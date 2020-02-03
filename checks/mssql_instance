@@ -7,7 +7,7 @@
 # |           | |___| | | |  __/ (__|   <    | |  | | . \            |
 # |            \____|_| |_|\___|\___|_|\_\___|_|  |_|_|\_\           |
 # |                                                                  |
-# | Copyright Mathias Kettner 2014             mk@mathias-kettner.de |
+# | Copyright Mathias Kettner 2020             mk@mathias-kettner.de |
 # +------------------------------------------------------------------+
 #
 # This file is part of Check_MK.
@@ -40,98 +40,125 @@
 # <<<mssql_instance:sep(124)>>>
 # ERROR: Failed to gather SQL server instances
 
-
-def _parse_prod_version(entry):
-    if entry.startswith("8."):
-        version = "2000"
-    elif entry.startswith("9."):
-        version = "2005"
-    elif entry.startswith("10.0"):
-        version = "2008"
-    elif entry.startswith("10.50"):
-        version = "2008R2"
-    elif entry.startswith("11."):
-        version = "2012"
-    elif entry.startswith("12."):
-        version = "2014"
-    elif entry.startswith("13."):
-        version = "2016"
-    elif entry.startswith("14."):
-        version = "2017"
-    else:
-        return "unknown[%s]" % entry
-    return "Microsoft SQL Server %s" % version
+factory_settings["mssql_instances_default_levels"] = {"cluster_status": "best"}
 
 
 def parse_mssql_instance(info):
+    def _parse_prod_version(entry):
+        if entry.startswith("8."):
+            version = "2000"
+        elif entry.startswith("9."):
+            version = "2005"
+        elif entry.startswith("10.0"):
+            version = "2008"
+        elif entry.startswith("10.50"):
+            version = "2008R2"
+        elif entry.startswith("11."):
+            version = "2012"
+        elif entry.startswith("12."):
+            version = "2014"
+        elif entry.startswith("13."):
+            version = "2016"
+        elif entry.startswith("14."):
+            version = "2017"
+        elif entry.startswith("15."):
+            version = "2019"
+        else:
+            return "unknown[%s]" % entry
+        return "Microsoft SQL Server %s" % version
+
     parsed = {}
+
     for line in info:
-        if line[0].startswith("ERROR:") or len(line) < 2 or line[1] not in [
+        if line[1].startswith("ERROR:") or len(line) < 2 or line[2] not in [
                 "config", "state", "details"
         ]:
             continue
-        elif line[0][:6] == "MSSQL_":
+        elif line[1][:6] == "MSSQL_":
             # Remove the MSSQL_ prefix from the ID for this check
-            instance_id = line[0][6:]
+            instance_id = line[1][6:]
         else:
-            instance_id = line[0]
+            instance_id = line[1]
 
-        instance = parsed.setdefault(
-            instance_id,
-            {
-                # it may happen that the state line is missing, add some fallback as default here
-                "state": "0",
-                "error_msg": "Unable to connect to database (Agent reported no state)",
-            })
+        instance = parsed.setdefault(instance_id, {})
+        error_msg = ""
 
-        if line[1] == "config":
+        # Instance-Name
+        if line[0] is None:
+            name = ""
+        else:
+            name = line[0] + ":"
+
+        # Filling error_msg to have an output for each instance
+        if line[3] == "1":
+            error_msg += name + "OK"
+        else:
+            error_msg += name + "|".join(line[4:])
+
+        if line[2] == "config":
             instance.update({
-                "version_info": "%s - %s" % (line[2], line[3]),
-                "cluster_name": line[4],
-            })
-        elif line[1] == "state":
-            instance.update({
-                "state": line[2],
-                "error_msg": "|".join(line[3:]),
+                "version_info": "%s - %s" % (line[3], line[4]),
+                "cluster_name": line[5],
             })
 
-        elif line[1] == "details":
-            _parse_prod_version(line[2])
+        elif line[2] == "state":
+            if "state" in instance:
+                state = instance.get("state") + ";" + line[3]
+            else:
+                state = line[3]
+            if "error_msg" in instance:
+                error_msg = instance.get("error_msg") + ";" + error_msg
+
+            instance.update({
+                "state": state,
+                "error_msg": error_msg,
+            })
+
+        # Still in use? Not in script!
+        elif line[2] == "details":
+            _parse_prod_version(line[3])
             instance.update({
                 "prod_version_info": "%s (%s) (%s) - %s" %
-                                     (_parse_prod_version(line[2]), line[3], line[2], line[4])
+                                     (_parse_prod_version(line[3]), line[4], line[3], line[5])
             })
-
     return parsed
 
 
-def inventory_mssql_instance(parsed):
-    for instance_id in parsed:
-        yield instance_id, {}
+@get_parsed_item_data
+def check_mssql_instance(item, params, data):
+    instance_state = data.get("state").split(";")
 
+    if params is None:
+        params = {}
 
-def check_mssql_instance(item, params, parsed):
-    instance = parsed.get(item)
-    if not instance:
-        return
+    state_map = params.get("map_connection_state")
+    cluster_status = params.get("cluster_status", "best")
+    state = 0
 
-    state = 2
-    if params is not None and \
-       params.get("map_connection_state") is not None:
-        state = params["map_connection_state"]
+    if cluster_status == 'best' or not isinstance(instance_state, list):
+        state = 0 if "1" in instance_state else 2
+    elif cluster_status == 'worst':
+        state = 2 if "0" in instance_state else 0
+    else:
+        state = 2
 
-    if instance["state"] == "0":
-        yield state, "Failed to connect to database (%s)" % instance["error_msg"]
+    if state_map != None:
+        state = state_map
 
-    yield 0, "Version: %s" % instance.get("prod_version_info", instance["version_info"])
-    if instance["cluster_name"] != "":
-        yield 0, "Clustered as %s" % instance["cluster_name"]
+    yield state, "state: " + data["error_msg"].replace(';', ', ')
+
+    yield 0, "Version: %s" % data.get("prod_version_info", data["version_info"])
+
+    if data["cluster_name"] != "":
+        yield 0, "clustered as %s" % data["cluster_name"]
 
 
 check_info["mssql_instance"] = {
     'parse_function': parse_mssql_instance,
     'check_function': check_mssql_instance,
-    'inventory_function': inventory_mssql_instance,
+    'inventory_function': discover(),
+    'default_levels_variable': "mssql_instances_default_levels",
     'service_description': 'MSSQL %s Instance',
     'group': 'mssql_instance',
+    'node_info': True,
 }

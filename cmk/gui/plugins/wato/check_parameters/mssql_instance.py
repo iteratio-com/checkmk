@@ -27,6 +27,7 @@
 from cmk.gui.i18n import _
 from cmk.gui.valuespec import (
     Dictionary,
+    DropdownChoice,
     MonitoringState,
     TextAscii,
 )
@@ -39,8 +40,20 @@ from cmk.gui.plugins.wato import (
 
 
 def _parameter_valuespec_mssql_instance():
-    return Dictionary(elements=[("map_connection_state",
-                                 MonitoringState(title=_("Connection status"), default_value=2))],)
+    return Dictionary(elements=[
+        ("map_connection_state", MonitoringState(title=_("Connection status"), default_value=2)),
+        ("cluster_status",
+         DropdownChoice(
+             choices=[
+                 ('worst', _('Worst Case')),
+                 ('best', _('Best Case')),
+             ],
+             help=
+             _("With this option you can specify, whether the check controlls for worst-case scenario (one service is not ok) or best-case scenario (at least one service is working). Actual-case prints warnings if at least one service is not working right."
+              ),
+             title=_("Cluster working scenario"),
+             default="actual_case"))
+    ],)
 
 
 rulespec_registry.register(
