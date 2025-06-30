@@ -409,7 +409,7 @@ fn check_body_matching(body: Option<&Body>, matcher: Vec<TextMatcher>) -> Vec<Op
                 )]
             } else {
                 notice(
-                    State::Warn,
+                    State::Crit,
                     &format!("{}: {} ({})", match_text, m.inner(), not_match_predicate),
                 )
             }
