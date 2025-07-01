@@ -23,7 +23,7 @@ from cmk.utils.redis import get_redis_client
 
 import cmk.gui.utils
 from cmk.gui import sites
-from cmk.gui.config import active_config
+from cmk.gui.config import active_config, Config
 from cmk.gui.crash_handler import handle_exception_as_gui_crash_report
 from cmk.gui.ctx_stack import g
 from cmk.gui.exceptions import HTTPRedirect, MKUserError
@@ -701,15 +701,15 @@ class QuicksearchSnapin(SidebarSnapin):
         super().__init__()
 
     @classmethod
-    def type_name(cls):
+    def type_name(cls) -> str:
         return "search"
 
     @classmethod
-    def title(cls):
+    def title(cls) -> str:
         return _("Quicksearch")
 
     @classmethod
-    def description(cls):
+    def description(cls) -> str:
         return _(
             "Interactive search field for direct access to monitoring instances (hosts, services, "
             "host and service groups).<br>You can use the following filters: <i>h:</i> Host,<br> "
@@ -718,7 +718,7 @@ class QuicksearchSnapin(SidebarSnapin):
             "Service label"
         )
 
-    def show(self):
+    def show(self, config: Config) -> None:
         id_ = "mk_side_search_field"
         html.open_div(id_="mk_side_search", onclick="cmk.quicksearch.close_popup();")
         html.input(id_=id_, type_="text", name="search", autocomplete="off")
@@ -908,7 +908,7 @@ class ABCLivestatusMatchPlugin(ABCMatchPlugin):
 
 
 class MatchPluginRegistry(cmk.ccc.plugin_registry.Registry[ABCMatchPlugin]):
-    def plugin_name(self, instance):
+    def plugin_name(self, instance: ABCMatchPlugin) -> str:
         return instance.name
 
     def get_livestatus_match_plugins(self) -> list[ABCLivestatusMatchPlugin]:

@@ -12,12 +12,10 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from enum import auto, Enum
-from typing import Final, Literal, TypedDict
+from typing import Literal, TypedDict
 from uuid import UUID
 
 from dateutil.relativedelta import relativedelta
-
-LicensingProtocolVersion: Final = "3.1"
 
 
 class RawLicenseUsageReport(TypedDict):

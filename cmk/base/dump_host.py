@@ -142,7 +142,7 @@ def dump_host(
         add_txt = ""
     print_("%s%s%s%-78s %s\n" % (color, tty.bold, tty.white, hostname + add_txt, tty.normal))
 
-    ip_stack_config = ConfigCache.ip_stack_config(hostname)
+    ip_stack_config = config_cache.ip_stack_config(hostname)
     primary_family = config_cache.default_address_family(hostname)
     ipaddress = (
         None if ip_stack_config is IPStackConfig.NO_IP else ip_address_of(hostname, primary_family)
@@ -172,7 +172,9 @@ def dump_host(
     )
 
     tag_template = tty.bold + "[" + tty.normal + "%s" + tty.bold + "]" + tty.normal
-    tags = [(tag_template % ":".join(t)) for t in sorted(config_cache.tags(hostname).items())]
+    tags = [
+        (tag_template % ":".join(t)) for t in sorted(config_cache.host_tags.tags(hostname).items())
+    ]
     print_(tty.yellow + "Tags:                   " + tty.normal + ", ".join(tags) + "\n")
 
     labels = [
@@ -222,7 +224,7 @@ def dump_host(
             plugins,
             hostname,
             ipaddress,
-            ConfigCache.ip_stack_config(hostname),
+            config_cache.ip_stack_config(hostname),
             fetcher_factory=config_cache.fetcher_factory(
                 config_cache.make_service_configurer(plugins.check_plugins, service_name_config),
                 ip_address_of,
@@ -248,7 +250,7 @@ def dump_host(
             tls_config=tls_config,
             computed_datasources=config_cache.computed_datasources(hostname),
             datasource_programs=config_cache.datasource_programs(hostname),
-            tag_list=config_cache.tag_list(hostname),
+            tag_list=config_cache.host_tags.tag_list(hostname),
             management_ip=ip_address_of_mgmt(hostname, primary_family),
             management_protocol=config_cache.management_protocol(hostname),
             special_agent_command_lines=config_cache.special_agent_command_lines(

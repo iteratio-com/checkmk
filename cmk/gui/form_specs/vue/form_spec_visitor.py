@@ -27,7 +27,6 @@ from cmk.gui.form_specs.private import (
     CommentTextArea,
     ConditionChoices,
     DictionaryExtended,
-    Folder,
     Labels,
     LegacyValueSpec,
     ListExtended,
@@ -41,7 +40,6 @@ from cmk.gui.form_specs.private import (
     SingleChoiceExtended,
     StringAutocompleter,
     TimeSpecific,
-    UnknownFormSpec,
     UserSelection,
 )
 from cmk.gui.form_specs.private.two_column_dictionary import TwoColumnDictionary
@@ -50,7 +48,6 @@ from cmk.gui.form_specs.vue.visitors.metric import MetricVisitor
 from cmk.gui.form_specs.vue.visitors.recomposers import (
     recompose_cascading_single_choice,
     recompose_dictionary,
-    recompose_folder,
     recompose_host_state,
     recompose_levels,
     recompose_list,
@@ -66,7 +63,6 @@ from cmk.gui.form_specs.vue.visitors.recomposers import (
     recompose_single_choice,
     recompose_string,
     recompose_time_period,
-    recompose_unknown_form_spec,
     recompose_user_selection,
 )
 from cmk.gui.htmllib.html import html
@@ -222,7 +218,6 @@ def register_form_specs():
     register_recomposer_function(MonitoredHostExtended, recompose_monitored_host_extended)
     register_recomposer_function(MonitoredService, recompose_monitored_service)
     register_recomposer_function(String, recompose_string)
-    register_recomposer_function(Folder, recompose_folder)
     register_recomposer_function(HostState, recompose_host_state)
     register_recomposer_function(ServiceState, recompose_service_state)
     register_recomposer_function(SingleChoice, recompose_single_choice)
@@ -230,7 +225,6 @@ def register_form_specs():
     register_recomposer_function(SimpleLevels, recompose_levels)
     register_recomposer_function(List, recompose_list)
     register_recomposer_function(Percentage, recompose_percentage)
-    register_recomposer_function(UnknownFormSpec, recompose_unknown_form_spec)
     register_recomposer_function(UserSelection, recompose_user_selection)
     register_recomposer_function(Dictionary, recompose_dictionary)
     register_recomposer_function(CascadingSingleChoice, recompose_cascading_single_choice)

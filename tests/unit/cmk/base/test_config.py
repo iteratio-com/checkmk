@@ -210,49 +210,6 @@ def test_all_active_hosts(monkeypatch: MonkeyPatch) -> None:
     } == {HostName("cluster1"), HostName("cluster3"), HostName("real1"), HostName("real3")}
 
 
-def test_config_cache_tag_to_group_map(monkeypatch: MonkeyPatch) -> None:
-    ts = Scenario()
-    ts.set_option(
-        "tag_config",
-        {
-            "aux_tags": [],
-            "tag_groups": [
-                {
-                    "id": "dingeling",
-                    "title": "Dung",
-                    "tags": [
-                        {"aux_tags": [], "id": TagID("dong"), "title": "ABC"},
-                    ],
-                }
-            ],
-        },
-    )
-    ts.apply(monkeypatch)
-    assert ConfigCache.get_tag_to_group_map() == {
-        TagID("all-agents"): TagGroupID("agent"),
-        TagID("auto-piggyback"): TagGroupID("piggyback"),
-        TagID("cmk-agent"): TagGroupID("agent"),
-        TagID("checkmk-agent"): TagGroupID("checkmk-agent"),
-        TagID("dong"): TagGroupID("dingeling"),
-        TagID("ip-v4"): TagGroupID("ip-v4"),
-        TagID("ip-v4-only"): TagGroupID("address_family"),
-        TagID("ip-v4v6"): TagGroupID("address_family"),
-        TagID("ip-v6"): TagGroupID("ip-v6"),
-        TagID("ip-v6-only"): TagGroupID("address_family"),
-        TagID("no-agent"): TagGroupID("agent"),
-        TagID("no-ip"): TagGroupID("address_family"),
-        TagID("no-piggyback"): TagGroupID("piggyback"),
-        TagID("no-snmp"): TagGroupID("snmp_ds"),
-        TagID("piggyback"): TagGroupID("piggyback"),
-        TagID("ping"): TagGroupID("ping"),
-        TagID("snmp"): TagGroupID("snmp"),
-        TagID("snmp-v1"): TagGroupID("snmp_ds"),
-        TagID("snmp-v2"): TagGroupID("snmp_ds"),
-        TagID("special-agents"): TagGroupID("agent"),
-        TagID("tcp"): TagGroupID("tcp"),
-    }
-
-
 @pytest.mark.parametrize(
     "hostname,host_path,result",
     [
@@ -1795,7 +1752,7 @@ def test_resolve_service_dependencies_cyclic(
 def test_service_depends_on_unknown_host(monkeypatch: MonkeyPatch) -> None:
     config_cache = Scenario().apply(monkeypatch)
     service_depends_on = config.ServiceDependsOn(
-        tag_list=config_cache.tag_list, service_dependencies=()
+        tag_list=config_cache.host_tags.tag_list, service_dependencies=()
     )
     assert not service_depends_on(HostName("test-host"), "svc")
 
@@ -1807,7 +1764,7 @@ def test_service_depends_on(monkeypatch: MonkeyPatch) -> None:
     config_cache = ts.apply(monkeypatch)
 
     service_depends_on = config.ServiceDependsOn(
-        tag_list=config_cache.tag_list,
+        tag_list=config_cache.host_tags.tag_list,
         service_dependencies=[
             ("dep1", [], config.ALL_HOSTS, ["svc1"], {}),
             ("dep2-%s", [], config.ALL_HOSTS, ["svc1-(.*)"], {}),
@@ -1863,7 +1820,7 @@ def test_config_cache_tag_list_of_host(monkeypatch: MonkeyPatch) -> None:
     ts.add_host(xyz_host)
 
     config_cache = ts.apply(monkeypatch)
-    assert set(config_cache.tag_list(xyz_host)) == {
+    assert set(config_cache.host_tags.tag_list(xyz_host)) == {
         TagID("/wato/"),
         TagID("lan"),
         TagID("ip-v4"),
@@ -1880,7 +1837,7 @@ def test_config_cache_tag_list_of_host(monkeypatch: MonkeyPatch) -> None:
 
 def test_config_cache_tag_list_of_host_not_existing(monkeypatch: MonkeyPatch) -> None:
     config_cache = Scenario().apply(monkeypatch)
-    assert set(config_cache.tag_list(HostName("not-existing"))) == {
+    assert set(config_cache.host_tags.tag_list(HostName("not-existing"))) == {
         TagID("/"),
         TagID("lan"),
         TagID("cmk-agent"),
@@ -1904,7 +1861,7 @@ def test_host_tags_of_host(monkeypatch: MonkeyPatch) -> None:
     ts.add_host(xyz_host)
 
     config_cache = ts.apply(monkeypatch)
-    assert config_cache.tags(xyz_host) == {
+    assert config_cache.host_tags.tags(xyz_host) == {
         "address_family": "ip-v4-only",
         "agent": "cmk-agent",
         "criticality": "prod",
@@ -1916,7 +1873,7 @@ def test_host_tags_of_host(monkeypatch: MonkeyPatch) -> None:
         "tcp": "tcp",
         "checkmk-agent": "checkmk-agent",
     }
-    assert config_cache.tags(test_host) == {
+    assert config_cache.host_tags.tags(test_host) == {
         "address_family": "ip-v4-only",
         "agent": "no-agent",
         "criticality": "prod",
@@ -1955,7 +1912,7 @@ def test_tags_of_service(monkeypatch: MonkeyPatch) -> None:
 
     config_cache = ts.apply(monkeypatch)
 
-    assert config_cache.tags(xyz_host) == {
+    assert config_cache.host_tags.tags(xyz_host) == {
         "address_family": "ip-v4-only",
         "agent": "cmk-agent",
         "criticality": "prod",
@@ -1969,7 +1926,7 @@ def test_tags_of_service(monkeypatch: MonkeyPatch) -> None:
     }
     assert config_cache.tags_of_service(xyz_host, "CPU load", {}) == {}
 
-    assert config_cache.tags(test_host) == {
+    assert config_cache.host_tags.tags(test_host) == {
         "address_family": "ip-v4-only",
         "agent": "no-agent",
         "criticality": "prod",

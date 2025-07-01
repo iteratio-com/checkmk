@@ -40,10 +40,12 @@ import DemoFormTuple from './DemoFormTuple.vue'
 import DemoFormLabels from './DemoFormLabels.vue'
 import type { Component } from 'vue'
 import DemoHelp from './DemoHelp.vue'
+import DemoCmkTabs from './DemoCmkTabs.vue'
 import DemoCmkChip from './DemoCmkChip.vue'
 import DemoCmkBadge from './DemoCmkBadge.vue'
 import DemoCmkProgressbar from './DemoCmkProgressbar.vue'
 import DemoTypography from './DemoTypography.vue'
+import DemoCmkLinkCard from './DemoCmkLinkCard.vue'
 
 interface Route {
   path: string
@@ -59,6 +61,11 @@ const routes: Route[] = [
     component: DemoEmpty
   },
   {
+    path: '/tabs',
+    name: 'CmkTabs',
+    component: DemoCmkTabs
+  },
+  {
     path: '/typography',
     name: 'Typography',
     component: DemoTypography
@@ -72,6 +79,11 @@ const routes: Route[] = [
     path: '/badge',
     name: 'CmkBadge',
     component: DemoCmkBadge
+  },
+  {
+    path: '/linkcard',
+    name: 'CmkLinkCard',
+    component: DemoCmkLinkCard
   },
   {
     path: '/chip',

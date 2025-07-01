@@ -19,12 +19,12 @@ from typing import Final, Literal, Protocol
 import livestatus
 
 import cmk.ccc.debug
+import cmk.ccc.resulttype as result
 from cmk.ccc import tty
 from cmk.ccc.exceptions import MKTimeout, OnError
 from cmk.ccc.hostaddress import HostAddress, HostName
 
 import cmk.utils.paths
-import cmk.utils.resulttype as result
 from cmk.utils import password_store
 from cmk.utils.agentdatatype import AgentRawData
 from cmk.utils.check_utils import ParametersTypeAlias
@@ -393,7 +393,7 @@ class CMKFetcher:
             hosts = [
                 (
                     host_name,
-                    (ip_stack_config := ConfigCache.ip_stack_config(host_name)),
+                    (ip_stack_config := self.config_cache.ip_stack_config(host_name)),
                     ip_address
                     or (
                         None
@@ -408,7 +408,7 @@ class CMKFetcher:
             hosts = [
                 (
                     node,
-                    (ip_stack_config := ConfigCache.ip_stack_config(node)),
+                    (ip_stack_config := self.config_cache.ip_stack_config(node)),
                     (
                         None
                         if ip_stack_config is IPStackConfig.NO_IP
@@ -465,7 +465,7 @@ class CMKFetcher:
                     tls_config=tls_config,
                     computed_datasources=self.config_cache.computed_datasources(current_host_name),
                     datasource_programs=self.config_cache.datasource_programs(current_host_name),
-                    tag_list=self.config_cache.tag_list(current_host_name),
+                    tag_list=self.config_cache.host_tags.tag_list(current_host_name),
                     management_ip=self.ip_address_of_mgmt(
                         current_host_name, self.default_address_family(current_host_name)
                     ),

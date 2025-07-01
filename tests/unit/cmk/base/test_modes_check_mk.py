@@ -11,9 +11,10 @@ from tests.testlib.unit.base_configuration_scenario import Scenario
 
 from tests.unit.cmk.base.emptyconfig import EMPTYCONFIG
 
+import cmk.ccc.resulttype as result
 from cmk.ccc.hostaddress import HostAddress, HostName
 
-import cmk.utils.resulttype as result
+from cmk.utils.tags import TagGroupID, TagID
 
 from cmk.fetchers import PiggybackFetcher
 
@@ -38,7 +39,24 @@ class TestModeDumpAgent:
     def patch_config_load(
         self, monkeypatch: pytest.MonkeyPatch, hostname: HostName, ipaddress: HostAddress
     ) -> None:
-        loaded_config = replace(EMPTYCONFIG, ipaddresses={hostname: ipaddress})
+        loaded_config = replace(
+            EMPTYCONFIG,
+            ipaddresses={hostname: ipaddress},
+            host_tags={
+                hostname: {
+                    TagGroupID("checkmk-agent"): TagID("checkmk-agent"),
+                    TagGroupID("piggyback"): TagID("auto-piggyback"),
+                    TagGroupID("networking"): TagID("lan"),
+                    TagGroupID("agent"): TagID("cmk-agent"),
+                    TagGroupID("criticality"): TagID("prod"),
+                    TagGroupID("snmp_ds"): TagID("no-snmp"),
+                    TagGroupID("site"): TagID("unit"),
+                    TagGroupID("address_family"): TagID("ip-v4-only"),
+                    TagGroupID("tcp"): TagID("tcp"),
+                    TagGroupID("ip-v4"): TagID("ip-v4"),
+                }
+            },
+        )
         monkeypatch.setattr(
             config,
             config.load.__name__,

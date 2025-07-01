@@ -4,17 +4,11 @@
 # conditions defined in the file COPYING, which is part of this source code package.
 from .cascading_single_choice_extended import CascadingSingleChoiceExtended
 from .catalog import Catalog, Topic
+from .comment_text_area import CommentTextArea
 from .condition_choices import ConditionChoices
-from .definitions import (
-    CommentTextArea,
-    LegacyValueSpec,
-    SingleChoiceElementExtended,
-    SingleChoiceExtended,
-    UnknownFormSpec,
-)
 from .dictionary_extended import DictionaryExtended
-from .folder import Folder
 from .labels import Labels, Source, World
+from .legacy_valuespec import LegacyValueSpec
 from .list_extended import ListExtended
 from .list_of_strings import ListOfStrings
 from .list_unique_selection import ListUniqueSelection
@@ -26,6 +20,10 @@ from .multiple_choice import (
 )
 from .optional_choice import OptionalChoice
 from .single_choice_editable import SingleChoiceEditable
+from .single_choice_extended import (
+    SingleChoiceElementExtended,
+    SingleChoiceExtended,
+)
 from .string_autocompleter import StringAutocompleter
 from .time_specific import TimeSpecific
 from .two_column_dictionary import TwoColumnDictionary
@@ -38,7 +36,6 @@ __all__ = [
     "CommentTextArea",
     "ConditionChoices",
     "DictionaryExtended",
-    "Folder",
     "Labels",
     "LegacyValueSpec",
     "ListExtended",
@@ -59,7 +56,6 @@ __all__ = [
     "TimeSpecific",
     "TwoColumnDictionary",
     "Topic",
-    "UnknownFormSpec",
     "UserSelection",
     "World",
 ]

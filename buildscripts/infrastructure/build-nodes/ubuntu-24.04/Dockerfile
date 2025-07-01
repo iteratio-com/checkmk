@@ -2,7 +2,7 @@ ARG DISTRO_IMAGE_BASE
 
 # hadolint ignore=DL3006
 # Create base image
-FROM ${DISTRO_IMAGE_BASE} as base
+FROM ${DISTRO_IMAGE_BASE} AS base
 
 SHELL ["/bin/bash", "-c"]
 ENV \
@@ -11,8 +11,8 @@ ENV \
     LANG=C.UTF-8 \
     PATH="/opt/bin:${PATH}"
 
-# fix for CMK-23806, url taken from https://launchpad.net/ubuntu/+archivemirrors
-RUN sed -i "s|http://.*.ubuntu.com/ubuntu|http://ftp.uni-stuttgart.de/ubuntu/|g" /etc/apt/sources.list.d/ubuntu.sources
+# Fix for CMK-23806, using our internal apt mirror
+RUN sed -i "s|http://.*.ubuntu.com/ubuntu|http://apt.lan.checkmk.net/ubuntu|g" /etc/apt/sources.list.d/ubuntu.sources
 
 RUN apt-get update
 
@@ -94,7 +94,7 @@ RUN rm /etc/cron.daily/apt-compat
 # - cmake is needed for e.g. building re2
 # - openssl is needed by Python 3.7+
 # - python is needed by our build / test chain
-FROM base as builder
+FROM base AS builder
 ARG NEXUS_ARCHIVES_URL
 ARG NEXUS_USERNAME
 ARG NEXUS_PASSWORD

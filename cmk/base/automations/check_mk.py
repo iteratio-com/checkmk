@@ -534,7 +534,7 @@ class AutomationDiscoveryPreview(Automation):
         ip_address = (
             None
             if host_name in hosts_config.clusters
-            or ConfigCache.ip_stack_config(host_name) is ip_lookup.IPStackConfig.NO_IP
+            or config_cache.ip_stack_config(host_name) is ip_lookup.IPStackConfig.NO_IP
             # We *must* do the lookup *before* calling `get_host_attributes()`
             # because...  I don't know... global variables I guess.  In any case,
             # doing it the other way around breaks one integration test.
@@ -1068,7 +1068,7 @@ def _execute_autodiscovery(
                     discovery_rules=loading_result.loaded_config.discovery_rules,
                     hosts_to_update=None,
                     service_depends_on=config.ServiceDependsOn(
-                        tag_list=config_cache.tag_list,
+                        tag_list=config_cache.host_tags.tag_list,
                         service_dependencies=loading_result.loaded_config.service_dependencies,
                     ),
                     duplicates=sorted(
@@ -1088,7 +1088,7 @@ def _execute_autodiscovery(
                     core,
                     ab_plugins,
                     service_depends_on=config.ServiceDependsOn(
-                        tag_list=config_cache.tag_list,
+                        tag_list=config_cache.host_tags.tag_list,
                         service_dependencies=loading_result.loaded_config.service_dependencies,
                     ),
                     locking_mode=config.restart_locking,
@@ -1317,7 +1317,7 @@ class AutomationRenameHosts(Automation):
                     plugins,
                     hosts_to_update=None,
                     service_depends_on=config.ServiceDependsOn(
-                        tag_list=config_cache.tag_list,
+                        tag_list=config_cache.host_tags.tag_list,
                         service_dependencies=loading_result.loaded_config.service_dependencies,
                     ),
                     bake_on_restart=_make_configured_bake_on_restart_callback(
@@ -2285,7 +2285,7 @@ class AutomationRestart(Automation):
             plugins,
             hosts_to_update=nodes,
             service_depends_on=config.ServiceDependsOn(
-                tag_list=loading_result.config_cache.tag_list,
+                tag_list=loading_result.config_cache.host_tags.tag_list,
                 service_dependencies=loading_result.loaded_config.service_dependencies,
             ),
             bake_on_restart=_make_configured_bake_on_restart_callback(
@@ -2866,17 +2866,15 @@ class AutomationDiagHost(Automation):
         file_cache_options = FileCacheOptions()
 
         if not ipaddress:
-            if ConfigCache.ip_stack_config(host_name) is ip_lookup.IPStackConfig.NO_IP:
+            if (
+                loading_result.config_cache.ip_stack_config(host_name)
+                is ip_lookup.IPStackConfig.NO_IP
+            ):
                 raise MKGeneralException("Host is configured as No-IP host: %s" % host_name)
             try:
-                resolved_address = ip_lookup.lookup_ip_address(ip_lookup_config, host_name)
+                ipaddress = ip_lookup.lookup_ip_address(ip_lookup_config, host_name)
             except Exception:
                 raise MKGeneralException("Cannot resolve host name %s into IP address" % host_name)
-
-            if resolved_address is None:
-                raise MKGeneralException("Cannot resolve host name %s into IP address" % host_name)
-
-            ipaddress = resolved_address
 
         try:
             if test == "ping":
@@ -3015,7 +3013,7 @@ class AutomationDiagHost(Automation):
             plugins,
             host_name,
             ipaddress,
-            ConfigCache.ip_stack_config(host_name),
+            config_cache.ip_stack_config(host_name),
             fetcher_factory=config_cache.fetcher_factory(service_configurer, ip_address_of),
             snmp_fetcher_config=SNMPFetcherConfig(
                 scan_config=snmp_scan_config,
@@ -3038,7 +3036,7 @@ class AutomationDiagHost(Automation):
             tls_config=tls_config,
             computed_datasources=config_cache.computed_datasources(host_name),
             datasource_programs=config_cache.datasource_programs(host_name),
-            tag_list=config_cache.tag_list(host_name),
+            tag_list=config_cache.host_tags.tag_list(host_name),
             management_ip=lookup_mgmt_board_ip_address(ip_lookup_config, host_name),
             management_protocol=config_cache.management_protocol(host_name),
             special_agent_command_lines=config_cache.special_agent_command_lines(
@@ -3486,7 +3484,7 @@ class AutomationGetAgentOutput(Automation):
         )
         config_cache = loading_result.config_cache
         hosts_config = config.make_hosts_config(loading_result.loaded_config)
-        ip_stack_config = ConfigCache.ip_stack_config(hostname)
+        ip_stack_config = config_cache.ip_stack_config(hostname)
         ip_lookup_config = config_cache.ip_lookup_config()
         ip_address_of = ip_lookup.ConfiguredIPLookup(
             ip_lookup.make_lookup_ip_address(ip_lookup_config),
@@ -3552,7 +3550,7 @@ class AutomationGetAgentOutput(Automation):
                     tls_config=tls_config,
                     computed_datasources=config_cache.computed_datasources(hostname),
                     datasource_programs=config_cache.datasource_programs(hostname),
-                    tag_list=config_cache.tag_list(hostname),
+                    tag_list=config_cache.host_tags.tag_list(hostname),
                     management_ip=lookup_mgmt_board_ip_address(ip_lookup_config, hostname),
                     management_protocol=config_cache.management_protocol(hostname),
                     special_agent_command_lines=config_cache.special_agent_command_lines(
