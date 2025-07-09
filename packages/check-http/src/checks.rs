@@ -408,10 +408,25 @@ fn check_body_matching(body: Option<&Body>, matcher: Vec<TextMatcher>) -> Vec<Op
                     &format!("{}: {} ({})", match_text, m.inner(), match_predicate),
                 )]
             } else {
-                notice(
-                    State::Crit,
-                    &format!("{}: {} ({})", match_text, m.inner(), not_match_predicate),
-                )
+                let mut full_match_text = None;
+                if let TextMatcher::Regex { regex, .. } = m {
+                    if let Some(captures) = regex.captures(&body.text) {
+                        // We have captures, so the regex matched. This only happens
+                        // in the "else" branch if the expectation was `false` (inverted match).
+                        // The user wants the full match in the output.
+                        if let Some(full_match) = captures.get(0) {
+                            full_match_text = Some(full_match.as_str().to_string());
+                        }
+                    }
+                }
+                if let Some(text) = full_match_text {
+                    notice(State::Warn, &text)
+                } else {
+                    notice(
+                        State::Warn,
+                        &format!("{}: {} ({})", match_text, m.inner(), not_match_predicate),
+                    )
+                }
             }
         })
         .collect::<Vec<_>>()

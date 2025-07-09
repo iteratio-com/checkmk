@@ -3,4 +3,4 @@
 // conditions defined in the file COPYING, which is part of this source code package.
 
 // This file is ignored by bazel and the version is set with a build flag.
-pub const VERSION: &str = "UNSET";
+pub const VERSION: &str = "2.4.0 for EVN by ITeratio";
