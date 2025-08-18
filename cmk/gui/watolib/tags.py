@@ -9,25 +9,22 @@ from collections.abc import Mapping, Sequence
 from enum import Enum
 from typing import Any, override, TypeVar
 
+import cmk.utils.paths
+import cmk.utils.tags
 from cmk.ccc import store
 from cmk.ccc.exceptions import MKGeneralException
 from cmk.ccc.i18n import _
-
-import cmk.utils.paths
-import cmk.utils.tags
-from cmk.utils.rulesets.ruleset_matcher import TagCondition
-from cmk.utils.tags import BuiltinTagConfig, TagConfig, TagConfigSpec, TagGroup, TagGroupID, TagID
-
 from cmk.gui import hooks
 from cmk.gui.config import load_config
 from cmk.gui.exceptions import MKAuthException
 from cmk.gui.hooks import request_memoize
 from cmk.gui.logged_in import user
 from cmk.gui.watolib.hosts_and_folders import Folder, folder_tree, Host
-from cmk.gui.watolib.php_formatter import format_php
 from cmk.gui.watolib.rulesets import AllRulesets, Rule, RuleConditions, Ruleset
 from cmk.gui.watolib.simple_config_file import ConfigFileRegistry, WatoSingleConfigFile
 from cmk.gui.watolib.utils import multisite_dir, wato_root_dir
+from cmk.utils.rulesets.ruleset_matcher import TagCondition
+from cmk.utils.tags import BuiltinTagConfig, TagConfig, TagConfigSpec, TagGroup, TagGroupID, TagID
 
 
 class TagConfigFile(WatoSingleConfigFile[TagConfigSpec]):
@@ -62,7 +59,7 @@ class TagConfigFile(WatoSingleConfigFile[TagConfigSpec]):
     def save(self, cfg: TagConfigSpec, pprint_value: bool) -> None:
         self._save_gui_config(cfg, pprint_value)
         self._save_base_config(cfg, pprint_value)
-        _export_hosttags_to_php(cfg)
+        hooks.call("tags-saved", cfg)
 
     def _save_gui_config(self, cfg: TagConfigSpec, pprint_value: bool) -> None:
         super().save(cfg, pprint_value)
@@ -164,9 +161,11 @@ class RepairError(MKGeneralException):
 def edit_tag_group(
     ident: TagGroupID,
     edited_group: TagGroup,
+    *,
     allow_repair: bool,
     pprint_value: bool,
     debug: bool,
+    use_git: bool,
 ) -> None:
     """Update attributes of a tag group & update the relevant positions which used the relevant tag group
 
@@ -190,7 +189,7 @@ def edit_tag_group(
     tag_config.validate_config()
     operation = OperationReplaceGroupedTags(ident, tag_ids_to_remove, tag_ids_to_replace)
     affected = change_host_tags(
-        operation, TagCleanupMode.CHECK, pprint_value=pprint_value, debug=debug
+        operation, TagCleanupMode.CHECK, pprint_value=pprint_value, debug=debug, use_git=use_git
     )
     if any(affected):
         if not allow_repair:
@@ -200,6 +199,7 @@ def edit_tag_group(
             TagCleanupMode("repair"),
             pprint_value=pprint_value,
             debug=debug,
+            use_git=use_git,
         )
     update_tag_config(tag_config, pprint_value)
 
@@ -310,13 +310,18 @@ def change_host_tags(
     *,
     pprint_value: bool,
     debug: bool,
+    use_git: bool,
 ) -> tuple[list[Folder], list[Host], list[Ruleset]]:
     affected_folder, affected_hosts = _change_host_tags_in_folders(
         operation, mode, folder_tree().root_folder(), pprint_value=pprint_value
     )
 
     affected_rulesets = _change_host_tags_in_rulesets(
-        operation, mode, pprint_value=pprint_value, debug=debug
+        operation,
+        mode,
+        pprint_value=pprint_value,
+        debug=debug,
+        use_git=use_git,
     )
     return affected_folder, affected_hosts, affected_rulesets
 
@@ -332,12 +337,15 @@ def _change_host_tags_in_rulesets(
     *,
     pprint_value: bool,
     debug: bool,
+    use_git: bool,
 ) -> list[Ruleset]:
     affected_rulesets = set()
     all_rulesets = _get_all_rulesets()
     for ruleset in all_rulesets.get_rulesets().values():
         for _folder, _rulenr, rule in ruleset.get_rules():
-            affected_rulesets.update(_change_host_tags_in_rule(operation, mode, ruleset, rule))
+            affected_rulesets.update(
+                _change_host_tags_in_rule(operation, mode, ruleset, rule, use_git=use_git)
+            )
 
     if mode != TagCleanupMode.CHECK:
         all_rulesets.save(pprint_value=pprint_value, debug=debug)
@@ -456,6 +464,8 @@ def _change_host_tags_in_rule(
     mode: TagCleanupMode,
     ruleset: Ruleset,
     rule: Rule,
+    *,
+    use_git: bool,
 ) -> set[Ruleset]:
     affected_rulesets: set[Ruleset] = set()
     if operation.tag_group_id not in rule.conditions.host_tags:
@@ -475,7 +485,7 @@ def _change_host_tags_in_rule(
             ) is not None and list(condition)[0] in ["$ne", "$nor"]:
                 _remove_tag_group_condition(rule, operation.tag_group_id)
             else:
-                ruleset.delete_rule(rule)
+                ruleset.delete_rule(rule, create_change=True, use_git=use_git)
         elif mode == TagCleanupMode.REMOVE:
             _remove_tag_group_condition(rule, operation.tag_group_id)
 
@@ -531,7 +541,7 @@ def _change_host_tags_in_rule(
         elif mode == TagCleanupMode.DELETE and (
             not isinstance(current_value, dict) and list(current_value)[0] not in ["$ne", "$nor"]
         ):
-            ruleset.delete_rule(rule)
+            ruleset.delete_rule(rule, create_change=True, use_git=use_git)
 
     return affected_rulesets
 
@@ -547,92 +557,3 @@ def _remove_tag_group_condition(rule: Rule, tag_group_id: TagGroupID) -> None:
             service_label_groups=rule.conditions.service_label_groups,
         )
     )
-
-
-# Creates a includable PHP file which provides some functions which
-# can be used by the calling program, for example NagVis. It declares
-# the following API:
-#
-# taggroup_title(group_id)
-# Returns the title of a Setup tag group
-#
-# taggroup_choice(group_id, list_of_object_tags)
-# Returns either
-#   false: When taggroup does not exist in current config
-#   null:  When no choice can be found for the given taggroup
-#   array(tag, title): When a tag of the taggroup
-#
-# all_taggroup_choices(object_tags):
-# Returns an array of elements which use the tag group id as key
-# and have an assiciative array as value, where 'title' contains
-# the tag group title and the value contains the value returned by
-# taggroup_choice() for this tag group.
-#
-def _export_hosttags_to_php(cfg: TagConfigSpec) -> None:
-    php_api_dir = cmk.utils.paths.var_dir / "wato/php-api"
-    path = php_api_dir / "hosttags.php"
-    php_api_dir.mkdir(mode=0o770, exist_ok=True, parents=True)
-
-    tag_config = cmk.utils.tags.TagConfig.from_config(cfg)
-    tag_config += cmk.utils.tags.BuiltinTagConfig()
-
-    # Transform Setup internal data structures into easier usable ones
-    hosttags_dict = {}
-    for tag_group in tag_config.tag_groups:
-        tags = {}
-        for grouped_tag in tag_group.tags:
-            tags[grouped_tag.id] = (grouped_tag.title, grouped_tag.aux_tag_ids)
-
-        hosttags_dict[tag_group.id] = (tag_group.topic, tag_group.title, tags)
-
-    auxtags_dict = dict(tag_config.aux_tag_list.get_choices())
-
-    content = f"""<?php
-// Created by WATO
-global $mk_hosttags, $mk_auxtags;
-$mk_hosttags = {format_php(hosttags_dict)};
-$mk_auxtags = {format_php(auxtags_dict)};
-
-function taggroup_title($group_id) {{
-    global $mk_hosttags;
-    if (isset($mk_hosttags[$group_id]))
-        return $mk_hosttags[$group_id][0];
-    else
-        return $taggroup;
-}}
-
-function taggroup_choice($group_id, $object_tags) {{
-    global $mk_hosttags;
-    if (!isset($mk_hosttags[$group_id]))
-        return false;
-    foreach ($object_tags AS $tag) {{
-        if (isset($mk_hosttags[$group_id][2][$tag])) {{
-            // Found a match of the objects tags with the taggroup
-            // now return an array of the matched tag and its alias
-            return array($tag, $mk_hosttags[$group_id][2][$tag][0]);
-        }}
-    }}
-    // no match found. Test whether or not a "None" choice is allowed
-    if (isset($mk_hosttags[$group_id][2][null]))
-        return array(null, $mk_hosttags[$group_id][2][null][0]);
-    else
-        return null; // no match found
-}}
-
-function all_taggroup_choices($object_tags) {{
-    global $mk_hosttags;
-    $choices = array();
-    foreach ($mk_hosttags AS $group_id => $group) {{
-        $choices[$group_id] = array(
-            'topic' => $group[0],
-            'title' => $group[1],
-            'value' => taggroup_choice($group_id, $object_tags),
-        );
-    }}
-    return $choices;
-}}
-
-?>
-"""
-
-    store.save_text_to_file(path, content)

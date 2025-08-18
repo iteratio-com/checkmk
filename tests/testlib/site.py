@@ -2,7 +2,6 @@
 # Copyright (C) 2019 Checkmk GmbH - License: GNU General Public License v2
 # This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 # conditions defined in the file COPYING, which is part of this source code package.
-# ruff: noqa: A005
 
 """Module for managing Checkmk test sites.
 
@@ -40,6 +39,11 @@ from typing import Any, Final, Literal, overload
 import pytest
 import pytest_check
 
+import livestatus
+
+from cmk import trace
+from cmk.crypto.password import Password
+from cmk.crypto.secrets import Secret
 from tests.testlib.common.repo import current_branch_name, repo_path
 from tests.testlib.common.utils import wait_until
 from tests.testlib.cse.utils import (  # type: ignore[import-untyped, unused-ignore]
@@ -70,12 +74,6 @@ from tests.testlib.version import (
     version_from_env,
 )
 from tests.testlib.web_session import CMKWebSession
-
-import livestatus
-
-from cmk import trace
-from cmk.crypto.password import Password
-from cmk.crypto.secrets import Secret
 
 logger = logging.getLogger(__name__)
 tracer = trace.get_tracer()
@@ -351,7 +349,13 @@ class Site:
         )
 
     @tracer.instrument("Site.reschedule_services")
-    def reschedule_services(self, hostname: str, max_count: int = 10, strict: bool = True) -> None:
+    def reschedule_services(
+        self,
+        hostname: str,
+        max_count: int = 10,
+        strict: bool = True,
+        wait_timeout: int | None = None,
+    ) -> None:
         """Reschedule services in the test-site for a given host until no pending services are
         found.
 
@@ -359,6 +363,7 @@ class Site:
             hostname: Name of the target host.
             max_count: Maximum number of iterations.
             strict: Assert having no pending services.
+            wait_timeout: Number of seconds to wait for the service check.
         """
         count = 0
         while (
@@ -371,7 +376,7 @@ class Site:
                 hostname,
                 pformat(pending_services),
             )
-            self.schedule_check(hostname, "Check_MK", 0)
+            self.schedule_check(hostname, "Check_MK", 0, wait_timeout)
             count += 1
 
         if strict:
@@ -687,15 +692,22 @@ class Site:
         return output
 
     @contextmanager
-    def copy_file(self, name: str | Path, target: str | Path) -> Iterator[None]:
-        """Copies a file from the same directory as the caller to the site"""
+    def copy_file(self, source_path: str | Path, target_path: str | Path) -> Iterator[Path]:
+        """Copies a file from the same directory as the caller to the site.
+
+        If absolute paths are passed, those will override the default source and target paths.
+
+        Args:
+            source_path: Source path of the file (either absolute or relative to the callers folder).
+            target_path: Target path of the file (either absolute or relative to the site).
+        """
         caller_file = Path(inspect.stack()[2].filename)
-        source_path = caller_file.parent / name
-        target_path = Path(target)
+        source_path = caller_file.parent / source_path
+        target_path = self.path(target_path)
         self.makedirs(target_path.parent)
         self.write_file(target_path, source_path.read_text())
         try:
-            yield
+            yield target_path
         finally:
             self.delete_file(target_path)
 
@@ -1268,7 +1280,7 @@ class Site:
     def is_running(self) -> bool:
         return self.omd("status").returncode == 0
 
-    def get_omd_service_names_and_statuses(site: Site, service: str = "") -> dict[str, int]:
+    def get_omd_service_names_and_statuses(self, service: str = "") -> dict[str, int]:
         """
         Return all service names and their statuses for the given site.
         """
@@ -1276,7 +1288,7 @@ class Site:
         cmd = ["status", "--bare"]
         if service:
             cmd.append(service)
-        p = site.omd(*cmd, check=False)
+        p = self.omd(*cmd, check=False)
         services = {}
         for line in p.stdout.strip().splitlines():
             parts = line.split()
@@ -1288,7 +1300,10 @@ class Site:
                         f"Expected status code to be an integer for service {parts[0]}"
                     ) from e
         if not services:
-            raise RuntimeError("No services found in 'omd status --bare' output:\n" + p.stdout)
+            raise RuntimeError(
+                f"No status found for '{' '.join(cmd)}'!\nSTDOUT:\n{p.stdout}\n",
+                f"STDERR:\n{p.stderr}\n",
+            )
         return services
 
     def is_stopped(self) -> bool:
@@ -1429,6 +1444,9 @@ class Site:
         user_spec, etag = user
         user_spec["language"] = "en"
         user_spec.pop("enforce_password_change", None)
+        # TODO: DEPRECATED(18295) remove "mega_menu_icons"
+        # Response contains "mega_menu_icons" AND "main_menu_icons" only _one_ is allowed in a request.
+        user_spec["interface_options"].pop("mega_menu_icons", None)
         self.openapi.users.edit(ADMIN_USER, user_spec, etag)
 
         # Verify the language is as expected now
@@ -1577,7 +1595,7 @@ class Site:
             for crash_id in self.listdir(self.crash_report_dir / crash_type)
         ]
 
-    def report_crashes(self):
+    def report_crashes(self) -> None:
         for crash_dir in self.crash_reports_dirs():
             crash_file = crash_dir / "crash.info"
             try:
@@ -1595,6 +1613,11 @@ class Site:
                 continue
             if re.search("Licensed phase: too many services.", crash_detail):
                 logger.warning("Ignored crash report due to license violation!")
+                continue
+            if (
+                crash_type == "ValueError"
+                and crash_detail == "This is intended, please move on... Really"
+            ):
                 continue
             pytest_check.fail(
                 f"""Crash report detected! {crash_type}: {crash_detail}.
@@ -1764,6 +1787,25 @@ class Site:
             current_settings["sites"][site_id].update(updated_site_settings)
 
         self.write_site_specific_settings(relative_path, current_settings)
+
+    @contextmanager
+    def backup_and_restore_files(self, files: list[Path]) -> Iterator[None]:
+        """Backup file(s) when entering the context and restore them when exiting.
+
+        Args:
+            files: List of files to be backed up.
+                Files are assumed to be relative to the site's root directory.
+        """
+        list_of_files = ", ".join(map(str, files))
+        logger.info("Backup files: '%s'", list_of_files)
+        backup = {file: self.read_file(file) for file in files}
+        try:
+            yield
+        finally:
+            logger.info("Restore files: '%s'", list_of_files)
+            for file, content in backup.items():
+                self.write_file(rel_path=file, content=content)
+            self.openapi.changes.activate_and_wait_for_completion()
 
 
 @dataclass(frozen=True)
@@ -1939,6 +1981,8 @@ class SiteFactory:
         site_copy = self.get_existing_site(copy_name)
         site_copy.start()
 
+        site.start()
+
         try:
             yield site_copy
 
@@ -2096,12 +2140,15 @@ class SiteFactory:
         # refresh the site object after creating the site
         site = self.get_existing_site(test_site.id)
 
+        assert site.version.version == target_package.version.version, (
+            "Version mismatch after update process:\n"
+            f"Expected version: {target_package.version.version}\n"
+            f"Actual version: {site.version.version}"
+        )
+
         _assert_tmpfs(site, base_package.version)
         if not site.edition.is_saas_edition():
             _assert_nagvis_server(target_package)
-
-        # open the livestatus port
-        site.open_livestatus_tcp(encrypted=False)
 
         # start the site after manually installing it
         site.start()
@@ -2164,12 +2211,15 @@ class SiteFactory:
         # refresh the site object after creating the site
         site = self.get_existing_site(site.id)
 
+        assert site.version.version == target_package.version.version, (
+            "Version mismatch after update process:\n"
+            f"Expected version: {target_package.version.version}\n"
+            f"Actual version: {site.version.version}"
+        )
+
         _assert_tmpfs(site, base_package.version)
         if not site.edition.is_saas_edition():
             _assert_nagvis_server(target_package)
-
-        # open the livestatus port
-        site.open_livestatus_tcp(encrypted=False)
 
         if start_site_after_update:
             # start the site after manually installing it

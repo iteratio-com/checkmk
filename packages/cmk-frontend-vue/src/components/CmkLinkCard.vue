@@ -5,8 +5,8 @@ conditions defined in the file COPYING, which is part of this source code packag
 -->
 <script setup lang="ts">
 import CmkIcon from '@/components/CmkIcon.vue'
-import CmkHeading2 from '@/components/typography/CmkHeading2.vue'
-import CmkBodyText from '@/components/typography/CmkBodyText.vue'
+import CmkParagraph from '@/components/typography/CmkParagraph.vue'
+import CmkHeading from '@/components/typography/CmkHeading.vue'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { computed } from 'vue'
 
@@ -23,7 +23,7 @@ const cmkLinkCardVariants = cva('', {
 })
 export type CmkLinkCardVariants = VariantProps<typeof cmkLinkCardVariants>
 interface CmkLinkCardProps {
-  iconName?: string
+  iconName?: string | undefined
   title: string
   subtitle?: string
   url: string
@@ -39,11 +39,11 @@ const classes = computed(() => [
 </script>
 
 <template>
-  <a :href="url" :target="openInNewTab ? 'blank' : ''" class="cmk-link-card" :class="classes">
+  <a :href="url" :target="openInNewTab ? '_blank' : ''" class="cmk-link-card" :class="classes">
     <CmkIcon v-if="iconName" :name="iconName" size="xxlarge" class="cmk-link-card__icon" />
     <div class="cmk-link-card__text-area">
-      <CmkHeading2 class="cmk-link-card__heading">{{ title }}</CmkHeading2>
-      <CmkBodyText :v-if="subtitle" class="cmk-link-card__subtitle">{{ subtitle }}</CmkBodyText>
+      <CmkHeading type="h4" class="cmk-link-card__heading">{{ title }}</CmkHeading>
+      <CmkParagraph :v-if="subtitle" class="cmk-link-card__subtitle">{{ subtitle }}</CmkParagraph>
     </div>
     <CmkIcon v-if="openInNewTab" name="export_link" class="cmk-link-card__export-icon" />
   </a>
@@ -52,7 +52,7 @@ const classes = computed(() => [
 <style scoped>
 .cmk-link-card--standard {
   background-color: var(--ux-theme-1);
-  border: 1px solid var(--default-border-color);
+  border: var(--dimension-border-width-1) solid var(--ux-theme-6);
 }
 .cmk-link-card--borderless {
   background-color: var(--ux-theme-2);
@@ -62,8 +62,7 @@ const classes = computed(() => [
   align-items: center;
   text-decoration: none;
   border-radius: 4px;
-  padding: var(--spacing);
-  margin-bottom: var(--spacing);
+  padding: var(--dimension-padding-4) var(--dimension-padding-5);
 
   &:hover {
     background-color: var(--ux-theme-5);
@@ -79,10 +78,7 @@ const classes = computed(() => [
   }
 }
 .cmk-link-card__icon {
-  margin-right: var(--spacing);
-}
-.cmk-link-card__text-area {
-  margin-right: var(--spacing);
+  margin-right: var(--dimension-item-spacing-7);
 }
 .cmk-link-card__subtitle {
   color: var(--font-color-dimmed);

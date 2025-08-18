@@ -13,17 +13,24 @@ from typing import Literal
 
 import livestatus
 
+import cmk.utils.paths
 from cmk.ccc.exceptions import MKGeneralException
 from cmk.ccc.hostaddress import HostName
 from cmk.ccc.site import SiteId
-
-import cmk.utils.paths
+from cmk.gui import sites, userdb
+from cmk.gui.config import active_config
+from cmk.gui.exceptions import MKAuthException
+from cmk.gui.hooks import request_memoize
+from cmk.gui.i18n import _
+from cmk.gui.logged_in import user
+from cmk.gui.watolib.groups_io import PermittedPath
 from cmk.utils.structured_data import (
+    HistoryArchivePath,
+    HistoryDeltaPath,
     HistoryEntry,
-    HistoryPath,
+    HistoryStore,
     ImmutableDeltaTree,
     ImmutableTree,
-    InventoryPaths,
     InventoryStore,
     load_history,
     parse_from_raw_status_data_tree,
@@ -33,14 +40,6 @@ from cmk.utils.structured_data import (
     SDNodeName,
     SDPath,
 )
-
-from cmk.gui import sites, userdb
-from cmk.gui.config import active_config
-from cmk.gui.exceptions import MKAuthException
-from cmk.gui.hooks import request_memoize
-from cmk.gui.i18n import _
-from cmk.gui.logged_in import user
-from cmk.gui.watolib.groups_io import PermittedPath
 
 
 class TreeSource(Enum):
@@ -284,30 +283,20 @@ def inventory_of_host(
     return tree.filter(filters) if filters else tree
 
 
-def get_short_inventory_filepath(host_name: HostName) -> Path:
-    return (
-        InventoryPaths(cmk.utils.paths.omd_root)
-        .inventory_tree(host_name)
-        .relative_to(cmk.utils.paths.omd_root)
-    )
-
-
-def load_latest_delta_tree(
-    inventory_store: InventoryStore, hostname: HostName
-) -> ImmutableDeltaTree:
+def load_latest_delta_tree(history_store: HistoryStore, hostname: HostName) -> ImmutableDeltaTree:
     if "/" in hostname:
         return ImmutableDeltaTree()
 
-    filter_tree = (
+    filter_delta_tree = (
         _make_filter_choices_from_permitted_paths(permitted_paths)
         if isinstance(permitted_paths := _get_permitted_inventory_paths(), list)
         else None
     )
     history = load_history(
-        inventory_store,
+        history_store,
         hostname,
-        filter_history_paths=lambda pairs: [pairs[-1]] if pairs else [],
-        filter_tree=filter_tree,
+        filter_history_paths=lambda paths: [paths[-1]] if paths else [],
+        filter_delta_tree=filter_delta_tree,
     )
     return history.entries[0].delta_tree if history.entries else ImmutableDeltaTree()
 
@@ -319,7 +308,7 @@ def _sort_corrupted_history_files(
 
 
 def load_delta_tree(
-    inventory_store: InventoryStore, hostname: HostName, timestamp: int
+    history_store: HistoryStore, hostname: HostName, timestamp: int
 ) -> tuple[ImmutableDeltaTree, Sequence[str]]:
     """Load inventory history and compute delta tree of a specific timestamp"""
     if "/" in hostname:
@@ -330,50 +319,50 @@ def load_delta_tree(
     # computation.
 
     def _search_timestamps(
-        pairs: Sequence[tuple[HistoryPath, HistoryPath]], timestamp: int
-    ) -> Sequence[tuple[HistoryPath, HistoryPath]]:
-        for previous, current in pairs:
-            if current.timestamp == timestamp:
-                return [(previous, current)]
+        paths: Sequence[HistoryDeltaPath | HistoryArchivePath], timestamp: int
+    ) -> Sequence[HistoryDeltaPath | HistoryArchivePath]:
+        for path in paths:
+            if path.current_timestamp == timestamp:
+                return [path]
         raise MKGeneralException(
             _("Found no history entry at the time of '%s' for the host '%s'")
             % (timestamp, hostname)
         )
 
-    filter_tree = (
+    filter_delta_tree = (
         _make_filter_choices_from_permitted_paths(permitted_paths)
         if isinstance(permitted_paths := _get_permitted_inventory_paths(), list)
         else None
     )
     history = load_history(
-        inventory_store,
+        history_store,
         hostname,
-        filter_history_paths=lambda pairs: _search_timestamps(pairs, timestamp),
-        filter_tree=filter_tree,
+        filter_history_paths=lambda paths: _search_timestamps(paths, timestamp),
+        filter_delta_tree=filter_delta_tree,
     )
     return (
         history.entries[0].delta_tree if history.entries else ImmutableDeltaTree(),
-        _sort_corrupted_history_files(inventory_store.inv_paths.archive_dir, history.corrupted),
+        _sort_corrupted_history_files(history_store.inv_paths.archive_dir, history.corrupted),
     )
 
 
 def get_history(
-    inventory_store: InventoryStore, hostname: HostName
+    history_store: HistoryStore, hostname: HostName
 ) -> tuple[Sequence[HistoryEntry], Sequence[str]]:
     if "/" in hostname:
         return [], []  # just for security reasons
 
-    filter_tree = (
+    filter_delta_tree = (
         _make_filter_choices_from_permitted_paths(permitted_paths)
         if isinstance(permitted_paths := _get_permitted_inventory_paths(), list)
         else None
     )
     history = load_history(
-        inventory_store,
+        history_store,
         hostname,
-        filter_history_paths=lambda pairs: pairs,
-        filter_tree=filter_tree,
+        filter_history_paths=lambda paths: paths,
+        filter_delta_tree=filter_delta_tree,
     )
     return history.entries, _sort_corrupted_history_files(
-        inventory_store.inv_paths.archive_dir, history.corrupted
+        history_store.inv_paths.archive_dir, history.corrupted
     )

@@ -15,7 +15,6 @@ from typing import Any, Literal, NamedTuple, Protocol, Self
 
 from cmk.ccc.exceptions import MKSNMPError
 from cmk.ccc.hostaddress import HostAddress, HostName
-
 from cmk.utils.sectionname import SectionName
 
 SNMPContext = str
@@ -25,6 +24,26 @@ OIDRange = tuple[int, int]
 RangeLimit = tuple[Literal["first", "last"], int] | tuple[Literal["mid"], OIDRange]
 SNMPRawValue = bytes
 SNMPRowInfo = list[tuple[OID, SNMPRawValue]]
+
+
+def parse_oid_range_config(
+    rule_values: Sequence[object],
+) -> Mapping[SectionName, Sequence[RangeLimit]]:
+    """Parse the OID range limits from the given config values."""
+    return {
+        SectionName(str(v[0])): [_parse_range_limit(l) for l in v[1]]
+        for v in reversed(rule_values)
+        if isinstance(v, tuple)
+    }
+
+
+def _parse_range_limit(raw: object) -> RangeLimit:
+    match raw:
+        case ("first" | "last" as position, int(limit)):
+            return position, limit
+        case ("mid", tuple((int(), int())) as oid_range):
+            return "mid", oid_range
+    raise ValueError(raw)
 
 
 class SNMPContextTimeout(MKSNMPError):
@@ -141,7 +160,7 @@ class SNMPHostConfig:
         self,
         section_name: SectionName | None,
     ) -> SNMPContextConfig:
-        if not section_name or self.snmp_version is not SNMPVersion.V3:
+        if self.snmp_version is not SNMPVersion.V3:
             return SNMPContextConfig.default()
         for ctx in self.snmpv3_contexts:
             if ctx.section is None or ctx.section == section_name:

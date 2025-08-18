@@ -9,17 +9,14 @@ from pathlib import Path
 
 import pytest
 
-from tests.testlib.unit.base_configuration_scenario import Scenario
-
-from cmk.ccc.hostaddress import HostName
-
 import cmk.utils.paths
-
+from cmk.ccc.hostaddress import HostName
 from cmk.checkengine.discovery import AutocheckServiceWithNodes, AutochecksStore
 from cmk.checkengine.discovery._autochecks import _AutochecksSerializer as AutochecksSerializer
 from cmk.checkengine.discovery._autochecks import _consolidate_autochecks_of_real_hosts
 from cmk.checkengine.discovery._utils import DiscoveredItem
 from cmk.checkengine.plugins import AutocheckEntry, CheckPluginName
+from tests.testlib.unit.base_configuration_scenario import Scenario
 
 
 @pytest.fixture(autouse=True)
@@ -91,7 +88,7 @@ class TestAutochecksStore:
         ),
     ],
 )
-def test_manager_get_autochecks_of(
+def test_memoizer_get_autochecks_of(
     autochecks_content: str,
     expected_result: Sequence[AutocheckEntry],
     monkeypatch: pytest.MonkeyPatch,
@@ -103,9 +100,9 @@ def test_manager_get_autochecks_of(
     ts.add_host(HostName("host"))
     config_cache = ts.apply(monkeypatch)
 
-    manager = config_cache.autochecks_manager
+    memoizer = config_cache.autochecks_memoizer
 
-    result = manager.get_autochecks(HostName("host"))
+    result = memoizer.read(HostName("host"))
     assert result == expected_result
 
 

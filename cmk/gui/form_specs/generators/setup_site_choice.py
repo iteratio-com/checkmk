@@ -6,13 +6,11 @@ from collections.abc import Sequence
 from typing import TypeVar
 
 from cmk.ccc.site import omd_site
-
 from cmk.gui import site_config
+from cmk.gui.config import active_config
 from cmk.gui.form_specs.private import SingleChoiceElementExtended, SingleChoiceExtended
 from cmk.gui.logged_in import user as global_user
-from cmk.gui.site_config import configured_sites
 from cmk.gui.user_sites import activation_sites, site_choices
-
 from cmk.rulesets.v1 import Help, Label, Title
 from cmk.rulesets.v1.form_specs import DefaultValue, InvalidElementValidator
 
@@ -20,14 +18,14 @@ T = TypeVar("T")
 
 
 def _compute_default_prefill() -> DefaultValue[str]:
-    if site_config.is_wato_slave_site():
+    if site_config.is_wato_slave_site(active_config.sites):
         # Placeholder for "central site". This is only relevant when using Setup on a remote site
         # and a host / folder has no site set.
         return DefaultValue("")
 
     if not (
         authorized_site_ids := list(
-            global_user.authorized_sites(unfiltered_sites=configured_sites()).keys()
+            global_user.authorized_sites(unfiltered_sites=active_config.sites).keys()
         )
     ):
         return DefaultValue("")
@@ -44,7 +42,7 @@ def _compute_site_choices() -> Sequence[SingleChoiceElementExtended[str]]:
             name=choice[0],
             title=Title(choice[1]),  # pylint: disable=localization-of-non-literal-string
         )
-        for choice in site_choices(activation_sites())
+        for choice in site_choices(activation_sites(active_config.sites))
     ]
 
 

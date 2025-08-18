@@ -7,18 +7,16 @@ import re
 from collections.abc import Iterator, Mapping, Sequence
 from typing import Any, cast
 
-from cmk.ccc.hostaddress import HostName
-
 from cmk.automations.results import DiagSpecialAgentHostConfig, DiagSpecialAgentInput
-
+from cmk.ccc.hostaddress import HostName
 from cmk.checkengine.discovery import CheckPreviewEntry
-
-from cmk.gui.form_specs.vue.form_spec_visitor import (
+from cmk.gui.form_specs.vue import (
+    DiskModel,
+    get_visitor,
+    RawFrontendData,
     serialize_data_for_frontend,
-    transform_to_disk_model,
+    VisitorOptions,
 )
-from cmk.gui.form_specs.vue.visitors import DataOrigin
-from cmk.gui.form_specs.vue.visitors._type_defs import DiskModel
 from cmk.gui.quick_setup.private.widgets import ConditionalNotificationStageWidget
 from cmk.gui.quick_setup.v0_unstable.setups import QuickSetupStage
 from cmk.gui.quick_setup.v0_unstable.type_defs import ParsedFormData, ServiceInterest
@@ -30,7 +28,6 @@ from cmk.gui.quick_setup.v0_unstable.widgets import (
     Widget,
 )
 from cmk.gui.watolib.passwords import load_passwords
-
 from cmk.rulesets.v1.form_specs import Dictionary, FormSpec, Password
 
 
@@ -141,14 +138,16 @@ def _get_rule_defaults(parameter_form: Dictionary) -> DiskModel:
     # 1a. Invalid entries exist since we have required dictelements without a DefaultValue prefill
     # 2.  Then convert this valid structure back to disk format so it can be properly merged
     #     with the actual configuration data from the quick setup stages
-    return transform_to_disk_model(
-        parameter_form,
-        serialize_data_for_frontend(
-            form_spec=parameter_form,
-            field_id="rule_id",
-            origin=DataOrigin.DISK,
-            do_validate=False,
-        ).data,
+    return get_visitor(
+        parameter_form, VisitorOptions(migrate_values=True, mask_values=False)
+    ).to_disk(
+        RawFrontendData(
+            serialize_data_for_frontend(
+                form_spec=parameter_form,
+                field_id="rule_id",
+                do_validate=False,
+            ).data,
+        )
     )
 
 

@@ -24,6 +24,7 @@ $package_name = Split-Path -Path (Get-Location) -Leaf
 
 $exe_name = "$package_name.exe"
 $work_dir = "$pwd"
+$cargo_toolchain = "1.87.0" # to be in sync with rust toolchain/bazel/etc
 $cargo_target = "x86_64-pc-windows-msvc"
 
 $packBuild = $false
@@ -193,13 +194,17 @@ $result = 1
 try {
     $mainStartTime = Get-Date
 
+    if ( "$env:CI_ORA2_DB_TEST" -eq "" ) {
+        Write-Error "CI_ORA2_DB_TEST environment variable is not set. Please set it to the test registry name." -ErrorAction Stop
+    }
+
     & rustup --version > nul
     if ($LASTEXITCODE -ne 0) {
         Write-Error "rustup not found, please install it and/or add to PATH" -ErrorAction Stop
     }
     &rustup update
     &rustup install
-    &rustup target add $cargo_target
+    &rustup target add $cargo_target --toolchain $cargo_toolchain
     & rustc --target $cargo_target -V
     & cargo -V
 
@@ -251,9 +256,6 @@ try {
         Invoke-Cargo-With-Explicit-Package "fmt" "--" "--check"
     }
     if ($packTest) {
-        if (-not (Test-Administrator)) {
-            Write-Error "Testing must be executed as Administrator." -ErrorAction Stop
-        }
         # TODO(timi): move it to CI
         .\tests\files\ci-scripts\manage-test-registry-set.ps1 --reinstall 2.5.0
         Invoke-Cargo-With-Explicit-Package "test" "--release" "--target" $cargo_target  "--" "--test-threads=4"

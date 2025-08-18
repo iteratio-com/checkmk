@@ -38,15 +38,12 @@ from setproctitle import setthreadtitle
 
 import cmk.ccc.daemon
 import cmk.ccc.profile
-import cmk.ccc.version as cmk_version
 from cmk.ccc import store
 from cmk.ccc.exceptions import MKException
 from cmk.ccc.hostaddress import HostAddress, HostName
 from cmk.ccc.site import omd_site
-
-import cmk.utils.paths
+from cmk.ccc.version import get_general_version_infos
 from cmk.utils import log
-from cmk.utils.iterables import partition
 from cmk.utils.log import VERBOSE
 from cmk.utils.translations import translate_hostname
 
@@ -984,17 +981,14 @@ class EventServer(ECServerThread):
                 if interval_start >= now:
                     continue
 
-                next_interval_start = self._event_status.next_interval_start(
-                    interval, interval_start
+                next_interval_start = self._event_status.clamp_timestamp_to_interval(
+                    interval, interval_start, interval_count=1
                 )
                 if next_interval_start > now:
                     continue
 
                 # Interval has been elapsed. Now comes the truth: do we have enough
                 # rule matches?
-
-                # First do not forget to switch to next interval
-                self._event_status.start_next_interval(rule["id"], interval)
 
                 # First look for case 1: rule that already have at least one hit
                 # and this events in the state "counting" exist.
@@ -1007,7 +1001,8 @@ class EventServer(ECServerThread):
                         if event["count"] < expect["count"]:  # no -> trigger alarm
                             events_to_delete.append((event, "AUTODELETE"))
                             self._handle_absent_event(rule, expect, event["count"], event["last"])
-                        else:  # yes -> everything is fine. Just log.
+                        else:  # yes -> everything is fine.
+                            self._event_status.clear_interval_start(rule["id"])
                             self._logger.info(
                                 "Rule %s/%s has reached %d occurrences (%d required). "
                                 "Starting next period.",
@@ -1023,6 +1018,9 @@ class EventServer(ECServerThread):
                 # Ou ou, no event found at all.
                 else:
                     self._handle_absent_event(rule, expect, 0, interval_start)
+
+                # Do not forget to switch to next interval
+                self._event_status.start_next_interval(rule["id"], interval)
 
                 for event, reason in events_to_delete:
                     self._event_status.remove_event(event, reason)
@@ -1690,6 +1688,9 @@ class EventServer(ECServerThread):
             self._config["event_limit"]["by_host"]["action"],
         )
 
+    def _get_rule_by_id(self, rule_id: str) -> Rule | None:
+        return self._rule_by_id.get(rule_id)
+
     def _create_overflow_event(self, ty: LimitKind, event: Event, limit: int) -> Event:
         now = time.time()
         new_event = Event(
@@ -1777,6 +1778,14 @@ def create_event_from_trap(trap: Iterable[tuple[str, str]], ipaddress_: str) -> 
         core_host=None,
         host_in_downtime=False,
     )
+
+
+def partition[T](pred: Callable[[T], bool], iterable: Iterable[T]) -> tuple[list[T], list[T]]:
+    yay = list[T]()
+    nay = list[T]()
+    for x in iterable:
+        (yay if pred(x) else nay).append(x)
+    return yay, nay
 
 
 # .
@@ -2256,13 +2265,17 @@ class StatusServer(ECServerThread):
             raise MKClientError("Wrong number of arguments for DELETE")
         event_ids, user = arguments
         ids = {int(event_id) for event_id in event_ids.split(",")}
-        self._event_status.delete_events_by(lambda event: event["id"] in ids, user)
+        self._event_status.delete_events_by(
+            lambda event: event["id"] in ids, user, self._event_server._get_rule_by_id
+        )
 
     def handle_command_delete_events_of_host(self, arguments: list[str]) -> None:
         if len(arguments) != 2:
             raise MKClientError("Wrong number of arguments for DELETE_EVENTS_OF_HOST")
         hostname, user = arguments
-        self._event_status.delete_events_by(lambda event: event["host"] == hostname, user)
+        self._event_status.delete_events_by(
+            lambda event: event["host"] == hostname, user, self._event_server._get_rule_by_id
+        )
 
     def handle_command_update(self, arguments: list[str]) -> None:
         event_ids, user, acknowledged, comment, contact = arguments
@@ -2600,43 +2613,54 @@ class EventStatus:
 
     def interval_start(self, rule_id: str, interval: ExpectInterval) -> int:
         """
-        Return beginning of current expectation interval. For new rules
-        we start with the next interval in future.
+        Return beginning of current expectation interval.
+        For new rules we should start with the inclusive start time for the event.
         """
+        now = time.time()
         if rule_id not in self._interval_starts:
-            start = self.next_interval_start(interval, time.time())
+            start = self.clamp_timestamp_to_interval(interval, now, interval_count=0)
             self._interval_starts[rule_id] = start
             return start
         start = self._interval_starts[rule_id]
+
         # Make sure that if the user switches from day to hour and we
         # are still waiting for the first interval to begin, that we
         # do not wait for the next day.
-        next_interval = self.next_interval_start(interval, time.time())
-        if start > next_interval:
-            start = next_interval
-            self._interval_starts[rule_id] = start
+        # Or if the start interval is stale then reset the interval.
+        previous_interval = self.clamp_timestamp_to_interval(interval, now, interval_count=-1)
+        next_interval = self.clamp_timestamp_to_interval(interval, now, interval_count=0)
+        if not (previous_interval <= start <= next_interval):
+            self._interval_starts[rule_id] = start = next_interval
         return start
 
-    def next_interval_start(self, interval: ExpectInterval, previous_start: float) -> int:
+    @staticmethod
+    def clamp_timestamp_to_interval(
+        interval: ExpectInterval, timestamp: float, interval_count: int
+    ) -> int:
         length, offset = interval if isinstance(interval, tuple) else (interval, 0)
         offset *= 3600
 
-        previous_start -= offset  # take into account timezone offset
-        full_parts = divmod(previous_start, length)[0]
-        next_start = (full_parts + 1) * length
+        timestamp -= offset  # take into account timezone offset
+        next_start = (timestamp // length + interval_count) * length
         next_start += offset
         return int(next_start)
 
     def start_next_interval(self, rule_id: str, interval: ExpectInterval) -> None:
-        current_start = self.interval_start(rule_id, interval)
-        next_start = self.next_interval_start(interval, current_start)
-        self._interval_starts[rule_id] = next_start
+        if rule_id not in self._interval_starts:
+            next_start = self.interval_start(rule_id, interval)
+        else:
+            current_start = self.interval_start(rule_id, interval)
+            next_start = self.clamp_timestamp_to_interval(interval, current_start, interval_count=1)
+            self._interval_starts[rule_id] = next_start
         self._logger.debug(
             "Rule %s: next interval starts %s (i.e. now + %.2f sec)",
             rule_id,
             next_start,
             time.time() - next_start,
         )
+
+    def clear_interval_start(self, rule_id: str) -> None:
+        self._interval_starts.pop(rule_id, None)
 
     def pack_status(self) -> PackedEventStatus:
         return PackedEventStatus(
@@ -3043,13 +3067,21 @@ class EventStatus:
             return found  # do event action, return found copy of event
         return None  # do not do event action
 
-    def delete_events_by(self, predicate: Callable[[Event], bool], user: str) -> None:
+    def delete_events_by(
+        self, predicate: Callable[[Event], bool], user: str, get_rule: Callable[[str], Rule | None]
+    ) -> None:
         for event in self._events[:]:
             if predicate(event):
                 event["phase"] = "closed"
                 if user:
                     event["owner"] = user
                 self.remove_event(event, "DELETE", user)
+                rule_id = event["rule_id"]
+                if event["id"] + 1 == self._next_event_id and rule_id in self._interval_starts:
+                    event_rule = get_rule(rule_id)
+                    if event_rule is not None and "expect" in event_rule:
+                        self.clear_interval_start(rule_id)
+                        self.interval_start(rule_id, event_rule["expect"]["interval"])
 
     def get_events(self) -> Iterable[Event]:
         return self._events
@@ -3399,11 +3431,12 @@ def reload_configuration(
 #   '----------------------------------------------------------------------'
 
 
-def main() -> None:
+def main(omd_root: Path, argv: Sequence[str]) -> None:
     """Main entry and option parsing."""
     os.unsetenv("LANG")
     logger = getLogger("cmk.mkeventd")
-    settings = create_settings(cmk_version.__version__, cmk.utils.paths.omd_root, sys.argv)
+    version_info = get_general_version_infos(omd_root)
+    settings = create_settings(version_info["version"], omd_root, sys.argv)
 
     pid_path = None
     try:
@@ -3415,7 +3448,7 @@ def main() -> None:
             open_log(settings.paths.log_file.value)
 
         logger.info("-" * 65)
-        logger.info("mkeventd version %s starting", cmk_version.__version__)
+        logger.info("mkeventd version %s starting", version_info["version"])
 
         slave_status = default_slave_status_master()
         config = load_configuration(settings, logger, slave_status)
@@ -3556,10 +3589,8 @@ def main() -> None:
 
         CrashReportStore().save(
             ECCrashReport(
-                cmk.utils.paths.crash_dir,
-                ECCrashReport.make_crash_info(
-                    cmk_version.get_general_version_infos(cmk.utils.paths.omd_root)
-                ),
+                omd_root=omd_root,
+                crash_info=ECCrashReport.make_crash_info(version_info, None),
             )
         )
         bail_out(logger, traceback.format_exc())
@@ -3568,7 +3599,3 @@ def main() -> None:
         if pid_path and store.have_lock(str(pid_path)):
             with contextlib.suppress(OSError):
                 pid_path.unlink()
-
-
-if __name__ == "__main__":
-    main()

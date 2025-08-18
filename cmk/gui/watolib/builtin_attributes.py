@@ -8,14 +8,14 @@ from typing import Any, Literal
 
 from marshmallow import ValidationError
 
+import cmk.fields.validators
+import cmk.utils.tags
+from cmk import fields
 from cmk.ccc.hostaddress import HostName
 from cmk.ccc.user import UserId
-
-import cmk.utils.tags
-from cmk.utils.tags import TagGroupID
-
 from cmk.gui import fields as gui_fields
 from cmk.gui import hooks, userdb
+from cmk.gui.config import active_config
 from cmk.gui.exceptions import MKUserError
 from cmk.gui.form_specs.converter import TransformDataForLegacyFormatOrRecomposeFunction
 from cmk.gui.form_specs.generators.host_address import create_host_address
@@ -32,6 +32,7 @@ from cmk.gui.htmllib.generator import HTMLWriter
 from cmk.gui.i18n import _
 from cmk.gui.logged_in import user
 from cmk.gui.site_config import has_wato_slave_sites, is_wato_slave_site
+from cmk.gui.type_defs import Choices
 from cmk.gui.utils.html import HTML
 from cmk.gui.utils.urls import urlencode_vars
 from cmk.gui.valuespec import (
@@ -70,7 +71,7 @@ from cmk.gui.watolib.config_hostname import ConfigHostname
 from cmk.gui.watolib.host_attributes import (
     ABCHostAttributeNagiosText,
     ABCHostAttributeValueSpec,
-    host_attribute_choices,
+    all_host_attributes,
     HOST_ATTRIBUTE_TOPIC_BASIC_SETTINGS,
     HOST_ATTRIBUTE_TOPIC_CUSTOM_ATTRIBUTES,
     HOST_ATTRIBUTE_TOPIC_MANAGEMENT_BOARD,
@@ -79,13 +80,11 @@ from cmk.gui.watolib.host_attributes import (
     HOST_ATTRIBUTE_TOPIC_NETWORK_ADDRESS,
     HOST_ATTRIBUTE_TOPIC_NETWORK_SCAN,
     HostAttributeTopic,
+    sorted_host_attributes,
 )
 from cmk.gui.watolib.hosts_and_folders import Host
 from cmk.gui.watolib.tags import TagConfigFile
 from cmk.gui.watolib.translation import HostnameTranslation
-
-import cmk.fields.validators
-from cmk import fields
 from cmk.rulesets.v1 import Help, Label, Message, Title
 from cmk.rulesets.v1.form_specs import (
     InvalidElementMode,
@@ -94,6 +93,7 @@ from cmk.rulesets.v1.form_specs import (
     MonitoredHost,
     String,
 )
+from cmk.utils.tags import TagGroupID
 
 
 class HostAttributeAlias(ABCHostAttributeNagiosText):
@@ -1165,7 +1165,9 @@ class HostAttributeSite(ABCHostAttributeValueSpec):
         return "site"
 
     def is_show_more(self) -> bool:
-        return not (has_wato_slave_sites() or is_wato_slave_site())
+        return not (
+            has_wato_slave_sites(active_config.sites) or is_wato_slave_site(active_config.sites)
+        )
 
     def topic(self) -> HostAttributeTopic:
         return HOST_ATTRIBUTE_TOPIC_BASIC_SETTINGS
@@ -1347,7 +1349,7 @@ class HostAttributeLockedAttributes(ABCHostAttributeValueSpec):
 
     def valuespec(self) -> ValueSpec:
         return ListOf(
-            valuespec=DropdownChoice(choices=host_attribute_choices),
+            valuespec=DropdownChoice(choices=_host_attribute_choices),
             title=_("Locked attributes"),
             text_if_empty=_("Not locked"),
         )
@@ -1357,6 +1359,19 @@ class HostAttributeLockedAttributes(ABCHostAttributeValueSpec):
             fields.String(),
             description="Name of host attributes which are locked in the UI.",
         )
+
+
+def _host_attribute_choices() -> Choices:
+    return [
+        (a.name(), a.title())
+        for a in sorted_host_attributes(
+            list(
+                all_host_attributes(
+                    active_config.wato_host_attrs, active_config.tags.get_tag_groups_by_topic()
+                ).values()
+            )
+        )
+    ]
 
 
 class HostAttributeMetaData(ABCHostAttributeValueSpec):
@@ -1497,9 +1512,6 @@ class HostAttributeDiscoveryFailed(ABCHostAttributeValueSpec):
             "and unset in case a later discovery succeeds."
         )
 
-    def get_tag_groups(self, value):
-        return {}
-
 
 class HostAttributeWaitingForDiscovery(ABCHostAttributeValueSpec):
     def name(self) -> str:
@@ -1555,9 +1567,6 @@ class HostAttributeWaitingForDiscovery(ABCHostAttributeValueSpec):
             "This indicates that the host is waiting for a bulk discovery. It is set to True once the host is in the queue. It will be "
             "removed after the discovery is ended."
         )
-
-    def get_tag_groups(self, value):
-        return {}
 
 
 class HostAttributeLabels(ABCHostAttributeValueSpec):

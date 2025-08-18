@@ -18,27 +18,41 @@ const propsCva = cva('', {
       success: 'cmk-badge-success',
       warning: 'cmk-badge-warning',
       danger: 'cmk-badge-danger'
+    },
+    type: {
+      fill: 'cmk-badge-fill',
+      outline: 'cmk-badge-outline'
+    },
+    shape: {
+      default: 'cmk-badge-default-shape',
+      circle: 'cmk-badge-circle'
     }
   },
   defaultVariants: {
     size: 'medium',
-    color: 'default'
+    color: 'default',
+    type: 'fill',
+    shape: 'default'
   }
 })
 
 export type Sizes = VariantProps<typeof propsCva>['size']
 export type Colors = VariantProps<typeof propsCva>['color']
+export type Types = VariantProps<typeof propsCva>['type']
+export type Shapes = VariantProps<typeof propsCva>['shape']
 
-export interface CmkChipProps {
+export interface CmkBadgeProps {
   size?: Sizes
   color?: Colors
+  type?: Types
+  shape?: Shapes
 }
 
-defineProps<CmkChipProps>()
+defineProps<CmkBadgeProps>()
 </script>
 
 <template>
-  <div class="cmk-badge" :class="propsCva({ size, color })">
+  <div class="cmk-badge" :class="propsCva({ size, color, type, shape })">
     <slot />
   </div>
 </template>
@@ -46,7 +60,7 @@ defineProps<CmkChipProps>()
 <style scoped>
 .cmk-badge {
   border-radius: 99999px;
-  border: 1px solid var(--custom-scroll-bar-thumb-color);
+  border: 2px solid var(--custom-scroll-bar-thumb-color);
   color: var(--custom-scroll-bar-thumb-color);
   text-align: center;
   margin: 4px;
@@ -54,28 +68,34 @@ defineProps<CmkChipProps>()
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0;
+  padding: 2px;
 }
 
 .cmk-badge-small {
   font-size: 10px;
-  width: 12px;
+  min-width: 12px;
+  width: auto;
   height: 12px;
-  max-width: 12px;
 }
 
 .cmk-badge-medium {
   font-size: 12px;
-  width: 18px;
+  min-width: 18px;
+  width: auto;
   height: 18px;
-  max-width: 18px;
 }
 
 .cmk-badge-large {
   font-size: 14px;
-  width: 24px;
+  min-width: 24px;
+  width: auto;
   height: 24px;
-  max-width: 24px;
+}
+
+.cmk-badge-default {
+  background: var(--custom-scroll-bar-thumb-color);
+  border-color: var(--custom-scroll-bar-thumb-color);
+  color: var(--white);
 }
 
 .cmk-badge-danger {
@@ -87,11 +107,49 @@ defineProps<CmkChipProps>()
 .cmk-badge-warning {
   background: var(--color-warning);
   border-color: var(--color-warning);
+  color: var(--black);
 }
 
 .cmk-badge-success {
   background: var(--success);
   border-color: var(--success);
   color: var(--black);
+}
+
+.cmk-badge-outline {
+  background: transparent;
+  &.cmk-badge-default {
+    color: var(--custom-scroll-bar-thumb-color);
+  }
+
+  &.cmk-badge-warning {
+    color: var(--color-warning);
+  }
+
+  &.cmk-badge-danger {
+    color: var(--color-danger);
+  }
+
+  &.cmk-badge-success {
+    color: var(--success);
+  }
+}
+
+.cmk-badge-fill {
+  border-color: transparent;
+}
+
+.cmk-badge-circle {
+  &.cmk-badge-small {
+    max-width: 12px;
+  }
+
+  &.cmk-badge-medium {
+    max-width: 18px;
+  }
+
+  &.cmk-badge-large {
+    max-width: 24px;
+  }
 }
 </style>

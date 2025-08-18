@@ -13,15 +13,11 @@ import dataclasses
 import time
 from collections.abc import Collection
 
-from livestatus import SiteConfigurations
-
+import cmk.utils.paths
 from cmk.ccc import store
 from cmk.ccc.site import SiteId
-
-import cmk.utils.paths
-
 from cmk.gui.breadcrumb import Breadcrumb
-from cmk.gui.config import active_config
+from cmk.gui.config import Config
 from cmk.gui.exceptions import MKUserError
 from cmk.gui.htmllib.html import html
 from cmk.gui.http import request
@@ -79,7 +75,7 @@ class ModeAnalyzeConfig(WatoMode):
     def title(self) -> str:
         return _("Analyze configuration")
 
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         menu = PageMenu(
             dropdowns=[
                 PageMenuDropdown(
@@ -106,7 +102,7 @@ class ModeAnalyzeConfig(WatoMode):
         )
         return menu
 
-    def action(self) -> ActionResult:
+    def action(self, config: Config) -> ActionResult:
         if not transactions.check_transaction():
             return None
 
@@ -116,7 +112,7 @@ class ModeAnalyzeConfig(WatoMode):
         if request.var("_do") in ["ack", "unack"]:
             site_id = SiteId(request.get_str_input_mandatory("_site_id"))
 
-            if site_id not in activation_sites():
+            if site_id not in activation_sites(config.sites):
                 raise MKUserError("_ack_site_id", _("Invalid site given"))
 
             if request.var("_do") == "ack":
@@ -136,8 +132,9 @@ class ModeAnalyzeConfig(WatoMode):
 
         return None
 
-    def page(self) -> None:
-        if not self._analyze_sites():
+    def page(self, config: Config) -> None:
+        analyze_sites = activation_sites(config.sites)
+        if not analyze_sites:
             html.show_message(
                 _(
                     "Analyze configuration can only be used with the local site and "
@@ -151,10 +148,11 @@ class ModeAnalyzeConfig(WatoMode):
         for _site_id, results in merge_tests(
             perform_tests(
                 self._logger,
+                config,
                 request,
-                self._analyze_sites(),
+                analyze_sites,
                 categories=None,
-                debug=active_config.debug,
+                debug=config.debug,
             )
         ).items():
             for result in results:
@@ -169,7 +167,7 @@ class ModeAnalyzeConfig(WatoMode):
                 )
                 row_data.results_by_site[result.site_id] = result
 
-        site_ids = sorted(self._analyze_sites())
+        site_ids = sorted(analyze_sites)
 
         for category_name, results_by_test in sorted(
             results_by_category.items(), key=lambda x: ACTestCategories.title(x[0])
@@ -313,9 +311,6 @@ class ModeAnalyzeConfig(WatoMode):
 
         # This dummy row is needed for not destroying the odd/even row highlighting
         table.row(css=["hidden"])
-
-    def _analyze_sites(self) -> SiteConfigurations:
-        return activation_sites()
 
     def _is_acknowledged(self, result: ACTestResult) -> bool:
         return (result.test_id, result.site_id, result.state.value) in self._acks

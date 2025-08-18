@@ -13,16 +13,13 @@ from typing import Any
 
 from livestatus import MKLivestatusNotFoundError
 
+import cmk.utils.render
 from cmk.ccc.exceptions import MKGeneralException
 from cmk.ccc.hostaddress import HostName
 from cmk.ccc.site import SiteId
-
-import cmk.utils.render
-from cmk.utils.jsontype import JsonSerializable
-from cmk.utils.paths import profile_dir
-from cmk.utils.servicename import ServiceName
-
-from cmk.gui.config import active_config
+from cmk.graphing.v1 import graphs as graphs_api
+from cmk.gui.color import render_color_icon
+from cmk.gui.config import active_config, Config
 from cmk.gui.exceptions import MKMissingDataError
 from cmk.gui.graphing._graph_templates import (
     get_template_graph_specification,
@@ -45,8 +42,9 @@ from cmk.gui.utils.popups import MethodAjax
 from cmk.gui.utils.rendering import text_with_links_to_user_translated_html
 from cmk.gui.utils.urls import makeuri_contextless
 from cmk.gui.valuespec import Timerange, TimerangeValue
-
-from cmk.graphing.v1 import graphs as graphs_api
+from cmk.utils.jsontype import JsonSerializable
+from cmk.utils.paths import profile_dir
+from cmk.utils.servicename import ServiceName
 
 from ._artwork import (
     compute_curve_values_at_timestamp,
@@ -57,7 +55,6 @@ from ._artwork import (
     order_graph_curves_for_legend_and_mouse_hover,
     save_graph_pin,
 )
-from ._color import render_color_icon
 from ._from_api import metrics_from_api, RegisteredMetric
 from ._graph_render_config import (
     GraphRenderConfig,
@@ -554,7 +551,7 @@ def _graph_margin_ex(
 # of things, we keep it.
 # TODO: Migrate this to a real AjaxPage
 class AjaxGraph(cmk.gui.pages.Page):
-    def page(self) -> PageResult:
+    def page(self, config: Config) -> PageResult:
         """Registered as `ajax_graph`."""
         response.set_content_type("application/json")
         try:
@@ -564,7 +561,7 @@ class AjaxGraph(cmk.gui.pages.Page):
             response.set_data(json.dumps(response_data))
         except Exception as e:
             logger.error("Ajax call ajax_graph.py failed: %s\n%s", e, traceback.format_exc())
-            if active_config.debug:
+            if config.debug:
                 raise
             response.set_data("ERROR: %s" % e)
         return None
@@ -798,7 +795,7 @@ def _render_graph_container_html(
 
 
 class AjaxRenderGraphContent(AjaxPage):
-    def page(self) -> PageResult:
+    def page(self, config: Config) -> PageResult:
         # Called from javascript code via JSON to initially render a graph
         """Registered as `ajax_render_graph_content`."""
         api_request = request.get_request()
@@ -945,24 +942,25 @@ def estimate_graph_step_for_html(
 # of things, we keep it.
 # TODO: Migrate this to a real AjaxPage
 class AjaxGraphHover(cmk.gui.pages.Page):
-    def page(self) -> PageResult:
+    def page(self, config: Config) -> PageResult:
         """Registered as `ajax_graph_hover`."""
         response.set_content_type("application/json")
         try:
             context_var = request.get_str_input_mandatory("context")
             context = json.loads(context_var)
             hover_time = request.get_integer_input_mandatory("hover_time")
-            response_data = _render_ajax_graph_hover(context, hover_time, metrics_from_api)
+            response_data = _render_ajax_graph_hover(config, context, hover_time, metrics_from_api)
             response.set_data(json.dumps(response_data))
         except Exception as e:
             logger.error("Ajax call ajax_graph_hover.py failed: %s\n%s", e, traceback.format_exc())
-            if active_config.debug:
+            if config.debug:
                 raise
             response.set_data("ERROR: %s" % e)
         return None
 
 
 def _render_ajax_graph_hover(
+    config: Config,
     context: Mapping[str, Any],
     hover_time: int,
     registered_metrics: Mapping[str, RegisteredMetric],
@@ -984,7 +982,7 @@ def _render_ajax_graph_hover(
                 user_specific_unit(
                     graph_recipe.unit_spec,
                     user,
-                    active_config,
+                    config,
                 ).formatter.render,
                 hover_time,
             )

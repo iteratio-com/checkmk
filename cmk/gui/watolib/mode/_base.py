@@ -8,6 +8,7 @@ from collections.abc import Collection, Iterable
 from typing import final
 
 from cmk.gui.breadcrumb import Breadcrumb, BreadcrumbItem
+from cmk.gui.config import Config
 from cmk.gui.htmllib.html import html
 from cmk.gui.http import request
 from cmk.gui.i18n import _
@@ -155,18 +156,16 @@ class WatoMode(abc.ABC):
         )
         yield from main_module.additional_breadcrumb_items()
 
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         """Returns the data structure representing the page menu for this mode"""
         return PageMenu(breadcrumb=breadcrumb)
 
-    def buttons(self) -> None:
-        pass
+    def buttons(self) -> None: ...
 
-    def action(self) -> ActionResult:
-        pass
+    def action(self, config: Config) -> ActionResult: ...
 
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         html.show_message(_("(This module is not yet implemented)"))
 
-    def handle_page(self) -> None:
-        return self.page()
+    def handle_page(self, config: Config) -> None:
+        return self.page(config)

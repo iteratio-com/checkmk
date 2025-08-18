@@ -12,13 +12,9 @@ from collections.abc import Iterator
 import cmk.ccc.version as cmk_version
 from cmk.ccc.hostaddress import HostName
 from cmk.ccc.site import SiteId
-
-from cmk.utils import paths
-from cmk.utils.servicename import ServiceName
-from cmk.utils.statename import host_state_name, service_state_name
-
 from cmk.gui import availability, bi
 from cmk.gui.availability import (
+    AVAnnotations,
     AVData,
     AVEntry,
     AVGroups,
@@ -78,6 +74,9 @@ from cmk.gui.valuespec import (
 )
 from cmk.gui.view import View
 from cmk.gui.visuals import page_menu_topic_add_to, view_title
+from cmk.utils import paths
+from cmk.utils.servicename import ServiceName
+from cmk.utils.statename import host_state_name, service_state_name
 
 # Variable name conventions
 # av_rawdata: a two tier dict: (site, host) -> service -> list(spans)
@@ -501,10 +500,10 @@ def do_render_availability(
     av_object: AVObjectSpec,
     avoptions: AVOptions,
 ) -> None:
+    availability_tables = availability.compute_availability_groups(what, av_data, avoptions)
     if av_mode == "timeline":
-        render_availability_timelines(what, av_data, avoptions)
+        render_availability_timelines(what, availability_tables, avoptions)
     else:
-        availability_tables = availability.compute_availability_groups(what, av_data, avoptions)
         render_availability_tables(availability_tables, what, avoptions)
 
     annotations = availability.load_annotations()
@@ -543,10 +542,11 @@ def render_availability_tables(
 
 
 def render_availability_timelines(
-    what: AVObjectType, av_data: AVData, avoptions: AVOptions
+    what: AVObjectType, av_groups: AVGroups, avoptions: AVOptions
 ) -> None:
-    for timeline_nr, av_entry in enumerate(av_data):
-        _render_availability_timeline(what, av_entry, avoptions, timeline_nr)
+    for group_title, av_data in av_groups:
+        for timeline_nr, av_entry in enumerate(av_data):
+            _render_availability_timeline(what, av_entry, avoptions, timeline_nr)
 
 
 def _render_availability_timeline(
@@ -1037,7 +1037,13 @@ def show_bi_availability(
 #   '----------------------------------------------------------------------'
 
 
-def show_annotations(annotations, av_rawdata, what, avoptions, omit_service):
+def show_annotations(
+    annotations: AVAnnotations,
+    av_rawdata: AVRawData,
+    what: AVObjectType,
+    avoptions: AVOptions,
+    omit_service: bool,
+) -> None:
     annos_to_render = availability.get_relevant_annotations(
         annotations, av_rawdata, what, avoptions
     )
@@ -1049,7 +1055,7 @@ def show_annotations(annotations, av_rawdata, what, avoptions, omit_service):
             table.cell("#", css=["narrow nowrap"])
             html.write_text_permissive(nr)
             table.cell("", css=["buttons"])
-            anno_vars = [
+            anno_vars: HTTPVariables = [
                 ("anno_site", site_id),
                 ("anno_host", host),
                 ("anno_service", service or ""),

@@ -10,12 +10,13 @@ from pathlib import Path
 
 import cmk.ccc.store
 from cmk.ccc.hostaddress import HostName
-
 from cmk.utils.structured_data import (
     deserialize_tree,
+    HistoryStore,
     InventoryStore,
     load_history,
     make_meta,
+    rename,
     SDKey,
     SDMetaAndRawTree,
     SDNodeName,
@@ -72,7 +73,7 @@ def _gzipped_json(raw_tree: SDRawTree) -> bytes:
     return buf.getvalue()
 
 
-def test_load_inventory_tree(tmp_path: Path) -> None:
+def test_load_inventory_tree_legacy(tmp_path: Path) -> None:
     host_name = HostName("hostname")
     raw_tree = _raw_tree("val")
     cmk.ccc.store.save_object_to_file(tmp_path / "var/check_mk/inventory/hostname", raw_tree)
@@ -81,6 +82,19 @@ def test_load_inventory_tree(tmp_path: Path) -> None:
     assert inv_store.load_inventory_tree(host_name=host_name) == deserialize_tree(raw_tree)
     assert (tmp_path / "var/check_mk/inventory/hostname").exists()
     assert not (tmp_path / "var/check_mk/inventory/hostname.json").exists()
+
+
+def test_load_inventory_tree(tmp_path: Path) -> None:
+    host_name = HostName("hostname")
+    raw_tree = _raw_tree("val")
+    cmk.ccc.store.save_text_to_file(
+        tmp_path / "var/check_mk/inventory/hostname.json", json.dumps(raw_tree)
+    )
+
+    inv_store = InventoryStore(tmp_path)
+    assert inv_store.load_inventory_tree(host_name=host_name) == deserialize_tree(raw_tree)
+    assert not (tmp_path / "var/check_mk/inventory/hostname").exists()
+    assert (tmp_path / "var/check_mk/inventory/hostname.json").exists()
 
 
 def test_save_inventory_tree(tmp_path: Path) -> None:
@@ -124,7 +138,7 @@ def test_remove_inventory_tree(tmp_path: Path) -> None:
     assert not (tmp_path / "var/check_mk/inventory/hostname.json.gz").exists()
 
 
-def test_load_status_data_tree(tmp_path: Path) -> None:
+def test_load_status_data_tree_legacy(tmp_path: Path) -> None:
     host_name = HostName("hostname")
     raw_tree = _raw_tree("val")
     cmk.ccc.store.save_object_to_file(tmp_path / "tmp/check_mk/status_data/hostname", raw_tree)
@@ -133,6 +147,19 @@ def test_load_status_data_tree(tmp_path: Path) -> None:
     assert inv_store.load_status_data_tree(host_name=host_name) == deserialize_tree(raw_tree)
     assert (tmp_path / "tmp/check_mk/status_data/hostname").exists()
     assert not (tmp_path / "tmp/check_mk/status_data/hostname.json").exists()
+
+
+def test_load_status_data_tree(tmp_path: Path) -> None:
+    host_name = HostName("hostname")
+    raw_tree = _raw_tree("val")
+    cmk.ccc.store.save_text_to_file(
+        tmp_path / "tmp/check_mk/status_data/hostname.json", json.dumps(raw_tree)
+    )
+
+    inv_store = InventoryStore(tmp_path)
+    assert inv_store.load_status_data_tree(host_name=host_name) == deserialize_tree(raw_tree)
+    assert not (tmp_path / "tmp/check_mk/status_data/hostname").exists()
+    assert (tmp_path / "tmp/check_mk/status_data/hostname.json").exists()
 
 
 def test_save_status_data_tree(tmp_path: Path) -> None:
@@ -209,12 +236,11 @@ def test_load_history(tmp_path: Path) -> None:
     cmk.ccc.store.save_object_to_file(tmp_path / "var/check_mk/inventory/hostname", raw_tree)
     cmk.ccc.store.save_bytes_to_file(tmp_path / "var/check_mk/inventory/hostname.gz", gzipped)
 
-    inv_store = InventoryStore(tmp_path)
     history = load_history(
-        inv_store,
+        HistoryStore(tmp_path),
         host_name,
-        filter_history_paths=lambda ps: ps,
-        filter_tree=None,
+        filter_history_paths=lambda paths: paths,
+        filter_delta_tree=None,
     )
     assert len(history.entries) == 6
     assert not history.corrupted
@@ -234,3 +260,107 @@ def test_load_history(tmp_path: Path) -> None:
     assert delta_cache_file_paths
     for delta_cache_file_path in delta_cache_file_paths:
         assert delta_cache_file_path.suffixes == [".json"]
+
+
+def test_rename_legacy(tmp_path: Path) -> None:
+    old_host_name = HostName("old_host_name")
+    raw_tree = _raw_tree("val")
+    gzipped = _gzipped_repr(raw_tree)
+    cmk.ccc.store.save_object_to_file(
+        tmp_path / f"var/check_mk/inventory/{old_host_name}", raw_tree
+    )
+    cmk.ccc.store.save_bytes_to_file(
+        tmp_path / f"var/check_mk/inventory/{old_host_name}.gz", gzipped
+    )
+    cmk.ccc.store.save_object_to_file(
+        tmp_path / f"tmp/check_mk/status_data/{old_host_name}", raw_tree
+    )
+    timestamps = list(range(5))
+    for idx in timestamps:
+        raw_tree = _raw_tree(f"val-{idx}")
+        cmk.ccc.store.save_object_to_file(
+            tmp_path / f"var/check_mk/inventory_archive/{old_host_name}/{idx}", raw_tree
+        )
+    for prev, cur in zip(timestamps, timestamps[1:]):
+        raw_tree = _raw_tree(f"val-{prev}-{cur}")
+        cmk.ccc.store.save_object_to_file(
+            tmp_path / f"var/check_mk/inventory_delta_cache/{old_host_name}/{prev}_{cur}", raw_tree
+        )
+
+    new_host_name = HostName("new_host_name")
+    rename(tmp_path, old_host_name=old_host_name, new_host_name=new_host_name)
+
+    assert not (tmp_path / f"var/check_mk/inventory/{old_host_name}").exists()
+    assert (tmp_path / f"var/check_mk/inventory/{new_host_name}").exists()
+    assert not (tmp_path / f"var/check_mk/inventory/{old_host_name}.gz").exists()
+    assert (tmp_path / f"var/check_mk/inventory/{new_host_name}.gz").exists()
+    assert not (tmp_path / f"tmp/check_mk/status_data/{old_host_name}").exists()
+    assert (tmp_path / f"tmp/check_mk/status_data/{new_host_name}").exists()
+
+    assert not (tmp_path / f"var/check_mk/inventory_archive/{old_host_name}").exists()
+    for idx in timestamps:
+        assert not (tmp_path / f"var/check_mk/inventory_archive/{old_host_name}/{idx}").exists()
+        assert (tmp_path / f"var/check_mk/inventory_archive/{new_host_name}/{idx}").exists()
+
+    assert not (tmp_path / f"var/check_mk/inventory_delta_cache/{old_host_name}").exists()
+    for prev, cur in zip(timestamps, timestamps[1:]):
+        assert not (
+            tmp_path / f"var/check_mk/inventory_delta_cache/{old_host_name}/{prev}_{cur}"
+        ).exists()
+        assert (
+            tmp_path / f"var/check_mk/inventory_delta_cache/{new_host_name}/{prev}_{cur}"
+        ).exists()
+
+
+def test_rename(tmp_path: Path) -> None:
+    old_host_name = HostName("old_host_name")
+    raw_tree = _raw_tree("val")
+    gzipped = _gzipped_json(raw_tree)
+    cmk.ccc.store.save_text_to_file(
+        tmp_path / f"var/check_mk/inventory/{old_host_name}.json", json.dumps(raw_tree)
+    )
+    cmk.ccc.store.save_bytes_to_file(
+        tmp_path / f"var/check_mk/inventory/{old_host_name}.json.gz", gzipped
+    )
+    cmk.ccc.store.save_text_to_file(
+        tmp_path / f"tmp/check_mk/status_data/{old_host_name}.json", json.dumps(raw_tree)
+    )
+    timestamps = list(range(5))
+    for idx in timestamps:
+        raw_tree = _raw_tree(f"val-{idx}")
+        cmk.ccc.store.save_text_to_file(
+            tmp_path / f"var/check_mk/inventory_archive/{old_host_name}/{idx}.json",
+            json.dumps(raw_tree),
+        )
+    for prev, cur in zip(timestamps, timestamps[1:]):
+        raw_tree = _raw_tree(f"val-{prev}-{cur}")
+        cmk.ccc.store.save_text_to_file(
+            tmp_path / f"var/check_mk/inventory_delta_cache/{old_host_name}/{prev}_{cur}.json",
+            json.dumps(raw_tree),
+        )
+
+    new_host_name = HostName("new_host_name")
+    rename(tmp_path, old_host_name=old_host_name, new_host_name=new_host_name)
+
+    assert not (tmp_path / f"var/check_mk/inventory/{old_host_name}.json").exists()
+    assert (tmp_path / f"var/check_mk/inventory/{new_host_name}.json").exists()
+    assert not (tmp_path / f"var/check_mk/inventory/{old_host_name}.json.gz").exists()
+    assert (tmp_path / f"var/check_mk/inventory/{new_host_name}.json.gz").exists()
+    assert not (tmp_path / f"tmp/check_mk/status_data/{old_host_name}.json").exists()
+    assert (tmp_path / f"tmp/check_mk/status_data/{new_host_name}.json").exists()
+
+    assert not (tmp_path / f"var/check_mk/inventory_archive/{old_host_name}").exists()
+    for idx in timestamps:
+        assert not (
+            tmp_path / f"var/check_mk/inventory_archive/{old_host_name}/{idx}.json"
+        ).exists()
+        assert (tmp_path / f"var/check_mk/inventory_archive/{new_host_name}/{idx}.json").exists()
+
+    assert not (tmp_path / f"var/check_mk/inventory_delta_cache/{old_host_name}").exists()
+    for prev, cur in zip(timestamps, timestamps[1:]):
+        assert not (
+            tmp_path / f"var/check_mk/inventory_delta_cache/{old_host_name}/{prev}_{cur}.json"
+        ).exists()
+        assert (
+            tmp_path / f"var/check_mk/inventory_delta_cache/{new_host_name}/{prev}_{cur}.json"
+        ).exists()

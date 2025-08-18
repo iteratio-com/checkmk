@@ -6,11 +6,10 @@
 
 import pytest
 
-from tests.testlib.common.repo import is_cloud_repo, is_enterprise_repo
-
 import cmk.gui.watolib.host_attributes as attrs
 from cmk.gui.config import active_config, Config
 from cmk.gui.watolib.host_attributes import all_host_attributes
+from tests.testlib.common.repo import is_cloud_repo, is_enterprise_repo
 
 expected_attributes = {
     "additional_ipv4addresses": {
@@ -307,6 +306,24 @@ expected_attributes = {
         if is_enterprise_repo()
         else {}
     ),
+    **(
+        {
+            "relay": {
+                "depends_on_roles": [],
+                "depends_on_tags": [],
+                "editable": True,
+                "from_config": False,
+                "show_in_folder": True,
+                "show_in_form": True,
+                "show_in_host_search": True,
+                "show_in_table": True,
+                "show_inherited_value": True,
+                "topic": "Basic settings",
+            },
+        }
+        if is_cloud_repo()
+        else {}
+    ),
     "tag_snmp_ds": {
         "depends_on_roles": [],
         "depends_on_tags": [],
@@ -372,10 +389,14 @@ expected_attributes = {
 
 @pytest.mark.usefixtures("load_config")
 def test_registered_host_attributes() -> None:
-    names = all_host_attributes(active_config).keys()
+    names = all_host_attributes(
+        active_config.wato_host_attrs, active_config.tags.get_tag_groups_by_topic()
+    ).keys()
     assert sorted(expected_attributes.keys()) == sorted(names)
 
-    for attr in all_host_attributes(active_config).values():
+    for attr in all_host_attributes(
+        active_config.wato_host_attrs, active_config.tags.get_tag_groups_by_topic()
+    ).values():
         spec = expected_attributes[attr.name()]
 
         # assert spec["class_name"] == attr_class.__name__
@@ -398,7 +419,10 @@ def test_legacy_register_rulegroup_with_defaults(
 ) -> None:
     monkeypatch.setattr(attrs, "host_attribute_registry", attrs.HostAttributeRegistry())
 
-    assert "lat" not in all_host_attributes(config := Config())
+    config = Config()
+    assert "lat" not in all_host_attributes(
+        config.wato_host_attrs, config.tags.get_tag_groups_by_topic()
+    )
 
     attrs.declare_host_attribute(
         attrs.NagiosTextAttribute(
@@ -409,7 +433,7 @@ def test_legacy_register_rulegroup_with_defaults(
         ),
     )
 
-    attr = all_host_attributes(config)["lat"]
+    attr = all_host_attributes(config.wato_host_attrs, config.tags.get_tag_groups_by_topic())["lat"]
     assert isinstance(attr, attrs.ABCHostAttributeNagiosText)
     assert attr.show_in_table() is True
     assert attr.show_in_folder() is True
@@ -429,7 +453,10 @@ def test_legacy_register_rulegroup_without_defaults(
 ) -> None:
     monkeypatch.setattr(attrs, "host_attribute_registry", attrs.HostAttributeRegistry())
 
-    assert "lat" not in all_host_attributes(config := Config())
+    config = Config()
+    assert "lat" not in all_host_attributes(
+        config.wato_host_attrs, config.tags.get_tag_groups_by_topic()
+    )
 
     attrs.declare_host_attribute(
         attrs.NagiosTextAttribute(
@@ -455,7 +482,7 @@ def test_legacy_register_rulegroup_without_defaults(
     assert topic.title == "Xyz"
     assert topic.sort_index == 80
 
-    attr = all_host_attributes(config)["lat"]
+    attr = all_host_attributes(config.wato_host_attrs, config.tags.get_tag_groups_by_topic())["lat"]
     assert isinstance(attr, attrs.ABCHostAttributeNagiosText)
     assert attr.show_in_table() is False
     assert attr.show_in_folder() is False
@@ -482,7 +509,13 @@ def test_legacy_register_rulegroup_without_defaults(
     ],
 )
 def test_host_attribute_topics(for_what: str) -> None:
-    assert attrs.get_sorted_host_attribute_topics(for_what=for_what, new=False) == [
+    assert attrs.sorted_host_attribute_topics(
+        all_host_attributes(
+            active_config.wato_host_attrs, active_config.tags.get_tag_groups_by_topic()
+        ),
+        for_what=for_what,
+        new=False,
+    ) == [
         ("basic", "Basic settings"),
         ("address", "Network address"),
         ("monitoring_agents", "Monitoring agents"),
@@ -494,7 +527,13 @@ def test_host_attribute_topics(for_what: str) -> None:
 
 @pytest.mark.usefixtures("load_config")
 def test_host_attribute_topics_for_folders() -> None:
-    assert attrs.get_sorted_host_attribute_topics("folder", new=False) == [
+    assert attrs.sorted_host_attribute_topics(
+        all_host_attributes(
+            active_config.wato_host_attrs, active_config.tags.get_tag_groups_by_topic()
+        ),
+        "folder",
+        new=False,
+    ) == [
         ("basic", "Basic settings"),
         ("address", "Network address"),
         ("monitoring_agents", "Monitoring agents"),
@@ -522,6 +561,7 @@ def test_host_attributes(for_what: str, new: bool) -> None:
         "basic": [
             "alias",
             "site",
+            *(["relay"] if is_cloud_repo() else []),
             "contactgroups",
             "parents",
         ],
@@ -566,12 +606,15 @@ def test_host_attributes(for_what: str, new: bool) -> None:
     if new:
         del topics["meta_data"]
 
-    current_topics = attrs.get_sorted_host_attribute_topics(for_what, new)
+    host_attributes = all_host_attributes(
+        active_config.wato_host_attrs, active_config.tags.get_tag_groups_by_topic()
+    )
+    current_topics = attrs.sorted_host_attribute_topics(host_attributes, for_what, new)
 
     assert sorted(topics.keys()) == sorted(dict(current_topics).keys())
 
     for topic_id, _title in current_topics:
-        names = [a.name() for a in attrs.get_sorted_host_attributes_by_topic(topic_id)]
+        names = [a.name() for a in attrs.sorted_host_attributes_by_topic(host_attributes, topic_id)]
         assert names == topics.get(topic_id, []), (
             "Expected attributes not specified for topic %r" % topic_id
         )

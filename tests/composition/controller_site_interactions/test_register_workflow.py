@@ -9,19 +9,14 @@ from pathlib import Path
 
 import pytest
 
+from cmk.ccc.hostaddress import HostName
+from cmk.utils.agent_registration import HostAgentConnectionMode
 from tests.testlib.agent import (
     register_controller,
     wait_until_host_has_services,
     wait_until_host_receives_data,
 )
-from tests.testlib.pytest_helpers.marks import (
-    skip_if_not_containerized,
-)
 from tests.testlib.site import Site
-
-from cmk.ccc.hostaddress import HostName
-
-from cmk.utils.agent_registration import HostAgentConnectionMode
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +51,7 @@ def _test_register_workflow(
         site.openapi.changes.activate_and_wait_for_completion(force_foreign_changes=True)
 
 
-@skip_if_not_containerized
+@pytest.mark.skip_if_not_containerized
 def test_register_workflow_pull(
     central_site: Site,
     agent_ctl: Path,
@@ -69,7 +64,7 @@ def test_register_workflow_pull(
     )
 
 
-@skip_if_not_containerized
+@pytest.mark.skip_if_not_containerized
 @pytest.mark.skip_if_not_edition("cloud", "managed")
 def test_register_workflow_push(
     central_site: Site,

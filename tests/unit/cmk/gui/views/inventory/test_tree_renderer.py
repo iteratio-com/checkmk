@@ -7,6 +7,22 @@ from collections.abc import Sequence
 
 import pytest
 
+from cmk.gui.inventory._tree import InventoryPath, TreeSource
+from cmk.gui.inventory.filters import FilterInvText
+from cmk.gui.views.inventory._display_hints import (
+    AttributeDisplayHint,
+    ColumnDisplayHint,
+    NodeDisplayHint,
+    Table,
+)
+from cmk.gui.views.inventory._paint_functions import inv_paint_generic
+from cmk.gui.views.inventory._tree_renderer import (
+    _replace_title_placeholders,
+    _SDDeltaItem,
+    _SDDeltaItemsSorter,
+    _SDItemsSorter,
+    SDItem,
+)
 from cmk.utils.structured_data import (
     ImmutableAttributes,
     ImmutableDeltaAttributes,
@@ -16,21 +32,6 @@ from cmk.utils.structured_data import (
     SDDeltaValue,
     SDKey,
     SDPath,
-)
-
-from cmk.gui.inventory.filters import FilterInvtableText
-from cmk.gui.views.inventory._display_hints import (
-    AttributeDisplayHint,
-    ColumnDisplayHint,
-    NodeDisplayHint,
-)
-from cmk.gui.views.inventory._paint_functions import inv_paint_generic
-from cmk.gui.views.inventory._tree_renderer import (
-    _replace_title_placeholders,
-    _SDDeltaItem,
-    _SDDeltaItemsSorter,
-    _SDItemsSorter,
-    SDItem,
 )
 
 
@@ -125,31 +126,47 @@ def test_sort_table_rows_displayhint(
 ) -> None:
     items_sorter = _SDItemsSorter(
         NodeDisplayHint(
+            name="inv",
             path=(),
             icon="",
             title="",
             short_title="",
             long_title="",
             attributes={},
-            columns={
-                SDKey("sid"): ColumnDisplayHint(
-                    "SID", "", "", inv_paint_generic, lambda r, l: 0, FilterInvtableText
-                ),
-                SDKey("changed"): ColumnDisplayHint(
-                    "Changed", "", "", inv_paint_generic, lambda r, l: 0, FilterInvtableText
-                ),
-                SDKey("foo"): ColumnDisplayHint(
-                    "Foo", "", "", inv_paint_generic, lambda r, l: 0, FilterInvtableText
-                ),
-                SDKey("flashback"): ColumnDisplayHint(
-                    "Flashback", "", "", inv_paint_generic, lambda r, l: 0, FilterInvtableText
-                ),
-                SDKey("other"): ColumnDisplayHint(
-                    "Other", "", "", inv_paint_generic, lambda r, l: 0, FilterInvtableText
-                ),
-            },
-            table_view_name="",
-            table_is_show_more=True,
+            table=Table(
+                columns={
+                    SDKey("sid"): ColumnDisplayHint(
+                        title="SID",
+                        short_title="",
+                        long_title="",
+                        paint_function=inv_paint_generic,
+                    ),
+                    SDKey("changed"): ColumnDisplayHint(
+                        title="Changed",
+                        short_title="",
+                        long_title="",
+                        paint_function=inv_paint_generic,
+                    ),
+                    SDKey("foo"): ColumnDisplayHint(
+                        title="Foo",
+                        short_title="",
+                        long_title="",
+                        paint_function=inv_paint_generic,
+                    ),
+                    SDKey("flashback"): ColumnDisplayHint(
+                        title="Flashback",
+                        short_title="",
+                        long_title="",
+                        paint_function=inv_paint_generic,
+                    ),
+                    SDKey("other"): ColumnDisplayHint(
+                        title="Other",
+                        short_title="",
+                        long_title="",
+                        paint_function=inv_paint_generic,
+                    ),
+                }
+            ),
         ),
         "",
         ImmutableAttributes(),
@@ -397,31 +414,47 @@ def test_sort_delta_table_rows_displayhint(
 ) -> None:
     delta_items_sorter = _SDDeltaItemsSorter(
         NodeDisplayHint(
+            name="inv",
             path=(),
             icon="",
             title="",
             short_title="",
             long_title="",
             attributes={},
-            columns={
-                SDKey("sid"): ColumnDisplayHint(
-                    "SID", "", "", inv_paint_generic, lambda r, l: 0, FilterInvtableText
-                ),
-                SDKey("changed"): ColumnDisplayHint(
-                    "Changed", "", "", inv_paint_generic, lambda r, l: 0, FilterInvtableText
-                ),
-                SDKey("foo"): ColumnDisplayHint(
-                    "Foo", "", "", inv_paint_generic, lambda r, l: 0, FilterInvtableText
-                ),
-                SDKey("flashback"): ColumnDisplayHint(
-                    "Flashback", "", "", inv_paint_generic, lambda r, l: 0, FilterInvtableText
-                ),
-                SDKey("other"): ColumnDisplayHint(
-                    "Other", "", "", inv_paint_generic, lambda r, l: 0, FilterInvtableText
-                ),
-            },
-            table_view_name="",
-            table_is_show_more=True,
+            table=Table(
+                columns={
+                    SDKey("sid"): ColumnDisplayHint(
+                        title="SID",
+                        short_title="",
+                        long_title="",
+                        paint_function=inv_paint_generic,
+                    ),
+                    SDKey("changed"): ColumnDisplayHint(
+                        title="Changed",
+                        short_title="",
+                        long_title="",
+                        paint_function=inv_paint_generic,
+                    ),
+                    SDKey("foo"): ColumnDisplayHint(
+                        title="Foo",
+                        short_title="",
+                        long_title="",
+                        paint_function=inv_paint_generic,
+                    ),
+                    SDKey("flashback"): ColumnDisplayHint(
+                        title="Flashback",
+                        short_title="",
+                        long_title="",
+                        paint_function=inv_paint_generic,
+                    ),
+                    SDKey("other"): ColumnDisplayHint(
+                        title="Other",
+                        short_title="",
+                        long_title="",
+                        paint_function=inv_paint_generic,
+                    ),
+                }
+            ),
         ),
         ImmutableDeltaAttributes(),
         delta_table,
@@ -486,6 +519,7 @@ def test_sort_attributes_pairs_displayhint(
 ) -> None:
     items_sorter = _SDItemsSorter(
         NodeDisplayHint(
+            name="inv",
             path=(),
             icon="",
             title="",
@@ -493,21 +527,79 @@ def test_sort_attributes_pairs_displayhint(
             long_title="",
             attributes={
                 SDKey("a"): AttributeDisplayHint(
-                    "A", "", "", inv_paint_generic, lambda r, l: 0, "", False
+                    name="inv_a",
+                    title="A",
+                    short_title="",
+                    long_title="",
+                    paint_function=inv_paint_generic,
+                    sort_function=lambda *args: 0,
+                    filter=FilterInvText(
+                        ident="inv_a",
+                        title="",
+                        inventory_path=InventoryPath(
+                            path=(),
+                            source=TreeSource.attributes,
+                            key=SDKey("a"),
+                        ),
+                        is_show_more=True,
+                    ),
                 ),
                 SDKey("b"): AttributeDisplayHint(
-                    "B", "", "", inv_paint_generic, lambda r, l: 0, "", False
+                    name="inv_b",
+                    title="B",
+                    short_title="",
+                    long_title="",
+                    paint_function=inv_paint_generic,
+                    sort_function=lambda *args: 0,
+                    filter=FilterInvText(
+                        ident="inv_b",
+                        title="",
+                        inventory_path=InventoryPath(
+                            path=(),
+                            source=TreeSource.attributes,
+                            key=SDKey("b"),
+                        ),
+                        is_show_more=True,
+                    ),
                 ),
                 SDKey("d"): AttributeDisplayHint(
-                    "D", "", "", inv_paint_generic, lambda r, l: 0, "", False
+                    name="inv_d",
+                    title="D",
+                    short_title="",
+                    long_title="",
+                    paint_function=inv_paint_generic,
+                    sort_function=lambda *args: 0,
+                    filter=FilterInvText(
+                        ident="inv_d",
+                        title="",
+                        inventory_path=InventoryPath(
+                            path=(),
+                            source=TreeSource.attributes,
+                            key=SDKey("d"),
+                        ),
+                        is_show_more=True,
+                    ),
                 ),
                 SDKey("c"): AttributeDisplayHint(
-                    "C", "", "", inv_paint_generic, lambda r, l: 0, "", False
+                    name="inv_c",
+                    title="C",
+                    short_title="",
+                    long_title="",
+                    paint_function=inv_paint_generic,
+                    sort_function=lambda *args: 0,
+                    filter=FilterInvText(
+                        ident="inv_c",
+                        title="",
+                        inventory_path=InventoryPath(
+                            path=(),
+                            source=TreeSource.attributes,
+                            key=SDKey("c"),
+                        ),
+                        is_show_more=True,
+                    ),
                 ),
             },
-            columns={},
-            table_view_name="",
-            table_is_show_more=True,
+            table=Table(columns={}),
         ),
         "",
         attributes,
@@ -561,6 +653,7 @@ def test_sort_delta_attributes_pairs_displayhint(
 ) -> None:
     delta_items_sorter = _SDDeltaItemsSorter(
         NodeDisplayHint(
+            name="inv",
             path=(),
             icon="",
             title="",
@@ -568,21 +661,79 @@ def test_sort_delta_attributes_pairs_displayhint(
             long_title="",
             attributes={
                 SDKey("a"): AttributeDisplayHint(
-                    "A", "", "", inv_paint_generic, lambda r, l: 0, "", False
+                    name="inv_a",
+                    title="A",
+                    short_title="",
+                    long_title="",
+                    paint_function=inv_paint_generic,
+                    sort_function=lambda *args: 0,
+                    filter=FilterInvText(
+                        ident="inv_a",
+                        title="",
+                        inventory_path=InventoryPath(
+                            path=(),
+                            source=TreeSource.attributes,
+                            key=SDKey("a"),
+                        ),
+                        is_show_more=True,
+                    ),
                 ),
                 SDKey("b"): AttributeDisplayHint(
-                    "B", "", "", inv_paint_generic, lambda r, l: 0, "", False
+                    name="inv_c",
+                    title="B",
+                    short_title="",
+                    long_title="",
+                    paint_function=inv_paint_generic,
+                    sort_function=lambda *args: 0,
+                    filter=FilterInvText(
+                        ident="inv_b",
+                        title="",
+                        inventory_path=InventoryPath(
+                            path=(),
+                            source=TreeSource.attributes,
+                            key=SDKey("b"),
+                        ),
+                        is_show_more=True,
+                    ),
                 ),
                 SDKey("d"): AttributeDisplayHint(
-                    "D", "", "", inv_paint_generic, lambda r, l: 0, "", False
+                    name="inv_d",
+                    title="D",
+                    short_title="",
+                    long_title="",
+                    paint_function=inv_paint_generic,
+                    sort_function=lambda *args: 0,
+                    filter=FilterInvText(
+                        ident="inv_d",
+                        title="",
+                        inventory_path=InventoryPath(
+                            path=(),
+                            source=TreeSource.attributes,
+                            key=SDKey("d"),
+                        ),
+                        is_show_more=True,
+                    ),
                 ),
                 SDKey("c"): AttributeDisplayHint(
-                    "C", "", "", inv_paint_generic, lambda r, l: 0, "", False
+                    name="inv_c",
+                    title="C",
+                    short_title="",
+                    long_title="",
+                    paint_function=inv_paint_generic,
+                    sort_function=lambda *args: 0,
+                    filter=FilterInvText(
+                        ident="inv_c",
+                        title="",
+                        inventory_path=InventoryPath(
+                            path=(),
+                            source=TreeSource.attributes,
+                            key=SDKey("c"),
+                        ),
+                        is_show_more=True,
+                    ),
                 ),
             },
-            columns={},
-            table_view_name="",
-            table_is_show_more=True,
+            table=Table(columns={}),
         ),
         delta_attributes,
         ImmutableDeltaTable(),
@@ -613,15 +764,14 @@ def test__replace_title_placeholders(
     assert (
         _replace_title_placeholders(
             NodeDisplayHint(
+                name="",
                 path=abc_path,
                 icon="",
                 title=title,
                 short_title=title,
                 long_title=title,
                 attributes={},
-                columns={},
-                table_view_name="",
-                table_is_show_more=True,
+                table=Table(columns={}),
             ),
             path,
         )

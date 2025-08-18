@@ -13,12 +13,12 @@ import type * as FormSpec from 'cmk-shared-typing/typescript/vue_formspec_compon
 import { groupNestedValidations, type ValidationMessages } from '@/form/components/utils/validation'
 import FormHelp from '@/form/private/FormHelp.vue'
 import { useId } from '@/form/utils'
-import CmkCheckbox from '@/components/CmkCheckbox.vue'
+import CmkCheckbox from '@/components/user-input/CmkCheckbox.vue'
 import CmkHtml from '@/components/CmkHtml.vue'
 import FormRequired from '@/form/private/FormRequired.vue'
 import FormReadonly from '@/form/components/FormReadonly.vue'
 import { rendersRequiredLabelItself } from '@/form/private/requiredValidator'
-import FormValidation from '@/form/components/FormValidation.vue'
+import FormValidation from '@/components/user-input/CmkInlineValidation.vue'
 
 import { getElementsInGroupsFromProps, toggleElement, titleRequired } from './_groups'
 
@@ -104,7 +104,6 @@ const { FormEditDispatcher } = useFormEditDispatcher()
                   <CmkHtml :html="dict_element.dict_config.parameter_form.title" /><FormRequired
                     v-if="!rendersRequiredLabelItself(dict_element.dict_config.parameter_form)"
                     :spec="dict_element.dict_config.parameter_form"
-                    :i18n-required="spec.i18n_base.required"
                     :space="'before'"
                   />
                 </span>

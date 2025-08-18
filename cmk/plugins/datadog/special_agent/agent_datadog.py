@@ -25,15 +25,12 @@ import pydantic
 import requests
 from dateutil import parser as dateutil_parser
 
-from cmk.ccc import store
-
-from cmk.utils import paths
-from cmk.utils.http_proxy_config import deserialize_http_proxy_config
-
 import cmk.ec.export as ec  # pylint: disable=cmk-module-layer-violation
-
+from cmk.ccc import store
 from cmk.special_agents.v0_unstable.agent_common import SectionWriter, special_agent_main
 from cmk.special_agents.v0_unstable.argument_parsing import Args, create_default_argument_parser
+from cmk.utils import paths
+from cmk.utils.http_proxy_config import deserialize_http_proxy_config
 
 Tags = Sequence[str]
 
@@ -486,15 +483,18 @@ def _forward_events_to_ec(
     add_text: bool,
 ) -> None:
     ec.forward_to_unix_socket(
-        _event_to_syslog_message(
-            event,
-            tag_regexes,
-            facility,
-            severity,
-            service_level,
-            add_text,
-        )
-        for event in events
+        (
+            _event_to_syslog_message(
+                event,
+                tag_regexes,
+                facility,
+                severity,
+                service_level,
+                add_text,
+            )
+            for event in events
+        ),
+        omd_root=paths.omd_root,
     )
 
 
@@ -672,13 +672,16 @@ def _forward_logs_to_ec(
     translator: Sequence[LogMessageElement],
 ) -> None:
     ec.forward_to_unix_socket(
-        _log_to_syslog_message(
-            log,
-            facility,
-            service_level,
-            translator,
-        )
-        for log in logs
+        (
+            _log_to_syslog_message(
+                log,
+                facility,
+                service_level,
+                translator,
+            )
+            for log in logs
+        ),
+        omd_root=paths.omd_root,
     )
 
 

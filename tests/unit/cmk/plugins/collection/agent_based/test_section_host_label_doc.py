@@ -14,15 +14,13 @@ from collections.abc import Iterable, Sequence
 from typing import Final
 
 import cmk.ccc.version as cmk_version
-
-from cmk.utils import paths
-from cmk.utils.sectionname import SectionName
-
 from cmk.checkengine.plugins import (
     AgentBasedPlugins,
     AgentSectionPlugin,
     SNMPSectionPlugin,
 )
+from cmk.utils import paths
+from cmk.utils.sectionname import SectionName
 
 CRE_DOCUMENTED_BUILTIN_HOST_LABELS: Final = {
     "cmk/azure/resource_group",
@@ -32,6 +30,7 @@ CRE_DOCUMENTED_BUILTIN_HOST_LABELS: Final = {
     "cmk/check_mk_server",
     "cmk/ceph/osd",
     "cmk/ceph/mon",
+    "cmk/device_model",
     "cmk/device_type",
     "cmk/docker_image",
     "cmk/docker_image_name",

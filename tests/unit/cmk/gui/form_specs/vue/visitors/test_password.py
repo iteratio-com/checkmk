@@ -7,10 +7,14 @@ from unittest.mock import ANY, patch
 
 import pytest
 
-from cmk.gui.form_specs.vue.visitors import DataOrigin, get_visitor
-from cmk.gui.form_specs.vue.visitors._type_defs import VisitorOptions
-
-from cmk.rulesets.v1.form_specs import migrate_to_password, Password
+from cmk.gui.form_specs.vue import (
+    get_visitor,
+    IncomingData,
+    RawDiskData,
+    RawFrontendData,
+    VisitorOptions,
+)
+from cmk.rulesets.v1.form_specs import DictElement, Dictionary, migrate_to_password, Password
 
 PasswordOnDisk = tuple[
     Literal["cmk_postprocessed"],
@@ -25,33 +29,49 @@ def test_password_encrypts_password(
     request_context: None,
 ) -> None:
     password = "some_password"
-    disk_visitor = get_visitor(Password(), VisitorOptions(data_origin=DataOrigin.DISK))
-    _, frontend_value = disk_visitor.to_vue(
-        ("cmk_postprocessed", "explicit_password", ("", password))
+    visitor = get_visitor(Password(), VisitorOptions(migrate_values=True, mask_values=False))
+    _, frontend_value = visitor.to_vue(
+        RawDiskData(("cmk_postprocessed", "explicit_password", ("", password)))
     )
     assert isinstance(frontend_value, tuple)
 
     assert not any(password in value for value in frontend_value if isinstance(value, str))
 
-    frontend_visitor = get_visitor(Password(), VisitorOptions(data_origin=DataOrigin.FRONTEND))
-    disk_value: PasswordOnDisk = frontend_visitor.to_disk(frontend_value)
+    disk_value: PasswordOnDisk = visitor.to_disk(RawFrontendData(frontend_value))
     assert disk_value[2][1] == password
 
 
 @patch("cmk.gui.form_specs.vue.visitors.password.passwordstore_choices", return_value=[])
 @pytest.mark.parametrize(
-    ["data_origin", "value"],
+    "value",
     [
-        [DataOrigin.DISK, ("cmk_postprocessed", "explicit_password", ("", "some_password"))],
-        [DataOrigin.FRONTEND, ("explicit_password", "", "some_password", False)],
+        RawDiskData(("cmk_postprocessed", "explicit_password", ("", "some_password"))),
+        RawFrontendData(("explicit_password", "", "some_password", False)),
     ],
 )
 def test_password_masks_password(
-    patch_pwstore: None, request_context: None, data_origin: DataOrigin, value: object
+    patch_pwstore: None, request_context: None, value: IncomingData
 ) -> None:
-    visitor = get_visitor(Password(), VisitorOptions(data_origin=data_origin))
-    _, _, (_, masked_password) = visitor.mask(value)
+    visitor = get_visitor(Password(), VisitorOptions(migrate_values=True, mask_values=True))
+    _, _, (_, masked_password) = visitor.to_disk(value)
+    assert masked_password == "******"
 
+
+@patch("cmk.gui.form_specs.vue.visitors.password.passwordstore_choices", return_value=[])
+@pytest.mark.parametrize(
+    "value",
+    [
+        RawDiskData({"el": ("cmk_postprocessed", "explicit_password", ("", "some_password"))}),
+        RawFrontendData({"el": ("explicit_password", "", "some_password", False)}),
+    ],
+)
+def test_nested_password_gets_masked(
+    patch_pwstore: None, request_context: None, value: IncomingData
+) -> None:
+    spec = Dictionary(elements={"el": DictElement(parameter_form=Password())})
+    visitor = get_visitor(spec, VisitorOptions(migrate_values=True, mask_values=True))
+    dict_result = visitor.to_disk(value)
+    _, _, (_, masked_password) = dict_result["el"]
     assert masked_password == "******"
 
 
@@ -60,7 +80,7 @@ def test_password_masks_password(
     ["old", "new"],
     [
         pytest.param(
-            ("password", "secret-password"),
+            RawDiskData(("password", "secret-password")),
             (
                 "cmk_postprocessed",
                 "explicit_password",
@@ -72,12 +92,12 @@ def test_password_masks_password(
             id="migrate explicit password",
         ),
         pytest.param(
-            ("store", "password_1"),
+            RawDiskData(("store", "password_1")),
             ("cmk_postprocessed", "stored_password", ("password_1", "")),
             id="migrate stored password",
         ),
         pytest.param(
-            ("explicit_password", "067408f0-d390-4dcc-ae3c-966f278ace7d", "abc"),
+            RawDiskData(("explicit_password", "067408f0-d390-4dcc-ae3c-966f278ace7d", "abc")),
             (
                 "cmk_postprocessed",
                 "explicit_password",
@@ -86,15 +106,17 @@ def test_password_masks_password(
             id="old 3-tuple explicit password",
         ),
         pytest.param(
-            ("stored_password", "password_1", ""),
+            RawDiskData(("stored_password", "password_1", "")),
             ("cmk_postprocessed", "stored_password", ("password_1", "")),
             id="old 3-tuple stored password",
         ),
         pytest.param(
-            (
-                "cmk_postprocessed",
-                "explicit_password",
-                ("067408f0-d390-4dcc-ae3c-966f278ace7d", "abc"),
+            RawDiskData(
+                (
+                    "cmk_postprocessed",
+                    "explicit_password",
+                    ("067408f0-d390-4dcc-ae3c-966f278ace7d", "abc"),
+                )
             ),
             (
                 "cmk_postprocessed",
@@ -104,7 +126,7 @@ def test_password_masks_password(
             id="already migrated explicit password",
         ),
         pytest.param(
-            ("cmk_postprocessed", "stored_password", ("password_1", "")),
+            RawDiskData(("cmk_postprocessed", "stored_password", ("password_1", ""))),
             ("cmk_postprocessed", "stored_password", ("password_1", "")),
             id="already migrated stored password",
         ),
@@ -113,11 +135,12 @@ def test_password_masks_password(
 def test_password_migrates_password_on_disk(
     patch_pwstore: None,
     request_context: None,
-    old: object,
+    old: IncomingData,
     new: PasswordOnDisk,
 ) -> None:
     disk_visitor = get_visitor(
-        Password(migrate=migrate_to_password), VisitorOptions(data_origin=DataOrigin.DISK)
+        Password(migrate=migrate_to_password),
+        VisitorOptions(migrate_values=True, mask_values=False),
     )
     disk_visitor_password = disk_visitor.to_disk(old)
     assert new == disk_visitor_password

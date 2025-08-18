@@ -7,19 +7,16 @@ import sys
 import traceback
 from typing import Literal
 
-import cmk.ccc.version as cmk_version
 from cmk.ccc import crash_reporting
-from cmk.ccc.crash_reporting import VersionInfo
-
-import cmk.utils.paths
-
+from cmk.ccc.version import get_general_version_infos
 from cmk.piggyback.hub import main
+from cmk.utils.paths import omd_root
 
 CrashReportStore = crash_reporting.CrashReportStore
 
 
 @crash_reporting.crash_report_registry.register
-class PiggybackHubCrashReport(crash_reporting.ABCCrashReport[VersionInfo]):
+class PiggybackHubCrashReport(crash_reporting.ABCCrashReport[None]):
     @classmethod
     def type(cls) -> Literal["piggyback-hub"]:
         return "piggyback-hub"
@@ -28,9 +25,9 @@ class PiggybackHubCrashReport(crash_reporting.ABCCrashReport[VersionInfo]):
 def create_crash_report_callback() -> str:
     try:
         crash = PiggybackHubCrashReport(
-            cmk.utils.paths.crash_dir,
-            PiggybackHubCrashReport.make_crash_info(
-                cmk_version.get_general_version_infos(cmk.utils.paths.omd_root)
+            omd_root=omd_root,
+            crash_info=PiggybackHubCrashReport.make_crash_info(
+                get_general_version_infos(omd_root), None
             ),
         )
         CrashReportStore().save(crash)

@@ -8,9 +8,9 @@ from collections.abc import Collection
 from datetime import datetime
 
 from cmk.ccc.user import UserId
-
 from cmk.gui import userdb
 from cmk.gui.breadcrumb import Breadcrumb, BreadcrumbItem, make_simple_page_breadcrumb
+from cmk.gui.config import Config
 from cmk.gui.exceptions import MKUserError
 from cmk.gui.htmllib.html import html
 from cmk.gui.http import request
@@ -25,7 +25,7 @@ from cmk.gui.page_menu import (
     PageMenuEntry,
     PageMenuTopic,
 )
-from cmk.gui.type_defs import ActionResult, PermissionName, Users
+from cmk.gui.type_defs import ActionResult, PermissionName
 from cmk.gui.userdb import connections_by_type, ConnectorType, get_connection, get_user_attributes
 from cmk.gui.utils.csrf_token import check_csrf_token
 from cmk.gui.utils.flashed_messages import flash
@@ -63,7 +63,7 @@ class ModeUserMigrate(WatoMode):
         )
         return breadcrumb
 
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         menu = PageMenu(
             dropdowns=[
                 PageMenuDropdown(
@@ -126,7 +126,7 @@ class ModeUserMigrate(WatoMode):
 
         return menu
 
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         if request.var("selection"):
             self._show_form_page()
         else:
@@ -163,7 +163,7 @@ class ModeUserMigrate(WatoMode):
             _("Back to users page"),
         )
 
-    def action(self) -> ActionResult:
+    def action(self, config: Config) -> ActionResult:
         check_csrf_token()
 
         if not transactions.check_transaction():
@@ -233,7 +233,7 @@ class ModeUserMigrate(WatoMode):
     ) -> tuple[list[str], list[str]]:
         users_with_warning: list[str] = []
         users_migrated: list[str] = []
-        all_users: Users = userdb.load_users()
+        all_users = userdb.load_users()
         for username in _get_selected_users():
             user_id = UserId(username)
             if username not in all_users:

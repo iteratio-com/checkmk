@@ -6,14 +6,13 @@ import logging
 
 import pytest
 
-from tests.testlib.agent_dumps import get_dump_and_walk_names
-from tests.testlib.site import Site, SiteFactory
-from tests.testlib.utils import get_services_with_status
-
 from tests.plugins_integration.checks import (
     config,
     setup_host,
 )
+from tests.testlib.agent_dumps import get_dump_and_walk_names
+from tests.testlib.site import Site, SiteFactory
+from tests.testlib.utils import get_services_with_status
 
 logger = logging.getLogger(__name__)
 
@@ -45,8 +44,8 @@ def _skip_checks():
     #   See Werk #16377 or commit daf9d3ab9a5e9d698733f0af345d88120de863f0
     # * The 'Power x' (x=1,2,...) services have been renamed into 'Power supply'
     #   See Werk 16905.
-    # * The 'Proxmox VE Node Info' service shows a flaky behavior after update.
-    #   Related: CMK-24198
+    # * The 'Proxmox VE Node Info' service state now depends on the 'subscription' state.
+    #   See CMK-24198.
     config.skipped_checks = ["Postfix status", "Postfix Queue", "Power 1", "Proxmox VE Node Info"]
     try:
         yield

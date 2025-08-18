@@ -14,10 +14,8 @@ from cmk.ccc.exceptions import MKGeneralException
 from cmk.ccc.hostaddress import HostName
 from cmk.ccc.site import SiteId
 from cmk.ccc.user import UserId
-
-from cmk.utils.macros import MacroMapping
-
 from cmk.gui import sites
+from cmk.gui.config import Config
 from cmk.gui.dashboard.type_defs import DashletId, DashletSize
 from cmk.gui.exceptions import MKMissingDataError, MKUserError
 from cmk.gui.graphing._from_api import graphs_from_api, metrics_from_api
@@ -55,6 +53,7 @@ from cmk.gui.visuals import (
     get_only_sites_from_context,
     get_singlecontext_vars,
 )
+from cmk.utils.macros import MacroMapping
 
 from ...title_macros import macro_mapping_from_context
 from ...type_defs import ABCGraphDashletConfig, DashboardConfig, DashboardName
@@ -341,7 +340,7 @@ function handle_dashboard_render_graph_response(handler_data, response_body)
 
 
 class TemplateGraphDashletConfig(ABCGraphDashletConfig):
-    source: str
+    source: str | int  # graph id or index (1-based) of the graph in the template
 
 
 class TemplateGraphDashlet(ABCGraphDashlet[TemplateGraphDashletConfig, TemplateGraphSpecification]):
@@ -438,7 +437,9 @@ def default_dashlet_graph_render_options() -> GraphRenderOptionsVS:
     )
 
 
-def graph_templates_autocompleter(value_entered_by_user: str, params: dict) -> Choices:
+def graph_templates_autocompleter(
+    config: Config, value_entered_by_user: str, params: dict
+) -> Choices:
     """Return the matching list of dropdown choices
     Called by the webservice with the current input field value and the
     completions_params to get the list of choices"""

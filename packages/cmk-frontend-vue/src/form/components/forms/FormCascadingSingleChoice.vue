@@ -10,7 +10,7 @@ import CmkDropdown from '@/components/CmkDropdown.vue'
 import CmkSpace from '@/components/CmkSpace.vue'
 import HelpText from '@/components/HelpText.vue'
 import ToggleButtonGroup from '@/components/ToggleButtonGroup.vue'
-import FormValidation from '@/form/components/FormValidation.vue'
+import FormValidation from '@/components/user-input/CmkInlineValidation.vue'
 import { validateValue, type ValidationMessages } from '@/form/components/utils/validation'
 import type {
   CascadingSingleChoice,
@@ -147,9 +147,9 @@ const { FormEditDispatcher } = useFormEditDispatcher()
             suggestions: spec.elements
           }"
           :no-elements-text="spec.no_elements_text"
-          :required-text="props.spec.i18n_base.required"
           :input-hint="props.spec.input_hint || ''"
           :label="props.spec.label || props.spec.title"
+          required
         />
       </template>
       <template v-if="activeElement !== null">

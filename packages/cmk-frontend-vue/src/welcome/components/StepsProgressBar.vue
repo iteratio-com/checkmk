@@ -6,15 +6,19 @@ conditions defined in the file COPYING, which is part of this source code packag
 
 <script setup lang="ts">
 import usei18n from '@/lib/i18n'
-import CmkHeading2 from '@/components/typography/CmkHeading2.vue'
-import CmkBody from '@/components/typography/CmkBodyText.vue'
+import CmkParagraph from '@/components/typography/CmkParagraph.vue'
+import CmkHeading from '@/components/typography/CmkHeading.vue'
 import CmkProgressbar from '@/components/CmkProgressbar.vue'
+import { type Sizes } from '../../components/CmkProgressbar.vue'
 
-const { t } = usei18n('steps-progress-bar')
+const { _t } = usei18n()
 
 export interface StepsProgressBarProps {
   completedSteps?: number
   totalSteps?: number
+  hideHeading?: boolean
+  flexColumn?: boolean
+  size?: Sizes
 }
 
 const { completedSteps = 1, totalSteps = 5 } = defineProps<StepsProgressBarProps>()
@@ -22,17 +26,18 @@ const { completedSteps = 1, totalSteps = 5 } = defineProps<StepsProgressBarProps
 
 <template>
   <div class="steps-progress-bar">
-    <CmkHeading2>{{ t('your-progress', 'Your progress') }}</CmkHeading2>
-    <div class="steps-progress-bar__content">
-      <CmkBody>
+    <CmkHeading v-if="!hideHeading" type="h4">{{ _t('Your progress') }}</CmkHeading>
+    <div class="steps-progress-bar__content" :class="{ 'flex-column': flexColumn }">
+      <CmkParagraph>
         {{ completedSteps }}/{{ totalSteps }}
-        {{ t('steps-complete', 'Steps complete') }}
-      </CmkBody>
+        {{ _t('Steps complete') }}
+      </CmkParagraph>
       <CmkProgressbar
         class="steps-progress-bar__bar"
+        :class="{ 'flex-column': flexColumn }"
         :value="completedSteps"
         :max="totalSteps"
-        size="small"
+        :size="size ? size : 'medium'"
       />
     </div>
   </div>
@@ -52,10 +57,20 @@ const { completedSteps = 1, totalSteps = 5 } = defineProps<StepsProgressBarProps
   gap: 8px;
   align-items: center;
   width: 100%;
+
+  &.flex-column {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 
 .steps-progress-bar__bar {
   max-width: 480px;
+  width: 100%;
   flex: 1;
+
+  &.flex-column {
+    flex: none;
+  }
 }
 </style>

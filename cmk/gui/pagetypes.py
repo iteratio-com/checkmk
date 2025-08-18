@@ -25,23 +25,21 @@ from __future__ import annotations
 import abc
 import copy
 import json
-from collections.abc import Iterator, Mapping, Sequence
+from collections.abc import Callable, Iterator, Mapping, Sequence
 from contextlib import suppress
 from dataclasses import dataclass, replace
 from typing import Generic, Literal, override, Self, TypeVar
 
 from pydantic import BaseModel as PydanticBaseModel
 
+import cmk.utils.paths
 from cmk.ccc import store
 from cmk.ccc.exceptions import MKGeneralException
 from cmk.ccc.user import UserId
 from cmk.ccc.version import Edition, edition
-
-import cmk.utils.paths
-
 from cmk.gui import sites, userdb
 from cmk.gui.breadcrumb import Breadcrumb, BreadcrumbItem, make_main_menu_breadcrumb
-from cmk.gui.config import default_authorized_builtin_role_ids
+from cmk.gui.config import Config, default_authorized_builtin_role_ids
 from cmk.gui.default_name import unique_default_name_suggestion
 from cmk.gui.default_permissions import PERMISSION_SECTION_GENERAL
 from cmk.gui.exceptions import MKAuthException, MKUserError
@@ -297,7 +295,7 @@ class Base(abc.ABC, Generic[_T_BaseConfig]):
     # PageTypes in plugins/pages. It is simply sufficient to register a PageType and
     # all page handlers will exist :-)
     @classmethod
-    def page_handlers(cls) -> dict[str, cmk.gui.pages.PageHandlerFunc]:
+    def page_handlers(cls) -> dict[str, Callable[[Config], None]]:
         return {}
 
     # Object methods that *can* be overridden - for cases where
@@ -510,12 +508,12 @@ class Overridable(Base[_T_OverridableConfig]):
 
     @override
     @classmethod
-    def page_handlers(cls) -> dict[str, cmk.gui.pages.PageHandlerFunc]:
+    def page_handlers(cls) -> dict[str, Callable[[Config], None]]:
         handlers = super().page_handlers()
         handlers.update(
             {
-                "%ss" % cls.type_name(): lambda: ListPage(cls).page(),
-                "edit_%s" % cls.type_name(): lambda: EditPage(cls).page(),
+                "%ss" % cls.type_name(): lambda config: ListPage(cls).page(config),
+                "edit_%s" % cls.type_name(): lambda config: EditPage(cls).page(config),
             }
         )
         return handlers
@@ -956,7 +954,7 @@ class ListPage(Page, Generic[_T]):
         self._type = pagetype
 
     @override
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         instances = self._type.load()
         self._type.need_overriding_permission("edit")
 
@@ -1175,7 +1173,7 @@ class EditPage(Page, Generic[_T_OverridableConfig, _T]):
         self._type = pagetype
 
     @override
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         """Page for editing an existing page, or creating a new one"""
         back_url = request.get_url_input("back", self._type.list_url())
 
@@ -1664,7 +1662,7 @@ class OverridableContainer(Overridable[_T_OverridableContainerConfig]):
 
     @override
     @classmethod
-    def page_handlers(cls) -> dict[str, cmk.gui.pages.PageHandlerFunc]:
+    def page_handlers(cls) -> dict[str, Callable[[Config], None]]:
         handlers = super().page_handlers()
         handlers.update(
             {
@@ -1680,7 +1678,7 @@ class OverridableContainer(Overridable[_T_OverridableContainerConfig]):
     # not with any actual subclass like GraphCollection. We need to find that
     # class by the URL variable page_type.
     @classmethod
-    def ajax_add_element(cls) -> None:
+    def ajax_add_element(cls, config: Config) -> None:
         page_type_name = request.get_ascii_input_mandatory("page_type")
         page_name = request.get_ascii_input_mandatory("page_name")
         element_type = request.get_ascii_input_mandatory("element_type")
@@ -1843,7 +1841,7 @@ class PageRenderer(OverridableContainer[_T_PageRendererConfig]):
 
     @override
     @classmethod
-    def page_handlers(cls) -> dict[str, cmk.gui.pages.PageHandlerFunc]:
+    def page_handlers(cls) -> dict[str, Callable[[Config], None]]:
         handlers = super().page_handlers()
         handlers.update(
             {
@@ -1854,7 +1852,7 @@ class PageRenderer(OverridableContainer[_T_PageRendererConfig]):
 
     @classmethod
     @abc.abstractmethod
-    def page_show(cls) -> None: ...
+    def page_show(cls, config: Config) -> None: ...
 
     @classmethod
     def requested_page(cls, instances: OverridableInstances[Self]) -> Self:

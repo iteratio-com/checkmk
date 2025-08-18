@@ -52,7 +52,7 @@ def fetch_package(Map args) {
     if (build_node == "fips") {
         // Do not start builds on FIPS node
         println("Detected build node 'fips', switching this to 'fra'.");
-        build_node = "fra"
+        build_node = "fra";
     }
 
     inside_container_minimal(safe_branch_name: args.safe_branch_name) {
@@ -65,6 +65,7 @@ def fetch_package(Map args) {
                 EDITION: args.edition,
                 DISTRO: args.distro,
                 FAKE_WINDOWS_ARTIFACTS: args.fake_windows_artifacts,
+                DISABLE_CACHE: args.disable_cache ?: false,
             ],
             build_params_no_check: [
                 CIPARAM_OVERRIDE_BUILD_NODE: build_node,

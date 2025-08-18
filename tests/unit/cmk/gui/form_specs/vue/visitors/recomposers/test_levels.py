@@ -7,15 +7,13 @@ from typing import Any, Literal, TypeVar
 
 import pytest
 
-from cmk.ccc.user import UserId
-
-from cmk.gui.form_specs.vue.form_spec_visitor import (
-    serialize_data_for_frontend,
-    transform_to_disk_model,
+from cmk.gui.form_specs.vue import (
+    DEFAULT_VALUE,
+    get_visitor,
+    RawDiskData,
+    RawFrontendData,
+    VisitorOptions,
 )
-from cmk.gui.form_specs.vue.visitors import DataOrigin, DEFAULT_VALUE
-from cmk.gui.session import UserContext
-
 from cmk.rulesets.v1 import Title
 from cmk.rulesets.v1.form_specs import (
     DefaultValue,
@@ -106,6 +104,8 @@ def levels_spec() -> Levels:
                 "cmk_postprocessed",
                 "predictive_levels",
                 {
+                    "__reference_metric__": "foo",
+                    "__direction__": "lower",
                     "period": "wday",
                     "horizon": 90,
                     "levels": ("absolute", (10.0, 20.0)),
@@ -115,27 +115,31 @@ def levels_spec() -> Levels:
         ),
         pytest.param(
             levels_spec(),
-            ("no_levels", None),
+            RawDiskData(("no_levels", None)),
             ("no_levels", None),
             ("no_levels", None),
         ),
         pytest.param(
             levels_spec(),
-            ("fixed", (30, 20)),
+            RawDiskData(("fixed", (30, 20))),
             ("fixed", [30, 20]),
             ("fixed", (30, 20)),
         ),
         pytest.param(
             levels_spec(),
-            (
-                "cmk_postprocessed",
-                "predictive_levels",
-                {
-                    "period": "wday",
-                    "horizon": 90,
-                    "levels": ("absolute", (10.0, 20.0)),
-                    "bound": None,
-                },
+            RawDiskData(
+                (
+                    "cmk_postprocessed",
+                    "predictive_levels",
+                    {
+                        "__reference_metric__": "foo",
+                        "__direction__": "lower",
+                        "period": "wday",
+                        "horizon": 90,
+                        "levels": ("absolute", (10.0, 20.0)),
+                        "bound": None,
+                    },
+                )
             ),
             (
                 "predictive",
@@ -150,6 +154,8 @@ def levels_spec() -> Levels:
                 "cmk_postprocessed",
                 "predictive_levels",
                 {
+                    "__reference_metric__": "foo",
+                    "__direction__": "lower",
                     "period": "wday",
                     "horizon": 90,
                     "levels": ("absolute", (10.0, 20.0)),
@@ -159,15 +165,53 @@ def levels_spec() -> Levels:
         ),
         pytest.param(
             levels_spec(),
+            RawDiskData(
+                (
+                    "cmk_postprocessed",
+                    "predictive_levels",
+                    {
+                        "period": "wday",
+                        "horizon": 90,
+                        "levels": ("absolute", (10.0, 20.0)),
+                        "bound": None,
+                    },
+                )
+            ),
+            (
+                "predictive",
+                {
+                    "period": "6c47c99835b507ae0ddffd0df817fbdd30633b902a75e5296b3a9c01417c2ec2",
+                    "horizon": 90,
+                    "levels": ("absolute", [10.0, 20.0]),
+                    "bound": None,
+                },
+            ),
             (
                 "cmk_postprocessed",
                 "predictive_levels",
                 {
-                    "period": "day",
-                    "horizon": 3,
-                    "levels": ("stdev", (10.0, 20.0)),
+                    "__reference_metric__": "foo",
+                    "__direction__": "lower",
+                    "period": "wday",
+                    "horizon": 90,
+                    "levels": ("absolute", (10.0, 20.0)),
                     "bound": None,
                 },
+            ),
+        ),
+        pytest.param(
+            levels_spec(),
+            RawDiskData(
+                (
+                    "cmk_postprocessed",
+                    "predictive_levels",
+                    {
+                        "period": "day",
+                        "horizon": 3,
+                        "levels": ("stdev", (10.0, 20.0)),
+                        "bound": None,
+                    },
+                )
             ),
             (
                 "predictive",
@@ -182,6 +226,8 @@ def levels_spec() -> Levels:
                 "cmk_postprocessed",
                 "predictive_levels",
                 {
+                    "__reference_metric__": "foo",
+                    "__direction__": "lower",
                     "period": "day",
                     "horizon": 3,
                     "levels": ("stdev", (10.0, 20.0)),
@@ -192,9 +238,6 @@ def levels_spec() -> Levels:
     ],
 )
 def test_levels_recompose(
-    request_context: None,
-    patch_theme: None,
-    with_user: tuple[UserId, str],
     spec: Levels,
     value: Any,
     expected_frontend_data: tuple[str, Any],
@@ -202,20 +245,14 @@ def test_levels_recompose(
 ) -> None:
     """Gets a spec and its value, serializes it for the frontend
     and then parses it back to disk data."""
-    with UserContext(with_user[0]):
-        vue_app_config = serialize_data_for_frontend(
-            spec,
-            "ut_id",
-            DataOrigin.DISK,
-            do_validate=True,
-            value=value,
-        )
+    visitor = get_visitor(spec, VisitorOptions(migrate_values=True, mask_values=False))
+    validation = visitor.validate(value)
+    _, frontend_data = visitor.to_vue(value)
+    disk_data = visitor.to_disk(RawFrontendData(frontend_data))
 
-        assert len(vue_app_config.validation) == 0
-        frontend_data = vue_app_config.data
-        disk_data = transform_to_disk_model(spec, frontend_data)
-        assert frontend_data == expected_frontend_data
-        assert disk_data == expected_disk_data
+    assert len(validation) == 0
+    assert frontend_data == expected_frontend_data
+    assert disk_data == expected_disk_data
 
 
 @pytest.mark.parametrize(
@@ -223,50 +260,45 @@ def test_levels_recompose(
     [
         pytest.param(
             levels_spec(),
-            (
-                "foo",
-                "predictive_levels",
-                {
-                    "period": "day",
-                    "horizon": 3,
-                    "levels": ("nonsense", (10.0, 20.0)),
-                    "bound": None,
-                },
+            RawDiskData(
+                (
+                    "foo",
+                    "predictive_levels",
+                    {
+                        "period": "day",
+                        "horizon": 3,
+                        "levels": ("nonsense", (10.0, 20.0)),
+                        "bound": None,
+                    },
+                )
             ),
             "Unable to transform value",
         ),
         pytest.param(
             levels_spec(),
-            (
-                "cmk_postprocessed",
-                "predictive_levels",
-                {
-                    "period": "day",
-                    "horizon": 3,
-                    "levels": ("nonsense", (10.0, 20.0)),
-                    "bound": None,
-                },
+            RawDiskData(
+                (
+                    "cmk_postprocessed",
+                    "predictive_levels",
+                    {
+                        "period": "day",
+                        "horizon": 3,
+                        "levels": ("nonsense", (10.0, 20.0)),
+                        "bound": None,
+                    },
+                )
             ),
             "Invalid selection",
         ),
     ],
 )
 def test_levels_recompose_invalid_data(
-    request_context: None,
-    patch_theme: None,
-    with_user: tuple[UserId, str],
     spec: Levels,
     invalid_value: Any,
     expected_validation_message: str,
 ) -> None:
-    with UserContext(with_user[0]):
-        vue_app_config = serialize_data_for_frontend(
-            spec,
-            "ut_id",
-            DataOrigin.DISK,
-            do_validate=True,
-            value=invalid_value,
-        )
+    visitor = get_visitor(spec, VisitorOptions(migrate_values=True, mask_values=False))
+    validation = visitor.validate(invalid_value)
 
-        assert len(vue_app_config.validation) == 1
-        assert vue_app_config.validation[0].message == expected_validation_message
+    assert len(validation) == 1
+    assert validation[0].message == expected_validation_message

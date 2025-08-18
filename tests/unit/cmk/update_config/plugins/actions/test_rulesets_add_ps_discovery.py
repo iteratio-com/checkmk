@@ -11,7 +11,6 @@ from cmk.gui.watolib.hosts_and_folders import folder_tree
 from cmk.gui.watolib.rulesets import Rule, RuleConditions, RuleOptions, Ruleset, RulesetCollection
 from cmk.gui.watolib.sample_config import PS_DISCOVERY_RULES
 from cmk.gui.watolib.sample_config._constants import _PS_COMMON_OPTS
-
 from cmk.update_config.plugins.actions.rulesets_add_ps_discovery import (
     add_ps_discovery_rules,
     overwrite_ps_discovery_rules,
@@ -22,7 +21,7 @@ from cmk.update_config.plugins.actions.rulesets_add_ps_discovery import (
 
 def _make_ruleset_collection_with_preexisting_rule(id_: str) -> RulesetCollection:
     # add some rule, but not quite one of ours:
-    ruleset = Ruleset(PS_DISCOVERY_RULE_NAME, {})
+    ruleset = Ruleset(PS_DISCOVERY_RULE_NAME)
     folder = folder_tree().root_folder()
     rule = Rule.from_ruleset_defaults(folder, ruleset)
     rule.id = id_
@@ -66,7 +65,7 @@ def test_update_with_preexisting_rulesets() -> None:
     ],
 )
 def test_update_rule_default_for_rabbitmq(preexisting: str | None, expected: str) -> None:
-    ruleset = Ruleset(PS_DISCOVERY_RULE_NAME, {})
+    ruleset = Ruleset(PS_DISCOVERY_RULE_NAME)
     if preexisting is not None:
         folder = folder_tree().root_folder()
         ruleset.append_rule(

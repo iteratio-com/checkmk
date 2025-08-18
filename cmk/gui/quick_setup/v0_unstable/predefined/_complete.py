@@ -10,12 +10,6 @@ from livestatus import SiteConfiguration
 
 from cmk.ccc.hostaddress import HostName
 from cmk.ccc.site import omd_site, SiteId
-
-from cmk.utils.global_ident_type import GlobalIdent, PROGRAM_ID_QUICK_SETUP
-from cmk.utils.password_store import Password as StorePassword
-from cmk.utils.rulesets.definition import RuleGroup
-from cmk.utils.rulesets.ruleset_matcher import RuleConditionsSpec, RuleOptionsSpec, RuleSpec
-
 from cmk.gui.config import active_config
 from cmk.gui.http import request
 from cmk.gui.i18n import _
@@ -70,8 +64,11 @@ from cmk.gui.watolib.services import (
     perform_fix_all,
 )
 from cmk.gui.watolib.sites import ReplicationStatusFetcher
-
 from cmk.rulesets.v1.form_specs import Dictionary
+from cmk.utils.global_ident_type import GlobalIdent, PROGRAM_ID_QUICK_SETUP
+from cmk.utils.password_store import Password as StorePassword
+from cmk.utils.rulesets.definition import RuleGroup
+from cmk.utils.rulesets.ruleset_matcher import RuleConditionsSpec, RuleOptionsSpec, RuleSpec
 
 
 class DCDHook:
@@ -80,7 +77,7 @@ class DCDHook:
     ] = lambda *_args: []
 
 
-def sanitize_folder_path(folder_path: str, *, pprint_value: bool) -> Folder:
+def sanitize_folder_path(folder_path: str, *, pprint_value: bool, use_git: bool) -> Folder:
     """Attempt to get the folder from the folder path. If the folder does not exist, create it.
     Returns the folder object."""
     sanitized_folder_path = normalize_folder_path_str(folder_path)
@@ -98,6 +95,7 @@ def sanitize_folder_path(folder_path: str, *, pprint_value: bool) -> Folder:
                 title=title,
                 attributes={},
                 pprint_value=pprint_value,
+                use_git=use_git,
             )
         )
     return folder
@@ -297,7 +295,9 @@ def _create_and_save_special_agent_bundle(
         password_entities = None
 
     # TODO: The sanitize function is likely to change once we have a folder FormSpec.
-    folder = sanitize_folder_path(host_path, pprint_value=active_config.wato_pprint_config)
+    folder = sanitize_folder_path(
+        host_path, pprint_value=active_config.wato_pprint_config, use_git=active_config.wato_use_git
+    )
     validated_host_name = HostName(host_name)
     progress_logger.log_new_progress_step(
         "create_config_bundle", "Create underlying configurations"
@@ -355,6 +355,7 @@ def _create_and_save_special_agent_bundle(
                 automation_config=make_automation_config(active_config.sites[site_id]),
                 pprint_value=active_config.wato_pprint_config,
                 debug=active_config.debug,
+                use_git=active_config.wato_use_git,
             )
         except Exception as e:
             progress_logger.update_progress_step_status("service_discovery", StepStatus.ERROR)
@@ -398,7 +399,7 @@ def _create_and_save_special_agent_bundle(
 def _service_discovery_possible(
     site_id: SiteId, *, site_config: SiteConfiguration, debug: bool
 ) -> bool:
-    if site_is_local(active_config.sites[site_id], site_id):
+    if site_is_local(active_config.sites[site_id]):
         return True
 
     if not is_replication_enabled(site_config):
@@ -420,6 +421,7 @@ def _run_service_discovery(
     automation_config: LocalAutomationConfig | RemoteAutomationConfig,
     pprint_value: bool,
     debug: bool,
+    use_git: bool,
 ) -> None:
     host: Host = Host.load_host(HostName(host_name))
     if isinstance(automation_config, RemoteAutomationConfig):
@@ -430,6 +432,7 @@ def _run_service_discovery(
             automation_config=automation_config,
             raise_errors=False,
             debug=debug,
+            use_git=use_git,
         )
 
         snapshot = fetch_service_discovery_background_job_status(
@@ -451,6 +454,7 @@ def _run_service_discovery(
         automation_config=automation_config,
         raise_errors=False,
         debug=debug,
+        use_git=use_git,
     )
     perform_fix_all(
         discovery_result=check_table,
@@ -459,4 +463,5 @@ def _run_service_discovery(
         automation_config=LocalAutomationConfig(),
         pprint_value=pprint_value,
         debug=debug,
+        use_git=use_git,
     )

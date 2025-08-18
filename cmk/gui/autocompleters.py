@@ -2,19 +2,14 @@
 # Copyright (C) 2021 Checkmk GmbH - License: GNU General Public License v2
 # This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 # conditions defined in the file COPYING, which is part of this source code package.
-
-# mypy: disable-error-code="explicit-override, no-untyped-call, no-untyped-def"
-
 import re
 from collections.abc import Callable, Collection, Sequence
-from typing import get_args
+from typing import Any, get_args, override
 
 from livestatus import LivestatusColumn, MultiSiteConnection
 
-from cmk.utils.regex import regex
-
 from cmk.gui import sites
-from cmk.gui.config import active_config
+from cmk.gui.config import Config
 from cmk.gui.exceptions import MKUserError
 from cmk.gui.groups import GroupType
 from cmk.gui.i18n import _
@@ -25,6 +20,7 @@ from cmk.gui.utils.user_errors import user_errors
 from cmk.gui.valuespec import autocompleter_registry, AutocompleterRegistry, Labels
 from cmk.gui.visuals import get_only_sites_from_context, livestatus_query_bare_string
 from cmk.gui.watolib.check_mk_automations import get_check_information_cached
+from cmk.utils.regex import regex
 
 
 def register(page_registry: PageRegistry, autocompleter_registry_: AutocompleterRegistry) -> None:
@@ -82,7 +78,7 @@ def _matches_id_or_title(ident: str, choice: tuple[str | None, str]) -> bool:
     return ident.lower() in (choice[0] or "").lower() or ident.lower() in choice[1].lower()
 
 
-def monitored_hostname_autocompleter(value: str, params: dict) -> Choices:
+def monitored_hostname_autocompleter(config: Config, value: str, params: dict) -> Choices:
     """Return the matching list of dropdown choices
     Called by the webservice with the current input field value and the completions_params to get the list of choices
     """
@@ -99,7 +95,7 @@ def monitored_hostname_autocompleter(value: str, params: dict) -> Choices:
     return _sorted_unique_lq(query, 200, value, params)
 
 
-def hostgroup_autocompleter(value: str, params: dict) -> Choices:
+def hostgroup_autocompleter(config: Config, value: str, params: dict) -> Choices:
     """Return the matching list of dropdown choices
     Called by the webservice with the current input field value and the completions_params to get the list of choices
     """
@@ -121,7 +117,7 @@ def hostgroup_autocompleter(value: str, params: dict) -> Choices:
     return choices
 
 
-def check_command_autocompleter(value: str, params: dict) -> Choices:
+def check_command_autocompleter(config: Config, value: str, params: dict) -> Choices:
     """Return the matching list of dropdown choices
     Called by the webservice with the current input field value and the completions_params to get the list of choices
     """
@@ -134,7 +130,9 @@ def check_command_autocompleter(value: str, params: dict) -> Choices:
     return empty_choices + choices
 
 
-def monitored_service_description_autocompleter(value: str, params: dict) -> Choices:
+def monitored_service_description_autocompleter(
+    config: Config, value: str, params: dict
+) -> Choices:
     """Return the matching list of dropdown choices
     Called by the webservice with the current input field value and the completions_params to get the list of choices
     """
@@ -155,7 +153,7 @@ def monitored_service_description_autocompleter(value: str, params: dict) -> Cho
     return _sorted_unique_lq(query, 200, value, params)
 
 
-def kubernetes_labels_autocompleter(value: str, params: dict) -> Choices:
+def kubernetes_labels_autocompleter(config: Config, value: str, params: dict) -> Choices:
     filter_id = params["group_type"]
     object_type = filter_id.removeprefix("kubernetes_")
     label_name = f"cmk/kubernetes/{object_type}"
@@ -183,17 +181,17 @@ def kubernetes_labels_autocompleter(value: str, params: dict) -> Choices:
     return __live_query_to_choices(_query_callback, 200, value, params)
 
 
-def tag_group_autocompleter(value: str, params: dict) -> Choices:
+def tag_group_autocompleter(config: Config, value: str, params: dict) -> Choices:
     return sorted(
-        (v for v in active_config.tags.get_tag_group_choices() if _matches_id_or_title(value, v)),
+        (v for v in config.tags.get_tag_group_choices() if _matches_id_or_title(value, v)),
         key=lambda a: a[1].lower(),
     )
 
 
-def tag_group_opt_autocompleter(value: str, params: dict) -> Choices:
+def tag_group_opt_autocompleter(config: Config, value: str, params: dict) -> Choices:
     grouped: Choices = []
 
-    for tag_group in active_config.tags.tag_groups:
+    for tag_group in config.tags.tag_groups:
         if tag_group.id == params["group_id"]:
             grouped.append(("", ""))
             for grouped_tag in tag_group.tags:
@@ -203,7 +201,7 @@ def tag_group_opt_autocompleter(value: str, params: dict) -> Choices:
     return grouped
 
 
-def label_autocompleter(value: str, params: dict) -> Choices:
+def label_autocompleter(config: Config, value: str, params: dict) -> Choices:
     """Return all known labels to support tagify label input dropdown completion"""
     group_labels: Sequence[str] = params.get("context", {}).get("group_labels", [])
     all_labels: Sequence[tuple[str, str]] = Labels.get_labels(
@@ -222,15 +220,15 @@ def label_autocompleter(value: str, params: dict) -> Choices:
     return [(value, value)] if regex(LABEL_REGEX).match(value) else []
 
 
-def check_types_autocompleter(value: str, params: dict) -> Choices:
+def check_types_autocompleter(config: Config, value: str, params: dict) -> Choices:
     return [
         (str(cn), (str(cn) + " - " + c["title"]))
-        for (cn, c) in get_check_information_cached(debug=active_config.debug).items()
+        for (cn, c) in get_check_information_cached(debug=config.debug).items()
         if not cn.is_management_name()
     ]
 
 
-def validate_autocompleter_data(api_request):
+def validate_autocompleter_data(api_request: dict[str, Any]) -> None:
     params = api_request.get("params")
     if params is None:
         raise MKUserError("params", _('You need to set the "%s" parameter.') % "params")
@@ -245,7 +243,8 @@ def validate_autocompleter_data(api_request):
 
 
 class PageVsAutocomplete(AjaxPage):
-    def page(self) -> PageResult:
+    @override
+    def page(self, config: Config) -> PageResult:
         api_request = self.webapi_request()
         validate_autocompleter_data(api_request)
         ident = api_request["ident"]
@@ -254,7 +253,7 @@ class PageVsAutocomplete(AjaxPage):
         if completer is None:
             raise MKUserError("ident", _("Invalid ident: %s") % ident)
 
-        result_data = completer(api_request["value"], api_request["params"])
+        result_data = completer(config, api_request["value"], api_request["params"])
 
         # Check for correct result_data format
         assert isinstance(result_data, list)

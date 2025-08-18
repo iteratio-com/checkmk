@@ -9,19 +9,15 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Final, NamedTuple, Protocol
 
+from cmk.agent_based.v2 import CheckResult, DiscoveryResult
 from cmk.ccc.hostaddress import HostName
-
-from cmk.utils.rulesets import RuleSetName
-from cmk.utils.servicename import Item, ServiceName
-from cmk.utils.validatedstr import ValidatedString
-
 from cmk.checkengine.checkresults import ServiceCheckResult
 from cmk.checkengine.fetcher import HostKey
 from cmk.checkengine.parameters import TimespecificParameters
 from cmk.checkengine.sectionparser import ParsedSectionName, Provider
-
-from cmk.agent_based.v2 import CheckResult, DiscoveryResult
 from cmk.discover_plugins import PluginLocation
+from cmk.utils.rulesets import RuleSetName
+from cmk.utils.servicename import Item, ServiceName
 
 from ._common import LegacyPluginLocation, RuleSetTypeName
 
@@ -29,20 +25,20 @@ type CheckFunction = Callable[..., CheckResult]
 type DiscoveryFunction = Callable[..., DiscoveryResult]
 
 
-class CheckPluginName(ValidatedString):
+class CheckPluginName(str):
     MANAGEMENT_PREFIX: Final = "mgmt_"
 
     def is_management_name(self) -> bool:
-        return self._value.startswith(self.MANAGEMENT_PREFIX)
+        return self.startswith(self.MANAGEMENT_PREFIX)
 
     def create_management_name(self) -> CheckPluginName:
         if self.is_management_name():
             return self
-        return CheckPluginName(f"{self.MANAGEMENT_PREFIX}{self._value}")
+        return CheckPluginName(f"{self.MANAGEMENT_PREFIX}{self}")
 
     def create_basic_name(self) -> CheckPluginName:
         if self.is_management_name():
-            return CheckPluginName(self._value[len(self.MANAGEMENT_PREFIX) :])
+            return CheckPluginName(self[len(self.MANAGEMENT_PREFIX) :])
         return self
 
 

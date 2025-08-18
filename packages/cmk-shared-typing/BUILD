@@ -21,10 +21,12 @@ SOURCES_COMMON = [
     "user_frontend_config.json",
     "vue_formspec_components.json",
     "welcome.json",
+    "agent_slideout.json",
 ]
 
 SOURCES_SPECIAL_DATACLASSES = [
     "graph_designer.json",
+    "service_graphs.json",
 ]
 
 json2typescript(
@@ -138,6 +140,7 @@ copy_file(
     name = "j2py_init",
     src = "header_py.txt",
     out = "cmk/shared_typing/__init__.py",
+    allow_symlink = True,
 )
 
 py_library(

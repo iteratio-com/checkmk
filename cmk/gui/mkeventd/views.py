@@ -10,12 +10,9 @@ from typing import Any, Literal, TypeGuard, TypeVar
 
 from livestatus import OnlySites
 
-from cmk.ccc.hostaddress import HostName
+from cmk.ccc.hostaddress import HostAddress, HostName
 from cmk.ccc.site import SiteId
 from cmk.ccc.user import UserId
-
-from cmk.utils.statename import short_service_state_name
-
 from cmk.gui.config import Config, default_authorized_builtin_role_ids
 from cmk.gui.dashboard import DashletConfig, LinkedViewDashletConfig, ViewDashletConfig
 from cmk.gui.data_source import ABCDataSource, DataSourceRegistry, row_id, RowTableLivestatus
@@ -68,6 +65,7 @@ from cmk.gui.views.sorter import (
 )
 from cmk.gui.views.store import get_permitted_views, multisite_builtin_views
 from cmk.gui.visuals.filter import Filter
+from cmk.utils.statename import short_service_state_name
 
 from .defines import action_whats, phase_names, syslog_facilities, syslog_priorities
 from .helpers import action_choices
@@ -650,8 +648,8 @@ class PainterEventHost(Painter):
         return False
 
     def render(self, row: Row, cell: "Cell", user: LoggedInUser) -> CellSpec:
-        host_name: HostName = row["host_name"]
-        host_name = row.get("event_host", host_name)
+        event_host: HostAddress = row["event_host"]
+        host_name = row.get("host_name", event_host)
 
         return "", html.render_a(
             host_name, _get_event_host_link(host_name, row, cell, request=self.request)

@@ -20,6 +20,7 @@ from dataclasses import asdict
 from typing import Any
 from urllib.parse import urlparse
 
+from cmk import fields
 from cmk.gui.config import active_config
 from cmk.gui.exceptions import MKAuthException, MKUserError
 from cmk.gui.http import request, Response
@@ -36,6 +37,7 @@ from cmk.gui.openapi.restful_objects import constructors, Endpoint
 from cmk.gui.openapi.restful_objects.registry import EndpointRegistry
 from cmk.gui.openapi.restful_objects.type_defs import DomainObject, LinkType
 from cmk.gui.openapi.utils import ProblemException, serve_json
+from cmk.gui.site_config import enabled_sites
 from cmk.gui.utils import permission_verification as permissions
 from cmk.gui.watolib.activate_changes import (
     activate_changes_start,
@@ -46,8 +48,6 @@ from cmk.gui.watolib.activate_changes import (
     load_activate_change_manager_with_id,
     MKLicensingError,
 )
-
-from cmk import fields
 
 ACTIVATION_ID = {
     "activation_id": fields.String(
@@ -121,7 +121,9 @@ def activate_changes(params: Mapping[str, Any]) -> Response:
     user.need_permission("wato.activate")
     body = params["body"]
     sites = body["sites"]
-    constructors.require_etag(constructors.hash_of_dict(get_pending_changes()))
+    constructors.require_etag(
+        constructors.hash_of_dict(get_pending_changes(list(active_config.sites)))
+    )
     with (
         may_fail(MKUserError),
         may_fail(MKAuthException, status=401),
@@ -129,9 +131,13 @@ def activate_changes(params: Mapping[str, Any]) -> Response:
     ):
         activation_response = activate_changes_start(
             sites=sites,
+            enabled_sites=list(enabled_sites(active_config.sites).keys()),
+            all_site_configs=active_config.sites,
             source="REST API",
             comment=None,
+            max_snapshots=active_config.wato_max_snapshots,
             force_foreign_changes=body["force_foreign_changes"],
+            use_git=active_config.wato_use_git,
             debug=active_config.debug,
         )
 
@@ -279,7 +285,7 @@ def list_activations(params: Mapping[str, Any]) -> Response:
 def list_pending_changes(params: Mapping[str, Any]) -> Response:
     """Show all pending changes"""
 
-    pending_changes = get_pending_changes()
+    pending_changes = get_pending_changes(list(active_config.sites))
     response = serve_json(
         {
             "id": "activation_run",

@@ -3,28 +3,26 @@
 # This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 # conditions defined in the file COPYING, which is part of this source code package.
 
-import json
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from functools import partial
 
 from cmk.ccc.site import SiteId
-
 from cmk.gui import query_filters
-from cmk.gui.config import active_config
-from cmk.gui.htmllib.html import html
+from cmk.gui.config import active_config, Config
 from cmk.gui.i18n import _l
 from cmk.gui.type_defs import Choices, FilterHTTPVariables, Row
 from cmk.gui.utils.autocompleter_config import AutocompleterConfig
 from cmk.gui.utils.speaklater import LazyString
-from cmk.gui.valuespec import AutocompleterRegistry, DualListChoice
+from cmk.gui.valuespec import AutocompleterRegistry
 
 from .filter import Filter, FilterRegistry
+from .filter.components import DualList, DynamicDropdown, FilterComponent
 
 
 def register(
     filter_registry: FilterRegistry,
     autocompleter_registry: AutocompleterRegistry,
-    site_choices: Callable[[], list[tuple[str, str]]],
+    site_choices: Callable[[Config], list[tuple[str, str]]],
     site_filter_heading_info: Callable[[FilterHTTPVariables], str | None],
 ) -> None:
     filter_registry.register(
@@ -82,21 +80,12 @@ class SiteFilter(Filter):
         self.query_filter = query_filter
         self._heading_info = heading_info
 
-    def display(self, value: FilterHTTPVariables) -> None:
-        current_value = value.get(self.query_filter.request_vars[0], "")
-        choices = [(current_value, current_value)] if current_value else []
-
-        html.dropdown(
-            self.query_filter.request_vars[0],
-            choices,
-            current_value,
-            style="width: 250px;",
-            class_=["ajax-vals"],
-            data_autocompleter=json.dumps(
-                AutocompleterConfig(
-                    ident="sites",
-                    strict=self.query_filter.ident == "site",
-                ).config
+    def components(self) -> Iterable[FilterComponent]:
+        yield DynamicDropdown(
+            id=self.query_filter.request_vars[0],
+            autocompleter=AutocompleterConfig(
+                ident="sites",
+                strict=self.query_filter.ident == "site",
             ),
         )
 
@@ -118,7 +107,7 @@ def default_site_filter_heading_info(value: FilterHTTPVariables) -> str | None:
 class MultipleSitesFilter(SiteFilter):
     def __init__(
         self,
-        site_choices: Callable[[], list[tuple[str, str]]],
+        site_choices: Callable[[Config], list[tuple[str, str]]],
         heading_info: Callable[[FilterHTTPVariables], str | None],
     ) -> None:
         super().__init__(
@@ -133,19 +122,24 @@ class MultipleSitesFilter(SiteFilter):
     def get_request_sites(self, value: FilterHTTPVariables) -> list[str]:
         return [x for x in value.get(self.htmlvars[0], "").strip().split("|") if x]
 
-    def display(self, value: FilterHTTPVariables) -> None:
-        sites_vs = DualListChoice(choices=self._site_choices(), rows=4)
-        sites_vs.render_input(self.htmlvars[0], self.get_request_sites(value))
+    def components(self) -> Iterable[FilterComponent]:
+        yield DualList(
+            id=self.query_filter.request_vars[0],
+            choices=dict(self._site_choices(active_config)),
+        )
 
 
 def sites_autocompleter(
-    value: str, params: dict, sites_options: Callable[[], list[tuple[str, str]]]
+    config: Config,
+    value: str,
+    params: dict,
+    sites_options: Callable[[Config], list[tuple[str, str]]],
 ) -> Choices:
     """Return the matching list of dropdown choices
     Called by the webservice with the current input field value and the completions_params to get the list of choices
     """
 
-    choices: Choices = [v for v in sites_options() if _matches_id_or_title(value, v)]
+    choices: Choices = [v for v in sites_options(config) if _matches_id_or_title(value, v)]
 
     # This part should not exists as the optional(not enforce) would better be not having the filter at all
     if not params.get("strict"):

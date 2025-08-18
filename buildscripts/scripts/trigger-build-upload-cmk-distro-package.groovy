@@ -2,9 +2,6 @@
 
 /// file: trigger-build-upload-cmk-distro-package.groovy
 
-/// Triggers a distribution package build (.rpm, .dep, etc.) for a given
-/// edition/distribution at a given git hash and uploads it to the tstsbuild server
-
 def main() {
     check_job_parameters([
         "EDITION",
@@ -37,7 +34,7 @@ def main() {
     // Use the directory also used by tests/testlib/containers.py to have it find
     // the downloaded package.
     def download_dir = "package_download";
-    def setup_values = single_tests.common_prepare(version: "daily");
+    def setup_values = single_tests.common_prepare(version: "daily", docker_tag: params.CIPARAM_OVERRIDE_DOCKER_TAG_BUILD);
     def all_editions = ["cloud", "enterprise", "managed", "raw", "saas", params.EDITION].unique();
 
     print(
@@ -59,7 +56,7 @@ def main() {
     if (build_node == "fips") {
         // Do not start builds on FIPS node
         println("Detected build node 'fips', switching this to 'fra'.");
-        build_node = "fra"
+        build_node = "fra";
     }
 
     def stages = all_editions.collectEntries { edition ->
@@ -94,20 +91,16 @@ def main() {
             }
 
             if ("${build_instance.result}" != "SUCCESS") {
-                notify.notify_maintainer_of_package("${TEAM_CI_MAIL}".split(","), edition, "${build_instance.absoluteUrl}")
+                notify.notify_maintainer_of_package("${TEAM_CI_MAIL}".split(","), edition, "${build_instance.absoluteUrl}");
             }
 
+            // Without this stage in place the whole job would fail, unclear why
             smart_stage(
-                name: "Copy artifacts",
+                name: "Say hello",
                 condition: build_instance,
                 raiseOnError: true,
             ) {
-                copyArtifacts(
-                    projectName: "${branch_base_folder}/builders/build-cmk-distro-package",
-                    selector: specific(build_instance.getId()),
-                    target: "${checkout_dir}/${download_dir}/",
-                    fingerprintArtifacts: true,
-                )
+                sh("echo hello");
             }
         }]
     }

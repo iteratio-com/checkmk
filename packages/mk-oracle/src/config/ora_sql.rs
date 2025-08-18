@@ -10,7 +10,7 @@ use crate::config::connection::Connection;
 use crate::config::options::Options;
 use crate::platform::registry::get_instances;
 use crate::platform::InstanceInfo;
-use crate::types::{HostName, InstanceAlias, InstanceName};
+use crate::types::{HostName, InstanceAlias, InstanceName, SqlBindParam};
 use anyhow::{anyhow, bail, Context, Result};
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
@@ -49,8 +49,10 @@ impl Default for Config {
 
 impl Config {
     pub fn from_string<T: AsRef<str>>(source: T) -> Result<Option<Self>> {
-        YamlLoader::load_from_str(source.as_ref())?
-            .first()
+        let r = source.as_ref();
+
+        let y = YamlLoader::load_from_str(r)?;
+        y.first()
             .and_then(|e| Config::from_yaml(e).transpose())
             .transpose()
     }
@@ -60,11 +62,8 @@ impl Config {
         if root.is_badvalue() {
             return Ok(None);
         }
-        let default_config = Config {
-            auth: Authentication::default(),
+        let default_config = Config::default();
 
-            ..Default::default()
-        };
         let config = Config::parse_main_from_yaml(root, &default_config)?;
         match config {
             Some(mut c) => {
@@ -89,7 +88,7 @@ impl Config {
             bail!("main key is absent");
         }
 
-        let auth = Authentication::from_yaml(main).unwrap_or_else(|_| default.auth.clone());
+        let auth = Authentication::from_yaml(main)?.unwrap_or_else(|| default.auth.clone());
         let conn = Connection::from_yaml(main)?.unwrap_or_else(|| default.conn().clone());
         let options = Options::from_yaml(main)?.unwrap_or_else(|| default.options().clone());
         let discovery = Discovery::from_yaml(main)?.unwrap_or_else(|| default.discovery().clone());
@@ -180,13 +179,17 @@ impl Config {
         "orasql-".to_owned() + &self.hash
     }
 
-    pub fn sections(&self) -> &Sections {
+    pub fn product(&self) -> &Sections {
         &self.sections
     }
 
-    pub fn is_instance_allowed(&self, name: &impl ToString) -> bool {
+    pub fn is_instance_allowed(&self, name: &impl AsRef<str>) -> bool {
         self.discovery
-            .is_instance_allowed(&InstanceName::from(name.to_string()))
+            .is_instance_allowed(&InstanceName::from(name.as_ref()))
+    }
+
+    pub fn params(&self) -> &Vec<SqlBindParam> {
+        self.options.params()
     }
 }
 
@@ -274,8 +277,16 @@ impl Discovery {
         }
         Ok(Some(Self {
             detect: discovery.get_bool(keys::DETECT, defaults::DISCOVERY_DETECT),
-            include: discovery.get_string_vector(keys::INCLUDE, &[]),
-            exclude: discovery.get_string_vector(keys::EXCLUDE, &[]),
+            include: discovery
+                .get_string_vector(keys::INCLUDE, &[])
+                .into_iter()
+                .map(|x| x.to_uppercase())
+                .collect(),
+            exclude: discovery
+                .get_string_vector(keys::EXCLUDE, &[])
+                .into_iter()
+                .map(|x| x.to_uppercase())
+                .collect(),
         }))
     }
     pub fn detect(&self) -> bool {
@@ -304,6 +315,7 @@ impl Discovery {
 #[derive(PartialEq, Debug, Clone)]
 pub enum Mode {
     Port,
+    Special,
 }
 
 impl Mode {
@@ -318,6 +330,7 @@ impl TryFrom<&str> for Mode {
     fn try_from(str: &str) -> Result<Self> {
         match str::to_ascii_lowercase(str).as_ref() {
             values::PORT => Ok(Mode::Port),
+            values::SPECIAL => Ok(Mode::Special),
             _ => Err(anyhow!("unsupported mode")),
         }
     }
@@ -343,7 +356,7 @@ impl CustomInstance {
         let name = InstanceName::from(
             yaml.get_string(keys::SID)
                 .context("Bad/Missing sid in instance")?
-                .to_uppercase(),
+                .as_str(),
         );
         let (auth, conn) = CustomInstance::ensure_auth_and_conn(yaml, main_auth, main_conn, &name)?;
         Ok(Self {
@@ -364,7 +377,7 @@ impl CustomInstance {
         main_conn: &Connection,
         sid: &InstanceName,
     ) -> Result<(Authentication, Connection)> {
-        let auth = Authentication::from_yaml(yaml).unwrap_or(main_auth.clone());
+        let auth = Authentication::from_yaml(yaml)?.unwrap_or(main_auth.clone());
         let conn = Connection::from_yaml(yaml)?.unwrap_or(main_conn.clone());
 
         let instance_host = calc_real_host(&conn);
@@ -454,6 +467,7 @@ mod tests {
     use super::*;
     use crate::config::authentication::AuthType;
     use crate::config::{section::SectionKind, yaml::test_tools::create_yaml};
+    use crate::types::{MaxConnections, MaxQueries};
     mod data {
         /// copied from tests/files/test-config.yaml
         pub const TEST_CONFIG: &str = r#"
@@ -465,40 +479,55 @@ oracle:
     authentication:
       username: "foo"
       password: "bar"
-      type: "standard" # optional, default: "os", values: standard, kerberos
+      role: "sysdba" # optional, default: empty, values: sysdba, sysasm, ...
+      type: "standard" # mandatory, default: "standard", values: standard, wallet
     connection: # optional
-      hostname: "localhost" # optional(default: "localhost")
-      point: "XE" # optional(default: "")
-      port: 1521 # optional(default: 1521)
-      timeout: 5 # optional(default: 5)
+      hostname: "localhost2" # optional(default: "localhost")
+      port: 1521 # optional, default: 1521
+      timeout: 11 # optional, default 5
+      tns_admin: "/path/to/oracle/config/files/" # optional, default: agent plugin config folder. Points to the location of sqlnet.ora and tnsnames.ora
+      oracle_local_registry: "/etc/oracle/olr.loc" # optional, default: folder of oracle configuration files like oratab
     sections: # optional
-    - instance:  # special section
-    - databases:
-    - counters:
-    - blocked_sessions:
-    - transactionlogs:
-    - clusters:
-    - mirroring:
-    - availability_groups:
-    - connections:
-    - tablespaces:
-        is_async : yes
-    - datafiles:
-        is_async: yes
-    - backup:
-        is_async: yes
+    - instance: # special section
+      affinity: "all" # optional, default: "db", values: "all", "db", "asm"
+    - dataguard_stats:
+    - locks:
+    - logswitches:
+    - longactivesessions:
+    - performance:
+    - processes:
+      affinity: "all" # optional, default "db", values: "all", "db", "asm"
+    - recovery_area:
+    - recovery_status:
+    - sessions:
+    - systemparameter:
+    - undostat:
+    - asm_diskgroup:
+      is_async: yes
+      affinity: "asm" # optional, default: "asm", values: "all", "db", "asm"
+    - iostats:
+      is_async: yes
     - jobs:
-        is_async: yes
-    - someOtherSQL:
-        is_async: yes
-        disabled: yes
-    cache_age: 600 # optional(default:600)
-    piggyback_host: "my_pb_host"
+      is_async: yes
+    - resumable:
+      is_async: yes
+    - rman:
+      is_async: yes
+    - tablespaces:
+      is_async: yes
+    - tablespaces_xxx:
+      is_async: yes
+    - tablespaces_xxxz:
+      is_async: yes
+    - tablespaces_xxxz1222:
+      is_async: yes
+    cache_age: 501 # optional(default:600)
+    piggyback_host: "some_pb_host"
     discovery: # optional
-      detect: true # optional(default:yes)
+      detect: false # optional(default:yes)
       include: ["foo", "bar", "INST2"] # optional prio 2; use instance even if excluded
       exclude: ["baz"] # optional, prio 3
-    mode: "port" # optional(default:"port")
+    mode: "special" # optional(default:"port")
     instances: # optional
       - sid: "INST1" # mandatory
         authentication: # optional, same as above
@@ -543,7 +572,7 @@ oracle:
         authentication: # optional
           username: "f"
           password: "b"
-          type: "sql_server"
+          type: "standard"
   "#;
         pub const DISCOVERY_FULL: &str = r#"
 discovery:
@@ -631,13 +660,37 @@ piggyback:
     }
 
     #[test]
+    fn test_config_all() {
+        let c = Config::from_string(data::TEST_CONFIG).unwrap().unwrap();
+        assert_eq!(c.options().max_connections(), MaxConnections::from(5));
+        assert_eq!(c.options().max_queries(), MaxQueries::from(16));
+        let auth = c.auth();
+        assert_eq!(auth.username(), "foo");
+        assert_eq!(auth.password(), Some("bar"));
+        let conn = c.conn();
+        assert_eq!(conn.hostname(), "localhost2".to_string().into());
+        let product = c.product();
+        assert_eq!(product.cache_age(), 501);
+        assert_eq!(product.sections().len(), 21);
+        assert_eq!(c.piggyback_host(), Some("some_pb_host"));
+        assert!(!c.discovery().detect);
+        let instances = c.instances();
+        assert_eq!(instances.len(), 2);
+        assert_eq!(c.mode, Mode::Special);
+        /*
+        mode: "port" # optional(default:"port")
+        instances: # optional
+        */
+    }
+
+    #[test]
     fn test_discovery_from_yaml_full() {
         let discovery = Discovery::from_yaml(&create_yaml(data::DISCOVERY_FULL))
             .unwrap()
             .unwrap();
         assert!(!discovery.detect());
-        assert_eq!(discovery.include(), &vec!["a".to_string(), "b".to_string()]);
-        assert_eq!(discovery.exclude(), &vec!["c".to_string(), "d".to_string()]);
+        assert_eq!(discovery.include(), &vec!["A".to_string(), "B".to_string()]);
+        assert_eq!(discovery.exclude(), &vec!["C".to_string(), "D".to_string()]);
     }
 
     #[test]
@@ -677,7 +730,7 @@ discovery:
     }
 
     fn as_names(sections: Vec<&Section>) -> Vec<&str> {
-        sections.iter().map(|s| s.name()).collect()
+        sections.iter().map(|s| s.name().as_str()).collect()
     }
 
     #[test]
@@ -742,6 +795,7 @@ authentication:
     type: "standard"
   "#,
         ))
+        .unwrap()
         .unwrap();
         let instance = CustomInstance::from_yaml(
             &create_yaml(data::CUSTOM_INSTANCE),
@@ -909,7 +963,7 @@ oracle:
             config
                 .all_sections()
                 .iter()
-                .map(|s| (s.name(), s.kind()))
+                .map(|s| (s.name().as_str(), s.kind()))
                 .collect::<Vec<(&str, SectionKind)>>(),
             [
                 ("instance", SectionKind::Sync),
@@ -921,7 +975,7 @@ oracle:
             config
                 .valid_sections()
                 .iter()
-                .map(|s| (s.name(), s.kind()))
+                .map(|s| (s.name().as_str(), s.kind()))
                 .collect::<Vec<(&str, SectionKind)>>(),
             [
                 ("instance", SectionKind::Sync),

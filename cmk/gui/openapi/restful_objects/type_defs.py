@@ -25,6 +25,7 @@ DomainType = Literal[
     "comment",
     "configuration_entity",
     "contact_group_config",
+    "dashboard",
     "dcd",
     "discovery_run",
     "downtime",
@@ -32,6 +33,7 @@ DomainType = Literal[
     "form_spec",
     "folder",
     "folder_config",
+    "graph_timerange",
     "host",
     "host_config",
     "host_config_internal",
@@ -73,6 +75,7 @@ DomainType = Literal[
     "quick_setup_stage_action_result",
     "managed_robots",
     "onboarding",
+    "visual_filter",
 ]
 
 
@@ -282,7 +285,7 @@ class ObjectProperty(TypedDict, total=False):
     extensions: dict[str, Any]
 
 
-Serializable = dict[str, Any] | CollectionObject | ObjectProperty | DomainObject | ActionResult
+Serializable = Mapping[str, Any] | CollectionObject | ObjectProperty | DomainObject | ActionResult
 ETagBehaviour = Literal["input", "output", "both"]
 
 SchemaClass = type[Schema]

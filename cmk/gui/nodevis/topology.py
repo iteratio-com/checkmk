@@ -18,18 +18,16 @@ from typing import Any, Literal
 import livestatus
 
 import cmk.ccc.plugin_registry
+import cmk.gui.visuals
+import cmk.utils.paths
 from cmk.ccc import store
 from cmk.ccc.hostaddress import HostName
 from cmk.ccc.site import SiteId
 from cmk.ccc.store import locked
 from cmk.ccc.user import UserId
-
-import cmk.utils.paths
-from cmk.utils.tags import TagID
-
-import cmk.gui.visuals
 from cmk.gui import sites
 from cmk.gui.breadcrumb import make_current_page_breadcrumb_item, make_topic_breadcrumb
+from cmk.gui.config import Config
 from cmk.gui.cron import CronJob, CronJobRegistry
 from cmk.gui.dashboard import get_topology_context_and_filters
 from cmk.gui.hooks import request_memoize
@@ -86,6 +84,7 @@ from cmk.gui.views.page_ajax_filters import ABCAjaxInitialFilters
 from cmk.gui.views.store import multisite_builtin_views
 from cmk.gui.visuals import get_livestatus_filter_headers
 from cmk.gui.visuals.filter import FilterRegistry
+from cmk.utils.tags import TagID
 
 
 @request_memoize()
@@ -214,7 +213,7 @@ class ABCTopologyPage(Page):
     def visual_spec(cls):
         raise NotImplementedError
 
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         """Determines the hosts to be shown"""
         user.need_permission("general.parent_child_topology")
         self.show_topology()
@@ -374,7 +373,7 @@ class AjaxInitialTopologyFilters(ABCAjaxInitialFilters):
 
 
 class AjaxFetchTopology(AjaxPage):
-    def page(self) -> PageResult:
+    def page(self, config: Config) -> PageResult:
         topology_type = request.get_str_input_mandatory("topology_type")
         if topology_type == "network_topology":
             default_overlays = NetworkTopologyPage.get_default_overlays_config()
@@ -1547,7 +1546,7 @@ def _register_builtin_views():
     )
 
 
-def cleanup_topology_layouts() -> None:
+def cleanup_topology_layouts(config: Config) -> None:
     """Topology layouts are currently restricted to a maximum number of 10000"""
     topology_configs_dir.mkdir(parents=True, exist_ok=True)
 

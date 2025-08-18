@@ -19,12 +19,29 @@ from flask import Flask
 from pytest_mock import MockerFixture
 from werkzeug.test import create_environ
 
+import cmk.gui.config as config_module
+import cmk.gui.mkeventd.wato as mkeventd
+import cmk.gui.watolib.password_store
+import cmk.utils.log
+from cmk.automations.results import DeleteHostsResult
+from cmk.ccc.hostaddress import HostName
+from cmk.ccc.user import UserId
+from cmk.gui import http, login, userdb
+from cmk.gui.config import active_config
+from cmk.gui.livestatus_utils.testing import mock_livestatus
+from cmk.gui.session import session
+from cmk.gui.type_defs import SessionInfo
+from cmk.gui.userdb.session import load_session_infos
+from cmk.gui.utils.script_helpers import session_wsgi_app
+from cmk.gui.watolib import activate_changes, groups
+from cmk.gui.watolib.hosts_and_folders import folder_tree
+from cmk.gui.wsgi.blueprints import checkmk, rest_api
+from cmk.utils.livestatus_helpers.testing import MockLiveStatusConnection
 from tests.testlib.unit.rest_api_client import (
     ClientRegistry,
     get_client_registry,
     RestApiClient,
 )
-
 from tests.unit.cmk.gui.common_fixtures import (
     create_aut_user_auth_wsgi_app,
     create_flask_app,
@@ -40,28 +57,6 @@ from tests.unit.cmk.web_test_app import (
     WebTestAppForCMK,
     WebTestAppRequestHandler,
 )
-
-from cmk.ccc.hostaddress import HostName
-from cmk.ccc.user import UserId
-
-import cmk.utils.log
-from cmk.utils.livestatus_helpers.testing import MockLiveStatusConnection
-
-from cmk.automations.results import DeleteHostsResult
-
-import cmk.gui.config as config_module
-import cmk.gui.mkeventd.wato as mkeventd
-import cmk.gui.watolib.password_store
-from cmk.gui import http, login, userdb
-from cmk.gui.config import active_config
-from cmk.gui.livestatus_utils.testing import mock_livestatus
-from cmk.gui.session import session
-from cmk.gui.type_defs import SessionInfo
-from cmk.gui.userdb.session import load_session_infos
-from cmk.gui.utils.script_helpers import session_wsgi_app
-from cmk.gui.watolib import activate_changes, groups
-from cmk.gui.watolib.hosts_and_folders import folder_tree
-from cmk.gui.wsgi.blueprints import checkmk, rest_api
 
 from .users import create_and_destroy_user
 
@@ -399,14 +394,14 @@ def aut_user_auth_wsgi_app(
 
 @pytest.fixture()
 def with_groups(monkeypatch, request_context, with_admin_login, suppress_remote_automation_calls):
-    groups.add_group("windows", "host", {"alias": "windows"}, pprint_value=False)
-    groups.add_group("routers", "service", {"alias": "routers"}, pprint_value=False)
-    groups.add_group("admins", "contact", {"alias": "admins"}, pprint_value=False)
+    groups.add_group("windows", "host", {"alias": "windows"}, pprint_value=False, use_git=False)
+    groups.add_group("routers", "service", {"alias": "routers"}, pprint_value=False, use_git=False)
+    groups.add_group("admins", "contact", {"alias": "admins"}, pprint_value=False, use_git=False)
     yield
-    groups.delete_group("windows", "host", pprint_value=False)
-    groups.delete_group("routers", "service", pprint_value=False)
+    groups.delete_group("windows", "host", pprint_value=False, use_git=False)
+    groups.delete_group("routers", "service", pprint_value=False, use_git=False)
     monkeypatch.setattr(mkeventd, "_get_rule_stats_from_ec", lambda: {})
-    groups.delete_group("admins", "contact", pprint_value=False)
+    groups.delete_group("admins", "contact", pprint_value=False, use_git=False)
 
 
 @pytest.fixture()
@@ -416,13 +411,16 @@ def with_host(
 ):
     hostnames = [HostName("heute"), HostName("example.com")]
     root_folder = folder_tree().root_folder()
-    root_folder.create_hosts([(hostname, {}, None) for hostname in hostnames], pprint_value=False)
+    root_folder.create_hosts(
+        [(hostname, {}, None) for hostname in hostnames], pprint_value=False, use_git=False
+    )
     yield hostnames
     root_folder.delete_hosts(
         hostnames,
         automation=lambda *args, **kwargs: DeleteHostsResult(),
         pprint_value=False,
         debug=False,
+        use_git=False,
     )
 
 
@@ -440,19 +438,28 @@ def flask_app(
     yield from create_flask_app()
 
 
+@pytest.fixture(name="base_without_version")
+def fixture_base_without_version() -> str:
+    return "/NO_SITE/check_mk/api"
+
+
 @pytest.fixture(name="base")
-def fixture_base() -> str:
-    return "/NO_SITE/check_mk/api/1.0"
+def fixture_base(base_without_version: str) -> str:
+    return f"{base_without_version}/1.0"
 
 
 @pytest.fixture()
-def api_client(aut_user_auth_wsgi_app: WebTestAppForCMK, base: str) -> RestApiClient:
-    return RestApiClient(WebTestAppRequestHandler(aut_user_auth_wsgi_app), base)
+def api_client(
+    aut_user_auth_wsgi_app: WebTestAppForCMK, base_without_version: str
+) -> RestApiClient:
+    return RestApiClient(WebTestAppRequestHandler(aut_user_auth_wsgi_app), base_without_version)
 
 
 @pytest.fixture()
-def clients(aut_user_auth_wsgi_app: WebTestAppForCMK, base: str) -> ClientRegistry:
-    return get_client_registry(WebTestAppRequestHandler(aut_user_auth_wsgi_app), base)
+def clients(aut_user_auth_wsgi_app: WebTestAppForCMK, base_without_version: str) -> ClientRegistry:
+    return get_client_registry(
+        WebTestAppRequestHandler(aut_user_auth_wsgi_app), base_without_version
+    )
 
 
 @pytest.fixture(name="fresh_app_instance", scope="function")

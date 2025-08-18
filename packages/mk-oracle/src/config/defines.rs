@@ -8,6 +8,7 @@ pub mod keys {
 
     pub const OPTIONS: &str = "options";
     pub const MAX_CONNECTIONS: &str = "max_connections";
+    pub const IGNORE_DB_NAME: &str = "IGNORE_DB_NAME";
 
     pub const AUTHENTICATION: &str = "authentication";
     pub const USERNAME: &str = "username";
@@ -19,6 +20,8 @@ pub mod keys {
     pub const CONNECTION: &str = "connection";
     pub const HOSTNAME: &str = "hostname";
     pub const INSTANCE: &str = "instance";
+    pub const TNS_ADMIN: &str = "tns_admin";
+    pub const ORACLE_LOCAL_REGISTRY: &str = "oracle_local_registry";
     pub const SERVICE_NAME: &str = "service_name";
     pub const SERVICE_TYPE: &str = "service_type";
     pub const PORT: &str = "port";
@@ -34,6 +37,7 @@ pub mod keys {
     pub const IS_ASYNC: &str = "is_async";
     pub const DISABLED: &str = "disabled";
     pub const SEP: &str = "sep";
+    pub const AFFINITY: &str = "affinity";
 
     pub const PIGGYBACK_HOST: &str = "piggyback_host";
     pub const DISCOVERY: &str = "discovery";
@@ -70,36 +74,24 @@ pub mod values {
 
     /// Mode::Port
     pub const PORT: &str = "port";
+    pub const SPECIAL: &str = "special";
 }
 
 pub mod defaults {
     use super::values;
     pub const MAX_CONNECTIONS: u32 = 6;
-    pub const MAX_QUERIES: u32 = 64;
+    pub const MAX_QUERIES: u32 = 16;
 
-    pub const AUTH_TYPE: &str = values::OS;
+    pub const AUTH_TYPE: &str = values::STANDARD;
     pub const MODE: &str = values::PORT;
     pub const CONNECTION_HOST_NAME: &str = "localhost";
 
-    pub const INSTANCE_NAME: &str = "XE";
+    pub const INSTANCE_NAME: &str = "";
     pub const CONNECTION_PORT: u16 = 1521;
     pub const CONNECTION_TIMEOUT: u64 = 5;
     pub const SECTIONS_CACHE_AGE: u32 = 600;
-    pub const SECTIONS_ALWAYS: &[&str] = &[
-        "instance",
-        "databases",
-        "counters",
-        "blocked_sessions",
-        "transactionlogs",
-        "clusters",
-        "mirroring",
-        "availability_groups",
-        "connections",
-    ];
-    pub const SECTIONS_CACHED: &[&str] = &["tablespaces", "datafiles", "backup", "jobs"];
-
     pub const DISCOVERY_DETECT: bool = true;
 
     pub const TRUST_SERVER_CERTIFICATE: bool = true;
-    pub const DEFAULT_SEP: char = ' ';
+    pub const DEFAULT_SEP: char = '|';
 }

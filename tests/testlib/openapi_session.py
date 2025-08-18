@@ -38,12 +38,10 @@ from typing import Any, NamedTuple
 
 import requests
 
-from tests.testlib.version import CMKVersion
-
+from cmk import trace
 from cmk.gui.http import HTTPMethod
 from cmk.gui.watolib.broker_connections import BrokerConnectionInfo
-
-from cmk import trace
+from tests.testlib.version import CMKVersion
 
 logger = logging.getLogger("rest-session")
 tracer = trace.get_tracer()
@@ -128,6 +126,9 @@ class CMKOpenApiSession(requests.Session):
         self.ldap_connection = LDAPConnectionAPI(self)
         self.passwords = PasswordsAPI(self)
         self.license = LicenseAPI(self)
+        self.otel_collector = OtelCollectorAPI(self)
+        self.event_console = EventConsoleAPI(self)
+        self.saml2 = Saml2API(self)
 
     def set_authentication_header(self, user: str, password: str) -> None:
         self.headers["Authorization"] = f"Bearer {user} {password}"
@@ -425,7 +426,7 @@ class UsersAPI(BaseAPI):
             raise UnexpectedResponse.from_response(response)
         return [User(title=user_dict["title"]) for user_dict in response.json()["value"]]
 
-    def get(self, username: str) -> tuple[dict[Any, str], str] | None:
+    def get(self, username: str) -> tuple[dict[str, Any], str] | None:
         """
         Returns
             a tuple with the user details and the Etag header if the user was found
@@ -544,7 +545,7 @@ class HostsAPI(BaseAPI):
         value: list[dict[str, Any]] = response.json()["value"]
         return value
 
-    def get(self, hostname: str) -> tuple[dict[Any, str], str] | None:
+    def get(self, hostname: str) -> tuple[dict[str, Any], str] | None:
         """
         Returns
             a tuple with the host details and the Etag header if the host was found
@@ -585,8 +586,20 @@ class HostsAPI(BaseAPI):
         value: list[dict[str, Any]] = response.json()["value"]
         return value
 
-    def get_all_names(self, ignore: list[str] | None = None) -> list[str]:
-        return [host["id"] for host in self.get_all() if not ignore or host["id"] not in ignore]
+    def get_all_names(
+        self, ignore: list[str] | None = None, allow: list[str] | None = None
+    ) -> list[str]:
+        """Get all host names from the API.
+
+        Args:
+            ignore: List of host names not to be returned, even if found in the system (optional).
+            allow: List of host names to be returned, if found in the system (optional).
+        """
+        return [
+            host_name
+            for host_name in [host["id"] for host in self.get_all()]
+            if (not ignore or host_name not in ignore) and (not allow or host_name in allow)
+        ]
 
     def delete(self, hostname: str) -> None:
         response = self.session.delete(f"/objects/host_config/{hostname}")
@@ -1093,6 +1106,19 @@ class DcdAPI(BaseAPI):
         if resp.status_code != 200:
             raise UnexpectedResponse.from_response(resp)
 
+    def get(self, dcd_id: str) -> dict[str, Any] | None:
+        """
+        Returns
+            the DCD details if the dcd_id was found
+            None if the dcd_id was not found
+        """
+        response = self.session.get(f"/objects/dcd/{dcd_id}")
+        if response.status_code not in (200, 404):
+            raise UnexpectedResponse.from_response(response)
+        if response.status_code == 404:
+            return None
+        return response.json()
+
     def delete(self, dcd_id: str) -> None:
         """Delete a DCD connection via REST API."""
         resp = self.session.delete(f"/objects/dcd/{dcd_id}")
@@ -1250,3 +1276,117 @@ class LicenseAPI(BaseAPI):
         if response.status_code != 200:
             raise UnexpectedResponse.from_response(response)
         return response
+
+
+class OtelCollectorAPI(BaseAPI):
+    def __init__(self, session: CMKOpenApiSession) -> None:
+        super().__init__(session)
+        # Hack to use the "unstable" version of the API endpoint
+        self.base_url = f"http://{self.session.host}:{self.session.port}/{self.session.site}/check_mk/api/unstable"
+
+    def create(
+        self,
+        ident: str,
+        title: str,
+        disabled: bool,
+        receiver_protocol_grpc: dict[str, Any] | None = None,
+        receiver_protocol_http: dict[str, Any] | None = None,
+        prometheus_scrape_configs: list[dict[str, Any]] | None = None,
+    ) -> None:
+        """Create an OpenTelemetry collector via REST API."""
+        body = {
+            "ident": ident,
+            "disabled": disabled,
+            "site": [self.session.site],
+            "title": title,
+        }
+        if receiver_protocol_grpc:
+            body["receiver_protocol_grpc"] = receiver_protocol_grpc
+        if receiver_protocol_http:
+            body["receiver_protocol_http"] = receiver_protocol_http
+        if prometheus_scrape_configs:
+            body["prometheus_scrape_configs"] = prometheus_scrape_configs
+
+        # hack to use the "unstable" version of the API endpoint
+        response = self.session.post(
+            url=self.base_url + "/domain-types/otel_collector_config/collections/all",
+            json=body,
+        )
+        if response.status_code != 200:
+            raise UnexpectedResponse.from_response(response)
+
+    def delete(self, ident: str) -> None:
+        """Delete an OpenTelemetry collector via REST API."""
+        response = self.session.delete(self.base_url + f"/objects/otel_collector_config/{ident}")
+        if response.status_code != 204:
+            raise UnexpectedResponse.from_response(response)
+
+
+class EventConsoleAPI(BaseAPI):
+    def get_all(self) -> list[dict[str, Any]]:
+        response = self.session.get(
+            "/domain-types/event_console/collections/all",
+        )
+        if response.status_code != 200:
+            raise UnexpectedResponse.from_response(response)
+        value: list[dict[str, Any]] = response.json()["value"]
+        return value
+
+    def archive_events_by_params(self, filters: dict[str, Any]) -> None:
+        """Archive EC events by using 'params' filter type."""
+        body = {"filter_type": "params", "filters": filters}
+        response = self.session.post(
+            url="/domain-types/event_console/actions/delete/invoke", json=body
+        )
+        if response.status_code != 204:
+            raise UnexpectedResponse.from_response(response)
+
+
+class Saml2API(BaseAPI):
+    def get_all(self) -> list[dict[str, Any]]:
+        response = self.session.get("/domain-types/saml_connection/collections/all")
+        if response.status_code != 200:
+            raise UnexpectedResponse.from_response(response)
+        return response.json()["value"]
+
+    def get(self, connection_id: str) -> tuple[dict[str, Any], str]:
+        """Returns a tuple with the connection details and the Etag header"""
+        response = self.session.get(f"/objects/saml_connection/{connection_id}")
+
+        if response.status_code != 200:
+            raise UnexpectedResponse.from_response(response)
+
+        return (response.json()["extensions"], response.headers["Etag"])
+
+    def create(self, connection_id: str, connection_config: dict[str, Any]) -> dict[str, Any]:
+        connection = {
+            "general_properties": {
+                "id": connection_id,
+                "name": "Test SAML Auth",
+            },
+            "connection_config": connection_config,
+            "security": {
+                "signing_certificate": {"type": "builtin"},
+                "decrypt_auth_certificate": {"type": "builtin"},
+            },
+            "users": {
+                "id_attribute": "user_id",
+            },
+        }
+
+        response = self.session.post(
+            "/domain-types/saml_connection/collections/all",
+            json=connection,
+        )
+        if response.status_code != 200:
+            raise UnexpectedResponse.from_response(response)
+        return response.json()
+
+    def delete(self, connection_id: str, etag: str) -> None:
+        response = self.session.delete(
+            f"/objects/saml_connection/{connection_id}",
+            headers={"If-Match": etag},
+        )
+
+        if response.status_code != 204:
+            raise UnexpectedResponse.from_response(response)

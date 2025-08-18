@@ -62,6 +62,7 @@ def main() {
         upload_to_testbuilds
         && (! currentBuild.fullProjectName.contains("/cv/"))
         && (! params.SKIP_DEPLOY_TO_WEBSITE)
+        && (! params.DISABLE_CACHE)
     );
 
     print(
@@ -83,6 +84,46 @@ def main() {
         |branch_base_folder:................ │${branch_base_folder}│
         |===================================================
         """.stripMargin());
+
+    // All following jobs (source package and distro specific packages)
+    // require a BOM file. We create this first to ensure that it is
+    // built before we attempt to build our packages.
+    inside_container_minimal(safe_branch_name: safe_branch_name) {
+        smart_stage(
+                name: "Build BOM",
+                raiseOnError: false,
+            ) {
+            def build_instance = null;
+
+            build_instance = smart_build(
+                // see global-defaults.yml, needs to run in minimal container
+                use_upstream_build: true,
+                relative_job_name: "${branch_base_folder}/builders/build-cmk-bom",
+                build_params: [
+                    CUSTOM_GIT_REF: effective_git_ref,
+                    VERSION: params.VERSION,
+                    EDITION: params.EDITION,
+                    DISABLE_CACHE: params.DISABLE_CACHE,
+                ],
+                build_params_no_check: [
+                    CIPARAM_OVERRIDE_BUILD_NODE: params.CIPARAM_OVERRIDE_BUILD_NODE,
+                    CIPARAM_CLEANUP_WORKSPACE: params.CIPARAM_CLEANUP_WORKSPACE,
+                    CIPARAM_BISECT_COMMENT: params.CIPARAM_BISECT_COMMENT,
+                ],
+                no_remove_others: true, // do not delete other files in the dest dir
+                download: false,    // use copyArtifacts to avoid nested directories
+            );
+
+            if (build_instance) {
+                copyArtifacts(
+                    projectName: "${branch_base_folder}/builders/build-cmk-bom",
+                    selector: specific(build_instance.getId()),
+                    target: relative_deliverables_dir,
+                    fingerprintArtifacts: true,
+                );
+            }
+        }
+    }
 
     /// In order to ensure a fixed order for stages executed in parallel,
     /// we wait an increasing amount of time (N * 100ms).
@@ -127,46 +168,6 @@ def main() {
             ) {
                 copyArtifacts(
                     projectName: "${branch_base_folder}/builders/build-cmk-source_tgz",
-                    selector: specific(build_instance.getId()),
-                    target: relative_deliverables_dir,
-                    fingerprintArtifacts: true,
-                )
-            }
-        },
-        "Build BOM": {
-            sleep(0.1 * timeOffsetForOrder++);
-            def build_instance = null;
-
-            smart_stage(
-                name: "Build BOM",
-                raiseOnError: false,
-            ) {
-                build_instance = smart_build(
-                    // see global-defaults.yml, needs to run in minimal container
-                    use_upstream_build: true,
-                    relative_job_name: "${branch_base_folder}/builders/build-cmk-bom",
-                    build_params: [
-                        CUSTOM_GIT_REF: effective_git_ref,
-                        VERSION: params.VERSION,
-                        EDITION: params.EDITION,
-                        DISABLE_CACHE: params.DISABLE_CACHE,
-                    ],
-                    build_params_no_check: [
-                        CIPARAM_OVERRIDE_BUILD_NODE: params.CIPARAM_OVERRIDE_BUILD_NODE,
-                        CIPARAM_CLEANUP_WORKSPACE: params.CIPARAM_CLEANUP_WORKSPACE,
-                        CIPARAM_BISECT_COMMENT: params.CIPARAM_BISECT_COMMENT,
-                    ],
-                    no_remove_others: true, // do not delete other files in the dest dir
-                    download: false,    // use copyArtifacts to avoid nested directories
-                );
-            }
-            smart_stage(
-                name: "Copy artifacts",
-                condition: build_instance,
-                raiseOnError: false,
-            ) {
-                copyArtifacts(
-                    projectName: "${branch_base_folder}/builders/build-cmk-bom",
                     selector: specific(build_instance.getId()),
                     target: relative_deliverables_dir,
                     fingerprintArtifacts: true,
@@ -223,7 +224,7 @@ def main() {
                     selector: specific(build_instance.getId()),
                     target: relative_deliverables_dir,
                     fingerprintArtifacts: true,
-                )
+                );
             }
         }]
     }
@@ -234,7 +235,7 @@ def main() {
 
     smart_stage(
         name: "Upload artifacts",
-        condition: upload_to_testbuilds,
+        condition: upload_to_testbuilds && (! currentBuild.fullProjectName.contains("/cv/")),
     ) {
         dir("${deliverables_dir}") {
             /// BOM shall have a unique name, see CMK-16483
@@ -249,26 +250,19 @@ def main() {
         /// on our own..
         def files_to_upload = {
             dir("${deliverables_dir}") {
-                cmd_output("ls *.{deb,rpm,cma,tar.gz,json,csv} || true").split().toList();
+                cmd_output("ls *.{deb,rpm,cma,tar.gz} *bill-of-materials.{json,csv} || true").split().toList();
             }
         }();
         print("Found files to upload: ${files_to_upload}");
 
-        def filtered_files_to_upload = [];
-        files_to_upload.each { item ->
-            if (!item.startsWith(bazel_log_prefix)) {
-                filtered_files_to_upload += item;
-            }
-        }
-        print("Filtered files to upload: ${filtered_files_to_upload}")
-
-        filtered_files_to_upload.each { filename ->
+        files_to_upload.each { filename ->
             artifacts_helper.upload_via_rsync(
                 "${WORKSPACE}/deliverables",
                 "${cmk_version_rc_aware}",
                 "${filename}",
                 "${INTERNAL_DEPLOY_DEST}",
                 INTERNAL_DEPLOY_PORT,
+                exclude_pattern="{${bazel_log_prefix}*}"
             );
         }
 
@@ -278,12 +272,16 @@ def main() {
 
         // this must not be called from within the container (results in yaml package missing)
         def exclude_pattern = versioning.get_internal_artifacts_pattern();
-        artifacts_helper.upload_version_dir(
-            deliverables_dir,
-            WEB_DEPLOY_DEST,
-            WEB_DEPLOY_PORT,
-            EXCLUDE_PATTERN=exclude_pattern,
-        );
+        files_to_upload.each { filename ->
+            artifacts_helper.upload_via_rsync(
+                "${WORKSPACE}/deliverables",
+                "${cmk_version_rc_aware}",
+                "${filename}",
+                WEB_DEPLOY_DEST,
+                WEB_DEPLOY_PORT,
+                exclude_pattern=exclude_pattern,
+            );
+        }
 
         if (EDITION.toLowerCase() == "saas" && versioning.is_official_release(cmk_version_rc_aware)) {
             // uploads distro packages, source.tar.gz and hashes

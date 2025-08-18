@@ -41,10 +41,6 @@ def provide_agent_binaries(Map args) {
             relative_job_name: "${branch_base_folder(with_testing_prefix=false)}/builders/build-linux-agent-updater",
             /// no Linux agent updaters for raw edition..
             condition: true, // edition != "raw",  // FIXME!
-            dependency_paths: [
-                "agents",
-                "non-free/packages/cmk-update-agent"
-            ],
             install_cmd: """\
                 # check-mk-agent-*.{deb,rpm}
                 cp *.deb *.rpm ${checkout_dir}/agents/
@@ -64,19 +60,6 @@ def provide_agent_binaries(Map args) {
             //       As 'soon' as this problem does not exist anymore we could run
             //       relatively from 'builders/..'
             relative_job_name: "${branch_base_folder(with_testing_prefix=false)}/winagt-build",
-            dependency_paths: [
-                "agents/modules",
-                "agents/windows",
-                "agents/wnx",
-                "packages/cmk-agent-ctl",
-                "packages/mk-sql",
-                "third_party/asio",
-                "third_party/fmt",
-                "third_party/googletest",
-                "third_party/openhardwaremonitor",
-                "third_party/simpleini",
-                "third_party/yaml-cpp",
-            ],
             install_cmd: """\
                 cp \
                     check_mk_agent-64.exe \
@@ -109,9 +92,6 @@ def provide_agent_binaries(Map args) {
             //       As 'soon' as this problem does not exist anymore we could run
             //       relatively from 'builders/..'
             relative_job_name: "${branch_base_folder(with_testing_prefix=false)}/winagt-build-modules",
-            dependency_paths: [
-                "agents/modules/windows",
-            ],
             install_cmd: """\
                 cp \
                     ./*.cab \
@@ -139,13 +119,14 @@ def provide_agent_binaries(Map args) {
                     use_upstream_build: true,
                     relative_job_name: details.relative_job_name,
                     build_params: [
+                        CUSTOM_GIT_REF: effective_git_ref,
                         VERSION: args.version,
                         DISABLE_CACHE: args.disable_cache,
                     ],
                     build_params_no_check: [
+                        CIPARAM_CLEANUP_WORKSPACE: params.CIPARAM_CLEANUP_WORKSPACE,
                         CIPARAM_BISECT_COMMENT: args.bisect_comment,
                     ],
-                    dependency_paths: details.dependency_paths,
                     dest: "${args.artifacts_base_dir}/${job_name}",
                     no_remove_others: true, // do not delete other files in the dest dir
                 );
@@ -156,9 +137,10 @@ def provide_agent_binaries(Map args) {
                 condition: run_condition && build_instance,
                 raiseOnError: true,
             ) {
-                dir("${checkout_dir}/${args.artifacts_base_dir}/${job_name}") {
-                    sh(details.install_cmd);
-                }
+                // prevent "_tmp" directories created by the Jenkins groovy dir() command
+                def install_cmd = "cd ${checkout_dir}/${args.artifacts_base_dir}/${job_name};";
+                install_cmd += details.install_cmd;
+                sh(install_cmd);
             }
         }]
     }

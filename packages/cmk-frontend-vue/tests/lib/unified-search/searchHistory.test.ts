@@ -15,35 +15,35 @@ test('Add hist entry on search history service', async () => {
   const searchHistory = new SearchHistoryService('test-search')
 
   const histE = new HistoryEntry(
-    'test',
-    'testProvider',
+    { input: 'test', filters: [], sort: 'none' },
     {
       title: 'testTitle',
       url: 'www.google.com',
-      context: 'test-context'
-    },
-    'testTopic'
+      context: 'test-context',
+      provider: 'monitoring',
+      topic: 'testTopic'
+    }
   )
   searchHistory.add(histE)
-  expect(searchHistory.get()[0]).toMatchObject(histE)
+  expect(searchHistory.getEntries()[0]).toMatchObject(histE)
 })
 
 test('Add hist entry twice on search history service', async () => {
   const searchHistory = new SearchHistoryService('test-search')
 
   const histE = new HistoryEntry(
-    'test',
-    'testProvider',
+    { input: 'test', filters: [], sort: 'none' },
     {
       title: 'testTitle',
       url: 'www.google.com',
-      context: 'test-context'
-    },
-    'testTopic'
+      context: 'test-context',
+      provider: 'monitoring',
+      topic: 'testTopic'
+    }
   )
   searchHistory.add(histE)
   searchHistory.add(histE)
-  expect(searchHistory.get()[0]?.hitCount).toBe(2)
+  expect(searchHistory.getEntries()[0]?.hitCount).toBe(2)
 })
 
 test('Test SearchHistorySearchProvider', async () => {
@@ -51,30 +51,31 @@ test('Test SearchHistorySearchProvider', async () => {
   const histSearch = new SearchHistorySearchProvider(searchHistory)
 
   const histE1 = new HistoryEntry(
-    'test',
-    'testProvider',
+    { input: 'test', filters: [], sort: 'none' },
     {
       title: 'testTitle',
       url: 'www.google.com',
-      context: 'test-context'
-    },
-    'testTopic'
+      context: 'test-context',
+      provider: 'monitoring',
+      topic: 'testTopic'
+    }
   )
 
   const histE2 = new HistoryEntry(
-    'test',
-    'abcProvider',
+    { input: 'abc', filters: [], sort: 'none' },
     {
       title: 'abcTitle',
       url: 'www.abc.com',
-      context: 'abc-context'
-    },
-    'abcTopic'
+      context: 'abc-context',
+      provider: 'setup',
+      topic: 'testTopic'
+    }
   )
   searchHistory.add(histE1)
   searchHistory.add(histE2)
 
-  const res = await histSearch.search('abc')
+  const { entries, queries } = await histSearch.search({ input: 'abc', filters: [], sort: 'none' })
 
-  expect(res).toMatchObject([histE2])
+  expect(entries).toMatchObject([histE2])
+  expect(queries).toMatchObject([histE2.query])
 })

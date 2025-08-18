@@ -6,12 +6,12 @@ conditions defined in the file COPYING, which is part of this source code packag
 <script setup lang="ts">
 import type * as FormSpec from 'cmk-shared-typing/typescript/vue_formspec_components'
 import { useValidation, type ValidationMessages } from '@/form/components/utils/validation'
-import FormValidation from '@/form/components/FormValidation.vue'
+import FormValidation from '@/components/user-input/CmkInlineValidation.vue'
 import { type Suggestion } from '@/components/suggestions'
 import CmkList from '@/components/CmkList'
 import { onBeforeUpdate, ref, watch } from 'vue'
 import FormAutocompleter from '@/form/private/FormAutocompleter.vue'
-import { inputSizes } from '../utils/sizes'
+import { inputSizes } from '@/components/user-input/sizes'
 import FormLabelsLabel from './FormLabelsLabel.vue'
 import FormLabel from '@/form/private/FormLabel.vue'
 

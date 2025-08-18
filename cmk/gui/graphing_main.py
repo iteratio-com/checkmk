@@ -18,15 +18,18 @@ from typing import override
 
 import cmk.ccc.debug
 import cmk.ccc.plugin_registry
-from cmk.ccc.hostaddress import HostName
-from cmk.ccc.site import SiteId
-
+import cmk.gui.pages
 import cmk.utils
 import cmk.utils.render
-from cmk.utils.metrics import MetricName
-from cmk.utils.servicename import ServiceName
-
-import cmk.gui.pages
+from cmk.ccc.hostaddress import HostName
+from cmk.ccc.site import SiteId
+from cmk.discover_plugins import discover_all_plugins, DiscoveredPlugins, PluginGroup
+from cmk.graphing.v1 import entry_point_prefixes
+from cmk.graphing.v1 import graphs as graphs_api
+from cmk.graphing.v1 import metrics as metrics_api
+from cmk.graphing.v1 import perfometers as perfometers_api
+from cmk.graphing.v1 import translations as translations_api
+from cmk.gui.config import Config
 from cmk.gui.graphing import _legacy as graphing_legacy
 from cmk.gui.graphing._from_api import (
     graphs_from_api,
@@ -44,13 +47,8 @@ from cmk.gui.htmllib.html import html
 from cmk.gui.http import request
 from cmk.gui.log import logger
 from cmk.gui.pages import PageResult
-
-from cmk.discover_plugins import discover_all_plugins, DiscoveredPlugins, PluginGroup
-from cmk.graphing.v1 import entry_point_prefixes
-from cmk.graphing.v1 import graphs as graphs_api
-from cmk.graphing.v1 import metrics as metrics_api
-from cmk.graphing.v1 import perfometers as perfometers_api
-from cmk.graphing.v1 import translations as translations_api
+from cmk.utils.metrics import MetricName
+from cmk.utils.servicename import ServiceName
 
 #   .--Plugins-------------------------------------------------------------.
 #   |                   ____  _             _                              |
@@ -179,7 +177,7 @@ def load_plugins() -> None:
 
 class PageHostServiceGraphPopup(cmk.gui.pages.Page):
     @override
-    def page(self) -> PageResult:
+    def page(self, config: Config) -> PageResult:
         """This page is called for the popup of the graph icon of hosts/services."""
         host_service_graph_popup_cmk(
             SiteId(raw_site_id) if (raw_site_id := request.var("site")) else None,
@@ -193,7 +191,7 @@ class PageHostServiceGraphPopup(cmk.gui.pages.Page):
 
 class PageGraphDashlet(cmk.gui.pages.Page):
     @override
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         html.write_html(
             host_service_graph_dashlet_cmk(
                 parse_raw_graph_specification(json.loads(request.get_str_input_mandatory("spec"))),

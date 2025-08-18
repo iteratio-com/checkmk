@@ -8,13 +8,10 @@ from logging import Logger
 
 from cmk.ccc.i18n import _
 from cmk.ccc.site import SiteId
-
-from cmk.utils.global_ident_type import GlobalIdent
-
 from cmk.gui.config import active_config
 from cmk.gui.watolib.hosts_and_folders import folder_tree
-
 from cmk.post_rename_site.registry import rename_action_registry, RenameAction
+from cmk.utils.global_ident_type import GlobalIdent
 
 
 def update_hosts_and_folders(old_site_id: SiteId, new_site_id: SiteId, logger: Logger) -> None:
@@ -39,7 +36,9 @@ def update_hosts_and_folders(old_site_id: SiteId, new_site_id: SiteId, logger: L
             if locked_by := _update_locked_by(old_site_id, new_site_id, host.locked_by()):
                 logger.debug("Host %s: Update dynamic site configuration", host.name())
                 host.update_attributes(
-                    {"locked_by": locked_by}, pprint_value=active_config.wato_pprint_config
+                    {"locked_by": locked_by},
+                    pprint_value=active_config.wato_pprint_config,
+                    use_git=active_config.wato_use_git,
                 )
 
         # Always rewrite the host config: The host_tags need to be updated, even in case there is no

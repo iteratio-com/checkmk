@@ -3,6 +3,6 @@
 # This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 # conditions defined in the file COPYING, which is part of this source code package.
 
-from cmk.gui.welcome.pages import register
+from cmk.gui.welcome.registration import register
 
 __all__ = ["register"]

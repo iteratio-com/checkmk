@@ -10,19 +10,32 @@ from dataclasses import dataclass
 from functools import total_ordering
 from typing import Literal
 
-from cmk.ccc.hostaddress import HostName
-from cmk.ccc.site import SiteId
-
 import cmk.utils.paths
 import cmk.utils.render
+from cmk.ccc.hostaddress import HostName
+from cmk.ccc.site import SiteId
+from cmk.gui import inventory
+from cmk.gui.config import Config
+from cmk.gui.exceptions import MKUserError
+from cmk.gui.htmllib.foldable_container import foldable_container
+from cmk.gui.htmllib.generator import HTMLWriter
+from cmk.gui.htmllib.html import html
+from cmk.gui.http import Request
+from cmk.gui.http import request as http_request
+from cmk.gui.i18n import _
+from cmk.gui.theme import Theme
+from cmk.gui.theme.current_theme import theme as gui_theme
+from cmk.gui.utils.html import HTML
+from cmk.gui.utils.urls import makeuri_contextless
+from cmk.gui.utils.user_errors import user_errors
 from cmk.utils.structured_data import (
+    HistoryStore,
     ImmutableAttributes,
     ImmutableDeltaAttributes,
     ImmutableDeltaTable,
     ImmutableDeltaTree,
     ImmutableTable,
     ImmutableTree,
-    InventoryStore,
     RetentionInterval,
     SDDeltaValue,
     SDKey,
@@ -31,21 +44,12 @@ from cmk.utils.structured_data import (
     SDValue,
 )
 
-from cmk.gui import inventory
-from cmk.gui.config import active_config
-from cmk.gui.exceptions import MKUserError
-from cmk.gui.htmllib.foldable_container import foldable_container
-from cmk.gui.htmllib.generator import HTMLWriter
-from cmk.gui.htmllib.html import html
-from cmk.gui.http import Request, request
-from cmk.gui.i18n import _
-from cmk.gui.theme import Theme
-from cmk.gui.theme.current_theme import theme
-from cmk.gui.utils.html import HTML
-from cmk.gui.utils.urls import makeuri_contextless
-from cmk.gui.utils.user_errors import user_errors
-
-from ._display_hints import DisplayHints, inv_display_hints, NodeDisplayHint
+from ._display_hints import (
+    DisplayHints,
+    inv_display_hints,
+    NodeDisplayHint,
+    TableWithView,
+)
 from .registry import PaintFunction
 
 
@@ -66,21 +70,21 @@ class SDItem:
         # Returns a tuple of two css classes (alignment and coloring) and the HTML value
         # We keep alignment and coloring classes separate as we only need the coloring within
         # tables
-        alignment_class, code = self.paint_function(self.value)
+        css_class, code = self.paint_function(self.value)
         html_value = HTML.with_escaping(code)
         if (
             not html_value
             or self.retention_interval is None
             or self.retention_interval.source == "current"
         ):
-            return alignment_class, "", html_value
+            return css_class, "", html_value
 
         now = int(time.time())
         valid_until = self.retention_interval.cached_at + self.retention_interval.cache_interval
         keep_until = valid_until + self.retention_interval.retention_interval
         if now > keep_until:
             return (
-                alignment_class,
+                css_class,
                 "inactive_cell",
                 HTMLWriter.render_span(
                     html_value
@@ -92,7 +96,7 @@ class SDItem:
             )
         if now > valid_until:
             return (
-                alignment_class,
+                css_class,
                 "inactive_cell",
                 HTMLWriter.render_span(
                     html_value,
@@ -104,7 +108,7 @@ class SDItem:
                     css=["muted_text"],
                 ),
             )
-        return alignment_class, "", html_value
+        return css_class, "", html_value
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -120,27 +124,27 @@ class _SDDeltaItem:
         # The coloring class is always an empty string but was added for a consistent fct signature
         # between _SDDeltaItem and SDItem
         if self.old is None and self.new is not None:
-            alignment_class, rendered_value = self.paint_function(self.new)
+            css_class, rendered_value = self.paint_function(self.new)
             return (
-                alignment_class,
+                css_class,
                 "",
                 HTMLWriter.render_span(rendered_value, css="invnew"),
             )
         if self.old is not None and self.new is None:
-            alignment_class, rendered_value = self.paint_function(self.old)
+            css_class, rendered_value = self.paint_function(self.old)
             return (
-                alignment_class,
+                css_class,
                 "",
                 HTMLWriter.render_span(rendered_value, css="invold"),
             )
         if self.old == self.new:
-            alignment_class, rendered_value = self.paint_function(self.old)
-            return alignment_class, "", HTML.with_escaping(rendered_value)
+            css_class, rendered_value = self.paint_function(self.old)
+            return css_class, "", HTML.with_escaping(rendered_value)
         if self.old is not None and self.new is not None:
             _, rendered_old_value = self.paint_function(self.old)
-            alignment_class, rendered_new_value = self.paint_function(self.new)
+            css_class, rendered_new_value = self.paint_function(self.new)
             return (
-                alignment_class,
+                css_class,
                 "",
                 HTMLWriter.render_span(rendered_old_value, css="invold")
                 + " → "
@@ -182,7 +186,9 @@ class _ABCItemsSorter(abc.ABC):
                 paint_function=h.paint_function,
                 key_info=f"{c}*" if c in key_columns else c,
             )
-            for c in list(self.hint.columns) + sorted(needed_keys - set(self.hint.columns))
+            for c in (
+                list(self.hint.table.columns) + sorted(needed_keys - set(self.hint.table.columns))
+            )
             if c in needed_keys
             for h in (self.hint.get_column_hint(c),)
         ]
@@ -322,18 +328,18 @@ class _SDDeltaItemsSorter(_ABCItemsSorter):
 
 
 # Ajax call for fetching parts of the tree
-def ajax_inv_render_tree() -> None:
-    site_id = SiteId(request.get_ascii_input_mandatory("site"))
-    host_name = request.get_validated_type_input_mandatory(HostName, "host")
+def ajax_inv_render_tree(config: Config) -> None:
+    site_id = SiteId(http_request.get_ascii_input_mandatory("site"))
+    host_name = http_request.get_validated_type_input_mandatory(HostName, "host")
     inventory.verify_permission(site_id, host_name)
 
-    raw_path = request.get_ascii_input_mandatory("raw_path", "")
-    show_internal_tree_paths = bool(request.var("show_internal_tree_paths"))
+    raw_path = http_request.get_ascii_input_mandatory("raw_path", "")
+    show_internal_tree_paths = bool(http_request.var("show_internal_tree_paths"))
 
     tree: ImmutableTree | ImmutableDeltaTree
-    if tree_id := request.get_ascii_input_mandatory("tree_id", ""):
+    if tree_id := http_request.get_ascii_input_mandatory("tree_id", ""):
         tree, corrupted_history_files = inventory.load_delta_tree(
-            InventoryStore(cmk.utils.paths.omd_root),
+            HistoryStore(cmk.utils.paths.omd_root),
             host_name,
             int(tree_id),
         )
@@ -341,8 +347,10 @@ def ajax_inv_render_tree() -> None:
             user_errors.add(
                 MKUserError(
                     "load_inventory_delta_tree",
-                    _("Cannot load HW/SW Inventory history %s. Please remove the corrupted files.")
-                    % ", ".join(corrupted_history_files),
+                    _(
+                        "Cannot load HW/SW Inventory history of %s. Please remove the corrupted files %s."
+                    )
+                    % (host_name, ", ".join(corrupted_history_files)),
                 )
             )
             return
@@ -354,24 +362,26 @@ def ajax_inv_render_tree() -> None:
                 raw_status_data_tree=raw_status_data_tree,
             )
         except Exception as e:
-            if active_config.debug:
+            if config.debug:
                 html.show_warning("%s" % e)
             user_errors.add(
                 MKUserError(
                     "load_inventory_tree",
-                    _("Cannot load HW/SW Inventory tree %s. Please remove the corrupted file.")
-                    % inventory.get_short_inventory_filepath(host_name),
+                    _(
+                        "Cannot load HW/SW Inventory of %s. Please remove corrupted inventory or status data tree files."
+                    )
+                    % host_name,
                 )
             )
             return
 
     TreeRenderer(
-        site_id,
-        host_name,
-        inv_display_hints,
-        theme,
-        request,
-        show_internal_tree_paths,
+        site_id=site_id,
+        host_name=host_name,
+        hints=inv_display_hints,
+        theme=gui_theme,
+        request=http_request,
+        show_internal_tree_paths=show_internal_tree_paths,
     ).show(tree.get_tree(inventory.parse_internal_raw_path(raw_path).path), tree_id)
 
 
@@ -386,18 +396,19 @@ def _replace_title_placeholders(hint: NodeDisplayHint, path: SDPath) -> str:
 class TreeRenderer:
     def __init__(
         self,
+        *,
         site_id: SiteId,
         host_name: HostName,
         hints: DisplayHints,
-        theme_: Theme,
-        request_: Request,
+        theme: Theme,
+        request: Request,
         show_internal_tree_paths: bool,
     ) -> None:
         self._site_id = site_id
         self._host_name = host_name
         self._hints = hints
-        self._theme = theme_
-        self._request = request_
+        self._theme = theme
+        self._request = request
         self._show_internal_tree_paths = show_internal_tree_paths
 
     def _get_header(self, title: str, key_info: str) -> HTML:
@@ -412,8 +423,8 @@ class TreeRenderer:
             html.open_tr()
             html.th(self._get_header(item.title, item.key))
 
-            # TODO separate alignment_class and coloring_class from rendered value
-            _alignment_class, coloring_class, rendered_value = item.compute_cell_spec()
+            # TODO separate css_class and coloring_class from rendered value
+            _css_class, coloring_class, rendered_value = item.compute_cell_spec()
             html.open_td(class_=coloring_class)
             html.write_html(rendered_value)
             html.close_td()
@@ -456,9 +467,9 @@ class TreeRenderer:
         for row in sorted_rows:
             html.open_tr(class_="even0")
             for item in row:
-                # TODO separate alignment_class and coloring_class from rendered value
-                alignment_class, coloring_class, rendered_value = item.compute_cell_spec()
-                html.open_td(class_=" ".join([alignment_class, coloring_class]))
+                # TODO separate css_class and coloring_class from rendered value
+                css_class, coloring_class, rendered_value = item.compute_cell_spec()
+                html.open_td(class_=" ".join([css_class, coloring_class]))
                 html.write_html(rendered_value)
                 html.close_td()
             html.close_tr()
@@ -526,6 +537,10 @@ class TreeRenderer:
         if sorted_pairs:
             self._show_attributes(sorted_pairs)
         if sorted_rows:
-            self._show_table(hint.table_view_name, columns, sorted_rows)
+            self._show_table(
+                hint.table.name if isinstance(hint.table, TableWithView) else "",
+                columns,
+                sorted_rows,
+            )
         for name in sorted(tree.nodes_by_name):
             self._show_node(tree.nodes_by_name[name], tree_id)

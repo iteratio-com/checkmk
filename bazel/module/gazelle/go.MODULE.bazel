@@ -1,10 +1,11 @@
 go_sdk = use_extension("@rules_go//go:extensions.bzl", "go_sdk")
-go_sdk.download(version = "1.22.10")
+go_sdk.download(version = "1.23.10")
 
 go_deps = use_extension("@gazelle//:extensions.bzl", "go_deps")
 go_deps.from_file(go_mod = "//:go.mod")
 use_repo(
     go_deps,
+    "com_github_open_telemetry_opentelemetry_collector_contrib_exporter_clickhouseexporter",
     "com_github_open_telemetry_opentelemetry_collector_contrib_exporter_fileexporter",
     "com_github_open_telemetry_opentelemetry_collector_contrib_exporter_syslogexporter",
     "com_github_open_telemetry_opentelemetry_collector_contrib_extension_basicauthextension",
@@ -23,6 +24,7 @@ use_repo(
     "io_opentelemetry_go_collector_otelcol",
     "io_opentelemetry_go_collector_processor",
     "io_opentelemetry_go_collector_processor_batchprocessor",
+    "io_opentelemetry_go_collector_processor_memorylimiterprocessor",
     "io_opentelemetry_go_collector_receiver",
     "io_opentelemetry_go_collector_receiver_otlpreceiver",
 )
@@ -32,12 +34,23 @@ use_repo(
 # See conversation here: https://github.com/bazel-contrib/bazel-gazelle/issues/1035
 # The mentioned solution 'build_file_proto_mode = "disable_global"' is deprecated and was moved to 'gazelle_override':
 # https://github.com/bazel-contrib/bazel-gazelle/blob/56b3f7867eff7bd43dd93777987af9f9668ae896/internal/bzlmod/go_deps.bzl#L206
-
 go_deps.gazelle_override(
     directives = [
         "gazelle:proto disable",
     ],
     path = "github.com/prometheus/prometheus",
+)
+go_deps.gazelle_override(
+    directives = [
+        "gazelle:proto disable",
+    ],
+    path = "go.opentelemetry.io/collector/pdata/xpdata",
+)
+go_deps.gazelle_override(
+    directives = [
+        "gazelle:proto disable",
+    ],
+    path = "go.opentelemetry.io/collector/exporter",
 )
 go_deps.gazelle_override(
     build_file_generation = "on",

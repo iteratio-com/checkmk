@@ -19,14 +19,17 @@ from dataclasses import dataclass
 from re import Pattern
 from typing import Any, Literal, NamedTuple, Never, NotRequired, TypedDict
 
-from cmk.ccc.hostaddress import HostName  # pylint: disable=cmk-module-layer-violation
-
-from cmk.checkengine.plugins import CheckPluginName  # pylint: disable=cmk-module-layer-violation
-
 # from cmk.base.config import logwatch_rule will NOT work!
 import cmk.base.config  # pylint: disable=cmk-module-layer-violation
-
 from cmk.agent_based.v2 import CheckPlugin, CheckResult, Result, State
+from cmk.base.configlib.servicename import (  # pylint: disable=cmk-module-layer-violation
+    make_final_service_name_config,
+)
+from cmk.ccc.hostaddress import HostName  # pylint: disable=cmk-module-layer-violation
+from cmk.checkengine.plugins import (  # pylint: disable=cmk-module-layer-violation
+    CheckPluginName,
+    ServiceID,
+)
 
 # Watch out! Matching the 'logwatch_rules' ruleset against labels will not
 # work as expected, if logfiles are grouped!
@@ -162,13 +165,12 @@ class RulesetAccess:
 
         # Fail #2: Compute the correct service description
         # This will be wrong if the logfile is grouped.
-        service_description = cc.make_passive_service_name_config().make_name(
-            cc.label_manager.labels_of_host,
-            host_name,
-            CheckPluginName(plugin.name),
-            service_name_template=plugin.service_name,
-            item=logfile,
-        )
+        service_description = cc.make_passive_service_name_config(
+            make_final_service_name_config(
+                cc._loaded_config,
+                cc.ruleset_matcher,
+            )
+        )(host_name, ServiceID(CheckPluginName(plugin.name), logfile), plugin.service_name)
 
         # Fail #3: Retrieve the configured labels for this service.
         # This might be wrong as a result of #2.
@@ -189,7 +191,7 @@ class RulesetAccess:
     def logwatch_ec_all(host_name: str) -> Sequence[ParameterLogwatchEc]:
         """Isolate the remaining API violation w.r.t. parameters"""
         cc = cmk.base.config.access_globally_cached_config_cache()
-        return cc.ruleset_matcher.get_host_values(
+        return cc.ruleset_matcher.get_host_values_all(
             HostName(host_name),
             cmk.base.config.checkgroup_parameters.get("logwatch_ec", []),  # type: ignore[arg-type]
             cc.label_manager.labels_of_host,

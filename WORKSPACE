@@ -5,10 +5,6 @@ load("//omd/packages/asio:asio_http.bzl", "asio_workspace")
 
 asio_workspace()
 
-load("//omd/packages/re2:re2_http.bzl", "re2_workspace")
-
-re2_workspace()
-
 load("//omd/packages/msitools:msitools_http.bzl", "msitools_workspace")
 
 msitools_workspace()
@@ -44,10 +40,6 @@ rrdtool_workspace()
 load("//omd/packages/rrdtool:rrdtool_native.bzl", "rrdtool_native_workspace")
 
 rrdtool_native_workspace()
-
-load("//omd/packages/httplib:httplib_http.bzl", "httplib_workspace")
-
-httplib_workspace()
 
 load("@aspect_rules_lint//lint:ruff.bzl", "fetch_ruff")
 

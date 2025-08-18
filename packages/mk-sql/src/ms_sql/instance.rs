@@ -1748,23 +1748,14 @@ fn to_backup_entry(
     } else {
         backup_type
     };
-    let replica_id = row.get_value_by_name("replica_id").trim().to_string();
-    let is_primary_replica = row
-        .get_value_by_name("is_primary_replica")
-        .trim()
-        .to_string();
-    if replica_id.is_empty() || is_primary_replica == "True" || is_primary_replica == "1" {
-        format!(
-            "{}{sep}{}{sep}{}+00:00{sep}{}\n",
-            instance_name,
-            database_name.replace(' ', "_"),
-            last_backup_date.replace(' ', "|"),
-            backup_type,
-        )
-        .into()
-    } else {
-        None
-    }
+    format!(
+        "{}{sep}{}{sep}{}+00:00{sep}{}\n",
+        instance_name,
+        database_name.replace(' ', "_"),
+        last_backup_date.replace(' ', "|"),
+        backup_type,
+    )
+    .into()
 }
 
 fn to_backup_entry_odbc(
@@ -1787,26 +1778,14 @@ fn to_backup_entry_odbc(
     } else {
         backup_type
     };
-    let replica_id = block
-        .get_value_by_name(row, "replica_id")
-        .trim()
-        .to_string();
-    let is_primary_replica = block
-        .get_value_by_name(row, "is_primary_replica")
-        .trim()
-        .to_string();
-    if replica_id.is_empty() || is_primary_replica == "True" || is_primary_replica == "1" {
-        format!(
-            "{}{sep}{}{sep}{}+00:00{sep}{}\n",
-            instance_name,
-            database_name.replace(' ', "_"),
-            last_backup_date.replace(' ', "|"),
-            backup_type,
-        )
-        .into()
-    } else {
-        None
-    }
+    format!(
+        "{}{sep}{}{sep}{}+00:00{sep}{}\n",
+        instance_name,
+        database_name.replace(' ', "_"),
+        last_backup_date.replace(' ', "|"),
+        backup_type,
+    )
+    .into()
 }
 
 struct Counter {
@@ -2345,9 +2324,10 @@ fn determine_reconnect(
                     if Some(&customization.endpoint()) != instance_builder.get_endpoint() =>
                 {
                     log::info!(
-                        "Instance {} to be reconnected with {}",
+                        "Instance {} to be reconnected with `{}` from `{}`",
                         instance_builder.get_name(),
-                        customization.endpoint().dump_compact()
+                        customization.endpoint().dump_compact(),
+                        instance_builder.get_endpoint().unwrap().dump_compact()
                     );
                     (instance_builder, Some(customization.endpoint()))
                 }

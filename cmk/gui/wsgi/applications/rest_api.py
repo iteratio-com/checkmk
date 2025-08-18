@@ -21,13 +21,14 @@ from flask import g, send_from_directory
 from werkzeug.exceptions import HTTPException, NotFound
 from werkzeug.routing import Map, Rule, Submount
 
+from livestatus import LivestatusTestingError
+
 import cmk.ccc.version as cmk_version
+from cmk import trace
 from cmk.ccc import crash_reporting, store
 from cmk.ccc.exceptions import MKException
 from cmk.ccc.site import omd_site, SiteId
-
-from cmk.utils import paths
-
+from cmk.crypto import MKCryptoException
 from cmk.gui import session
 from cmk.gui.config import active_config
 from cmk.gui.exceptions import MKAuthException, MKHTTPException, MKUserError
@@ -57,11 +58,10 @@ from cmk.gui.openapi.utils import (
     RestAPIRequestGeneralException,
     RestAPIResponseGeneralException,
 )
+from cmk.gui.site_config import enabled_sites
 from cmk.gui.wsgi.applications.utils import AbstractWSGIApp
 from cmk.gui.wsgi.wrappers import ParameterDict
-
-from cmk import trace
-from cmk.crypto import MKCryptoException
+from cmk.utils import paths
 
 if TYPE_CHECKING:
     from cmk.gui.http import HTTPMethod
@@ -117,13 +117,15 @@ def crash_report_response(exc: Exception) -> WSGIApplication:
         "check_mk_user": {
             "user_id": user.id,
             "user_roles": user.role_ids,
-            "authorized_sites": list(user.authorized_sites()),
+            "authorized_sites": list(
+                user.authorized_sites(unfiltered_sites=enabled_sites(active_config.sites))
+            ),
         },
     }
 
     crash = APICrashReport(
-        paths.crash_dir,
-        APICrashReport.make_crash_info(
+        omd_root=paths.omd_root,
+        crash_info=APICrashReport.make_crash_info(
             cmk_version.get_general_version_infos(paths.omd_root), details
         ),
     )
@@ -206,6 +208,11 @@ class VersionedEndpointAdapter(AbstractWSGIApp):
             "query": self._query_args(),
             "headers": request.headers,
         }
+        api_context = ApiContext.new(
+            config=active_config,
+            version=self.requested_version,
+            etag_if_match=request.if_match,
+        )
 
         is_testing = str(request.environ.get("paste.testing", "False")).lower() == "true"
 
@@ -218,7 +225,7 @@ class VersionedEndpointAdapter(AbstractWSGIApp):
         response = handle_endpoint_request(
             endpoint=self.endpoint.request_endpoint(),
             request_data=request_data,
-            api_context=ApiContext(version=self.requested_version),
+            api_context=api_context,
             permission_validator=permission_validator,
             wato_enabled=active_config.wato_enabled,
             wato_use_git=active_config.wato_use_git,
@@ -697,6 +704,11 @@ class CheckmkRESTAPI(AbstractWSGIApp):
                 title="An exception occurred.",
                 detail=str(exc),
             )
+
+        except LivestatusTestingError as exc:
+            if self.testing:
+                raise  # this makes it easier to read incorrect expected queries in tests
+            response = crash_report_response(exc)
 
         except Exception as exc:
             if self.debug and not self.testing:

@@ -14,18 +14,16 @@ from types import ModuleType
 from typing import Any, Final
 
 import cmk.ccc.version as cmk_version
-
 import cmk.utils.tags
-from cmk.utils import paths
-
+from cmk import trace
 from cmk.gui import log, utils
 from cmk.gui.ctx_stack import request_local_attr, set_global_var
 from cmk.gui.exceptions import MKConfigError
 from cmk.gui.i18n import _
 from cmk.gui.plugins.config.base import CREConfig  # pylint: disable=cmk-module-layer-violation
 from cmk.gui.type_defs import Key, RoleName
-
-from cmk import trace
+from cmk.utils import paths
+from cmk.utils.experimental_config import load_experimental_config
 
 if cmk_version.edition(paths.omd_root) is not cmk_version.Edition.CRE:
     from cmk.gui.cee.plugins.config.cee import (  # type: ignore[import-not-found, import-untyped, unused-ignore] # pylint: disable=cmk-module-layer-violation
@@ -164,9 +162,7 @@ def load_config() -> None:
     raw_config = get_default_config()
 
     # Load assorted experimental parameters if any
-    experimental_config = cmk.utils.paths.make_experimental_config_file()
-    if experimental_config.exists():
-        _load_config_file_to(str(experimental_config), raw_config)
+    raw_config.update(load_experimental_config(cmk.utils.paths.default_config_dir))
 
     # First load main file
     _load_config_file_to(str(cmk.utils.paths.default_config_dir / "multisite.mk"), raw_config)

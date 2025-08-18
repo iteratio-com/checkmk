@@ -38,6 +38,22 @@ from ._type_defs import PackageError, PackageID, PackageName
 _logger = logging.getLogger(__name__)
 
 
+class VersionMismatch(PackageError):
+    """Indicating that a version requirement was not met"""
+
+    def __init__(self, requirement: str, msg: str):
+        super().__init__(msg)
+        self.requirement: Final = requirement
+
+
+class VersionTooLow(VersionMismatch):
+    """Indicating that the sites version is too low compared to the requirement."""
+
+
+class VersionTooHigh(VersionMismatch):
+    """Indicating that the sites version is too high compared to the requirement."""
+
+
 class ComparableVersion(Protocol):
     def __ge__(self, other: Self) -> bool: ...
 
@@ -226,7 +242,7 @@ def create(
     if installer.is_installed(manifest.name):
         raise PackageError("Package already exists.")
 
-    _raise_for_nonexisting_files(manifest, path_config)
+    _raise_for_invalid_files_entries(manifest, path_config)
     _validate_package_files(manifest, installer)
     installer.add_installed_manifest(manifest)
     _create_enabled_mkp_from_installed_package(
@@ -256,7 +272,7 @@ def edit(
         if installer.is_installed(new_manifest.name):
             raise PackageError("Cannot rename package: a package with that name already exists.")
 
-    _raise_for_nonexisting_files(new_manifest, path_config)
+    _raise_for_invalid_files_entries(new_manifest, path_config)
     _validate_package_files(new_manifest, installer)
 
     _create_enabled_mkp_from_installed_package(
@@ -270,11 +286,13 @@ def edit(
     installer.add_installed_manifest(new_manifest)
 
 
-def _raise_for_nonexisting_files(manifest: Manifest, path_config: PathConfig) -> None:
+def _raise_for_invalid_files_entries(manifest: Manifest, path_config: PathConfig) -> None:
     for part, rel_path in manifest.files.items():
         for rp in rel_path:
-            if not (fp := (path_config.get_path(part) / rp).exists()):
+            if not (fp := (path_config.get_path(part) / rp)).exists():
                 raise PackageError(f"File {fp} does not exist.")
+            if not fp.is_file():
+                raise PackageError(f"{fp} is not a file.")
 
 
 def _create_enabled_mkp_from_installed_package(
@@ -538,9 +556,10 @@ def _raise_for_too_old_cmk_version(
         # Be compatible: When a version can not be parsed, then skip this check
         return
 
-    raise PackageError(
+    raise VersionTooLow(
+        min_version,
         f"Package requires a Checkmk version {min_version} or higher (this is {site_version})."
-        f" You can skip all version checks by using the `--force-install` flag on the commandline."
+        " To enable it anyway, use the `--force-install` flag to skip all version checks.",
     )
 
 
@@ -563,9 +582,10 @@ def _raise_for_too_new_cmk_version(
         # Be compatible: When a version can not be parsed, then skip this check
         return
 
-    raise PackageError(
+    raise VersionTooHigh(
+        until_version,
         f"Package requires a Checkmk version below {until_version} (this is {site_version})."
-        f" You can skip all version checks by using the `--force-install` flag on the commandline."
+        " To enable it anyway, use the `--force-install` flag to skip all version checks.",
     )
 
 

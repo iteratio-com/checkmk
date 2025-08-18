@@ -5,14 +5,11 @@
 
 import pytest
 
-from tests.unit.mocks_and_helpers import FixPluginLegacy
-
-from cmk.utils.sectionname import SectionName
-
-from cmk.checkengine.plugins import AgentBasedPlugins
-
 from cmk.agent_based.legacy.v0_unstable import LegacyCheckDefinition
+from cmk.checkengine.plugins import AgentBasedPlugins
 from cmk.discover_plugins import PluginLocation
+from cmk.utils.sectionname import SectionName
+from tests.unit.mocks_and_helpers import FixPluginLegacy
 
 pytestmark = pytest.mark.checks
 
@@ -113,9 +110,6 @@ def test_no_new_or_vanished_legacy_checks(fix_plugin_legacy: FixPluginLegacy) ->
         "apc_inrow_temp",
         "apc_rackpdu_power",
         "apc_sts_inputs",
-        "apc_symmetra",
-        "apc_symmetra_temp",
-        "apc_symmetra_elphase",
         "apc_symmetra_ext_temp",
         "apc_symmetra_input",
         "apc_symmetra_output",
@@ -298,7 +292,6 @@ def test_no_new_or_vanished_legacy_checks(fix_plugin_legacy: FixPluginLegacy) ->
         "db2_backup",
         "db2_bp_hitratios",
         "db2_connections",
-        "db2_counters",
         "db2_logsizes",
         "db2_mem",
         "db2_sort_overflow",
@@ -704,7 +697,6 @@ def test_no_new_or_vanished_legacy_checks(fix_plugin_legacy: FixPluginLegacy) ->
         "jolokia_metrics_on_disk",
         "jolokia_metrics_off_heap",
         "jolokia_metrics_writer",
-        "juniper_alarm",
         "juniper_bgp_state",
         "juniper_fru",
         "juniper_fru_fan",
@@ -743,13 +735,10 @@ def test_no_new_or_vanished_legacy_checks(fix_plugin_legacy: FixPluginLegacy) ->
         "libelle_business_shadow_process",
         "libelle_business_shadow_archive_dir",
         "logins",
-        "lvm_lvs",
         "lvm_vgs",
         "mailman_lists",
         "mbg_lantime_ng_fan",
         "mbg_lantime_ng_power",
-        "mbg_lantime_ng_refclock_gps",
-        "mbg_lantime_ng_refclock",
         "mbg_lantime_ng_state",
         "mbg_lantime_ng_temp",
         "mbg_lantime_refclock",
@@ -921,7 +910,6 @@ def test_no_new_or_vanished_legacy_checks(fix_plugin_legacy: FixPluginLegacy) ->
         "rabbitmq_nodes_mem",
         "rabbitmq_nodes_uptime",
         "rabbitmq_nodes_gc",
-        "rabbitmq_queues",
         "rabbitmq_vhosts",
         "raritan_emx",
         "raritan_emx_fan",
@@ -1023,7 +1011,6 @@ def test_no_new_or_vanished_legacy_checks(fix_plugin_legacy: FixPluginLegacy) ->
         "supermicro_sensors",
         "supermicro_smart",
         "superstack3_sensors",
-        "suseconnect",
         "sylo",
         "sym_brightmail_queues",
         "symantec_av_progstate",

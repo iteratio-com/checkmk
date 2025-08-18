@@ -17,38 +17,33 @@ from typing import Any, Literal
 import pytest
 from pytest import MonkeyPatch
 
-from tests.testlib.unit.base_configuration_scenario import Scenario
-
-from tests.unit.cmk.base.emptyconfig import EMPTYCONFIG
-
 import cmk.ccc.debug
 import cmk.ccc.version as cmk_version
-from cmk.ccc.hostaddress import HostAddress, HostName
-
-from cmk.utils import ip_lookup, paths
-from cmk.utils.config_path import VersionedConfigPath
-from cmk.utils.labels import ABCLabelConfig, LabelManager, Labels
-from cmk.utils.servicename import ServiceName
-
-from cmk.checkengine.plugins import AgentBasedPlugins, AutocheckEntry, CheckPlugin, CheckPluginName
-
 from cmk.base import config
-from cmk.base.core_nagios._create_config import (
+from cmk.base.configlib.servicename import make_final_service_name_config
+from cmk.base.core.nagios._create_config import (
     _format_nagios_object,
     create_nagios_config_commands,
     create_nagios_host_spec,
     create_nagios_servicedefs,
     NagiosConfig,
 )
-from cmk.base.core_nagios._precompile_host_checks import (
+from cmk.base.core.nagios._precompile_host_checks import (
     dump_precompiled_hostcheck,
     HostCheckStore,
     PrecompileMode,
 )
-
+from cmk.ccc.hostaddress import HostAddress, HostName
+from cmk.checkengine.plugins import AgentBasedPlugins, AutocheckEntry, CheckPlugin, CheckPluginName
 from cmk.discover_plugins import PluginLocation
 from cmk.server_side_calls.v1 import ActiveCheckCommand, ActiveCheckConfig
 from cmk.server_side_calls_backend import load_active_checks
+from cmk.utils import ip_lookup, paths
+from cmk.utils.config_path import VersionedConfigPath
+from cmk.utils.labels import ABCLabelConfig, LabelManager, Labels
+from cmk.utils.servicename import ServiceName
+from tests.testlib.unit.base_configuration_scenario import Scenario
+from tests.unit.cmk.base.empty_config import EMPTY_CONFIG
 
 
 def ip_address_of_never_called(
@@ -60,7 +55,8 @@ def ip_address_of_never_called(
 
 
 def ip_address_of_return_local(
-    _h: HostName, _f: Literal[socket.AddressFamily.AF_INET, socket.AddressFamily.AF_INET6]
+    host_name: HostName,
+    family: Literal[socket.AddressFamily.AF_INET, socket.AddressFamily.AF_INET6] | None = None,
 ) -> HostAddress:
     return HostAddress("127.0.0.1")
 
@@ -329,9 +325,13 @@ def test_create_nagios_host_spec(
         error_handler=config.handle_ip_lookup_failure,
     )
 
-    host_attrs = config_cache.get_host_attributes(hostname, ip_address_of)
+    host_attrs = config_cache.get_host_attributes(
+        hostname, socket.AddressFamily.AF_INET, ip_address_of
+    )
 
-    host_spec = create_nagios_host_spec(cfg, config_cache, hostname, host_attrs, ip_address_of)
+    host_spec = create_nagios_host_spec(
+        cfg, config_cache, hostname, socket.AddressFamily.AF_INET, host_attrs, ip_address_of
+    )
     assert host_spec == result
 
 
@@ -354,11 +354,18 @@ def test_create_nagios_host_spec_service_period(monkeypatch: MonkeyPatch) -> Non
 
     config_cache = ts.apply(monkeypatch)
 
-    host_attrs = config_cache.get_host_attributes(hostname, ip_address_of=lambda *a: None)
+    host_attrs = config_cache.get_host_attributes(
+        hostname, socket.AddressFamily.AF_INET, ip_address_of=lambda *a: HostAddress("")
+    )
 
     cfg = NagiosConfig(io.StringIO(), [hostname])
     host_spec = create_nagios_host_spec(
-        cfg, config_cache, hostname, host_attrs, ip_address_of=lambda *a: None
+        cfg,
+        config_cache,
+        hostname,
+        socket.AddressFamily.AF_INET,
+        host_attrs,
+        ip_address_of=lambda *a: HostAddress(""),
     )
     assert host_spec["_SERVICE_PERIOD"] == "24X7"
     assert "service_period" not in host_spec
@@ -448,9 +455,11 @@ def test_dump_precompiled_hostcheck(monkeypatch: MonkeyPatch, config_path: Path)
 
     host_check = dump_precompiled_hostcheck(
         config_cache,
-        config_cache.make_passive_service_name_config(),
-        config_path,
-        hostname,
+        passive_service_name_config=lambda *a: "",
+        enforced_services_table=lambda hn: {},
+        config_path=config_path,
+        hostname=hostname,
+        get_ip_stack_config=lambda *a: ip_lookup.IPStackConfig.IPv4,
         plugins=_make_plugins_for_test(),
         precompile_mode=PrecompileMode.INSTANT,
         ip_address_of=lambda *a: HostAddress("1.2.3.4"),
@@ -597,24 +606,33 @@ def test_create_nagios_servicedefs_active_check(
     monkeypatch.setattr(config, "get_resource_macros", lambda: {})
 
     hostname = HostName("my_host")
-    config_cache = config._create_config_cache(EMPTYCONFIG)
+    config_cache = config.ConfigCache(EMPTY_CONFIG)
     config_cache.label_manager = LabelManager(FakeLabelConfig(service_labels), {}, {}, {})
     monkeypatch.setattr(config_cache, "alias", lambda hn: {hostname: host_attrs["alias"]}[hn])
     monkeypatch.setattr(config_cache, "active_checks", lambda *args, **kw: active_checks)
 
+    final_service_name_config = make_final_service_name_config(
+        config_cache._loaded_config, config_cache.ruleset_matcher
+    )
     outfile = io.StringIO()
     cfg = NagiosConfig(outfile, [hostname])
     license_counter = Counter("services")
     create_nagios_servicedefs(
         cfg,
         config_cache,
-        config_cache.make_passive_service_name_config(),
-        {},
-        hostname,
-        host_attrs,
-        {},
-        license_counter,
-        ip_address_of_return_local,
+        final_service_name_config=final_service_name_config,
+        passive_service_name_config=config_cache.make_passive_service_name_config(
+            final_service_name_config
+        ),
+        enforced_services_table=lambda hn: {},
+        plugins={},
+        hostname=hostname,
+        ip_stack_config=ip_lookup.IPStackConfig.IPv4,
+        host_ip_family=socket.AddressFamily.AF_INET,
+        host_attrs=host_attrs,
+        stored_passwords={},
+        license_counter=license_counter,
+        ip_address_of=ip_address_of_return_local,
         service_depends_on=lambda *a: (),
     )
 
@@ -641,20 +659,26 @@ def test_create_nagios_servicedefs_service_period(monkeypatch: MonkeyPatch) -> N
 
     config_cache = ts.apply(monkeypatch)
 
-    host_attrs = config_cache.get_host_attributes(hostname, ip_address_of_return_local)
+    host_attrs = config_cache.get_host_attributes(
+        hostname, socket.AddressFamily.AF_INET, ip_address_of_return_local
+    )
     outfile = io.StringIO()
     cfg = NagiosConfig(outfile, [hostname])
     license_counter = Counter("services")
     create_nagios_servicedefs(
         cfg,
         config_cache,
-        config_cache.make_passive_service_name_config(),
-        {},
-        hostname,
-        host_attrs,
-        {},
-        license_counter,
-        ip_address_of_return_local,
+        final_service_name_config=lambda *a: "",
+        passive_service_name_config=lambda *a: "",
+        enforced_services_table=lambda hn: {},
+        plugins={},
+        hostname=hostname,
+        ip_stack_config=ip_lookup.IPStackConfig.IPv4,
+        host_ip_family=socket.AddressFamily.AF_INET,
+        host_attrs=host_attrs,
+        stored_passwords={},
+        license_counter=license_counter,
+        ip_address_of=ip_address_of_return_local,
         service_depends_on=lambda *a: (),
     )
 
@@ -761,8 +785,12 @@ def test_create_nagios_servicedefs_with_warnings(
     _patch_plugin_loading(monkeypatch, loaded_active_checks)
     monkeypatch.setattr(config, "get_resource_macros", lambda: {})
 
-    config_cache = config._create_config_cache(EMPTYCONFIG)
+    config_cache = config.ConfigCache(EMPTY_CONFIG)
     monkeypatch.setattr(config_cache, "active_checks", lambda *args, **kw: active_checks)
+
+    final_service_name_config = make_final_service_name_config(
+        config_cache._loaded_config, config_cache.ruleset_matcher
+    )
 
     hostname = HostName("my_host")
     outfile = io.StringIO()
@@ -771,13 +799,19 @@ def test_create_nagios_servicedefs_with_warnings(
     create_nagios_servicedefs(
         cfg,
         config_cache,
-        config_cache.make_passive_service_name_config(),
-        {},
-        HostName("my_host"),
-        host_attrs,
-        {},
-        license_counter,
-        ip_address_of_return_local,
+        final_service_name_config=final_service_name_config,
+        passive_service_name_config=config_cache.make_passive_service_name_config(
+            final_service_name_config
+        ),
+        enforced_services_table=lambda hn: {},
+        plugins={},
+        hostname=HostName("my_host"),
+        ip_stack_config=ip_lookup.IPStackConfig.IPv4,
+        host_ip_family=socket.AddressFamily.AF_INET,
+        host_attrs=host_attrs,
+        stored_passwords={},
+        license_counter=license_counter,
+        ip_address_of=ip_address_of_return_local,
         service_depends_on=lambda *a: (),
     )
 
@@ -828,7 +862,7 @@ def test_create_nagios_servicedefs_omit_service(
     _patch_plugin_loading(monkeypatch, loaded_active_checks)
     monkeypatch.setattr(config, "get_resource_macros", lambda: {})
 
-    config_cache = config._create_config_cache(EMPTYCONFIG)
+    config_cache = config.ConfigCache(EMPTY_CONFIG)
     monkeypatch.setattr(config_cache, "active_checks", lambda *args, **kw: active_checks)
     monkeypatch.setattr(config_cache, "service_ignored", lambda *_: True)
 
@@ -839,13 +873,17 @@ def test_create_nagios_servicedefs_omit_service(
     create_nagios_servicedefs(
         cfg,
         config_cache,
-        config_cache.make_passive_service_name_config(),
-        {},
-        hostname,
-        host_attrs,
-        {},
-        license_counter,
-        ip_address_of_return_local,
+        final_service_name_config=lambda *a: "",
+        passive_service_name_config=lambda *a: "",
+        enforced_services_table=lambda hn: {},
+        plugins={},
+        hostname=hostname,
+        ip_stack_config=ip_lookup.IPStackConfig.IPv4,
+        host_ip_family=socket.AddressFamily.AF_INET,
+        host_attrs=host_attrs,
+        stored_passwords={},
+        license_counter=license_counter,
+        ip_address_of=ip_address_of_return_local,
         service_depends_on=lambda *a: (),
     )
 
@@ -896,7 +934,7 @@ def test_create_nagios_servicedefs_invalid_args(
 ) -> None:
     _patch_plugin_loading(monkeypatch, loaded_active_checks)
 
-    config_cache = config._create_config_cache(EMPTYCONFIG)
+    config_cache = config.ConfigCache(EMPTY_CONFIG)
     monkeypatch.setattr(config_cache, "active_checks", lambda *args, **kw: active_checks)
 
     monkeypatch.setattr(cmk.ccc.debug, "enabled", lambda: False)
@@ -909,13 +947,17 @@ def test_create_nagios_servicedefs_invalid_args(
     create_nagios_servicedefs(
         cfg,
         config_cache,
-        config_cache.make_passive_service_name_config(),
-        {},
-        hostname,
-        host_attrs,
-        {},
-        license_counter,
-        ip_address_of_return_local,
+        final_service_name_config=lambda *a: "",
+        passive_service_name_config=lambda *a: "",
+        enforced_services_table=lambda hn: {},
+        plugins={},
+        hostname=hostname,
+        ip_stack_config=ip_lookup.IPStackConfig.IPv4,
+        host_ip_family=socket.AddressFamily.AF_INET,
+        host_attrs=host_attrs,
+        stored_passwords={},
+        license_counter=license_counter,
+        ip_address_of=ip_address_of_return_local,
         service_depends_on=lambda *a: (),
     )
 
@@ -985,9 +1027,12 @@ def test_create_nagios_config_commands(
     )
     monkeypatch.setattr(config, "get_resource_macros", lambda: {})
 
-    config_cache = config._create_config_cache(EMPTYCONFIG)
+    config_cache = config.ConfigCache(EMPTY_CONFIG)
     monkeypatch.setattr(config_cache, "active_checks", lambda *args, **kw: active_checks)
 
+    final_service_name_config = make_final_service_name_config(
+        config_cache._loaded_config, config_cache.ruleset_matcher
+    )
     hostname = HostName("my_host")
     outfile = io.StringIO()
     cfg = NagiosConfig(outfile, [hostname])
@@ -995,12 +1040,18 @@ def test_create_nagios_config_commands(
     create_nagios_servicedefs(
         cfg,
         config_cache,
-        config_cache.make_passive_service_name_config(),
-        {},
-        hostname,
-        host_attrs,
-        {},
-        license_counter,
+        final_service_name_config=final_service_name_config,
+        passive_service_name_config=config_cache.make_passive_service_name_config(
+            final_service_name_config
+        ),
+        enforced_services_table=lambda hn: {},
+        plugins={},
+        hostname=hostname,
+        ip_stack_config=ip_lookup.IPStackConfig.IPv4,
+        host_ip_family=socket.AddressFamily.AF_INET,
+        host_attrs=host_attrs,
+        stored_passwords={},
+        license_counter=license_counter,
         ip_address_of=lambda *a: HostAddress("127.0.0.1"),
         service_depends_on=lambda *a: (),
     )

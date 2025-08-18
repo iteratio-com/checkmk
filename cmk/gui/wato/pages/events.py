@@ -7,12 +7,9 @@ import abc
 from collections.abc import Callable, Sequence
 from typing import Generic, Literal, TypeVar
 
+from livestatus import SiteConfigurations
+
 from cmk.ccc.version import Edition, edition
-
-from cmk.utils import paths
-from cmk.utils.notify_types import EventRule
-
-from cmk.gui.config import active_config
 from cmk.gui.http import request
 from cmk.gui.i18n import _
 from cmk.gui.userdb import UserSelection
@@ -31,6 +28,8 @@ from cmk.gui.valuespec import (
 from cmk.gui.watolib.hosts_and_folders import folder_tree
 from cmk.gui.watolib.mode import WatoMode
 from cmk.gui.watolib.timeperiods import TimeperiodSelection
+from cmk.utils import paths
+from cmk.utils.notify_types import EventRule
 
 from .._check_plugin_selection import CheckPluginSelection
 from .._group_selection import sorted_contact_group_choices, sorted_service_group_choices
@@ -42,7 +41,9 @@ _T_EventSpec = TypeVar("_T_EventSpec", bound=EventRule | dict)
 class ABCEventsMode(WatoMode, abc.ABC, Generic[_T_EventSpec]):
     @classmethod
     @abc.abstractmethod
-    def _rule_match_conditions(cls):
+    def _rule_match_conditions(
+        cls, service_levels: Sequence[tuple[int, str]]
+    ) -> list[DictionaryEntry | tuple[str, ListChoice]]:
         raise NotImplementedError()
 
     @classmethod
@@ -113,7 +114,9 @@ class ABCEventsMode(WatoMode, abc.ABC, Generic[_T_EventSpec]):
         ]
 
     @classmethod
-    def _generic_rule_match_conditions(cls):
+    def _generic_rule_match_conditions(
+        cls, service_levels: Sequence[tuple[int, str]]
+    ) -> list[DictionaryEntry]:
         return _simple_host_rule_match_conditions() + [
             (
                 "match_servicelabels",
@@ -277,7 +280,7 @@ class ABCEventsMode(WatoMode, abc.ABC, Generic[_T_EventSpec]):
                     choices=sorted_contact_group_choices,
                 ),
             ),
-            *cls._match_service_level_elements(),
+            *cls._match_service_level_elements(service_levels),
             (
                 "match_timeperiod",
                 TimeperiodSelection(
@@ -291,7 +294,9 @@ class ABCEventsMode(WatoMode, abc.ABC, Generic[_T_EventSpec]):
         ]
 
     @classmethod
-    def _match_service_level_elements(cls) -> list[DictionaryEntry]:
+    def _match_service_level_elements(
+        cls, service_levels: Sequence[tuple[int, str]]
+    ) -> list[DictionaryEntry]:
         if edition(paths.omd_root) is Edition.CSE:  # disabled in CSE
             return []
         return [
@@ -307,12 +312,12 @@ class ABCEventsMode(WatoMode, abc.ABC, Generic[_T_EventSpec]):
                     elements=[
                         DropdownChoice(
                             label=_("from:"),
-                            choices=active_config.mkeventd_service_levels,
+                            choices=service_levels,
                             prefix_values=True,
                         ),
                         DropdownChoice(
                             label=_(" to:"),
-                            choices=active_config.mkeventd_service_levels,
+                            choices=service_levels,
                             prefix_values=True,
                         ),
                     ],
@@ -321,7 +326,9 @@ class ABCEventsMode(WatoMode, abc.ABC, Generic[_T_EventSpec]):
         ]
 
     @abc.abstractmethod
-    def _add_change(self, *, action_name: str, text: str) -> None: ...
+    def _add_change(
+        self, *, action_name: str, text: str, use_git: bool, site_configs: SiteConfigurations
+    ) -> None: ...
 
     def _generic_rule_list_actions(
         self,
@@ -329,6 +336,9 @@ class ABCEventsMode(WatoMode, abc.ABC, Generic[_T_EventSpec]):
         what: Literal["alert_handler", "notification"],
         what_title: str,
         save_rules: Callable[[list[_T_EventSpec]], None],
+        *,
+        use_git: bool,
+        site_configs: SiteConfigurations,
     ) -> None:
         edit_rules = list(rules)
         if request.has_var("_delete"):
@@ -336,6 +346,8 @@ class ABCEventsMode(WatoMode, abc.ABC, Generic[_T_EventSpec]):
             self._add_change(
                 action_name=what + "-delete-rule",
                 text=_("Deleted %s %d") % (what_title, nr),
+                use_git=use_git,
+                site_configs=site_configs,
             )
             del edit_rules[nr]
             save_rules(edit_rules)
@@ -351,6 +363,8 @@ class ABCEventsMode(WatoMode, abc.ABC, Generic[_T_EventSpec]):
                 self._add_change(
                     action_name=what + "-move-rule",
                     text=_("Changed position of %s %d") % (what_title, from_pos),
+                    use_git=use_git,
+                    site_configs=site_configs,
                 )
 
 

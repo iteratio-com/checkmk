@@ -1,6 +1,7 @@
 load("@aspect_bazel_lib//lib:expand_template.bzl", "expand_template")
 load("@aspect_rules_lint//format:defs.bzl", "format_multirun")
 load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
+load("@bazel_skylib//rules:native_binary.bzl", "native_binary")
 load("@cmk_requirements//:requirements.bzl", "requirement")
 load("@rules_mypy//mypy:mypy.bzl", "mypy_cli")
 
@@ -16,20 +17,17 @@ mypy_cli(
 # TODO: Collect here all formatters we're currently using
 format_multirun(
     name = "format",
+    c = "@clang-linux-x86_64//:bin/clang-format",
+    cc = "@clang-linux-x86_64//:bin/clang-format",
     python = "@aspect_rules_lint//format:ruff",
     rust = "@rules_rust//tools/upstream_wrapper:rustfmt",
-    toml = ":taplo_wrapper",
+    toml = ":taplo_quiet",
     visibility = ["//visibility:public"],
 )
 
-alias(
-    name = "clang-format",
-    actual = "@llvm_toolchain//:clang-format",
-)
-
-alias(
-    name = "clangtidy_bin",
-    actual = "@llvm_toolchain//:clang-tidy",
+native_binary(
+    name = "clang_tidy",
+    src = "@clang-linux-x86_64//:bin/clang-tidy",
 )
 
 filegroup(
@@ -75,23 +73,29 @@ sh_binary(
 )
 
 genrule(
-    name = "taplo_bin",
+    name = "taplo",
     srcs = ["@taplo.gz//file"],
-    outs = ["taplo"],
+    outs = ["taplo_bin"],
     cmd = "gunzip -c $< > $@",
     executable = True,
 )
 
 expand_template(
-    name = "taplo_wrapper",
+    name = "taplo_quiet_tp",
     out = "taplo_wrapper.sh",
     data = [":taplo_bin"],
-    is_executable = True,
     substitutions = {"{taplo_bin}": "$(execpath :taplo_bin)"},
     template = [
         "#!/bin/sh",
-        'exec env RUST_LOG=warn "./{taplo_bin}" "$@"',
+        'exec env RUST_LOG=warn "$BUILD_WORKSPACE_DIRECTORY/{taplo_bin}" "$@"',
+        "",
     ],
+)
+
+sh_binary(
+    name = "taplo_quiet",
+    srcs = [":taplo_quiet_tp"],
+    data = [":taplo"],
 )
 
 # TODO: Should we use buildifier more in the way aspect does?

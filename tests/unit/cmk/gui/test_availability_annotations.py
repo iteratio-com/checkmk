@@ -5,7 +5,7 @@
 
 
 import datetime
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Sequence
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -13,7 +13,8 @@ import time_machine
 from pytest import MonkeyPatch
 
 import cmk.utils.render
-
+from cmk.ccc.hostaddress import HostName
+from cmk.ccc.site import SiteId
 from cmk.gui import availability
 
 
@@ -256,9 +257,12 @@ def test_relevant_annotation_times(
     ],
 )
 def test_get_annotation_date_render_function(
-    annotation_times: Sequence[tuple[int, int]], result: str
+    annotation_times: Sequence[tuple[int, int]], result: Callable
 ) -> None:
-    annotations = [((None, None, None), {"from": s, "until": e}) for s, e in annotation_times]
+    annotations: list[tuple[availability.SiteHostSvc, availability.AVAnnotationEntry]] = [
+        ((SiteId("foo"), HostName("checkmk.com"), None), {"from": s, "until": e})
+        for s, e in annotation_times
+    ]
     with time_machine.travel(datetime.datetime.fromtimestamp(1572253746, tz=ZoneInfo("CET"))):
         assert (
             availability.get_annotation_date_render_function(
@@ -440,9 +444,9 @@ def test_get_annotation_date_render_function(
     ],
 )
 def test_get_relevant_annotations(
-    annotations: Mapping[tuple[str, str, None | str], Sequence[object]],
+    annotations: availability.AVAnnotations,
     by_host: availability.AVRawData,
-    avoptions: Mapping[str, object],
+    avoptions: availability.AVOptions,
     result: Sequence[tuple[object, object]],
 ) -> None:
     assert (

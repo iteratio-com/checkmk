@@ -21,17 +21,13 @@ from livestatus import (
 )
 
 import cmk.ccc.version as cmk_version
-from cmk.ccc import store
-from cmk.ccc.plugin_registry import Registry
-from cmk.ccc.site import omd_site, SiteId
-
-from cmk.utils import paths
-from cmk.utils.licensing.handler import LicenseState
-
 import cmk.gui.sites
 import cmk.gui.watolib.activate_changes
 import cmk.gui.watolib.changes
 import cmk.gui.watolib.sidebar_reload
+from cmk.ccc import store
+from cmk.ccc.plugin_registry import Registry
+from cmk.ccc.site import omd_site, SiteId
 from cmk.gui import hooks, log
 from cmk.gui.config import (
     load_config,
@@ -82,6 +78,8 @@ from cmk.gui.watolib.config_sync import create_distributed_wato_files
 from cmk.gui.watolib.global_settings import load_configuration_settings
 from cmk.gui.watolib.mode import mode_registry
 from cmk.gui.watolib.simple_config_file import ConfigFileRegistry, WatoSingleConfigFile
+from cmk.utils import paths
+from cmk.utils.licensing.handler import LicenseState
 
 
 class SitesConfigFile(WatoSingleConfigFile[SiteConfigurations]):
@@ -252,9 +250,7 @@ class SiteManagement:
                     ),
                 ),
             ],
-            default_value="all"
-            if site_id is None or site_is_local(site_configuration, site_id)
-            else None,
+            default_value="all" if site_id is None or site_is_local(site_configuration) else None,
             help=_(
                 "By default the users are synchronized automatically in the interval configured "
                 "in the connection. For example the LDAP connector synchronizes the users every "
@@ -294,10 +290,12 @@ class SiteManagement:
     @classmethod
     def get_connected_sites_to_update(
         cls,
+        *,
         new_or_deleted_connection: bool,
         modified_site: SiteId,
         current_config: SiteConfiguration,
-        old_config: SiteConfiguration | None = None,
+        old_config: SiteConfiguration | None,
+        site_configs: SiteConfigurations,
     ) -> set[SiteId]:
         connected = {omd_site()}
 
@@ -305,7 +303,7 @@ class SiteManagement:
             old_config
             and is_replication_enabled(old_config) != is_replication_enabled(current_config)
         ):
-            connected |= set(wato_slave_sites().keys())
+            connected |= set(wato_slave_sites(site_configs).keys())
             return connected
 
         if old_config is None:
@@ -569,7 +567,11 @@ class SiteManagement:
         domains = cls._affected_config_domains()
 
         connected_sites = cls.get_connected_sites_to_update(
-            new_or_deleted_connection=True, modified_site=site_id, current_config=all_sites[site_id]
+            new_or_deleted_connection=True,
+            modified_site=site_id,
+            current_config=all_sites[site_id],
+            old_config=None,
+            site_configs=all_sites,
         )
 
         del all_sites[site_id]
@@ -697,28 +699,24 @@ def _encode_socket_for_nagvis(site_id: SiteId, site: SiteConfiguration) -> str:
     return cmk.gui.sites.encode_socket_for_livestatus(site_id, site)
 
 
-# Makes sure, that in distributed mode we monitor only
-# the hosts that are directly assigned to our (the local)
-# site.
-def _update_distributed_wato_file(sites):
-    # Note: we cannot access config.sites here, since we
-    # are currently in the process of saving the new
-    # site configuration.
+def _update_distributed_wato_file(sites: SiteConfigurations) -> None:
+    """Update the the distributed_wato.mk in the site where the site configuration is saved
+
+    Makes sure, that in distributed mode we monitor only the hosts that are directly assigned
+    to our (the local) site.
+    """
     distributed = False
     for siteid, site in sites.items():
         if is_replication_enabled(site):
             distributed = True
-        if site_is_local(site, siteid):
+        if site_is_local(site):
             create_distributed_wato_files(
                 base_dir=cmk.utils.paths.omd_root,
                 site_id=siteid,
                 is_remote=False,
             )
 
-    # Remove the distributed wato file
-    # a) If there is no distributed Setup setup
-    # b) If the local site could not be gathered
-    if not distributed:  # or not found_local:
+    if not distributed:
         _delete_distributed_wato_file()
 
 
@@ -732,17 +730,17 @@ def is_livestatus_encrypted(site: SiteConfiguration) -> bool:
     )
 
 
-def site_globals_editable(site_id: SiteId, site: SiteConfiguration) -> bool:
+def site_globals_editable(all_sites: SiteConfigurations, site: SiteConfiguration) -> bool:
     # Site is a remote site of another site. Allow to edit probably pushed site
     # specific globals when remote Setup is enabled
-    if is_wato_slave_site():
+    if is_wato_slave_site(all_sites):
         return True
 
     # Local site: Don't enable site specific locals when no remote sites configured
-    if not has_wato_slave_sites():
+    if not has_wato_slave_sites(all_sites):
         return False
 
-    return is_replication_enabled(site) or site_is_local(site, site_id)
+    return is_replication_enabled(site) or site_is_local(site)
 
 
 def _delete_distributed_wato_file():

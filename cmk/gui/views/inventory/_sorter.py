@@ -8,11 +8,12 @@ from typing import TypedDict
 
 from cmk.utils.structured_data import SDKey, SDPath
 
-from ._display_hints import AttributeDisplayHint, ColumnDisplayHint
+from ._display_hints import AttributeDisplayHint, ColumnDisplayHintOfView
 from .registry import SortFunction
 
 
 class SorterFromHint(TypedDict):
+    name: str
     title: str
     columns: Sequence[str]
     load_inv: bool
@@ -23,6 +24,7 @@ def attribute_sorter_from_hint(
     path: SDPath, key: SDKey, hint: AttributeDisplayHint
 ) -> SorterFromHint:
     return SorterFromHint(
+        name=hint.name,
         title=hint.long_inventory_title,
         columns=["host_inventory", "host_structured_status"],
         load_inv=True,
@@ -33,10 +35,11 @@ def attribute_sorter_from_hint(
     )
 
 
-def column_sorter_from_hint(ident: str, hint: ColumnDisplayHint) -> SorterFromHint:
+def column_sorter_from_hint(hint: ColumnDisplayHintOfView) -> SorterFromHint:
     return SorterFromHint(
+        name=hint.name,
         title=hint.long_inventory_title,
-        columns=[ident],
+        columns=[hint.name],
         load_inv=False,
-        cmp=lambda left, right: hint.sort_function(left.get(ident), right.get(ident)),
+        cmp=lambda left, right: hint.sort_function(left.get(hint.name), right.get(hint.name)),
     )

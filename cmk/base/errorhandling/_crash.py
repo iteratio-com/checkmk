@@ -11,21 +11,17 @@ from typing import Any, Literal, TypedDict
 
 import cmk.ccc.debug
 import cmk.ccc.version as cmk_version
+import cmk.utils.encoding
+import cmk.utils.paths
 from cmk.ccc import crash_reporting
 from cmk.ccc.crash_reporting import CrashInfo
 from cmk.ccc.hostaddress import HostName
-
-import cmk.utils.encoding
-import cmk.utils.paths
+from cmk.checkengine.plugins import CheckPluginName
+from cmk.piggyback.backend import get_messages_for
+from cmk.snmplib import SNMPBackendEnum
 from cmk.utils.agentdatatype import AgentRawData
 from cmk.utils.sectionname import SectionName
 from cmk.utils.servicename import ServiceName
-
-from cmk.snmplib import SNMPBackendEnum
-
-from cmk.checkengine.plugins import CheckPluginName
-
-from cmk.piggyback.backend import get_messages_for
 
 CrashReportStore = crash_reporting.CrashReportStore
 
@@ -43,8 +39,8 @@ def create_section_crash_dump(
     text = f"{operation.title()} of section {section_name} failed"
     try:
         crash = SectionCrashReport(
-            cmk.utils.paths.crash_dir,
-            SectionCrashReport.make_crash_info(
+            omd_root=cmk.utils.paths.omd_root,
+            crash_info=SectionCrashReport.make_crash_info(
                 cmk_version.get_general_version_infos(cmk.utils.paths.omd_root),
                 details={
                     "section_name": str(section_name),
@@ -83,8 +79,8 @@ def create_check_crash_dump(
     text = "check failed - please submit a crash report!"
     try:
         crash = CheckCrashReport(
-            cmk.utils.paths.crash_dir,
-            CheckCrashReport.make_crash_info(
+            omd_root=cmk.utils.paths.omd_root,
+            crash_info=CheckCrashReport.make_crash_info(
                 cmk_version.get_general_version_infos(cmk.utils.paths.omd_root),
                 CheckDetails(
                     check_output=text,
@@ -113,12 +109,13 @@ def create_check_crash_dump(
 class CrashReportWithAgentOutput[T](crash_reporting.ABCCrashReport[T]):
     def __init__(
         self,
-        crashdir: Path,
+        *,
+        omd_root: Path,
         crash_info: CrashInfo,
         snmp_info: bytes | None = None,
         agent_output: bytes | None = None,
     ) -> None:
-        super().__init__(crashdir, crash_info)
+        super().__init__(omd_root=omd_root, crash_info=crash_info)
         self.snmp_info = snmp_info
         self.agent_output = agent_output
 

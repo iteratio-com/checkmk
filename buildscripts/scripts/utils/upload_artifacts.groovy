@@ -66,30 +66,8 @@ def download_version_dir(DOWNLOAD_SOURCE,
 }
 /* groovylint-enable ParameterCount */
 
-def upload_version_dir(SOURCE_PATH, UPLOAD_DEST, PORT, EXCLUDE_PATTERN="", ADDITONAL_ARGS="") {
-    println("""
-        ||== upload_version_dir ====================================================================
-        || SOURCE_PATH      = |${SOURCE_PATH}|
-        || UPLOAD_DEST      = |${UPLOAD_DEST}|
-        || PORT             = |${PORT}|
-        || EXCLUDE_PATTERN  = |${EXCLUDE_PATTERN}|
-        || ADDITONAL_ARGS   = |${ADDITONAL_ARGS}|
-        ||==========================================================================================
-        """.stripMargin());
-
-    withCredentials([file(credentialsId: 'Release_Key', variable: 'RELEASE_KEY')]) {    // groovylint-disable DuplicateMapLiteral
-        sh("""
-            rsync -av \
-                ${ADDITONAL_ARGS} \
-                -e "ssh -o StrictHostKeyChecking=no -i ${RELEASE_KEY} -p ${PORT}" \
-                --exclude=${EXCLUDE_PATTERN} \
-                ${SOURCE_PATH} \
-                ${UPLOAD_DEST}
-        """);
-    }
-}
-
-def upload_via_rsync(archive_base, cmk_version, filename, upload_dest, upload_port) {
+/* groovylint-disable ParameterCount */
+def upload_via_rsync(archive_base, cmk_version, filename, upload_dest, upload_port, exclude_pattern="") {
     println("""
         ||== upload_via_rsync() ================================================
         || archive_base = |${archive_base}|
@@ -97,6 +75,7 @@ def upload_via_rsync(archive_base, cmk_version, filename, upload_dest, upload_po
         || filename =     |${filename}|
         || upload_dest =  |${upload_dest}|
         || upload_port =  |${upload_port}|
+        || exclude_pattern  = |${exclude_pattern}|
         ||======================================================================
         """.stripMargin());
 
@@ -105,6 +84,7 @@ def upload_via_rsync(archive_base, cmk_version, filename, upload_dest, upload_po
         sh("""
             rsync -av --relative \
                 --exclude '*dbgsym*.deb' \
+                --exclude=${exclude_pattern} \
                 -e "ssh -o StrictHostKeyChecking=no \
                 -i ${RELEASE_KEY} -p ${upload_port}" \
                 ${archive_base}/./${cmk_version}/${filename} \
@@ -113,6 +93,7 @@ def upload_via_rsync(archive_base, cmk_version, filename, upload_dest, upload_po
         """);
     }
 }
+/* groovylint-enable ParameterCount */
 
 def upload_files_to_nexus(SOURCE_PATTERN, UPLOAD_DEST) {
     println("""

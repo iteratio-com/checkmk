@@ -33,16 +33,18 @@ FILES_IGNORED = {
     Path("pnpm-lock.yaml"),
     Path(".editorconfig"),
     Path("eslint.config.js"),
+    Path("gettext.config.js"),
     Path(".f12"),
     Path(".gitignore"),
+    Path(".gitattributes"),
     Path(".prettierignore"),
     Path(".prettierrc.json"),
     Path(".npmrc"),
     Path("README.md"),
     Path("index.html"),
-    Path("src/components/_demo/index.html"),
+    Path("demo/index.html"),
     Path("env.d.ts"),
-    Path("src/components/_demo/public/mockServiceWorker.js"),  # auto generated
+    Path("demo/public/mockServiceWorker.js"),  # auto generated
 }
 
 ROOT_FOLDERS_IGNORED = {

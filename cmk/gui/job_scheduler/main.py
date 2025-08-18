@@ -16,21 +16,17 @@ from typing import override
 from setproctitle import setproctitle
 
 import cmk.ccc.version as cmk_version
+from cmk import trace
 from cmk.ccc import crash_reporting
-from cmk.ccc.crash_reporting import VersionInfo
 from cmk.ccc.daemon import daemonize, pid_file_lock
 from cmk.ccc.exceptions import MKGeneralException
 from cmk.ccc.site import get_omd_config, omd_site, resource_attributes_from_config
-
-from cmk.utils import paths
-
 from cmk.gui import log, single_global_setting
 from cmk.gui.background_job import job_registry, ThreadedJobExecutor
 from cmk.gui.utils import get_failed_plugins
-
-from cmk import trace
 from cmk.trace.export import exporter_from_config, init_span_processor
 from cmk.trace.logs import add_span_log_handler
+from cmk.utils import paths
 
 from ._fast_api_app import get_application, make_process_health
 from ._scheduler import run_scheduler_threaded, SchedulerState
@@ -43,7 +39,7 @@ def _pid_file(omd_root: Path) -> Path:
     return omd_root / "tmp" / "run" / "cmk-ui-job-scheduler.pid"
 
 
-class JobSchedulerCrashReport(crash_reporting.ABCCrashReport[VersionInfo]):
+class JobSchedulerCrashReport(crash_reporting.ABCCrashReport[None]):
     @override
     @classmethod
     def type(cls) -> str:
@@ -52,9 +48,9 @@ class JobSchedulerCrashReport(crash_reporting.ABCCrashReport[VersionInfo]):
 
 def default_crash_report_callback(_exc: Exception) -> str:
     crash = JobSchedulerCrashReport(
-        paths.crash_dir,
-        JobSchedulerCrashReport.make_crash_info(
-            cmk_version.get_general_version_infos(paths.omd_root)
+        omd_root=paths.omd_root,
+        crash_info=JobSchedulerCrashReport.make_crash_info(
+            cmk_version.get_general_version_infos(paths.omd_root), None
         ),
     )
     crash_reporting.CrashReportStore().save(crash)

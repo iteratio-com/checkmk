@@ -9,15 +9,12 @@ import time
 from collections.abc import Callable, Iterable, Mapping, Sequence, Set
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Final, Generic, NamedTuple, Self, TypeVar
+from typing import Any, Final, Generic, NamedTuple, NewType, Self, TypeVar
 
 from cmk.ccc import debug
 from cmk.ccc.hostaddress import HostName
-
-from cmk.utils.sectionname import SectionMap, SectionName
-from cmk.utils.validatedstr import ValidatedString
-
 from cmk.piggyback.backend import store_piggyback_raw_data
+from cmk.utils.sectionname import SectionMap, SectionName
 
 from .fetcher import HostKey, SourceType
 from .parser import HostSections
@@ -29,8 +26,7 @@ ParsedSectionContent = object  # the parse function may return *anything*.
 _TSeq = TypeVar("_TSeq", bound=Sequence)
 
 
-class ParsedSectionName(ValidatedString):
-    pass
+ParsedSectionName = NewType("ParsedSectionName", str)
 
 
 @dataclass(frozen=True)

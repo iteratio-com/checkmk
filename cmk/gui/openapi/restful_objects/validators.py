@@ -12,15 +12,17 @@ import http.client
 import json
 import logging
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
-from typing import Any, NoReturn, Self
+from typing import Any, Literal, NoReturn, Self
 from urllib import parse
 
 import pydantic
 from marshmallow import fields as ma_fields
 from marshmallow import Schema, ValidationError
+from pydantic_core import ErrorDetails
 from werkzeug.datastructures import MIMEAccept, MultiDict
 from werkzeug.http import parse_options_header
 
+from cmk import trace
 from cmk.gui import hooks
 from cmk.gui import http as cmk_http
 from cmk.gui.exceptions import MKAuthException
@@ -31,7 +33,7 @@ from cmk.gui.openapi.permission_tracking import (
 )
 from cmk.gui.openapi.restful_objects.content_decoder import decode
 from cmk.gui.openapi.restful_objects.params import path_parameters
-from cmk.gui.openapi.restful_objects.type_defs import StatusCodeInt
+from cmk.gui.openapi.restful_objects.type_defs import ETagBehaviour, StatusCodeInt
 from cmk.gui.openapi.utils import (
     EXT,
     FIELDS,
@@ -43,11 +45,10 @@ from cmk.gui.openapi.utils import (
     RestAPIQueryPathValidationException,
     RestAPIRequestContentTypeException,
     RestAPIRequestDataValidationException,
+    RestAPIRequestGeneralException,
     RestAPIResponseException,
 )
 from cmk.gui.utils import permission_verification as permissions
-
-from cmk import trace
 
 tracer = trace.get_tracer()
 _logger = logging.getLogger(__name__)
@@ -312,19 +313,31 @@ class RequestDataValidator:
     @staticmethod
     def raise_formatted_pydantic_error(
         validation_error: pydantic.ValidationError,
+        status_code: Literal[400, 401, 403, 404, 406, 415] = 400,
     ) -> NoReturn:
         """Convert a Pydantic validation error to a RestAPIRequestDataValidationException."""
         # the context may contain the actual exception, which is usually not serializable
         # the msg contains the exception details, which is hopefully enough to understand the issue
-        errors = {
-            RequestDataValidator._format_pydantic_location(error["loc"]): error
-            for error in validation_error.errors(include_context=False)
-        }
-        raise RestAPIRequestDataValidationException(
-            title=http.client.responses[400],
-            detail=f"These fields have problems: {_format_fields(errors)}",
-            fields=FIELDS(errors),
+        raise RequestDataValidator.format_error_details(
+            status_code=status_code,
+            errors=validation_error.errors(include_context=False),
         ) from validation_error
+
+    @staticmethod
+    def format_error_details(
+        errors: Iterable[ErrorDetails],
+        status_code: Literal[400, 401, 403, 404, 406, 415] = 400,
+    ) -> RestAPIRequestGeneralException:
+        """Create a RestAPIRequestGeneralException from error details."""
+        error_dict = {
+            RequestDataValidator._format_pydantic_location(error["loc"]): error for error in errors
+        }
+        return RestAPIRequestGeneralException(
+            status=status_code,
+            title=http.client.responses[status_code],
+            detail=f"These fields have problems: {_format_fields(error_dict)}",
+            fields=FIELDS(error_dict),
+        )
 
 
 class HeaderValidator:
@@ -498,6 +511,30 @@ class ResponseValidator:
                         "error": str(exc),
                         "orig": data,
                     },
+                ),
+            )
+
+    @staticmethod
+    def validate_etag_response(
+        etag_header: str | None,
+        etag_behaviour: ETagBehaviour | None,
+    ) -> None:
+        """Validate the ETag header in the response."""
+        if etag_behaviour is None or etag_behaviour == "input":
+            if etag_header is None:
+                return
+            raise RestAPIResponseException(
+                title="ETag header not expected",
+                detail=(
+                    "This endpoint is not configured to respond with an ETag header. "
+                    "Please update the endpoint behaviour."
+                ),
+            )
+        if etag_header is None:
+            raise RestAPIResponseException(
+                title="ETag header expected",
+                detail=(
+                    "This endpoint is configured to respond with an ETag header, but none was returned."
                 ),
             )
 

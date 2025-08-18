@@ -3,8 +3,6 @@
 # This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 # conditions defined in the file COPYING, which is part of this source code package.
 
-import cmk.utils.paths
-
 import cmk.gui.plugins.wato as api_module  # pylint: disable=cmk-module-layer-violation
 import cmk.gui.plugins.wato.utils as wato_utils  # pylint: disable=cmk-module-layer-violation
 import cmk.gui.valuespec
@@ -28,6 +26,7 @@ import cmk.gui.watolib.timeperiods
 import cmk.gui.watolib.translation
 import cmk.gui.watolib.user_scripts
 import cmk.gui.watolib.utils
+import cmk.utils.paths
 from cmk.gui.hooks import register_hook
 from cmk.gui.plugins.wato import datasource_programs  # pylint: disable=cmk-module-layer-violation
 from cmk.gui.plugins.wato.utils import (  # pylint: disable=cmk-module-layer-violation
@@ -58,12 +57,7 @@ from cmk.gui.watolib.notification_parameter import (
     NotificationParameter,
     register_notification_parameters,
 )
-
-from ._check_mk_configuration import monitoring_macro_help, PluginCommandLine, UserIconOrAction
-from ._group_selection import ContactGroupSelection, HostGroupSelection, ServiceGroupSelection
-from ._http_proxy import HTTPProxyInput, HTTPProxyReference
-from ._permissions import PERMISSION_SECTION_WATO
-from ._rulespec_groups import (
+from cmk.gui.watolib.rulespec_groups import (
     RulespecGroupActiveChecks,
     RulespecGroupDatasourcePrograms,
     RulespecGroupDatasourceProgramsApps,
@@ -75,6 +69,11 @@ from ._rulespec_groups import (
     RulespecGroupIntegrateOtherServices,
     RulespecGroupVMCloudContainer,
 )
+
+from ._check_mk_configuration import monitoring_macro_help, PluginCommandLine, UserIconOrAction
+from ._group_selection import ContactGroupSelection, HostGroupSelection, ServiceGroupSelection
+from ._http_proxy import HTTPProxyInput, HTTPProxyReference
+from ._permissions import PERMISSION_SECTION_WATO
 from .pages._password_store_valuespecs import (
     IndividualOrStoredPassword,
     MigrateToIndividualOrStoredPassword,

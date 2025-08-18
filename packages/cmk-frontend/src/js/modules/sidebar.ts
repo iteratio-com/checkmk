@@ -200,6 +200,7 @@ function snapinDrop(event: MouseEvent, targetpos: HTMLElement): boolean | void {
     if (targetpos != null)
         before = "&before=" + targetpos.id.replace("snapin_container_", "");
     call_ajax("sidebar_move_snapin.py?name=" + thisId + before);
+    refresh_single_snapin(thisId);
 }
 
 function snapinTerminateDrag(): true | void {
@@ -479,8 +480,7 @@ export function add_snapin(name: string) {
 
 // Removes the snapin from the current sidebar and informs the server for persistance
 export function remove_sidebar_snapin(oLink: HTMLButtonElement, url: string) {
-    const container = oLink.parentNode!.parentNode!.parentNode!
-        .parentNode as HTMLElement;
+    const container = oLink.parentNode!.parentNode as HTMLElement;
     const id = container.id.replace("snapin_container_", "");
 
     call_ajax(url, {
@@ -552,11 +552,26 @@ export function toggle_sidebar_snapin(
 
     // FIXME: Does oContent really exist?
     const closed = oContent!.style.display == "none";
+    const snapinContainer = oH2.parentNode!.parentNode;
+    const showMore = snapinContainer!.querySelector(
+        ".moresnapin",
+    ) as HTMLElement;
+    const closeSnapin = snapinContainer!.querySelector(
+        ".closesnapin",
+    ) as HTMLElement;
     if (closed) {
+        if (showMore) {
+            remove_class(showMore, "hidden");
+        }
+        remove_class(closeSnapin, "hidden");
         oContent!.style.display = "block";
         change_class(oHead!, "closed", "open");
         change_class(oImg!, "closed", "open");
     } else {
+        if (showMore) {
+            add_class(showMore, "hidden");
+        }
+        add_class(closeSnapin, "hidden");
         oContent!.style.display = "none";
         change_class(oHead!, "open", "closed");
         change_class(oImg!, "open", "closed");
@@ -625,6 +640,8 @@ export function reset_sidebar_scheduler() {
     execute_sidebar_scheduler();
 }
 
+let pending_changes_counter = 0;
+
 export function execute_sidebar_scheduler() {
     g_seconds_to_update =
         g_seconds_to_update !== null
@@ -638,6 +655,11 @@ export function execute_sidebar_scheduler() {
             execute_sidebar_scheduler();
         }, 250);
         return;
+    }
+
+    pending_changes_counter = (pending_changes_counter + 1) % 3;
+    if (pending_changes_counter === 0) {
+        update_pending_changes();
     }
 
     const to_be_updated: string[] = [];
@@ -1173,6 +1195,10 @@ export function init_messages_and_werks(
 ) {
     g_sidebar_notify_interval = interval;
     create_initial_ids("user", "messages", "user_message.py");
+    create_initial_ids("changes", "changes", "wato.py?mode=changelog");
+
+    update_pending_changes();
+
     // Are there pending messages? Render the initial state of
     // trigger button
     update_messages();
@@ -1258,6 +1284,36 @@ export function update_message_trigger(msg_text: string, msg_count: number) {
 
 function mark_message_read(msg_id: string) {
     call_ajax("sidebar_message_read.py?id=" + msg_id);
+}
+
+interface AjaxSidebarGetPendingChanges {
+    number_of_pending_changes: number;
+}
+
+function handle_pending_changes(_data: any, response_text: string) {
+    const response: CMKAjaxReponse<AjaxSidebarGetPendingChanges> =
+        JSON.parse(response_text);
+    if (response.result_code != 0) {
+        return;
+    }
+    const l = document.getElementById("changes_label");
+    if (l) {
+        if (response.result.number_of_pending_changes === 0) {
+            l.style.display = "none";
+            return;
+        }
+        l.innerText =
+            response.result.number_of_pending_changes > 10
+                ? "10+"
+                : response.result.number_of_pending_changes.toString();
+        l.style.display = "inline";
+    }
+}
+
+function update_pending_changes() {
+    call_ajax("ajax_sidebar_get_number_of_pending_changes.py", {
+        response_handler: handle_pending_changes,
+    });
 }
 
 interface AjaxSidebarGetUnackIncompWerks {

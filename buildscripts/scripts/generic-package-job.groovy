@@ -3,7 +3,7 @@
 /// file: generic-package-job.groovy
 
 def secret_list(secret_vars) {
-    return secret_vars ? secret_vars.split(',') : [];
+    return secret_vars ? secret_vars.split(' ') : [];
 }
 
 def validate_parameters() {
@@ -17,10 +17,9 @@ def main() {
         "PACKAGE_PATH",
         "SECRET_VARS",
         "COMMAND_LINE",
-        "DEPENDENCY_PATH_HASHES",
     ]);
 
-    validate_parameters()
+    validate_parameters();
 
     def helper = load("${checkout_dir}/buildscripts/scripts/utils/test_helper.groovy");
     currentBuild.description = "Running ${PACKAGE_PATH}<br>${currentBuild.description}";
@@ -28,7 +27,7 @@ def main() {
 
     def output_file = PACKAGE_PATH.split("/")[-1] + ".log"
     dir(checkout_dir) {
-        inside_container(init: true) {
+        inside_container(init: true, privileged: true, set_docker_group_id: true) {
             withCredentials(secret_list(SECRET_VARS).collect { string(credentialsId: it, variable: it) }) {
                 helper.execute_test([
                     name       : PACKAGE_PATH,
@@ -41,10 +40,6 @@ def main() {
         archiveArtifacts(
             artifacts: "${output_file}",
             fingerprint: true,
-        );
-        setCustomBuildProperty(
-            key: "path_hashes",
-            value: directory_hashes(DEPENDENCY_PATH_HASHES.split(",").grep().collect {keyvalue -> keyvalue.split("=")[0]}),
         );
     }
 }

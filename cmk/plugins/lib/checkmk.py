@@ -58,8 +58,6 @@ class CachedPlugin(NamedTuple):
 
 class CachedPluginsSection(NamedTuple):
     timeout: list[CachedPlugin] | None
-    # "killfailed" has been removed from the agent in 2.4
-    # Currently it is still used by mk_oracle
     killfailed: list[CachedPlugin] | None
 
 
@@ -68,6 +66,7 @@ class CertInfoController(BaseModel):
     issuer: str
 
     @field_validator("to", mode="before")
+    @classmethod
     def _parse_cert_validity(cls, value: str | datetime) -> datetime:
         return (
             value
@@ -118,6 +117,7 @@ class CertInfo(BaseModel):
     common_name: str | None = Field(None)
 
     @field_validator("not_after", mode="before")
+    @classmethod
     def _validate_not_after(cls, value: str | datetime | None) -> datetime | None:
         """convert not_after from str to datetime
 

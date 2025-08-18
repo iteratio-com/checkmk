@@ -13,14 +13,14 @@ from collections.abc import Iterable, Iterator
 from contextlib import contextmanager
 from typing import Literal
 
+from livestatus import SiteConfigurations
+
 import cmk.ccc.version as cmk_version
 from cmk.ccc.exceptions import MKException
 from cmk.ccc.user import UserId
-
-from cmk.utils import paths
-
 from cmk.gui import crash_handler, visuals
 from cmk.gui.breadcrumb import Breadcrumb
+from cmk.gui.config import Config
 from cmk.gui.crash_handler import GUIDetails
 from cmk.gui.exceptions import MKAuthException, MKMissingDataError, MKUserError
 from cmk.gui.graphing._utils import MKCombinedGraphLimitExceededError
@@ -52,8 +52,8 @@ from cmk.gui.utils.output_funnel import output_funnel
 from cmk.gui.utils.urls import makeuri, makeuri_contextless
 from cmk.gui.views.page_ajax_filters import ABCAjaxInitialFilters
 from cmk.gui.visuals.info import visual_info_registry
-from cmk.gui.watolib.activate_changes import get_pending_changes_tooltip, has_pending_changes
 from cmk.gui.watolib.users import get_enabled_remote_sites_for_logged_in_user
+from cmk.utils import paths
 
 from ._network_topology import get_topology_context_and_filters
 from .breadcrumb import dashboard_breadcrumb
@@ -91,13 +91,13 @@ DASHLET_PADDING = (
 RASTER = 10  # Raster the dashlet coords are measured in (px)
 
 
-def page_dashboard() -> None:
+def page_dashboard(config: Config) -> None:
     name = request.get_ascii_input_mandatory("name", "")
     if not name:
         name = _get_default_dashboard_name()
         request.set_var("name", name)  # make sure that URL context is always complete
 
-    draw_dashboard(name)
+    _draw_dashboard(name, config.sites)
 
 
 def _get_default_dashboard_name() -> str:
@@ -121,8 +121,7 @@ def _get_default_dashboard_name() -> str:
     return "main" if user.may("general.see_all") and user.may("dashboard.main") else "problems"
 
 
-# Actual rendering function
-def draw_dashboard(name: DashboardName) -> None:
+def _draw_dashboard(name: DashboardName, site_configs: SiteConfigurations) -> None:
     mode = "display"
     if request.var("edit") == "1":
         mode = "edit"
@@ -187,7 +186,7 @@ def draw_dashboard(name: DashboardName) -> None:
     )
 
     # replication is only needed if we have remote sites
-    if need_replication and get_enabled_remote_sites_for_logged_in_user(user):
+    if need_replication and get_enabled_remote_sites_for_logged_in_user(user, site_configs):
         save_and_replicate_all_dashboards(
             makeuri(request, [("name", name), ("edit", "1" if mode == "edit" else "0")])
         )
@@ -497,8 +496,6 @@ def _page_menu(
             ),
         ],
         breadcrumb=breadcrumb,
-        has_pending_changes=has_pending_changes(),
-        pending_changes_tooltip=get_pending_changes_tooltip(),
         # Disable suggestion rendering because it makes the page content shift downwards, which is
         # unwanted on unscrollable dashboards
         enable_suggestions=False,
@@ -1155,7 +1152,7 @@ def draw_dashlet(dashlet: Dashlet, content: HTML | str, title: HTML | str) -> No
     html.close_div()
 
 
-def ajax_dashlet() -> None:
+def ajax_dashlet(config: Config) -> None:
     """Render the inner HTML of a dashlet"""
     name = request.get_ascii_input_mandatory("name", "")
     if not name:

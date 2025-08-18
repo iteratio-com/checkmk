@@ -8,12 +8,9 @@ from collections.abc import Collection, Iterable, Mapping, Sequence
 from typing import override, Protocol
 
 from cmk.ccc.exceptions import MKGeneralException
-
-from cmk.utils.rulesets.definition import RuleGroup, RuleGroupType
-
 from cmk.gui import forms
 from cmk.gui.breadcrumb import Breadcrumb, BreadcrumbItem
-from cmk.gui.config import active_config
+from cmk.gui.config import Config
 from cmk.gui.exceptions import MKUserError
 from cmk.gui.htmllib.generator import HTMLWriter
 from cmk.gui.htmllib.html import html
@@ -63,6 +60,7 @@ from cmk.gui.watolib.hosts_and_folders import make_action_link
 from cmk.gui.watolib.main_menu import ABCMainModule, MainModuleRegistry, MainModuleTopic, MenuItem
 from cmk.gui.watolib.mode import mode_url, ModeRegistry, redirect, WatoMode
 from cmk.gui.watolib.rulespecs import rulespec_registry
+from cmk.utils.rulesets.definition import RuleGroup, RuleGroupType
 
 
 def register(main_module_registry: MainModuleRegistry, mode_registry: ModeRegistry) -> None:
@@ -135,7 +133,7 @@ class ModeQuickSetupSpecialAgent(WatoMode):
             return super().breadcrumb()
 
     @override
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         return make_simple_form_page_menu(
             title=_("Configuration"),
             breadcrumb=breadcrumb,
@@ -144,7 +142,7 @@ class ModeQuickSetupSpecialAgent(WatoMode):
         )
 
     @override
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         enable_page_menu_entry(html, "inline_help")
         html.vue_component(
             component_name="cmk-quick-setup",
@@ -213,7 +211,7 @@ class ModeEditConfigurationBundles(WatoMode):
         raise MKGeneralException("Not implemented bundle group type")
 
     @override
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         menu = PageMenu(
             dropdowns=[
                 PageMenuDropdown(
@@ -245,8 +243,8 @@ class ModeEditConfigurationBundles(WatoMode):
         return menu
 
     @override
-    def page(self) -> None:
-        if not active_config.wato_hide_varnames:
+    def page(self, config: Config) -> None:
+        if not config.wato_hide_varnames:
             display_varname = (
                 '%s["%s"]' % tuple(self._name.split(":")) if ":" in self._name else self._name
             )
@@ -254,7 +252,9 @@ class ModeEditConfigurationBundles(WatoMode):
 
         self._bundles_listing(self._name)
 
-    def _delete_bundle(self, bundle_id: BundleId) -> None:
+    def _delete_bundle(
+        self, bundle_id: BundleId, *, pprint_value: bool, use_git: bool, debug: bool
+    ) -> None:
         if self._bundle_group_type is RuleGroupType.SPECIAL_AGENTS:
             # revert changes does not work correctly when a config sync to another site occurred
             # for consistency reasons we always prevent the user from reverting the changes
@@ -265,16 +265,16 @@ class ModeEditConfigurationBundles(WatoMode):
         delete_config_bundle(
             bundle_id,
             user_id=user.id,
-            pprint_value=active_config.wato_pprint_config,
-            use_git=active_config.wato_use_git,
-            debug=active_config.debug,
+            pprint_value=pprint_value,
+            use_git=use_git,
+            debug=debug,
         )
         add_change(
             action_name="delete-quick-setup",
             text=_("Deleted Quick setup {bundle_id}").format(bundle_id=bundle_id),
             user_id=user.id,
             prevent_discard_changes=prevent_discard_changes,
-            use_git=active_config.wato_use_git,
+            use_git=use_git,
         )
 
     def _bundles_listing(self, group_name: str) -> None:
@@ -322,7 +322,7 @@ class ModeEditConfigurationBundles(WatoMode):
         return make_action_link(vars_)
 
     @override
-    def action(self) -> ActionResult:
+    def action(self, config: Config) -> ActionResult:
         check_csrf_token()
         if not transactions.check_transaction():
             return redirect(self.mode_url(**{"mode": self.name(), self.VAR_NAME: self._name}))
@@ -330,7 +330,12 @@ class ModeEditConfigurationBundles(WatoMode):
         bundle_id = BundleId(request.get_ascii_input_mandatory(self.VAR_BUNDLE_ID))
         action = request.get_ascii_input_mandatory(self.VAR_ACTION)
         if action == "delete":
-            self._delete_bundle(bundle_id)
+            self._delete_bundle(
+                bundle_id,
+                pprint_value=config.wato_pprint_config,
+                use_git=config.wato_use_git,
+                debug=config.debug,
+            )
 
         return redirect(self.mode_url(**{"mode": self.name(), self.VAR_NAME: self._name}))
 
@@ -571,7 +576,7 @@ class EditDCDConnection(Protocol):
 
     def page(self, form_name: str) -> None: ...
 
-    def action(self) -> ActionResult: ...
+    def action(self, config: Config) -> ActionResult: ...
 
 
 class ModeConfigurationBundle(WatoMode):
@@ -655,13 +660,13 @@ class ModeConfigurationBundle(WatoMode):
             )
 
     @override
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         return make_simple_form_page_menu(
             _("Actions"), breadcrumb, form_name="edit_bundle", button_name="_save"
         )
 
     @override
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         if not self._existing_bundle:
             html.open_div(class_="really")
             html.h3(_("The configuration bundle %s does not exist") % self._bundle_id)
@@ -781,7 +786,7 @@ class ModeConfigurationBundle(WatoMode):
         )
 
     @override
-    def action(self) -> ActionResult:
+    def action(self, config: Config) -> ActionResult:
         check_csrf_token()
 
         if not transactions.check_transaction():
@@ -792,26 +797,26 @@ class ModeConfigurationBundle(WatoMode):
             delete_config_bundle_objects(
                 references,
                 user_id=user.id,
-                pprint_value=active_config.wato_pprint_config,
-                use_git=active_config.wato_use_git,
-                debug=active_config.debug,
+                pprint_value=config.wato_pprint_config,
+                use_git=config.wato_use_git,
+                debug=config.debug,
             )
             return redirect(mode_url("changelog"))
 
         if request.has_var("_save"):
             vs = self._configuration_vs(self._bundle_id)
-            config = vs.from_html_vars(self.FORM_PREFIX)
-            vs.validate_value(config, "edit_bundle")
+            bundle_config = vs.from_html_vars(self.FORM_PREFIX)
+            vs.validate_value(bundle_config, "edit_bundle")
             self._bundle.update(
                 {
-                    "title": config["_name"],
-                    "comment": config["_comment"],
+                    "title": bundle_config["_name"],
+                    "comment": bundle_config["_comment"],
                 }
             )
             edit_config_bundle_configuration(
                 self._bundle_id,
                 self._bundle,
-                pprint_value=active_config.wato_pprint_config,
+                pprint_value=config.wato_pprint_config,
             )
 
         return redirect(self.parent_mode().mode_url(varname=self._bundle_group))

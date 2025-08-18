@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Copyright (C) 2021 Checkmk GmbH - License: GNU General Public License v2
 # This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 # conditions defined in the file COPYING, which is part of this source code package.
@@ -17,8 +18,6 @@ from contextlib import contextmanager
 from datetime import datetime, timedelta
 from typing import Any
 
-from cmk.utils.paths import tmp_dir
-
 from cmk.plugins.proxmox_ve.special_agent.libproxmox import (
     LogData,
     ProxmoxVeAPI,
@@ -27,6 +26,7 @@ from cmk.plugins.proxmox_ve.special_agent.libproxmox import (
 from cmk.special_agents.v0_unstable.argument_parsing import Args
 from cmk.special_agents.v0_unstable.misc import to_bytes
 from cmk.special_agents.v0_unstable.storage import Storage
+from cmk.utils.paths import tmp_dir
 
 LOGGER = logging.getLogger("agent_proxmox_ve.backups")
 
@@ -60,6 +60,7 @@ class BackupTask:
         self.__dict__.update(task)
 
         if dump_logs:
+            LogCacheFilePath.mkdir(parents=True, exist_ok=True)
             with (LogCacheFilePath / (f"{task['upid']}.log")).open("w") as file:
                 LOGGER.debug("wrote log to: %s", file.name)
                 file.write("\n".join(line["t"] for line in logs))
@@ -81,6 +82,7 @@ class BackupTask:
             self.backup_data, errors = {}, [(exc.line, str(exc))]
 
         if errors and dump_erroneous_logs:
+            LogCacheFilePath.mkdir(parents=True, exist_ok=True)
             with (LogCacheFilePath / (f"erroneous-{task['upid']}.log")).open("w") as file:
                 LOGGER.error(
                     "Parsing the log for UPID=%r resulted in a error(s) - write log content to %r",

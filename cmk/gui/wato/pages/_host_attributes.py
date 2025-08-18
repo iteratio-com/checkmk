@@ -9,12 +9,7 @@ from typing import cast, Literal
 
 import cmk.ccc.version as cmk_version
 from cmk.ccc.hostaddress import HostName
-
-from cmk.utils import paths
-from cmk.utils.rulesets.definition import RuleGroup
-
 from cmk.gui import forms
-from cmk.gui.config import active_config
 from cmk.gui.exceptions import MKUserError
 from cmk.gui.htmllib.generator import HTMLWriter
 from cmk.gui.htmllib.html import html
@@ -27,9 +22,10 @@ from cmk.gui.utils.urls import makeuri_contextless
 from cmk.gui.valuespec import FixedValue, ValueSpec
 from cmk.gui.watolib.configuration_bundle_store import is_locked_by_quick_setup
 from cmk.gui.watolib.host_attributes import (
+    ABCHostAttribute,
     ABCHostAttributeValueSpec,
-    get_sorted_host_attribute_topics,
-    get_sorted_host_attributes_by_topic,
+    sorted_host_attribute_topics,
+    sorted_host_attributes_by_topic,
 )
 from cmk.gui.watolib.hosts_and_folders import (
     Folder,
@@ -37,6 +33,9 @@ from cmk.gui.watolib.hosts_and_folders import (
     Host,
     SearchFolder,
 )
+from cmk.utils import paths
+from cmk.utils.rulesets.definition import RuleGroup
+from cmk.utils.tags import TagID
 
 #   "host"        -> normal host edit dialog
 #   "cluster"     -> normal host edit dialog
@@ -54,10 +53,12 @@ def _get_single_host(hosts: Mapping[str, object]) -> Host | None:
 
 # TODO: Wow, this function REALLY has to be cleaned up
 def configure_attributes(
+    host_attributes: Mapping[str, ABCHostAttribute],
     new: bool,
     hosts: Mapping[str, Host | Folder | None],
     for_what: DialogIdent,
     parent: Folder | SearchFolder | None,
+    aux_tags_by_tag: Mapping[TagID | None, Sequence[TagID]],
     myself: Folder | None = None,
     without_attributes: Sequence[str] | None = None,
     varprefix: str = "",
@@ -91,9 +92,9 @@ def configure_attributes(
     show_more_mode = user.show_mode != "default_show_less"
     is_cse = cmk_version.edition(paths.omd_root) == cmk_version.Edition.CSE
 
-    for topic_id, topic_title in get_sorted_host_attribute_topics(for_what, new):
+    for topic_id, topic_title in sorted_host_attribute_topics(host_attributes, for_what, new):
         topic_is_volatile = True  # assume topic is sometimes hidden due to dependencies
-        topic_attributes = get_sorted_host_attributes_by_topic(topic_id)
+        topic_attributes = sorted_host_attributes_by_topic(host_attributes, topic_id)
 
         single_edit_host = _get_single_host(hosts)
 
@@ -398,7 +399,7 @@ def configure_attributes(
             | set(dependency_mapping_roles.keys())
             | set(hide_attributes)
         ),
-        "aux_tags_by_tag": active_config.tags.get_aux_tags_by_tag(),
+        "aux_tags_by_tag": aux_tags_by_tag,
         "depends_on_tags": dependency_mapping_tags,
         "depends_on_roles": dependency_mapping_roles,
         "volatile_topics": volatile_topics,

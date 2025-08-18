@@ -9,37 +9,29 @@ from inspect import BoundArguments
 from werkzeug.datastructures import MIMEAccept
 from werkzeug.http import parse_accept_header
 
+from cmk import trace
 from cmk.ccc import store
-
-from cmk.utils.paths import configuration_lockfile
-
 from cmk.gui.fields.fields_filter import FieldsFilter
 from cmk.gui.http import HTTPMethod, Response
-from cmk.gui.openapi.framework._types import ApiContext, DataclassInstance, RawRequestData
-from cmk.gui.openapi.framework._utils import get_stripped_origin, iter_dataclass_fields
-from cmk.gui.openapi.framework.endpoint_model import EndpointModel
-from cmk.gui.openapi.framework.model import json_dump_without_omitted
-from cmk.gui.openapi.framework.model.response import ApiResponse, TypedResponse
-from cmk.gui.openapi.framework.registry import RequestEndpoint
-from cmk.gui.openapi.restful_objects.constructors import etag_of_dict
-from cmk.gui.openapi.restful_objects.utils import (
-    identify_expected_status_codes,
-)
+from cmk.gui.openapi.restful_objects.utils import identify_expected_status_codes
 from cmk.gui.openapi.restful_objects.validators import (
     ContentTypeValidator,
     HeaderValidator,
     PermissionValidator,
     ResponseValidator,
 )
-from cmk.gui.openapi.utils import (
-    EXT,
-    RestAPIResponseException,
-    RestAPIWatoDisabledException,
-)
+from cmk.gui.openapi.utils import EXT, RestAPIResponseException, RestAPIWatoDisabledException
 from cmk.gui.watolib.activate_changes import update_config_generation
 from cmk.gui.watolib.git import do_git_commit
+from cmk.utils.paths import configuration_lockfile
 
-from cmk import trace
+from ._context import ApiContext
+from ._types import DataclassInstance, RawRequestData
+from ._utils import get_stripped_origin, iter_dataclass_fields
+from .endpoint_model import EndpointModel
+from .model import json_dump_without_omitted
+from .model.response import ApiResponse, TypedResponse
+from .registry import RequestEndpoint
 
 tracer = trace.get_tracer()
 
@@ -73,7 +65,6 @@ def _create_response(
     content_type: str | None,
     *,
     fields_filter: FieldsFilter | None,
-    add_etag: bool,
     is_testing: bool,
 ) -> Response:
     """Create a Flask response from the endpoint response."""
@@ -88,14 +79,9 @@ def _create_response(
         status_code = 204 if json_text is None else 200
         headers = {}
 
-    if json_text is not None:
+    if json_text is not None and fields_filter is not None:
         json_object = json.loads(json_text)
-        if fields_filter is not None:
-            json_object = fields_filter.apply(json_object)
-
-        if add_etag:
-            headers["ETag"] = etag_of_dict(json_object).to_header()
-
+        json_object = fields_filter.apply(json_object)
         json_text = json.dumps(json_object)
 
     return Response(
@@ -202,6 +188,7 @@ def handle_endpoint_request(
         with tracer.span("endpoint-body-call"):
             raw_response = endpoint.handler(*bound_arguments.args, **bound_arguments.kwargs)
 
+    # Step 5: Create the response object
     with tracer.span("create-response"):
         if isinstance(raw_response, Response):
             _validate_direct_response(raw_response)
@@ -212,11 +199,13 @@ def handle_endpoint_request(
                 model.response_body_type,
                 endpoint.content_type,
                 fields_filter=_identify_fields_filter(bound_arguments, model.has_request_schema),
-                add_etag=endpoint.etag in ("output", "both"),
                 is_testing=is_testing,
             )
 
-    # Step 5: Check permissions
+    # Step 6: Validate ETag
+    ResponseValidator.validate_etag_response(response.headers.get("ETag"), endpoint.etag)
+
+    # Step 7: Check permissions
     if response.status_code < 400:
         ResponseValidator.validate_permissions(
             endpoint=endpoint.operation_id,
@@ -226,7 +215,7 @@ def handle_endpoint_request(
             is_testing=is_testing,
         )
 
-    # Step 6: Validate response status code
+    # Step 8: Validate response status code
     allowed_status_codes = identify_expected_status_codes(
         endpoint.method,
         endpoint.doc_group,
@@ -245,7 +234,7 @@ def handle_endpoint_request(
         expected_status_codes=list(allowed_status_codes),
     )
 
-    # Step 7: Update config generation if needed
+    # Step 9: Update config generation if needed
     if (
         endpoint.method != "get"
         and response.status_code < 300

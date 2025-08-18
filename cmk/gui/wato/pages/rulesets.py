@@ -17,46 +17,22 @@ from typing import Any, cast, Final, Literal, NamedTuple, overload, TypedDict
 
 from livestatus import SiteConfiguration
 
+import cmk.gui.watolib.changes as _changes
+from cmk import trace
 from cmk.ccc.exceptions import MKGeneralException
 from cmk.ccc.hostaddress import HostName
 from cmk.ccc.site import SiteId
-
-from cmk.utils.labels import LabelGroups
-from cmk.utils.regex import escape_regex_chars
-from cmk.utils.rulesets import ruleset_matcher
-from cmk.utils.rulesets.conditions import (
-    allow_host_label_conditions,
-    allow_label_conditions,
-    allow_service_label_conditions,
-    HostOrServiceConditions,
-    HostOrServiceConditionsSimple,
-)
-from cmk.utils.rulesets.definition import RuleGroup, RuleGroupType
-from cmk.utils.rulesets.ruleset_matcher import (
-    RulesetName,
-    RuleSpec,
-    TagCondition,
-    TagConditionNE,
-    TagConditionNOR,
-    TagConditionOR,
-)
-from cmk.utils.servicename import Item, ServiceName
-from cmk.utils.tags import GroupedTag, TagGroupID, TagID
-
-import cmk.gui.watolib.changes as _changes
 from cmk.gui import deprecations, forms
 from cmk.gui.breadcrumb import Breadcrumb, BreadcrumbItem
-from cmk.gui.config import active_config
+from cmk.gui.config import active_config, Config
 from cmk.gui.ctx_stack import g
 from cmk.gui.exceptions import HTTPRedirect, MKAuthException, MKUserError
 from cmk.gui.form_specs.private import LegacyValueSpec
-from cmk.gui.form_specs.vue.form_spec_visitor import (
+from cmk.gui.form_specs.vue import (
     DisplayMode,
     parse_data_from_frontend,
     render_form_spec,
-    RenderMode,
 )
-from cmk.gui.form_specs.vue.visitors import DataOrigin, DEFAULT_VALUE
 from cmk.gui.hooks import call as call_hooks
 from cmk.gui.hooks import request_memoize
 from cmk.gui.htmllib.generator import HTMLWriter
@@ -82,8 +58,14 @@ from cmk.gui.quick_setup.html import (
     quick_setup_render_link,
     quick_setup_source_cell,
 )
+from cmk.gui.search import (
+    ABCMatchItemGenerator,
+    MatchItem,
+    MatchItemGeneratorRegistry,
+    MatchItems,
+)
 from cmk.gui.table import Foldable, show_row_count, Table, table_element
-from cmk.gui.type_defs import ActionResult, HTTPVariables, PermissionName
+from cmk.gui.type_defs import ActionResult, HTTPVariables, PermissionName, RenderMode
 from cmk.gui.utils.csrf_token import check_csrf_token
 from cmk.gui.utils.escaping import escape_to_html_permissive, strip_tags
 from cmk.gui.utils.flashed_messages import flash
@@ -170,17 +152,37 @@ from cmk.gui.watolib.rulespecs import (
     RulespecGroup,
     RulespecSubGroup,
 )
-from cmk.gui.watolib.search import (
-    ABCMatchItemGenerator,
-    MatchItem,
-    MatchItemGeneratorRegistry,
-    MatchItems,
-)
 from cmk.gui.watolib.utils import mk_eval, mk_repr
-
-from cmk import trace
 from cmk.rulesets.v1.form_specs import FormSpec
+from cmk.utils.labels import LabelGroups
+from cmk.utils.regex import escape_regex_chars
+from cmk.utils.rulesets import ruleset_matcher
+from cmk.utils.rulesets.conditions import (
+    allow_host_label_conditions,
+    allow_label_conditions,
+    allow_service_label_conditions,
+    HostOrServiceConditions,
+    HostOrServiceConditionsSimple,
+)
+from cmk.utils.rulesets.definition import RuleGroup, RuleGroupType
+from cmk.utils.rulesets.ruleset_matcher import (
+    RulesetName,
+    RuleSpec,
+    TagCondition,
+    TagConditionNE,
+    TagConditionNOR,
+    TagConditionOR,
+)
+from cmk.utils.servicename import Item, ServiceName
+from cmk.utils.tags import GroupedTag, TagGroupID, TagID
 
+from ...form_specs.vue import (
+    DEFAULT_VALUE,
+    DefaultValue,
+    IncomingData,
+    RawDiskData,
+    RawFrontendData,
+)
 from ._rule_conditions import DictHostTagCondition
 
 _DEPRECATION_WARNING = "<b>This feature will be deprecated in a future version of Checkmk.</b>"
@@ -310,7 +312,7 @@ class ABCRulesetMode(WatoMode):
     def title(self) -> str:
         return self._title
 
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         if self._help:
             html.help(self._help)
 
@@ -322,7 +324,7 @@ class ABCRulesetMode(WatoMode):
                         name: ruleset
                         for name, ruleset in self._rulesets().get_rulesets().items()
                         if ruleset.matches_search_with_rules(
-                            self._search_options, debug=active_config.debug
+                            self._search_options, debug=config.debug
                         )
                     }
                 )
@@ -469,7 +471,7 @@ class ModeRuleSearch(ABCRulesetMode):
         else:
             raise NotImplementedError()
 
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         menu = PageMenu(
             dropdowns=[
                 PageMenuDropdown(
@@ -521,15 +523,15 @@ class ModeRuleSearch(ABCRulesetMode):
     def _page_menu_entries_related(self) -> Iterable[PageMenuEntry]:
         yield _page_menu_entry_predefined_conditions()
 
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         if self._page_type is PageType.RuleSearch and not request.has_var("filled_in"):
             search_form(
                 title="%s: " % _("Quick search"),
                 default_value=self._search_options.get("fulltext", ""),
             )
-        super().page()
+        super().page(config)
 
-    def action(self) -> HTTPRedirect:
+    def action(self, config: Config) -> HTTPRedirect:
         forms.remove_unused_vars("search_p_rule", _is_var_to_delete)
         return redirect(makeuri(request, []))
 
@@ -705,7 +707,7 @@ class ModeRulesetGroup(ABCRulesetMode):
             rulegroup.doc_references if isinstance(rulegroup, RulespecGroup) else {}
         )
 
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         menu = PageMenu(
             dropdowns=[
                 PageMenuDropdown(
@@ -1004,7 +1006,7 @@ class ModeEditRuleset(WatoMode):
 
         return title
 
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         menu = PageMenu(
             dropdowns=[
                 PageMenuDropdown(
@@ -1124,7 +1126,7 @@ class ModeEditRuleset(WatoMode):
                 is_suggested=True,
             )
 
-    def action(self) -> ActionResult:
+    def action(self, config: Config) -> ActionResult:
         back_url = self.mode_url(
             varname=self._name,
             host=self._hostname or "",
@@ -1155,10 +1157,12 @@ class ModeEditRuleset(WatoMode):
         if action == "delete":
             if is_locked_by_quick_setup(rule.locked_by):
                 raise MKUserError(None, _("Cannot delete rules that are managed by quick setup."))
-            ruleset.delete_rule(rule)
+            ruleset.delete_rule(rule, create_change=True, use_git=config.wato_use_git)
         elif action == "move_to":
             target_idx = request.get_integer_input_mandatory("_index")
-            if target_idx != ruleset.move_rule_to(rule, target_idx):
+            if target_idx != ruleset.move_rule_to(
+                rule, index=target_idx, use_git=config.wato_use_git
+            ):
                 flash(
                     _(
                         "This rule cannot be moved above rules that "
@@ -1167,13 +1171,11 @@ class ModeEditRuleset(WatoMode):
                     msg_type="warning",
                 )
 
-        rulesets.save_folder(
-            pprint_value=active_config.wato_pprint_config, debug=active_config.debug
-        )
+        rulesets.save_folder(pprint_value=config.wato_pprint_config, debug=config.debug)
         return redirect(back_url)
 
-    def page(self) -> None:
-        if not active_config.wato_hide_varnames:
+    def page(self, config: Config) -> None:
+        if not config.wato_hide_varnames:
             display_varname = (
                 '%s["%s"]' % tuple(self._name.split(":")) if ":" in self._name else self._name
             )
@@ -1190,7 +1192,7 @@ class ModeEditRuleset(WatoMode):
 
         html.help(ruleset.help())
         self._explain_match_type(ruleset.match_type())
-        self._rule_listing(ruleset, site_configs=active_config.sites, debug=active_config.debug)
+        self._rule_listing(ruleset, site_configs=config.sites, debug=config.debug)
         self._create_form()
 
     def _explain_match_type(self, match_type: MatchType) -> None:
@@ -1592,8 +1594,7 @@ class ModeEditRuleset(WatoMode):
             render_form_spec(
                 form_spec,
                 rule.id,
-                value,
-                DataOrigin.DISK,
+                RawDiskData(value),
                 True,
                 display_mode=DisplayMode.READONLY,
             )
@@ -1694,7 +1695,7 @@ class ModeRuleSearchForm(WatoMode):
             return _("Refine search")
         return _("Search rulesets and rules")
 
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         menu = make_simple_form_page_menu(
             _("Search"),
             breadcrumb,
@@ -1715,7 +1716,7 @@ class ModeRuleSearchForm(WatoMode):
         )
         return menu
 
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         with html.form_context("rule_search", method="POST"):
             html.hidden_field("mode", self.back_mode, add_var=True)
 
@@ -2066,7 +2067,7 @@ class ABCEditRuleMode(WatoMode):
     def title(self) -> str:
         return _("Edit rule: %s") % self._rulespec.title
 
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         menu = make_simple_form_page_menu(
             _("Rule"),
             breadcrumb,
@@ -2136,7 +2137,7 @@ class ABCEditRuleMode(WatoMode):
             [("mode", self._back_mode), ("host", request.get_ascii_input_mandatory("host", ""))]
         )
 
-    def action(self) -> ActionResult:
+    def action(self, config: Config) -> ActionResult:
         check_csrf_token()
 
         if not transactions.check_transaction():
@@ -2153,7 +2154,11 @@ class ABCEditRuleMode(WatoMode):
 
         if new_rule_folder == self._folder:
             self._rule.folder = new_rule_folder
-            self._save_rule()
+            self._save_rule(
+                pprint_value=config.wato_pprint_config,
+                debug=config.debug,
+                use_git=config.wato_use_git,
+            )
 
         elif is_locked_by_quick_setup(self._rule.locked_by):
             flash(_("Cannot change folder of rules managed by Quick setup."), msg_type="error")
@@ -2161,7 +2166,11 @@ class ABCEditRuleMode(WatoMode):
 
         else:
             # Move rule to new folder during editing
-            self._remove_from_orig_folder()
+            self._remove_from_orig_folder(
+                pprint_value=config.wato_pprint_config,
+                debug=config.debug,
+                use_git=config.wato_use_git,
+            )
 
             # Set new folder
             self._rule.folder = new_rule_folder
@@ -2169,9 +2178,7 @@ class ABCEditRuleMode(WatoMode):
             self._rulesets = FolderRulesets.load_folder_rulesets(new_rule_folder)
             self._ruleset = self._rulesets.get(self._name)
             self._ruleset.append_rule(new_rule_folder, self._rule)
-            self._rulesets.save_folder(
-                pprint_value=active_config.wato_pprint_config, debug=active_config.debug
-            )
+            self._rulesets.save_folder(pprint_value=config.wato_pprint_config, debug=config.debug)
 
             affected_sites = list(set(self._folder.all_site_ids() + new_rule_folder.all_site_ids()))
             _changes.add_change(
@@ -2182,7 +2189,7 @@ class ABCEditRuleMode(WatoMode):
                 sites=affected_sites,
                 diff_text=self._ruleset.diff_rules(self._orig_rule, self._rule),
                 object_ref=self._rule.object_ref(),
-                use_git=active_config.wato_use_git,
+                use_git=config.wato_use_git,
             )
 
         flash(self._success_message())
@@ -2258,14 +2265,11 @@ class ABCEditRuleMode(WatoMode):
         return RuleConditions(**store_entries[condition_id]["conditions"])
 
     @abc.abstractmethod
-    def _save_rule(self) -> None:
-        raise NotImplementedError()
+    def _save_rule(self, *, pprint_value: bool, debug: bool, use_git: bool) -> None: ...
 
-    def _remove_from_orig_folder(self) -> None:
-        self._ruleset.delete_rule(self._orig_rule, create_change=False)
-        self._rulesets.save_folder(
-            pprint_value=active_config.wato_pprint_config, debug=active_config.debug
-        )
+    def _remove_from_orig_folder(self, *, pprint_value: bool, debug: bool, use_git: bool) -> None:
+        self._ruleset.delete_rule(self._orig_rule, create_change=False, use_git=use_git)
+        self._rulesets.save_folder(pprint_value=pprint_value, debug=debug)
 
     def _success_message(self) -> str:
         return _('Edited rule in ruleset "%s" in folder "%s"') % (
@@ -2285,7 +2289,7 @@ class ABCEditRuleMode(WatoMode):
         # Non _ vars are always added as hidden vars into a form
         return "_vue_edit_rule"
 
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         call_hooks("rmk_ruleset_banner", self._ruleset.name)
 
         help_text = self._ruleset.help()
@@ -2300,15 +2304,18 @@ class ABCEditRuleMode(WatoMode):
             html.div(help_text, class_="info")
 
         with html.form_context("rule_editor", method="POST"):
-            self._page_form(debug=active_config.debug)
+            self._page_form(debug=config.debug)
 
-    def _get_rule_value_and_origin(self) -> tuple[Any, DataOrigin]:
+    def _get_rule_value(self) -> IncomingData:
         if request.has_var(self._vue_field_id()):
-            return (
-                json.loads(request.get_str_input_mandatory(self._vue_field_id())),
-                DataOrigin.FRONTEND,
+            return RawFrontendData(
+                json.loads(request.get_str_input_mandatory(self._vue_field_id()))
             )
-        return self._rule.value, DataOrigin.DISK
+        return (
+            self._rule.value
+            if isinstance(self._rule.value, DefaultValue)
+            else RawDiskData(self._rule.value)
+        )
 
     @property
     def folder(self) -> Folder:
@@ -2351,23 +2358,21 @@ class ABCEditRuleMode(WatoMode):
                     valuespec.render_input("ve", self._rule.value)
                 case RenderMode.FRONTEND:
                     assert registered_form_spec is not None
-                    value, origin = self._get_rule_value_and_origin()
+                    value = self._get_rule_value()
                     render_form_spec(
                         registered_form_spec,
                         self._vue_field_id(),
                         value,
-                        origin,
                         self._should_validate_on_render(),
                     )
                 case RenderMode.BACKEND_AND_FRONTEND:
                     forms.section("Current setting as VUE")
                     assert registered_form_spec is not None
-                    value, origin = self._get_rule_value_and_origin()
+                    value = self._get_rule_value()
                     render_form_spec(
                         registered_form_spec,
                         self._vue_field_id(),
                         value,
-                        origin,
                         self._should_validate_on_render(),
                     )
                     forms.section("Backend rendered (read only)")
@@ -3167,12 +3172,10 @@ class ModeEditRule(ABCEditRuleMode):
         request.set_var(cls.VAR_RULE_ID, rule_id)
         request.set_var(cls.VAR_RULE_SPEC_NAME, rule_spec_name)
 
-    def _save_rule(self) -> None:
+    def _save_rule(self, *, pprint_value: bool, debug: bool, use_git: bool) -> None:
         # Just editing without moving to other folder
-        self._ruleset.edit_rule(self._orig_rule, self._rule)
-        self._rulesets.save_folder(
-            pprint_value=active_config.wato_pprint_config, debug=active_config.debug
-        )
+        self._ruleset.edit_rule(self._orig_rule, self._rule, use_git=use_git)
+        self._rulesets.save_folder(pprint_value=pprint_value, debug=debug)
 
 
 class ModeCloneRule(ABCEditRuleMode):
@@ -3187,13 +3190,11 @@ class ModeCloneRule(ABCEditRuleMode):
         super()._set_rule()
         self._rule = self._orig_rule.clone(preserve_id=False)
 
-    def _save_rule(self) -> None:
-        self._ruleset.clone_rule(self._orig_rule, self._rule)
-        self._rulesets.save_folder(
-            pprint_value=active_config.wato_pprint_config, debug=active_config.debug
-        )
+    def _save_rule(self, *, pprint_value: bool, debug: bool, use_git: bool) -> None:
+        self._ruleset.clone_rule(self._orig_rule, self._rule, use_git=use_git)
+        self._rulesets.save_folder(pprint_value=pprint_value, debug=debug)
 
-    def _remove_from_orig_folder(self) -> None:
+    def _remove_from_orig_folder(self, *, pprint_value: bool, debug: bool, use_git: bool) -> None:
         pass  # Cloned rule is not yet in folder, don't try to remove
 
     def _page_form_quick_setup_warning(self) -> None:
@@ -3275,12 +3276,10 @@ class ModeNewRule(ABCEditRuleMode):
             )
         )
 
-    def _save_rule(self) -> None:
+    def _save_rule(self, *, pprint_value: bool, debug: bool, use_git: bool) -> None:
         index = self._ruleset.append_rule(self._folder, self._rule)
-        self._rulesets.save_folder(
-            pprint_value=active_config.wato_pprint_config, debug=active_config.debug
-        )
-        self._ruleset.add_new_rule_change(index, self._folder, self._rule)
+        self._rulesets.save_folder(pprint_value=pprint_value, debug=debug)
+        self._ruleset.add_new_rule_change(index, self._folder, self._rule, use_git=use_git)
 
     def _success_message(self) -> str:
         return _('Created new rule in ruleset "%s" in folder "%s"') % (
@@ -3297,10 +3296,10 @@ class ModeExportRule(ABCEditRuleMode):
     def title(self) -> str:
         return _("Rule representation: %s") % self._rulespec.title
 
-    def _save_rule(self) -> None:
+    def _save_rule(self, *, pprint_value: bool, debug: bool, use_git: bool) -> None:
         pass
 
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         rule_config = self._rule.ruleset.valuespec().mask(self._rule.value)
         content_id = "rule_representation"
         success_msg = _("Successfully copied to clipboard.")
@@ -3328,7 +3327,7 @@ class ModeExportRule(ABCEditRuleMode):
                 onclick=f"cmk.utils.copy_dom_element_content_to_clipboard({json.dumps(content_id)}, {json.dumps(success_msg)})",
             )
 
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         return PageMenu(
             dropdowns=list(self._page_menu_dropdowns()),
             breadcrumb=breadcrumb,
@@ -3412,7 +3411,7 @@ class ModeUnknownRulesets(WatoMode):
     def title(self) -> str:
         return _("Unknown rulesets")
 
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         return PageMenu(
             dropdowns=[
                 PageMenuDropdown(
@@ -3590,9 +3589,9 @@ class ModeUnknownRulesets(WatoMode):
             HTMLWriter.render_tt(pformat(rulespec["condition"]).replace("\n", "<br>")),
         )
 
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         unknown_check_parameter_rulesets, unknown_rulesets = self._unknown_rulesets(
-            debug=active_config.debug
+            debug=config.debug
         )
         with html.form_context("bulk_delete_selected_unknown_rulesets", method="POST"):
             html.hidden_field("mode", "unknown_rulesets", add_var=True)
@@ -3620,13 +3619,21 @@ class ModeUnknownRulesets(WatoMode):
                             table, unknown_ruleset_name, rule_nr, folder_path, rulespec
                         )
 
-    def _delete_cp_rule(self, rulesets: AllRulesets, ruleset: Ruleset, rule: Rule) -> None:
+    def _delete_cp_rule(
+        self, rulesets: AllRulesets, ruleset: Ruleset, rule: Rule, *, use_git: bool
+    ) -> None:
         if is_locked_by_quick_setup(rule.locked_by):
             raise MKUserError(None, _("Cannot delete rules that are managed by Quick setup."))
-        ruleset.delete_rule(rule)
+        ruleset.delete_rule(rule, create_change=True, use_git=use_git)
 
     def _bulk_delete_selected_rules(
-        self, selected_cp_rule_ids: Sequence[str], selected_rule_ids: Sequence[str]
+        self,
+        selected_cp_rule_ids: Sequence[str],
+        selected_rule_ids: Sequence[str],
+        *,
+        pprint_value: bool,
+        debug: bool,
+        use_git: bool,
     ) -> ActionResult:
         rulesets = AllRulesets.load_all_rulesets()
         do_reset = False
@@ -3641,10 +3648,8 @@ class ModeUnknownRulesets(WatoMode):
 
         for folder, rulesets_and_rules in by_folder.items():
             for ruleset, rule in rulesets_and_rules:
-                self._delete_cp_rule(rulesets, ruleset, rule)
-            rulesets.save_folder(
-                folder, pprint_value=active_config.wato_pprint_config, debug=active_config.debug
-            )
+                self._delete_cp_rule(rulesets, ruleset, rule, use_git=use_git)
+            rulesets.save_folder(folder, pprint_value=pprint_value, debug=debug)
 
         do_save = False
         for folder_path, rulespecs_by_name in rulesets.get_unknown_rulesets().items():
@@ -3656,13 +3661,18 @@ class ModeUnknownRulesets(WatoMode):
                         do_reset = True
 
         if do_save:
-            rulesets.save(pprint_value=active_config.wato_pprint_config, debug=active_config.debug)
+            rulesets.save(pprint_value=pprint_value, debug=debug)
         if do_reset:
             deprecations.reset_scheduling()
         return redirect(self.mode_url())
 
     def _delete_selected_cp_rule(
-        self, selected_ruleset_name: str, selected_rule_id: str
+        self,
+        selected_ruleset_name: str,
+        selected_rule_id: str,
+        pprint_value: bool,
+        debug: bool,
+        use_git: bool,
     ) -> ActionResult:
         rulesets = AllRulesets.load_all_rulesets()
         if not (ruleset := rulesets.get_rulesets().get(selected_ruleset_name)):
@@ -3671,11 +3681,11 @@ class ModeUnknownRulesets(WatoMode):
         for rules in ruleset.rules.values():
             for rule in rules:
                 if rule.id == selected_rule_id:
-                    self._delete_cp_rule(rulesets, ruleset, rule)
+                    self._delete_cp_rule(rulesets, ruleset, rule, use_git=use_git)
                     rulesets.save_folder(
                         rule.folder,
-                        pprint_value=active_config.wato_pprint_config,
-                        debug=active_config.debug,
+                        pprint_value=pprint_value,
+                        debug=debug,
                     )
                     deprecations.reset_scheduling()
                     return redirect(self.mode_url())
@@ -3683,7 +3693,7 @@ class ModeUnknownRulesets(WatoMode):
         return None
 
     def _delete_selected_rule(
-        self, selected_ruleset_name: str, selected_rule_id: str
+        self, selected_ruleset_name: str, selected_rule_id: str, *, pprint_value: bool, debug: bool
     ) -> ActionResult:
         rulesets = AllRulesets.load_all_rulesets()
         for folder_path, rulespecs_by_name in rulesets.get_unknown_rulesets().items():
@@ -3691,15 +3701,13 @@ class ModeUnknownRulesets(WatoMode):
                 for rulespec in rulespecs:
                     if rulespec["id"] == selected_rule_id:
                         rulesets.delete_unknown_rule(folder_path, ruleset_name, rulespec["id"])
-                        rulesets.save(
-                            pprint_value=active_config.wato_pprint_config, debug=active_config.debug
-                        )
+                        rulesets.save(pprint_value=pprint_value, debug=debug)
                         deprecations.reset_scheduling()
                         return redirect(self.mode_url())
 
         return None
 
-    def action(self) -> ActionResult:
+    def action(self, config: Config) -> ActionResult:
         check_csrf_token()
 
         d_cp_rule_ids = [
@@ -3711,16 +3719,33 @@ class ModeUnknownRulesets(WatoMode):
             for vn, _vv in request.itervars(prefix="_c_unknown_rule")
         ]
         if request.var("_bulk_delete_selected_unknown_rulesets") and (d_cp_rule_ids or d_rule_ids):
-            return self._bulk_delete_selected_rules(d_cp_rule_ids, d_rule_ids)
+            return self._bulk_delete_selected_rules(
+                d_cp_rule_ids,
+                d_rule_ids,
+                pprint_value=config.wato_pprint_config,
+                debug=config.debug,
+                use_git=config.wato_use_git,
+            )
 
         if (d_ruleset_name := request.var("_delete_cp_ruleset_name")) and (
             d_rule_id := request.var("_delete_cp_rule_id")
         ):
-            return self._delete_selected_cp_rule(d_ruleset_name, d_rule_id)
+            return self._delete_selected_cp_rule(
+                d_ruleset_name,
+                d_rule_id,
+                pprint_value=config.wato_pprint_config,
+                debug=config.debug,
+                use_git=config.wato_use_git,
+            )
 
         if (d_ruleset_name := request.var("_delete_ruleset_name")) and (
             d_rule_id := request.var("_delete_rule_id")
         ):
-            return self._delete_selected_rule(d_ruleset_name, d_rule_id)
+            return self._delete_selected_rule(
+                d_ruleset_name,
+                d_rule_id,
+                pprint_value=config.wato_pprint_config,
+                debug=config.debug,
+            )
 
         return None

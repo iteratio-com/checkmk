@@ -5,10 +5,9 @@
 
 from pathlib import Path
 
+from cmk.base.errorhandling import CheckCrashReport, CheckDetails
 from cmk.ccc.crash_reporting import VersionInfo
 from cmk.ccc.hostaddress import HostName
-
-from cmk.base.errorhandling import CheckCrashReport, CheckDetails
 
 
 def _check_generic_crash_info(crash):
@@ -34,15 +33,14 @@ def _check_generic_crash_info(crash):
 
 def test_check_crash_report_from_exception(tmp_path: Path) -> None:
     # Tautological test...
-    crashdir = tmp_path / "crash"
     hostname = HostName("testhost")
     crash = None
     try:
         raise Exception("DING")
     except Exception:
         crash = CheckCrashReport(
-            crashdir,
-            CheckCrashReport.make_crash_info(
+            omd_root=tmp_path,
+            crash_info=CheckCrashReport.make_crash_info(
                 VersionInfo(
                     time=0.0,
                     os="",

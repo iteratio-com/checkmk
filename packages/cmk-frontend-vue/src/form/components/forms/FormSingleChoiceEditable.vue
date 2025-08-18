@@ -7,8 +7,8 @@ conditions defined in the file COPYING, which is part of this source code packag
 import FormSingleChoiceEditableEditAsync from '@/form/components/forms/FormSingleChoiceEditableEditAsync.vue'
 import { useErrorBoundary } from '@/components/useErrorBoundary'
 import CmkSpace from '@/components/CmkSpace.vue'
-import SlideIn from '@/components/SlideIn.vue'
-import FormValidation from '@/form/components/FormValidation.vue'
+import CmkSlideInDialog from '@/components/CmkSlideInDialog.vue'
+import FormValidation from '@/components/user-input/CmkInlineValidation.vue'
 import { useValidation, type ValidationMessages } from '@/form/components/utils/validation'
 import type { SingleChoiceEditable } from 'cmk-shared-typing/typescript/vue_formspec_components'
 import { onMounted, ref, toRaw } from 'vue'
@@ -128,9 +128,9 @@ const { ErrorBoundary, error } = useErrorBoundary()
       }"
       :input-hint="spec.i18n.no_selection"
       :no-elements-text="spec.i18n.no_objects"
-      :required-text="spec.i18n_base.required"
       :label="spec.title"
       class="fsce__dropdown"
+      required
     />
     <template v-if="spec.allow_editing_existing_elements">
       <FormButton
@@ -146,7 +146,7 @@ const { ErrorBoundary, error } = useErrorBoundary()
       {{ spec.i18n.create }}
     </FormButton>
 
-    <SlideIn
+    <CmkSlideInDialog
       :open="slideInOpen"
       :header="{
         title:
@@ -173,7 +173,7 @@ const { ErrorBoundary, error } = useErrorBoundary()
           @submitted="slideInSubmitted"
         />
       </ErrorBoundary>
-    </SlideIn>
+    </CmkSlideInDialog>
   </div>
   <FormValidation :validation="validation"></FormValidation>
 </template>

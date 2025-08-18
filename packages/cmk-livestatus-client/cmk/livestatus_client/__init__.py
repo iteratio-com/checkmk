@@ -16,7 +16,6 @@ import socket
 import ssl
 import threading
 import time
-from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterator, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -25,9 +24,10 @@ from functools import cache
 from io import BytesIO
 from typing import Any, Literal, NamedTuple, NewType, NotRequired, override, TypedDict
 
+from cmk import trace
 from cmk.ccc.site import SiteId
 
-from cmk import trace
+from .commands import Command
 
 UserId = NewType("UserId", str)
 
@@ -91,7 +91,7 @@ class SiteConfiguration(TypedDict):
     proxy: ProxyConfig | None
     replicate_ec: bool
     replicate_mkps: bool
-    replication: str | None
+    replication: Literal["slave"] | None
     message_broker_port: int
     secret: NotRequired[str]  # Set when doing the site login
     status_host: tuple[SiteId, str] | None
@@ -389,6 +389,9 @@ class Helpers:
     @staticmethod
     def _serialize_command(command: Command) -> str:
         def _serialize_type(value: Command.Arguments) -> str:
+            if value is None:
+                return ""
+
             match value:
                 case str():
                     return lqencode(value)
@@ -398,9 +401,15 @@ class Helpers:
                     return str(value)
                 case datetime():
                     return str(int(value.timestamp()))
+                case list() if all(isinstance(v, int) for v in value):
+                    return ",".join(map(str, value))
+                case Enum():
+                    return str(value.value)
 
-        serialized_args = ";".join(map(_serialize_type, command.args))
-        return f"{command.name};{serialized_args}"
+            assert False, f"Unexpected type in serialization: {type(value)}"
+
+        serialized_args = ";".join(map(_serialize_type, command.args()))
+        return f"{command.name()};{serialized_args}"
 
 
 @cache
@@ -1643,18 +1652,3 @@ def get_rrd_data(
         if (step := int(raw_step)) == 0
         else RRDResponse(range(int(raw_start), int(raw_end), step), values)
     )
-
-
-@dataclass(frozen=True)
-class Command(ABC):
-    type Arguments = int | str | datetime | bool
-
-    @property
-    @abstractmethod
-    def name(self) -> str:
-        """Name of the command to be sent."""
-
-    @property
-    @abstractmethod
-    def args(self) -> list[Arguments]:
-        """Arguments for the command."""

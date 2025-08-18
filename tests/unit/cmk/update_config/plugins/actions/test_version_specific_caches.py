@@ -7,9 +7,9 @@ import logging
 
 import pytest
 
-from cmk.utils import paths as paths_utils
-
+from cmk.update_config.lib import ExpiryVersion
 from cmk.update_config.plugins.actions.version_specific_caches import VersionSpecificCachesCleaner
+from cmk.utils import paths as paths_utils
 
 
 @pytest.fixture(name="plugin", scope="module")
@@ -18,6 +18,7 @@ def fixture_plugin() -> VersionSpecificCachesCleaner:
         name="version_specific_caches",
         title="Cleanup version specific caches",
         sort_index=30,
+        expiry_version=ExpiryVersion.NEVER,
     )
 
 

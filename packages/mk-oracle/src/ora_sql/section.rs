@@ -2,15 +2,17 @@
 // This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 // conditions defined in the file COPYING, which is part of this source code package.
 
-use super::sqls::{self, find_known_query};
-use crate::config::section::get_plain_section_names;
 use crate::config::{self, section, section::names};
-use crate::emit::header;
-use crate::{constants, types::InstanceName, utils};
+use crate::emit::{header, signaling_header};
+use crate::ora_sql::sqls;
+use crate::types::SectionAffinity;
+use crate::types::{InstanceNumVersion, SectionName, Tenant};
+use crate::{constants, utils};
 use anyhow::Result;
 use std::collections::HashMap;
 use std::fs::read_to_string;
 use std::path::{Path, PathBuf};
+use std::sync::LazyLock;
 
 #[derive(Debug, PartialEq)]
 pub enum SectionKind {
@@ -20,50 +22,48 @@ pub enum SectionKind {
 
 #[derive(Debug, Clone)]
 pub struct Section {
-    name: String,
+    name: SectionName,
     sep: char,
     cache_age: Option<u32>,
-    decorated: bool,
     header_name: String,
-}
-
-fn to_header_name(name: &str) -> &str {
-    match name {
-        names::CLUSTERS => "cluster",
-        _ => name,
-    }
+    section_affinity: SectionAffinity,
 }
 
 impl Section {
     pub fn make_instance_section() -> Self {
         let config_section = config::section::SectionBuilder::new(section::names::INSTANCE).build();
-        Self::new(&config_section, None)
+        Self::new(&config_section, 0)
     }
 
-    pub fn new(section: &config::section::Section, global_cache_age: Option<u32>) -> Self {
+    pub fn new(section: &config::section::Section, global_cache_age: u32) -> Self {
         let cache_age = if section.kind() == config::section::SectionKind::Async {
-            global_cache_age
+            Some(global_cache_age)
         } else {
             None
         };
         Self {
-            name: section.name().into(),
+            name: section.name().clone(),
             sep: section.sep(),
             cache_age,
-            decorated: !get_plain_section_names().contains(section.name()),
-            header_name: to_header_name(section.name()).into(),
+            header_name: section.name().clone().into(),
+            section_affinity: section.affinity().clone(),
         }
     }
 
-    pub fn to_plain_header(&self) -> String {
-        header(&self.header_name, self.sep)
+    pub fn to_signaling_header(&self) -> Option<String> {
+        if self.header_name.as_str() == section::names::ASM_INSTANCE {
+            return None;
+        }
+        Some(signaling_header(&self.header_name))
     }
 
     pub fn to_work_header(&self) -> String {
-        header(
-            &(self.header_name.clone() + &self.cached_header()),
-            self.sep,
-        )
+        let real_name = match self.header_name.as_str() {
+            names::IO_STATS => names::PERFORMANCE, // IO_STATS is a performance section
+            names::ASM_INSTANCE => names::INSTANCE, // ASM_INSTANCE is an instance section
+            _ => &self.header_name,
+        };
+        header(&(real_name.to_string() + &self.cached_header()), self.sep)
     }
 
     fn cached_header(&self) -> String {
@@ -78,7 +78,7 @@ impl Section {
             .unwrap_or_default()
     }
 
-    pub fn name(&self) -> &str {
+    pub fn name(&self) -> &SectionName {
         &self.name
     }
 
@@ -102,60 +102,50 @@ impl Section {
         self.cache_age.unwrap_or_default()
     }
 
-    pub fn first_line(&self, value: Option<&InstanceName>) -> String {
-        if self.decorated {
-            value.map(|v| format!("{}\n", v)).unwrap_or_default()
-        } else {
-            String::new()
-        }
+    pub fn affinity(&self) -> &SectionAffinity {
+        &self.section_affinity
     }
 
-    /// try to find the section's query in the sql directory for instance with the given version
-    /// or in the known queries if custom sql query is not provided
-    pub fn select_query(&self, sql_dir: Option<PathBuf>, instance_version: u32) -> Option<String> {
-        match self.name.as_ref() {
-            names::INSTANCE => find_known_query(sqls::Id::InstanceProperties)
-                .map(str::to_string)
-                .ok(),
-            _ => self.find_query(sql_dir, instance_version),
-        }
-    }
-
-    fn find_query(&self, sql_dir: Option<PathBuf>, instance_version: u32) -> Option<String> {
-        self.find_provided_query(sql_dir, instance_version)
+    pub fn find_query(
+        &self,
+        sql_dir: Option<PathBuf>,
+        instance_version: InstanceNumVersion,
+        tenant: Tenant,
+    ) -> Option<String> {
+        self.find_custom_query(sql_dir, instance_version)
             .or_else(|| {
-                get_sql_id(&self.name)
-                    .and_then(Self::find_known_query)
+                get_sql_id(&self.header_name)
+                    .and_then(|s| Self::find_known_query(s, instance_version, tenant))
                     .map(|s| s.to_owned())
             })
     }
 
-    pub fn find_provided_query(
+    pub fn find_custom_query(
         &self,
         sql_dir: Option<PathBuf>,
-        instance_version: u32,
+        instance_version: InstanceNumVersion,
     ) -> Option<String> {
-        if let Some(dir) = sql_dir {
-            if let Ok(versioned_files) = find_sql_files(&dir, &self.name) {
-                for (min_version, sql_file) in versioned_files {
-                    if instance_version >= min_version {
-                        #[allow(clippy::all)]
-                        return read_to_string(&sql_file)
-                            .map_err(|e| {
-                                log::error!("Can't read file {:?} {}", &sql_file, &e);
-                                e
-                            })
-                            .ok();
-                    }
-                }
-            };
-        }
-        None
+        let dir = sql_dir?;
+        let versioned_files = find_sql_files(&dir, &self.header_name).ok()?;
+        versioned_files
+            .into_iter()
+            .find(|(min_version, _)| instance_version >= InstanceNumVersion::from(*min_version))
+            .and_then(|(_, sql_file)| {
+                read_to_string(&sql_file)
+                    .inspect_err(|e| {
+                        log::error!("Can't read file {:?} {}", &sql_file, &e);
+                    })
+                    .ok()
+            })
     }
-    fn find_known_query(id: sqls::Id) -> Option<&'static str> {
-        sqls::find_known_query(id)
+    fn find_known_query(
+        id: sqls::Id,
+        version: InstanceNumVersion,
+        tenant: Tenant,
+    ) -> Option<String> {
+        sqls::get_factory_query(id, Some(version), tenant, None)
             .map_err(|e| {
-                log::error!("{e}");
+                log::error!("Can't find query {id:?} {e}");
                 e
             })
             .ok()
@@ -202,25 +192,30 @@ fn get_file_version(path: &Path, section_name: &str) -> Option<u32> {
     None
 }
 
-lazy_static::lazy_static! {
-    static ref SECTION_MAP: HashMap<&'static str, sqls::Id> = HashMap::from([
-        (names::INSTANCE, sqls::Id::InstanceProperties),
-        (names::COUNTERS, sqls::Id::Counters),
-        (names::BACKUP, sqls::Id::Backup),
-        (names::BLOCKED_SESSIONS, sqls::Id::BlockedSessions),
-        (names::DATABASES, sqls::Id::Databases),
-        (names::CONNECTIONS, sqls::Id::Connections),
-
-        (names::TRANSACTION_LOG, sqls::Id::TransactionLogs),
-        (names::DATAFILES, sqls::Id::Datafiles),
-        (names::TABLE_SPACES, sqls::Id::TableSpaces),
-        (names::CLUSTERS, sqls::Id::Clusters),
-
+static SECTION_MAP: LazyLock<HashMap<&'static str, sqls::Id>> = LazyLock::new(|| {
+    HashMap::from([
+        (names::IO_STATS, sqls::Id::IoStats),
+        (names::TS_QUOTAS, sqls::Id::TsQuotas),
         (names::JOBS, sqls::Id::Jobs),
-        (names::MIRRORING, sqls::Id::Mirroring),
-        (names::AVAILABILITY_GROUPS, sqls::Id::AvailabilityGroups),
-    ]);
-}
+        (names::RESUMABLE, sqls::Id::Resumable),
+        (names::UNDO_STAT, sqls::Id::UndoStat),
+        (names::RECOVERY_AREA, sqls::Id::RecoveryArea),
+        (names::ASM_DISK_GROUP, sqls::Id::AsmDiskGroup),
+        (names::LOCKS, sqls::Id::Locks),
+        (names::LOG_SWITCHES, sqls::Id::LogSwitches),
+        (names::LONG_ACTIVE_SESSIONS, sqls::Id::LongActiveSessions),
+        (names::PROCESSES, sqls::Id::Processes),
+        (names::RECOVERY_STATUS, sqls::Id::RecoveryStatus),
+        (names::RMAN, sqls::Id::Rman),
+        (names::SESSIONS, sqls::Id::Sessions),
+        (names::SYSTEM_PARAMETER, sqls::Id::SystemParameter),
+        (names::TABLESPACES, sqls::Id::TableSpaces),
+        (names::DATAGUARD_STATS, sqls::Id::DataGuardStats),
+        (names::INSTANCE, sqls::Id::Instance),
+        (names::ASM_INSTANCE, sqls::Id::AsmInstance),
+        (names::PERFORMANCE, sqls::Id::Performance),
+    ])
+});
 
 pub fn get_sql_id<T: AsRef<str>>(section_name: T) -> Option<sqls::Id> {
     SECTION_MAP.get(section_name.as_ref()).copied()
@@ -235,24 +230,27 @@ mod tests {
     fn test_section_header() {
         let section = Section::make_instance_section();
         assert_eq!(
-            section.to_plain_header(),
-            "<<<oracle_instance:sep(124)>>>\n"
+            section.to_signaling_header().unwrap(),
+            "<<<oracle_instance>>>"
         );
-        assert_eq!(section.to_work_header(), "<<<oracle_instance:sep(124)>>>\n");
+        assert_eq!(section.to_work_header(), "<<<oracle_instance:sep(124)>>>");
 
         let section = Section::new(
             &section::SectionBuilder::new("backup")
                 .set_async(true)
                 .build(),
-            Some(100),
+            100,
         );
-        assert_eq!(section.to_plain_header(), "<<<oracle_backup:sep(124)>>>\n");
+        assert_eq!(
+            section.to_signaling_header().unwrap(),
+            "<<<oracle_backup>>>"
+        );
         assert!(section
             .to_work_header()
             .starts_with("<<<oracle_backup:cached("));
-        assert!(section.to_work_header().ends_with("100):sep(124)>>>\n"));
+        assert!(section.to_work_header().ends_with("100):sep(124)>>>"));
 
-        let section = Section::new(&section::SectionBuilder::new("jobs").build(), Some(100));
+        let section = Section::new(&section::SectionBuilder::new("jobs").build(), 100);
         assert!(section
             .to_work_header()
             .starts_with("<<<oracle_jobs:cached("));
@@ -260,35 +258,16 @@ mod tests {
             &section::SectionBuilder::new("jobs")
                 .set_async(false)
                 .build(),
-            Some(100),
+            100,
         );
-        assert_eq!(section.to_work_header(), "<<<oracle_jobs:sep(09)>>>\n");
+        assert_eq!(section.to_work_header(), "<<<oracle_jobs:sep(124)>>>");
     }
 
     /// We test only few parameters
     #[test]
     fn test_get_ids() {
-        assert_eq!(get_sql_id(names::JOBS).unwrap(), sqls::Id::Jobs);
-        assert_eq!(
-            get_sql_id(section::names::MIRRORING).unwrap(),
-            sqls::Id::Mirroring
-        );
-        assert_eq!(
-            get_sql_id(names::AVAILABILITY_GROUPS).unwrap(),
-            sqls::Id::AvailabilityGroups
-        );
-        assert_eq!(get_sql_id(names::COUNTERS).unwrap(), sqls::Id::Counters);
-        assert_eq!(get_sql_id(names::CLUSTERS).unwrap(), sqls::Id::Clusters);
-        assert_eq!(
-            get_sql_id(names::CONNECTIONS).unwrap(),
-            sqls::Id::Connections
-        );
+        assert_eq!(get_sql_id(names::IO_STATS).unwrap(), sqls::Id::IoStats);
+        // TODO: add all..
         assert!(get_sql_id("").is_none());
-    }
-
-    #[test]
-    fn test_header_name() {
-        assert_eq!(to_header_name(names::CLUSTERS), "cluster");
-        assert_eq!(to_header_name("xxx"), "xxx");
     }
 }

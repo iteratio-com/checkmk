@@ -42,7 +42,6 @@ def main() {
                     use_upstream_build: true,
                     relative_job_name: "${branch_base_folder}/builders/build-cmk-package",
                     force_build: params.FORCE_BUILD,
-                    dependency_paths: [p.path] + p.dependencies,
                     build_params: [
                         CUSTOM_GIT_REF: effective_git_ref,
                         PACKAGE_PATH:  p.path,
@@ -60,7 +59,7 @@ def main() {
 
                 if ("${build_instance.result}" != "SUCCESS") {
                     if (send_notification_mail) {
-                        notify.notify_maintainer_of_package(p.maintainers, stepName, "${build_instance.absoluteUrl}" + "console")
+                        notify.notify_maintainer_of_package(p.maintainers, stepName, "${build_instance.absoluteUrl}" + "console");
                     }
                     throw new Exception("Job ${stepName} failed");
                 }

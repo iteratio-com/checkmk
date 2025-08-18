@@ -5,6 +5,7 @@
 
 
 import logging
+import socket
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import NamedTuple
@@ -12,21 +13,20 @@ from typing import NamedTuple
 import pytest
 from pytest import MonkeyPatch
 
-from tests.testlib.unit.base_configuration_scenario import Scenario
-
+from cmk.agent_based.v2 import AgentSection, SimpleSNMPSection
+from cmk.base import config
+from cmk.base.checkers import (
+    CMKFetcher,
+    CMKParser,
+    DiscoveryPluginMapper,
+    HostLabelPluginMapper,
+    SectionPluginMapper,
+)
+from cmk.base.config import ConfigCache
+from cmk.base.configlib.checkengine import DiscoveryConfig
+from cmk.base.configlib.servicename import make_final_service_name_config
 from cmk.ccc.exceptions import OnError
 from cmk.ccc.hostaddress import HostAddress, HostName
-
-from cmk.utils.everythingtype import EVERYTHING
-from cmk.utils.labels import DiscoveredHostLabelsStore, HostLabel
-from cmk.utils.rulesets import RuleSetName
-from cmk.utils.sectionname import SectionName
-
-from cmk.snmplib import SNMPRawData
-
-from cmk.fetchers import Mode
-from cmk.fetchers.filecache import FileCacheOptions
-
 from cmk.checkengine.checkresults import ActiveCheckResult
 from cmk.checkengine.discovery import (
     ABCDiscoveryConfig,
@@ -67,24 +67,20 @@ from cmk.checkengine.sectionparser import (
     SectionPlugin,
     SectionsParser,
 )
-
-from cmk.base import config
-from cmk.base.checkers import (
-    CMKFetcher,
-    CMKParser,
-    DiscoveryPluginMapper,
-    HostLabelPluginMapper,
-    SectionPluginMapper,
-)
-from cmk.base.config import ConfigCache
-from cmk.base.configlib.checkengine import DiscoveryConfig
-
-from cmk.agent_based.v2 import AgentSection, SimpleSNMPSection
+from cmk.fetchers import Mode, PlainFetcherTrigger
+from cmk.fetchers.filecache import FileCacheOptions
 from cmk.plugins.collection.agent_based.df_section import agent_section_df
 from cmk.plugins.collection.agent_based.kernel import agent_section_kernel
 from cmk.plugins.collection.agent_based.labels import agent_section_labels
 from cmk.plugins.collection.agent_based.uptime import agent_section_uptime
 from cmk.plugins.liebert.agent_based.liebert_fans import snmp_section_liebert_fans
+from cmk.snmplib import SNMPRawData
+from cmk.utils.everythingtype import EVERYTHING
+from cmk.utils.ip_lookup import IPStackConfig
+from cmk.utils.labels import DiscoveredHostLabelsStore, HostLabel
+from cmk.utils.rulesets import RuleSetName
+from cmk.utils.sectionname import SectionName
+from tests.testlib.unit.base_configuration_scenario import Scenario
 
 
 def _as_plugin(plugin: AgentSection | SimpleSNMPSection) -> SectionPlugin:
@@ -1491,25 +1487,33 @@ def test_commandline_discovery(
 
     file_cache_options = FileCacheOptions()
     parser = CMKParser(
-        config_cache.parser_factory(),
+        config.make_parser_config(
+            config_cache._loaded_config, config_cache.ruleset_matcher, config_cache.label_manager
+        ),
         selected_sections=NO_SELECTION,
         keep_outdated=file_cache_options.keep_outdated,
         logger=logging.getLogger("tests"),
     )
+    service_name_config = config_cache.make_passive_service_name_config(
+        make_final_service_name_config(config_cache._loaded_config, config_cache.ruleset_matcher)
+    )
     fetcher = CMKFetcher(
         config_cache,
+        lambda hn: PlainFetcherTrigger(),
         config_cache.fetcher_factory(
-            config_cache.make_service_configurer(
-                {}, config_cache.make_passive_service_name_config()
-            ),
-            ip_lookup=lambda *a: None,
+            config_cache.make_service_configurer({}, service_name_config),
+            ip_lookup=lambda *a: HostAddress(""),
+            service_name_config=service_name_config,
+            enforced_services_table=lambda hn: {},
         ),
         agent_based_plugins,
+        default_address_family=lambda *a: socket.AddressFamily.AF_INET,
         file_cache_options=file_cache_options,
         force_snmp_cache_refresh=False,
-        ip_address_of=lambda *a: None,
-        ip_address_of_mandatory=lambda *a: None,
-        ip_address_of_mgmt=lambda *a: None,
+        get_ip_stack_config=lambda *a: IPStackConfig.IPv4,
+        ip_address_of=lambda *a: HostAddress(""),
+        ip_address_of_mandatory=lambda *a: HostAddress(""),
+        ip_address_of_mgmt=lambda *a: HostAddress(""),
         mode=Mode.DISCOVERY,
         on_error=OnError.RAISE,
         selected_sections=NO_SELECTION,

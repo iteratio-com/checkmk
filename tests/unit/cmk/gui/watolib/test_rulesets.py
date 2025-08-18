@@ -9,27 +9,22 @@ from io import StringIO
 
 import pytest
 
-from tests.testlib.unit.base_configuration_scenario import Scenario
-
-from cmk.ccc.hostaddress import HostName
-
-from cmk.utils.labels import Labels
-from cmk.utils.paths import default_config_dir
-from cmk.utils.rulesets.ruleset_matcher import RuleSpec
-
 from cmk.automations.results import (
     AnalyzeHostRuleMatchesResult,
     AnalyzeServiceRuleMatchesResult,
 )
-
 from cmk.base.automations.check_mk import (
     AutomationAnalyzeHostRuleMatches,
     AutomationAnalyzeServiceRuleMatches,
 )
-
+from cmk.ccc.hostaddress import HostName
 from cmk.gui.watolib import rulesets
 from cmk.gui.watolib.hosts_and_folders import Folder, FolderTree
 from cmk.gui.watolib.rulesets import FolderRulesets, Rule, RuleConditions, RuleOptions, Ruleset
+from cmk.utils.labels import Labels
+from cmk.utils.paths import default_config_dir
+from cmk.utils.rulesets.ruleset_matcher import RuleSpec
+from tests.testlib.unit.base_configuration_scenario import Scenario
 
 
 @pytest.fixture(name="mock_analyze_host_rule_matches_automation")
@@ -95,11 +90,12 @@ def _test_hosts(folder: Folder) -> None:
             (HostName("dong"), {}, None),
         ],
         pprint_value=False,
+        use_git=False,
     )
 
 
 def _test_host_ruleset(folder: Folder) -> Ruleset:
-    ruleset = Ruleset("only_hosts", {})
+    ruleset = Ruleset("only_hosts")
     ruleset.append_rule(
         folder,
         Rule(
@@ -205,7 +201,7 @@ def test_analyse_service_ruleset() -> None:
 
 
 def _test_service_ruleset(folder: Folder) -> Ruleset:
-    ruleset = Ruleset("ignored_services", {})
+    ruleset = Ruleset("ignored_services")
     ruleset.append_rule(
         folder,
         Rule(

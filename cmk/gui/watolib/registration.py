@@ -8,12 +8,15 @@ from collections.abc import Sequence
 from datetime import timedelta
 
 from cmk.ccc import version
-
 from cmk.gui import hooks
 from cmk.gui.background_job import BackgroundJobRegistry
 from cmk.gui.cron import CronJob, CronJobRegistry
+from cmk.gui.search import (
+    launch_requests_processing_background,
+    MatchItemGeneratorRegistry,
+    SearchIndexBackgroundJob,
+)
 from cmk.gui.valuespec import AutocompleterRegistry
-from cmk.gui.watolib.search import MatchItemGeneratorRegistry
 
 from . import (
     _sync_remote_sites,
@@ -51,7 +54,11 @@ from .config_domain_name import (
 from .config_hostname import config_hostname_autocompleter
 from .config_sync import ReplicationPathRegistry
 from .groups import ContactGroupUsageFinderRegistry as ContactGroupUsageFinderRegistry
-from .host_attributes import ABCHostAttribute, HostAttributeRegistry, HostAttributeTopicRegistry
+from .host_attributes import (
+    ABCHostAttribute,
+    HostAttributeRegistry,
+    HostAttributeTopicRegistry,
+)
 from .host_label_sync import AutomationDiscoveredHostLabelSync
 from .host_match_item_generator import MatchItemGeneratorHosts
 from .host_rename import (
@@ -87,7 +94,6 @@ from .sample_config import (
     ConfigGeneratorLocalSiteConnection,
     ConfigGeneratorRegistrationUser,
 )
-from .search import launch_requests_processing_background, SearchIndexBackgroundJob
 from .services import ServiceDiscoveryBackgroundJob
 from .timeperiods import TimeperiodUsageFinderRegistry
 from .user_profile import handle_ldap_sync_finished, PushUserProfilesToSite

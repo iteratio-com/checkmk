@@ -11,17 +11,12 @@ modified via rules."""
 import functools
 from collections.abc import Callable, Collection, Container, Iterator
 
-from cmk.ccc.hostaddress import HostName
-
-from cmk.utils.rulesets.definition import RuleGroup
-from cmk.utils.servicename import Item
-
-from cmk.automations.results import AnalyseServiceResult, ServiceInfo
-
 import cmk.gui.view_utils
+from cmk.automations.results import AnalyseServiceResult, ServiceInfo
+from cmk.ccc.hostaddress import HostName
 from cmk.gui import forms
 from cmk.gui.breadcrumb import Breadcrumb
-from cmk.gui.config import active_config
+from cmk.gui.config import Config
 from cmk.gui.exceptions import MKUserError
 from cmk.gui.htmllib.generator import HTMLWriter
 from cmk.gui.htmllib.html import html
@@ -56,6 +51,8 @@ from cmk.gui.watolib.rulespecs import (
     RulespecAllowList,
 )
 from cmk.gui.watolib.utils import mk_repr
+from cmk.utils.rulesets.definition import RuleGroup
+from cmk.utils.servicename import Item
 
 from ._status_links import make_service_status_link
 
@@ -100,7 +97,7 @@ class ModeObjectParameters(WatoMode):
             title += " / " + self._service
         return title
 
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         return PageMenu(
             dropdowns=[
                 PageMenuDropdown(
@@ -131,27 +128,27 @@ class ModeObjectParameters(WatoMode):
         if self._service:
             yield make_service_status_link(self._host.name(), self._service)
 
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         all_rulesets = AllRulesets.load_all_rulesets()
         for_host: bool = not self._service
 
         # Object type specific detail information
         service_result: AnalyseServiceResult | None = None
-        automation_config = make_automation_config(active_config.sites[self._host.site_id()])
+        automation_config = make_automation_config(config.sites[self._host.site_id()])
         if for_host:
-            self._show_host_info(automation_config=automation_config, debug=active_config.debug)
+            self._show_host_info(automation_config=automation_config, debug=config.debug)
         else:
             assert self._service is not None
             service_result = analyse_service(
                 automation_config,
                 self._hostname,
                 self._service,
-                debug=active_config.debug,
+                debug=config.debug,
             )
             self._show_service_info(
                 all_rulesets=all_rulesets,
                 service_result=service_result,
-                debug=active_config.debug,
+                debug=config.debug,
             )
 
         last_maingroup = None
@@ -190,7 +187,7 @@ class ModeObjectParameters(WatoMode):
                     svc_desc=self._service,
                     service_result=service_result,
                     known_settings=None,
-                    debug=active_config.debug,
+                    debug=config.debug,
                 )
 
         forms.end()
@@ -643,7 +640,7 @@ class ModeObjectParameters(WatoMode):
             try:
                 html.write_text_permissive(valuespec.value_to_html(known_settings))
             except Exception as e:
-                if active_config.debug:
+                if debug:
                     raise
                 html.write_text_permissive(_("Invalid parameter %r: %s") % (known_settings, e))
 

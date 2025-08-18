@@ -6,9 +6,12 @@ conditions defined in the file COPYING, which is part of this source code packag
 <script setup lang="ts">
 import { ref } from 'vue'
 import CmkDialog from '@/components/CmkDialog.vue'
-import SlideIn from '@/components/SlideIn.vue'
+import CmkSlideInDialog from '@/components/CmkSlideInDialog.vue'
+import AgentInstallSlideOutContent from '@/mode-host/agent-connection-test/components/AgentInstallSlideOutContent.vue'
+import AgentRegisterSlideOutContent from '@/mode-host/agent-connection-test/components/AgentRegisterSlideOutContent.vue'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/tooltip'
 import { TooltipArrow } from 'radix-vue'
+import { type AgentSlideout } from 'cmk-shared-typing/typescript/agent_slideout'
 
 interface Props {
   dialog_title: string
@@ -16,13 +19,16 @@ interface Props {
   slide_in_title: string
   slide_in_button_title: string
   docs_button_title: string
-  url: string
+  close_button_title: string
+  host_name: string
+  agent_slideout: AgentSlideout
+  all_agents_url: string
+  is_not_registered: boolean
 }
 
 defineProps<Props>()
 
 const slideInOpen = ref(false)
-const externalContent = ref('')
 
 const openDocs = () => {
   window.open('https://docs.checkmk.com/latest/en/wato_monitoringagents.html#agents', '_blank')
@@ -67,14 +73,32 @@ const tooltipOpen = ref(true)
       </TooltipContent>
     </Tooltip>
   </TooltipProvider>
-  <SlideIn
+  <CmkSlideInDialog
     :open="slideInOpen"
     :header="{ title: slide_in_title, closeButton: true }"
     @close="slideInOpen = false"
   >
-    <!-- eslint-disable-next-line vue/no-v-html -->
-    <div v-html="externalContent"></div>
-  </SlideIn>
+    <AgentRegisterSlideOutContent
+      v-if="is_not_registered"
+      :all_agents_url="all_agents_url"
+      :host_name="host_name"
+      :agent_registration_cmds="agent_slideout.agent_registration_cmds"
+      :close_button_title="close_button_title"
+      :save_host="agent_slideout.save_host"
+      @close="((slideInOpen = false), (tooltipOpen = false))"
+    />
+    <AgentInstallSlideOutContent
+      v-else
+      :all_agents_url="all_agents_url"
+      :host_name="host_name"
+      :agent_install_cmds="agent_slideout.agent_install_cmds"
+      :agent_registration_cmds="agent_slideout.agent_registration_cmds"
+      :legacy_agent_url="agent_slideout.legacy_agent_url"
+      :close_button_title="close_button_title"
+      :save_host="agent_slideout.save_host"
+      @close="((slideInOpen = false), (tooltipOpen = false))"
+    />
+  </CmkSlideInDialog>
 </template>
 
 <style scoped>

@@ -4,10 +4,9 @@
 # conditions defined in the file COPYING, which is part of this source code package.
 
 
-from cmk.base.check_legacy_includes.temperature import check_temperature
-
 from cmk.agent_based.legacy.v0_unstable import LegacyCheckDefinition
 from cmk.agent_based.v2 import SNMPTree, startswith, StringTable
+from cmk.base.check_legacy_includes.temperature import check_temperature
 
 check_info = {}
 
@@ -40,7 +39,9 @@ def check_emerson_temp(item, params, info):
 
 
 def parse_emerson_temp(string_table: StringTable) -> StringTable:
-    return string_table
+    # Only use the first two sensor values, as values beyond that seem to be handled in a different
+    # structure that we lack a concrete definition for.
+    return string_table[:2]
 
 
 check_info["emerson_temp"] = LegacyCheckDefinition(

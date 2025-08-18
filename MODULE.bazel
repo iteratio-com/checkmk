@@ -8,69 +8,58 @@ repo_license = use_repo_rule("//bazel/rules:repo_license.bzl", "detect_repo_lice
 
 bazel_dep(name = "aspect_bazel_lib", version = "2.17.1")
 bazel_dep(name = "aspect_rules_js", version = "2.3.7")
-bazel_dep(name = "aspect_rules_lint", version = "1.4.4")
+bazel_dep(name = "aspect_rules_lint", version = "1.5.1")
 bazel_dep(name = "aspect_rules_py", version = "1.5.2")
 bazel_dep(name = "aspect_rules_ts", version = "3.6.0")
 bazel_dep(name = "aspect_rules_webpack", version = "0.17.0")
-bazel_dep(name = "bazel_skylib", version = "1.7.1")
-bazel_dep(name = "gazelle", version = "0.42.0")
+bazel_dep(name = "bazel_skylib", version = "1.8.1")
+bazel_dep(name = "gazelle", version = "0.45.0")
 bazel_dep(name = "googletest", version = "1.17.0", repo_name = "gtest")
-bazel_dep(
-    # Transitive dependency for protobuf.
-    # Req anything with a version equal or greater than 1.64.0.
-    name = "grpc-java",
-    version = "1.64.0",
-)
-bazel_dep(name = "platforms", version = "0.0.11")
-bazel_dep(name = "protobuf", version = "29.3", repo_name = "com_google_protobuf")
+bazel_dep(name = "platforms", version = "1.0.0")
+bazel_dep(name = "protobuf", version = "31.1")
 bazel_dep(name = "rules_cc", version = "0.1.2")
-bazel_dep(name = "rules_foreign_cc", version = "0.14.0")
-bazel_dep(name = "rules_go", version = "0.50.1")
+bazel_dep(name = "rules_foreign_cc", version = "0.15.0")
+bazel_dep(name = "rules_go", version = "0.56.1")
 bazel_dep(name = "rules_multirun", version = "0.12.0")
 bazel_dep(name = "rules_multitool", version = "1.5.0")
 bazel_dep(name = "rules_mypy", version = "0.29.0")
 bazel_dep(name = "rules_nodejs", version = "6.3.5")
 bazel_dep(name = "rules_pkg", version = "1.1.0")
 bazel_dep(name = "rules_proto", version = "7.1.0")
-bazel_dep(name = "rules_proto_grpc", version = "5.0.1")
+bazel_dep(name = "rules_proto_grpc", version = "5.3.1")
 bazel_dep(name = "rules_python", version = "1.4.1")
 bazel_dep(name = "rules_rust", version = "0.61.0")
 bazel_dep(name = "rules_uv", version = "0.71.0")
-bazel_dep(
-    # LLVM for clang-tidy, clang-format, and IWYU.
-    name = "toolchains_llvm",
-    version = "1.4.0",
-)
 bazel_dep(name = "toolchains_musl", version = "0.1.20")
-bazel_dep(
-    # Transitive dep required because a dependency in the protobuf-python chain
-    # expects `@rules_proto//proto/private/rules:proto_toolchain_rule.bzl`.
-    # However, 7083178 removed the file from rules_proto.
-    name = "toolchains_protoc",
-    version = "0.3.7",
-)
 
-bazel_dep(name = "bazel_clang_tidy", dev_dependency = True)
 bazel_dep(name = "bazel_iwyu", dev_dependency = True)
+bazel_dep(
+    name = "llvm_linux_x86_64",
+    version = "19.1.7",
+    dev_dependency = True,
+    repo_name = "clang-linux-x86_64",
+)
+bazel_dep(
+    name = "clickhouse",
+    version = "v25.6.5.41-stable",
+    dev_dependency = True,
+)
 bazel_dep(
     name = "buildifier_prebuilt",
     version = "8.0.0",
     dev_dependency = True,
 )
 bazel_dep(
+    name = "cpp-httplib",
+    version = "0.16.3.bzl.1",
+    dev_dependency = True,
+    repo_name = "httplib",
+)
+bazel_dep(
     # Hedron's Compile Commands Extractor for Bazel
     # https://github.com/hedronvision/bazel-compile-commands-extractor
     name = "hedron_compile_commands",
     dev_dependency = True,
-)
-
-git_override(
-    module_name = "bazel_clang_tidy",
-    # No tags, no releases.  Live on head.
-    commit = "a965fb4cb5286812643e205a5f0db8927107b120",
-    patch_strip = 1,
-    patches = ["//bazel/patches:bazel_clang_tidy-gcc_install_dir.patch"],
-    remote = "https://github.com/erenon/bazel_clang_tidy.git",
 )
 
 git_override(
@@ -102,6 +91,16 @@ git_override(
 )
 
 single_version_override(
+    module_name = "aspect_rules_lint",
+    patch_strip = 1,
+    patches = [
+        "//bazel/patches:rules_lint-clang_tidy-gcc_install_dir.patch",
+        "//bazel/patches:rules_lint-clang_tidy-deps.patch",
+        "//bazel/patches:rules_lint-clang_tidy-quotation.patch",
+    ],
+)
+
+single_version_override(
     module_name = "aspect_rules_py",
     patch_strip = 1,
     patches = [
@@ -109,21 +108,6 @@ single_version_override(
         "//bazel/patches:rules_py-no_mypy_for_py_pytest_main.patch",
     ],
     version = "1.5.2",
-)
-
-single_version_override(
-    module_name = "aspect_rules_lint",
-    patch_strip = 1,
-    patches = [
-        # https://github.com/aspect-build/rules_lint/pull/576
-        "//bazel/patches:rules_lint-feat_format_toml.patch",
-    ],
-)
-
-single_version_override(
-    module_name = "toolchains_llvm",
-    patch_strip = 1,
-    patches = ["//bazel/patches:toolchains_llvm-expose_full_archive.patch"],
 )
 
 single_version_override(
@@ -168,13 +152,13 @@ single_version_override(
 
 new_local_repository(
     name = "glib",
-    build_file = "@//omd/packages/glib:BUILD",
+    build_file = "@//omd/packages/glib:BUILD.glib.bazel",
     path = "/usr",
 )
 
 new_local_repository(
     name = "libxml2",
-    build_file = "@//omd/packages/libxml2:BUILD",
+    build_file = "@//omd/packages/libxml2:BUILD.libxml2.bazel",
     path = "/usr",
 )
 
@@ -190,7 +174,9 @@ filegroup(
         "gcc-13.2.0/lib64/libstdc++.so",
         "gcc-13.2.0/lib64/libstdc++.so.6",
         "gcc-13.2.0/lib64/libstdc++.so.6.0.32",
-    ]),
+    ],
+    allow_empty = True,
+    ),
     visibility = ["//visibility:public"],
 )
     """,
@@ -203,8 +189,8 @@ UPSTREAM_MIRROR_URL = "https://artifacts.lan.tribe29.com/repository/upstream-arc
 http_file(
     name = "otel_collector_custom_builder",
     executable = True,
-    sha256 = "bbccc5ab73364a17d99b22f0c1d53fc0efecee5fa8f93000596b4cfbe9a73325",
-    url = "https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/cmd%2Fbuilder%2Fv0.113.0/ocb_0.113.0_linux_amd64",
+    sha256 = "97094e36179e2b792e8760db67a399f649d3dff041ee4ea2144db612abcd840a",
+    url = "https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/cmd%2Fbuilder%2Fv0.131.0/ocb_0.131.0_linux_amd64",
 )
 
 http_file(
@@ -253,6 +239,16 @@ exec "$(dirname -- "${BASH_SOURCE[0]}")"/ld.orig "${args[@]}"
 )
 
 http_archive(
+    name = "pcap",
+    build_file = "//omd/packages/pcap:BUILD.pcap.bazel",
+    integrity = "sha256-hPqJrG0wMCjBxbdUq/93Ik9F7KCpTrGjT/CqnO7OOSU=",
+    strip_prefix = "libpcap-1.10.5",
+    urls = [
+        "https://www.tcpdump.org/release/libpcap-1.10.5.tar.xz",
+    ],
+)
+
+http_archive(
     name = "patch",
     build_file = "//omd/packages/patch:BUILD.patch.bazel",
     patch_args = ["-p1"],
@@ -293,7 +289,7 @@ filegroup(
 )
 
 http_archive(
-    name = "oci-basic-light-lin-x86",
+    name = "oci-basic-light-lin-x64",
     build_file_content = """
 filegroup(
     name = "srcs",
@@ -310,10 +306,10 @@ filegroup(
     visibility = ["//visibility:public"],
 )
 """,
-    sha256 = "fa18a5a04b6ea2c5c528d8764dc6ef4caab2b5ec217cfee82629f5c861db10ea",
+    sha256 = "87208c83f23b7e6c934ca7047c00044aa1b0adc8d0dd60cb0ee16042593b4af5",
     urls = [
-        "https://download.oracle.com/otn_software/linux/instantclient/2118000/instantclient-basiclite-linux-21.18.0.0.0dbru.zip",
-        UPSTREAM_MIRROR_URL + "/instantclient-basiclite-linux-21.18.0.0.0dbru.zip",
+        "https://download.oracle.com/otn_software/linux/instantclient/2118000/instantclient-basiclite-linux.x64-21.18.0.0.0dbru.zip",
+        UPSTREAM_MIRROR_URL + "/instantclient-basiclite-linux.x64-21.18.0.0.0dbru.zip",
     ],
 )
 
@@ -325,6 +321,18 @@ http_archive(
     urls = [
         "https://github.com/openssl/openssl/releases/download/openssl-3.0.16/openssl-3.0.16.tar.gz",
         UPSTREAM_MIRROR_URL + "openssl-3.0.16.tar.gz",
+    ],
+)
+
+http_archive(
+    # TODO: re2 is available from the central registry.  However, there seems
+    # to be versioning issues with protobuf.
+    name = "re2",
+    sha256 = "665b65b6668156db2b46dddd33405cd422bd611352c5052ab3dae6a5fbac5506",
+    strip_prefix = "re2-2022-12-01",
+    urls = [
+        "https://github.com/google/re2/archive/refs/tags/2022-12-01.tar.gz",
+        UPSTREAM_MIRROR_URL + "re2-2022-12-01.tar.gz",
     ],
 )
 
@@ -342,11 +350,11 @@ http_archive(
 http_archive(
     name = "erlang",
     build_file = "//omd/packages/erlang:BUILD.erlang.bazel",
-    sha256 = "e49708cf1f602863e394869af48df4abcb39e3633b96cb4babde3ee7aa724872",
-    strip_prefix = "otp_src_26.2.5.2",
+    sha256 = "a02efb423a7ecdee661b3c3ad2661521d9c00c2dd866c004d95a87d486a03bab",
+    strip_prefix = "otp_src_26.2.5.13",
     urls = [
-        UPSTREAM_MIRROR_URL + "otp_src_26.2.5.2.tar.gz",
-        "https://github.com/erlang/otp/releases/download/OTP-26.2.5.2/otp_src_26.2.5.2.tar.gz",
+        UPSTREAM_MIRROR_URL + "otp_src_26.2.5.13.tar.gz",
+        "https://github.com/erlang/otp/releases/download/OTP-26.2.5.13/otp_src_26.2.5.13.tar.gz",
     ],
 )
 
@@ -513,9 +521,9 @@ http_archive(
 http_archive(
     name = "robotmk",
     build_file = "//omd/packages/robotmk:BUILD.robotmk.bazel",
-    sha256 = "7b7315cfaf69ae2fa12d7f2da4893c1c486a77393ecf71a76ccb04edf31cac9f",
+    sha256 = "c5b65ae68cb0911f8e1a111447091d324c377626eb84cc4d6be8a903360ddbf0",
     urls = [
-        "https://github.com/elabit/robotmk/releases/download/v4.0.0-alpha-5/all_executables.zip",
+        "https://github.com/elabit/robotmk/releases/download/v4.0.0-alpha-6/all_executables.zip",
     ],
 )
 
@@ -611,11 +619,24 @@ exports_files([
     ],
 )
 
-repo_license(name = "repo_license")
+http_archive(
+    name = "nagvis",
+    build_file = "//omd/packages/nagvis:BUILD.nagvis.bazel",
+    patch_args = ["-p1"],
+    patch_tool = "patch",
+    patches = [
+        "//omd/packages/nagvis/patches:0001-global.php.dif",
+        "//omd/packages/nagvis/patches:0002-cmkadmin.dif",
+    ],
+    sha256 = "69ca223cf3a14ba77d6b168b242c3c2bd3b059c44142a618ed9968d24d5700ba",
+    strip_prefix = "nagvis-1.9.47",
+    urls = [
+        UPSTREAM_MIRROR_URL + "nagvis-1.9.47.tar.gz",
+        "https://www.nagvis.org/share/nagvis-1.9.47.tar.gz",
+    ],
+)
 
-llvm = use_extension("@toolchains_llvm//toolchain/extensions:llvm.bzl", "llvm")
-llvm.toolchain(llvm_version = "19.1.7")
-use_repo(llvm, "llvm_toolchain", "llvm_toolchain_llvm")
+repo_license(name = "repo_license")
 
 multitool = use_extension("@rules_multitool//multitool:extension.bzl", "multitool")
 use_repo(multitool, "multitool")
@@ -642,7 +663,7 @@ rust.repository_set(
     edition = "2021",
     exec_triple = "x86_64-unknown-linux-gnu",
     target_compatible_with = [
-        "//bazel/platforms:unknown",
+        "//bazel/platforms:linker_unknown",
         "@platforms//cpu:x86_64",
         "@platforms//os:linux",
     ],
@@ -673,6 +694,7 @@ use_repo(toolchains_musl, "musl_toolchains_hub")
 register_toolchains(
     "@rust_toolchains//:all",
     "@musl_toolchains_hub//:all",
+    "//bazel/toolchains/cc/gcc:host_gcc_toolchain",
     "//bazel/toolchains/cc/gcc/local:linux_x86_64",
 )
 

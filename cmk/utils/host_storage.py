@@ -15,7 +15,6 @@ from typing import Any, Generic, TypedDict, TypeVar
 
 from cmk.ccc import store
 from cmk.ccc.hostaddress import HostName
-
 from cmk.utils.labels import Labels
 from cmk.utils.rulesets.tuple_rulesets import ALL_HOSTS, ALL_SERVICES
 from cmk.utils.tags import TagGroupID, TagID
@@ -291,7 +290,7 @@ def get_standard_hosts_storage() -> ABCHostsStorage[str]:
 
 
 @lru_cache
-def get_host_storage_loaders(storage_format_option: str) -> list[ABCHostsStorageLoader]:
+def get_host_storage_loaders(storage_format_option: object) -> list[ABCHostsStorageLoader]:
     host_storage_loaders: list[ABCHostsStorageLoader] = [
         StandardStorageLoader(get_standard_hosts_storage())
     ]
@@ -454,5 +453,10 @@ def get_all_storage_readers() -> list[ABCHostsStorage]:
     ]
 
 
-def get_storage_format(format_str: str) -> StorageFormat:
-    return StorageFormat.from_str(format_str)
+def get_storage_format(format_option: object) -> StorageFormat:
+    match format_option:
+        case None:
+            return StorageFormat.PICKLE
+        case str() as format_str:
+            return StorageFormat.from_str(format_str)
+    raise TypeError(format_option)

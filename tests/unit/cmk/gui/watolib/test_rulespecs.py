@@ -10,12 +10,10 @@ import pytest
 from pytest import MonkeyPatch
 
 import cmk.ccc.version as cmk_version
-
-from cmk.utils import paths
-
 import cmk.gui.watolib.rulespecs
 from cmk.gui.exceptions import MKUserError
 from cmk.gui.plugins.wato.utils import TimeperiodValuespec
+from cmk.gui.search import MatchItem
 from cmk.gui.utils.rule_specs.legacy_converter import GENERATED_GROUP_PREFIX
 from cmk.gui.valuespec import Dictionary, FixedValue, TextInput
 from cmk.gui.watolib.main_menu import main_module_registry
@@ -32,7 +30,7 @@ from cmk.gui.watolib.rulespecs import (
     RulespecRegistry,
     RulespecSubGroup,
 )
-from cmk.gui.watolib.search import MatchItem
+from cmk.utils import paths
 
 
 def test_rulespec_sub_group() -> None:

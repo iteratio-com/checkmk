@@ -13,12 +13,6 @@ from cmk.ccc.exceptions import MKGeneralException
 from cmk.ccc.hostaddress import HostName
 from cmk.ccc.site import omd_site
 from cmk.ccc.user import UserId
-
-from cmk.utils.global_ident_type import GlobalIdent, PROGRAM_ID_DCD, PROGRAM_ID_QUICK_SETUP
-from cmk.utils.password_store import Password
-from cmk.utils.rulesets.definition import RuleGroupType
-from cmk.utils.rulesets.ruleset_matcher import RuleSpec
-
 from cmk.gui.exceptions import MKAuthException
 from cmk.gui.i18n import _
 from cmk.gui.logged_in import user
@@ -29,6 +23,10 @@ from cmk.gui.watolib.host_attributes import HostAttributes
 from cmk.gui.watolib.hosts_and_folders import Folder, folder_tree, Host
 from cmk.gui.watolib.passwords import load_passwords, remove_password, save_password
 from cmk.gui.watolib.rulesets import AllRulesets, FolderRulesets, Rule, SingleRulesetRecursively
+from cmk.utils.global_ident_type import GlobalIdent, PROGRAM_ID_DCD, PROGRAM_ID_QUICK_SETUP
+from cmk.utils.password_store import Password
+from cmk.utils.rulesets.definition import RuleGroupType
+from cmk.utils.rulesets.ruleset_matcher import RuleSpec
 
 _T = TypeVar("_T")
 IdentFinder = Callable[[GlobalIdent | None], str | None]
@@ -246,12 +244,18 @@ def _validate_and_prepare_create_calls(
         )
     if entities.hosts:
         create_functions.append(
-            _prepare_create_hosts(bundle_ident, entities.hosts, pprint_value=pprint_value)
+            _prepare_create_hosts(
+                bundle_ident, entities.hosts, pprint_value=pprint_value, use_git=use_git
+            )
         )
     if entities.rules:
         create_functions.append(
             _prepare_create_rules(
-                bundle_ident, entities.rules, pprint_value=pprint_value, debug=debug
+                bundle_ident,
+                entities.rules,
+                pprint_value=pprint_value,
+                debug=debug,
+                use_git=use_git,
             )
         )
     if entities.dcd_connections:
@@ -390,9 +394,9 @@ def delete_config_bundle_objects(
 ) -> None:
     # delete resources in inverse order to create, as rules may reference hosts for example
     if references.rules:
-        _delete_rules(references.rules, pprint_value=pprint_value, debug=debug)
+        _delete_rules(references.rules, pprint_value=pprint_value, debug=debug, use_git=use_git)
     if references.hosts:
-        _delete_hosts(references.hosts, pprint_value=pprint_value, debug=debug)
+        _delete_hosts(references.hosts, pprint_value=pprint_value, debug=debug, use_git=use_git)
     if references.passwords:
         _delete_passwords(
             references.passwords,
@@ -401,7 +405,9 @@ def delete_config_bundle_objects(
             use_git=use_git,
         )
     if references.dcd_connections:
-        _delete_dcd_connections(references.dcd_connections, pprint_value=pprint_value, debug=debug)
+        _delete_dcd_connections(
+            references.dcd_connections, pprint_value=pprint_value, debug=debug, use_git=use_git
+        )
 
 
 def _collect_many(values: Iterable[tuple[str, _T]]) -> Mapping[BundleId, Sequence[_T]]:
@@ -433,7 +439,7 @@ def _get_host_attributes(bundle_ident: GlobalIdent, params: CreateHost) -> HostA
 
 
 def _prepare_create_hosts(
-    bundle_ident: GlobalIdent, hosts: Iterable[CreateHost], *, pprint_value: bool
+    bundle_ident: GlobalIdent, hosts: Iterable[CreateHost], *, pprint_value: bool, use_git: bool
 ) -> CreateFunction:
     folder_getter = itemgetter("folder")
     hosts_sorted_by_folder: list[CreateHost] = sorted(hosts, key=folder_getter)
@@ -458,7 +464,7 @@ def _prepare_create_hosts(
 
     def create() -> None:
         for f, validated_hosts in folder_and_valid_hosts:
-            f.create_validated_hosts(validated_hosts, pprint_value=pprint_value)
+            f.create_validated_hosts(validated_hosts, pprint_value=pprint_value, use_git=use_git)
 
     return create
 
@@ -477,7 +483,7 @@ def _user_may_delete_hosts(hosts: Iterable[Host]) -> None:
         )
 
 
-def _delete_hosts(hosts: Iterable[Host], *, pprint_value: bool, debug: bool) -> None:
+def _delete_hosts(hosts: Iterable[Host], *, pprint_value: bool, debug: bool, use_git: bool) -> None:
     folder_getter = itemgetter(0)
     folders_and_hosts = sorted(
         ((host.folder(), host) for host in hosts),
@@ -491,6 +497,7 @@ def _delete_hosts(hosts: Iterable[Host], *, pprint_value: bool, debug: bool) -> 
             allow_locked_deletion=True,
             pprint_value=pprint_value,
             debug=debug,
+            use_git=use_git,
         )
 
 
@@ -581,7 +588,12 @@ def _collect_rules(
 
 
 def _prepare_create_rules(
-    bundle_ident: GlobalIdent, rules: Iterable[CreateRule], *, pprint_value: bool, debug: bool
+    bundle_ident: GlobalIdent,
+    rules: Iterable[CreateRule],
+    *,
+    pprint_value: bool,
+    debug: bool,
+    use_git: bool,
 ) -> CreateFunction:
     validated_data = []
     # sort by folder, then ruleset
@@ -610,14 +622,14 @@ def _prepare_create_rules(
         for f, rulesets, new_rules in validated_data:
             for rule in new_rules:
                 index = rule.ruleset.append_rule(f, rule)
-                rule.ruleset.add_new_rule_change(index, f, rule)
+                rule.ruleset.add_new_rule_change(index, f, rule, use_git=use_git)
 
             rulesets.save_folder(pprint_value=pprint_value, debug=debug)
 
     return create
 
 
-def _delete_rules(rules: Iterable[Rule], *, pprint_value: bool, debug: bool) -> None:
+def _delete_rules(rules: Iterable[Rule], *, pprint_value: bool, debug: bool, use_git: bool) -> None:
     folder_getter = itemgetter(0)
     sorted_rules = sorted(((rule.folder, rule) for rule in rules), key=folder_getter)
     for folder, rule_iter in groupby(sorted_rules, key=folder_getter):  # type: Folder, Iterable[tuple[Folder, Rule]]
@@ -626,7 +638,9 @@ def _delete_rules(rules: Iterable[Rule], *, pprint_value: bool, debug: bool) -> 
             # the rule objects loaded into `rulesets` are different instances
             ruleset = rulesets.get(rule.ruleset.name)
             actual_rule = ruleset.get_rule_by_id(rule.id)
-            rulesets.get(rule.ruleset.name).delete_rule(actual_rule)
+            rulesets.get(rule.ruleset.name).delete_rule(
+                actual_rule, create_change=True, use_git=use_git
+            )
 
         rulesets.save_folder(pprint_value=pprint_value, debug=debug)
 
@@ -659,7 +673,11 @@ def _prepare_create_dcd_connections(
 
 
 def _delete_dcd_connections(
-    dcd_connections: Sequence[tuple[str, DCDConnectionSpec]], *, pprint_value: bool, debug: bool
+    dcd_connections: Sequence[tuple[str, DCDConnectionSpec]],
+    *,
+    pprint_value: bool,
+    debug: bool,
+    use_git: bool,
 ) -> None:
     for dcd_connection_id, _spec in dcd_connections:
         DCDConnectionHook.delete_dcd_connection(dcd_connection_id)
@@ -674,6 +692,7 @@ def _delete_dcd_connections(
         ),
         pprint_value=pprint_value,
         debug=debug,
+        use_git=use_git,
     )
 
 

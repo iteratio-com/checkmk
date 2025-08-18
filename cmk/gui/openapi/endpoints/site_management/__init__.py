@@ -25,7 +25,6 @@ from typing import Any
 from livestatus import SiteConfiguration, SiteConfigurations
 
 from cmk.ccc.site import SiteId
-
 from cmk.gui.config import active_config
 from cmk.gui.exceptions import MKUserError
 from cmk.gui.http import Response
@@ -46,6 +45,7 @@ from cmk.gui.openapi.restful_objects.constructors import domain_object
 from cmk.gui.openapi.restful_objects.registry import EndpointRegistry
 from cmk.gui.openapi.restful_objects.type_defs import DomainObject
 from cmk.gui.openapi.utils import problem, serve_json
+from cmk.gui.site_config import site_is_local
 from cmk.gui.utils import permission_verification as permissions
 from cmk.gui.watolib.site_management import (
     add_changes_after_editing_site_connection,
@@ -261,10 +261,11 @@ def _convert_validate_and_save_site_data(
         internal_config: SiteConfiguration = site_obj.to_internal()
 
         sites_to_update = SitesApiMgr().get_connected_sites_to_update(
-            is_new_connection,
-            site_id,
+            new_or_deleted_connection=is_new_connection,
+            modified_site=site_id,
             current_site_config=internal_config,
             old_site_config=old_site_config,
+            site_configs=SitesApiMgr().get_all_sites(),
         )
         SitesApiMgr().validate_and_save_site(
             site_id,
@@ -278,7 +279,9 @@ def _convert_validate_and_save_site_data(
         site_id=site_id,
         is_new_connection=is_new_connection,
         replication_enabled=site_obj.configuration_connection.enable_replication,
+        is_local_site=site_is_local(internal_config),
         connected_sites=sites_to_update,
+        use_git=active_config.wato_use_git,
     )
 
     return serve_json(data=_serialize_site(site_obj), status=200)

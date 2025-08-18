@@ -19,12 +19,10 @@ from pydantic import (
 )
 
 from cmk.ccc.plugin_registry import Registry
-
+from cmk.graphing.v1 import graphs as graphs_api
+from cmk.gui.color import scalar_colors
 from cmk.gui.i18n import _
 
-from cmk.graphing.v1 import graphs as graphs_api
-
-from ._color import scalar_colors
 from ._from_api import RegisteredMetric
 from ._graph_render_config import GraphRenderOptions
 from ._metric_operation import (
@@ -163,5 +161,6 @@ class GraphRecipe(BaseModel, frozen=True):
     specification: SerializeAsAny[GraphSpecification]
 
     @field_validator("specification", mode="before")
+    @classmethod
     def parse_specification(cls, value: Mapping[str, object]) -> GraphSpecification:
         return parse_raw_graph_specification(value)

@@ -4,7 +4,7 @@
 # conditions defined in the file COPYING, which is part of this source code package.
 
 import re
-from collections.abc import Callable
+from collections.abc import Callable, Iterable, Sequence
 from functools import partial
 
 from cmk.gui import query_filters
@@ -13,32 +13,100 @@ from cmk.gui.htmllib.html import html
 from cmk.gui.i18n import _, _l
 from cmk.gui.ifaceoper import interface_oper_states, interface_port_types
 from cmk.gui.num_split import cmp_version
-from cmk.gui.type_defs import FilterHeader, FilterHTTPVariables, Row, Rows, VisualContext
+from cmk.gui.type_defs import (
+    FilterHeader,
+    FilterHTTPVariables,
+    Row,
+    Rows,
+    VisualContext,
+)
 from cmk.gui.utils.speaklater import LazyString
 from cmk.gui.visuals.filter import (
     CheckboxRowFilter,
-    display_filter_radiobuttons,
     DualListFilter,
     Filter,
     FilterNumberRange,
     FilterOption,
     InputTextFilter,
 )
+from cmk.gui.visuals.filter.components import (
+    Checkbox,
+    FilterComponent,
+    HorizontalGroup,
+    RadioButton,
+    TextInput,
+)
 
 from ._tree import InventoryPath
 
 
-class FilterInvtableText(InputTextFilter):
-    def __init__(self, *, inv_info: str, ident: str, title: str) -> None:
+class FilterInvBool(FilterOption):
+    def __init__(
+        self,
+        *,
+        ident: str,
+        title: str,
+        inventory_path: InventoryPath,
+        is_show_more: bool = True,
+    ) -> None:
         super().__init__(
             title=title,
             sort_index=800,
-            info=inv_info,
-            query_filter=query_filters.TableTextQuery(
-                ident=ident, row_filter=query_filters.filter_by_column_textregex
+            info="host",
+            query_filter=query_filters.TristateQuery(
+                ident=ident,
+                filter_code=lambda x: "",  # No Livestatus filtering right now
+                filter_row=inside_inventory(inventory_path),
             ),
-            show_heading=False,
+            is_show_more=is_show_more,
         )
+
+    def need_inventory(self, value: FilterHTTPVariables) -> bool:
+        return self.query_filter.selection_value(value) != self.query_filter.ignore
+
+
+def _filter_in_host_inventory_range(
+    inventory_path: InventoryPath,
+) -> Callable[[Row, str, query_filters.MaybeBounds], bool]:
+    def row_filter(row: Row, column: str, bounds: query_filters.MaybeBounds) -> bool:
+        if not isinstance(
+            invdata := row["host_inventory"].get_attribute(inventory_path.path, inventory_path.key),
+            int | float,
+        ):
+            return False
+        return query_filters.value_in_range(invdata, bounds)
+
+    return row_filter
+
+
+class FilterInvFloat(FilterNumberRange):
+    def __init__(
+        self,
+        *,
+        ident: str,
+        title: str,
+        inventory_path: InventoryPath,
+        unit: str | LazyString,
+        scale: float | None,
+        is_show_more: bool = True,
+    ) -> None:
+        super().__init__(
+            title=title,
+            sort_index=800,
+            info="host",
+            query_filter=query_filters.NumberRangeQuery(
+                ident=ident,
+                filter_livestatus=False,
+                filter_row=_filter_in_host_inventory_range(inventory_path),
+                request_var_suffix="",
+                bound_rescaling=scale if scale is not None else 1.0,
+            ),
+            unit=unit,
+            is_show_more=is_show_more,
+        )
+
+    def need_inventory(self, value: FilterHTTPVariables) -> bool:
+        return any(self.query_filter.extractor(value))
 
 
 class FilterInvText(InputTextFilter):
@@ -63,6 +131,117 @@ class FilterInvText(InputTextFilter):
 
     def need_inventory(self, value: FilterHTTPVariables) -> bool:
         return bool(value.get(self.htmlvars[0], "").strip().lower())
+
+
+class FilterInvChoice(FilterOption):
+    def __init__(
+        self,
+        *,
+        ident: str,
+        title: str,
+        inventory_path: InventoryPath,
+        options: Sequence[tuple[str, str]],
+        is_show_more: bool = True,
+    ) -> None:
+        super().__init__(
+            title=title,
+            sort_index=800,
+            info="host",
+            query_filter=query_filters.SingleOptionQuery(
+                ident=ident,
+                options=list(options),
+                filter_code=lambda x: "",
+                filter_row=lambda selection, row: (selection == "yes")
+                == row.get("invinterface_available"),
+            ),
+            is_show_more=is_show_more,
+        )
+
+    def need_inventory(self, value: FilterHTTPVariables) -> bool:
+        return self.query_filter.selection_value(value) != self.query_filter.ignore
+
+
+def _filter_table_choices(ident: str, context: VisualContext, rows: Rows) -> Rows:
+    values = context.get(ident, {})
+
+    def _add_row(row: Row) -> bool:
+        # Apply filter if and only if a filter value is set
+        value = row.get(ident)
+        if (filter_key := f"{ident}_{value}") in values:
+            return values[filter_key] == "on"
+        return True
+
+    return [row for row in rows if _add_row(row)]
+
+
+class FilterInvtableChoice(CheckboxRowFilter):
+    def __init__(
+        self, *, inv_info: str, ident: str, title: str, options: Sequence[tuple[str, str]]
+    ) -> None:
+        super().__init__(
+            title=title,
+            sort_index=800,
+            info=inv_info,
+            query_filter=query_filters.MultipleOptionsQuery(
+                ident=ident,
+                options=[(f"{ident}_{k}", v) for k, v in options],
+                rows_filter=partial(_filter_table_choices, ident),
+            ),
+        )
+
+
+class FilterInvtableIntegerRange(FilterNumberRange):
+    """Filter for choosing a range in which a certain integer lies"""
+
+    def __init__(
+        self,
+        *,
+        inv_info: str,
+        ident: str,
+        title: str,
+        unit: str | LazyString,
+        scale: float | None,
+    ) -> None:
+        super().__init__(
+            title=title,
+            sort_index=800,
+            info=inv_info,
+            query_filter=query_filters.NumberRangeQuery(
+                ident=ident,
+                filter_livestatus=False,
+                filter_row=query_filters.column_value_in_range,
+                request_var_suffix="",
+                bound_rescaling=scale if scale is not None else 1.0,
+            ),
+            unit=unit,
+            is_show_more=True,
+        )
+
+
+class FilterInvtableText(InputTextFilter):
+    def __init__(self, *, inv_info: str, ident: str, title: str) -> None:
+        super().__init__(
+            title=title,
+            sort_index=800,
+            info=inv_info,
+            query_filter=query_filters.TableTextQuery(
+                ident=ident, row_filter=query_filters.filter_by_column_textregex
+            ),
+            show_heading=False,
+        )
+
+
+class FilterInvtableDualChoice(DualListFilter):
+    def __init__(
+        self, *, inv_info: str, ident: str, title: str, options: Sequence[tuple[str, str]]
+    ) -> None:
+        super().__init__(
+            title=title,
+            sort_index=800,
+            info=inv_info,
+            query_filter=query_filters.MultipleQuery(ident=ident, op="="),
+            options=lambda i: list(options),
+        )
 
 
 def _filter_by_host_inventory(
@@ -103,66 +282,6 @@ class FilterInvtableTimestampAsAge(FilterNumberRange):
         )
 
 
-class FilterInvtableIntegerRange(FilterNumberRange):
-    """Filter for choosing a range in which a certain integer lies"""
-
-    def __init__(self, *, inv_info: str, ident: str, title: str) -> None:
-        super().__init__(
-            title=title,
-            sort_index=800,
-            info=inv_info,
-            query_filter=query_filters.NumberRangeQuery(
-                ident=ident,
-                filter_livestatus=False,
-                filter_row=query_filters.column_value_in_range,
-            ),
-        )
-
-
-class FilterInvFloat(FilterNumberRange):
-    def __init__(
-        self,
-        *,
-        ident: str,
-        title: str,
-        inventory_path: InventoryPath,
-        unit: str | LazyString,
-        scale: float | None,
-        is_show_more: bool = True,
-    ) -> None:
-        super().__init__(
-            title=title,
-            sort_index=800,
-            info="host",
-            query_filter=query_filters.NumberRangeQuery(
-                ident=ident,
-                filter_livestatus=False,
-                filter_row=_filter_in_host_inventory_range(inventory_path),
-                request_var_suffix="",
-                bound_rescaling=scale if scale is not None else 1.0,
-            ),
-            unit=unit,
-            is_show_more=is_show_more,
-        )
-
-    def need_inventory(self, value: FilterHTTPVariables) -> bool:
-        return any(self.query_filter.extractor(value))
-
-
-def _filter_in_host_inventory_range(
-    inventory_path: InventoryPath,
-) -> Callable[[Row, str, query_filters.MaybeBounds], bool]:
-    def row_filter(row: Row, column: str, bounds: query_filters.MaybeBounds) -> bool:
-        if not isinstance(
-            invdata := row["host_inventory"].get_attribute(inventory_path.path, inventory_path.key),
-            int | float,
-        ):
-            return False
-        return query_filters.value_in_range(invdata, bounds)
-
-    return row_filter
-
-
 class FilterInvtableVersion(Filter):
     def __init__(self, *, inv_info: str, ident: str, title: str) -> None:
         request_vars = [ident + "_from", ident + "_until"]
@@ -181,11 +300,27 @@ class FilterInvtableVersion(Filter):
         )
 
     def display(self, value: FilterHTTPVariables) -> None:
+        # keep this in sync with components(), remove once all filter menus are switched to vue
+        # this special styling is not supported by the current components
         html.write_text_permissive(_("Min.&nbsp;Version:"))
         html.text_input(self.htmlvars[0], default_value=value.get(self.htmlvars[0], ""), size=7)
         html.write_text_permissive(" &nbsp; ")
         html.write_text_permissive(_("Max.&nbsp;Version:"))
         html.text_input(self.htmlvars[1], default_value=value.get(self.htmlvars[1], ""), size=7)
+
+    def components(self) -> Iterable[FilterComponent]:
+        yield HorizontalGroup(
+            components=[
+                TextInput(
+                    id=self.htmlvars[0],
+                    label=_("Min.&nbsp;Version:"),
+                ),
+                TextInput(
+                    id=self.htmlvars[1],
+                    label=_("Max.&nbsp;Version:"),
+                ),
+            ]
+        )
 
     def filter_table(self, context: VisualContext, rows: Rows) -> Rows:
         return self.query_filter.filter_table(context, rows)
@@ -277,31 +412,6 @@ class FilterInvtableInterfaceType(DualListFilter):
         return [row for row in rows if str(row[self.query_filter.column]) in selection]
 
 
-class FilterInvBool(FilterOption):
-    def __init__(
-        self,
-        *,
-        ident: str,
-        title: str,
-        inventory_path: InventoryPath,
-        is_show_more: bool = True,
-    ) -> None:
-        super().__init__(
-            title=title,
-            sort_index=800,
-            info="host",
-            query_filter=query_filters.TristateQuery(
-                ident=ident,
-                filter_code=lambda x: "",  # No Livestatus filtering right now
-                filter_row=inside_inventory(inventory_path),
-            ),
-            is_show_more=is_show_more,
-        )
-
-    def need_inventory(self, value: FilterHTTPVariables) -> bool:
-        return self.query_filter.selection_value(value) != self.query_filter.ignore
-
-
 # Filter tables
 def inside_inventory(inventory_path: InventoryPath) -> Callable[[bool, Row], bool]:
     def keep_row(on: bool, row: Row) -> bool:
@@ -351,20 +461,21 @@ class FilterInvHasSoftwarePackage(Filter):
         return bool(value.get(self._varprefix + "name"))
 
     def display(self, value: FilterHTTPVariables) -> None:
+        # keep this in sync with components(), remove once all filter menus are switched to vue
+        # this special styling is not supported by the current components
         html.text_input(
             varname=self._varprefix + "name",
             default_value=value.get(self._varprefix + "name", ""),
         )
         html.br()
-        display_filter_radiobuttons(
-            varname=self._varprefix + "match",
-            options=[
-                ("exact", _("exact match")),
-                ("regex", _("regular expression, substring match")),
-            ],
-            default="exact",
-            value=value,
-        )
+        RadioButton(
+            id=self._varprefix + "match",
+            choices={
+                "exact": _("exact match"),
+                "regex": _("regular expression, substring match"),
+            },
+            default_value="exact",
+        ).render_html(self.ident, value)
         html.br()
         html.open_span(class_="min_max_row")
         html.write_text_permissive(_("Min.&nbsp;Version: "))
@@ -386,6 +497,34 @@ class FilterInvHasSoftwarePackage(Filter):
             self._varprefix + "negate",
             False,
             label=_("Negate: find hosts <b>not</b> having this package"),
+        )
+
+    def components(self) -> Iterable[FilterComponent]:
+        yield TextInput(id=self._varprefix + "name")
+        yield RadioButton(
+            id=self._varprefix + "match",
+            choices={
+                "exact": _("exact match"),
+                "regex": _("regular expression, substring match"),
+            },
+            default_value="exact",
+        )
+        yield HorizontalGroup(
+            components=[
+                TextInput(
+                    id=self._varprefix + "version_from",
+                    label=_("Min.&nbsp;Version:"),
+                ),
+                TextInput(
+                    id=self._varprefix + "version_to",
+                    label=_("Max.&nbsp;Version:"),
+                ),
+            ]
+        )
+        yield Checkbox(
+            id=self._varprefix + "negate",
+            label=_("Negate: find hosts <b>not</b> having this package"),
+            default_value=False,
         )
 
     def filter_table(self, context: VisualContext, rows: Rows) -> Rows:

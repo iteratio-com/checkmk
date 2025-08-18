@@ -8,24 +8,23 @@ from logging import Logger
 from pathlib import Path
 from typing import override
 
-from cmk.utils.paths import local_agent_based_plugins_dir
-
 from cmk.gui.exceptions import MKUserError
 from cmk.gui.utils.urls import werk_reference_url, WerkReference
-
 from cmk.mkp_tool import Manifest, PackageID
+from cmk.update_config.lib import ExpiryVersion
 from cmk.update_config.plugins.pre_actions.utils import (
     AGENT_BASED_PLUGINS_PREACTION_SORT_INDEX,
     ConflictMode,
     continue_per_users_choice,
     disable_incomp_mkp,
     get_installer_and_package_map,
-    get_path_config,
     is_applicable_mkp,
+    make_path_config,
     PACKAGE_STORE,
     Resume,
 )
 from cmk.update_config.registry import pre_update_action_registry, PreUpdateAction
+from cmk.utils.paths import local_agent_based_plugins_dir
 
 
 class PreUpdateAgentBasedPlugins(PreUpdateAction):
@@ -39,9 +38,8 @@ class PreUpdateAgentBasedPlugins(PreUpdateAction):
 
     @override
     def __call__(self, logger: Logger, conflict_mode: ConflictMode) -> None:
-        path_config = get_path_config()
         # In this case we have no mkp plugins available so bail out early
-        if path_config is None:
+        if (path_config := make_path_config()) is None:
             return
         installer, package_map = get_installer_and_package_map(path_config)
         # group the local_agent_based_plugins_dir files by package
@@ -111,5 +109,6 @@ pre_update_action_registry.register(
         name="agent_based_plugins",
         title="Agent based plugins",
         sort_index=AGENT_BASED_PLUGINS_PREACTION_SORT_INDEX,
+        expiry_version=ExpiryVersion.NEVER,
     )
 )

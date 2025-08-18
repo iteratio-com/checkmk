@@ -10,17 +10,21 @@
                 "$ref": "#/$defs/mode_host_site"
             }
         },
+        "agent_connection_modes": {
+            "type": "array",
+            "items": {
+                "$ref": "#/$defs/mode_host_agent_connection_mode"
+            }
+        },
         "i18n_ping_host": { "$ref": "#/$defs/i18n_ping_host" },
-        "i18n_agent_connection": { "$ref": "#/$defs/i18n_agent_connection" },
-        "url": { "type": "string" },
-        "host_name": { "type": "string" }
+        "host_name": { "type": "string" },
+        "agent_slideout": { "$ref": "agent_slideout.json" }
     },
     "required": [
         "form_keys",
         "sites",
         "i18n_ping_host",
-        "i18n_agent_connection",
-        "url",
+        "agent_slideout",
         "host_name"
     ],
     "$defs": {
@@ -41,41 +45,6 @@
                 "success_ip_pingable"
             ]
         },
-        "i18n_agent_connection": {
-            "type": "object",
-            "properties": {
-                "dialog_message": {
-                    "type": "string"
-                },
-                "slide_in_title": {
-                    "type": "string"
-                },
-                "msg_start": {
-                    "type": "string"
-                },
-                "msg_success": {
-                    "type": "string"
-                },
-                "msg_loading": {
-                    "type": "string"
-                },
-                "msg_missing": {
-                    "type": "string"
-                },
-                "msg_error": {
-                    "type": "string"
-                }
-            },
-            "required": [
-                "dialog_message",
-                "slide_in_title",
-                "msg_start",
-                "msg_success",
-                "msg_loading",
-                "msg_missing",
-                "msg_error"
-            ]
-        },
         "mode_host_form_keys": {
             "type": "object",
             "properties": {
@@ -85,6 +54,7 @@
                 "ipv6_address": { "type": "string" },
                 "site": { "type": "string" },
                 "ip_address_family": { "type": "string" },
+                "cmk_agent_connection": { "type": "string" },
                 "tag_agent": { "type": "string" },
                 "cb_change": { "type": "string" }
             },
@@ -95,6 +65,7 @@
                 "ipv6_address",
                 "site",
                 "ip_address_family",
+                "cmk_agent_connection",
                 "tag_agent",
                 "cb_change"
             ]
@@ -106,6 +77,14 @@
                 "site_id": { "type": "string" }
             },
             "required": ["id_hash", "site_id"]
+        },
+        "mode_host_agent_connection_mode": {
+            "type": "object",
+            "properties": {
+                "id_hash": { "type": "string" },
+                "mode": { "type": "string" }
+            },
+            "required": ["id_hash", "mode"]
         }
     }
 }

@@ -11,16 +11,11 @@ from pathlib import Path
 from typing import Literal, override
 
 import cmk.ccc.version as cmk_version
-
 import cmk.utils.paths
-from cmk.utils import man_pages
-from cmk.utils.labels import Labels
-from cmk.utils.render import approx_age
-from cmk.utils.statename import short_host_state_name, short_service_state_name
-
+from cmk.discover_plugins import discover_families, PluginGroup
 from cmk.gui import sites
+from cmk.gui.color import render_color_icon
 from cmk.gui.config import active_config, Config
-from cmk.gui.graphing._color import render_color_icon
 from cmk.gui.graphing._from_api import metrics_from_api, RegisteredMetric
 from cmk.gui.graphing._metrics import get_metric_spec, registered_metric_ids_and_titles
 from cmk.gui.graphing._translated_metrics import (
@@ -77,8 +72,10 @@ from cmk.gui.view_utils import (
     render_tag_groups,
 )
 from cmk.gui.visual_link import render_link_to_view
-
-from cmk.discover_plugins import discover_families, PluginGroup
+from cmk.utils import man_pages
+from cmk.utils.labels import Labels
+from cmk.utils.render import approx_age
+from cmk.utils.statename import short_host_state_name, short_service_state_name
 
 from ..v1.helpers import get_perfdata_nth_value, is_stale, paint_stalified
 from .base import Cell, Painter
@@ -5403,6 +5400,7 @@ class PainterHostDockerNode(Painter):
                 ("view_name", "host"),
                 ("host", node),
             ],
+            html_text=node,
         )
         return "", content
 

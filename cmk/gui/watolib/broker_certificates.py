@@ -16,23 +16,10 @@ from dateutil.relativedelta import relativedelta
 
 from livestatus import SiteConfiguration
 
+from cmk import messaging
 from cmk.ccc.exceptions import MKGeneralException
 from cmk.ccc.plugin_registry import Registry
 from cmk.ccc.site import omd_site, SiteId
-
-from cmk.utils import paths
-from cmk.utils.certs import (
-    LocalBrokerCertificate,
-    MessagingTrustedCAs,
-    SiteBrokerCA,
-    SiteBrokerCertificate,
-)
-
-from cmk.gui.http import request as _request
-from cmk.gui.watolib.automation_commands import AutomationCommand
-from cmk.gui.watolib.automations import do_remote_automation, RemoteAutomationConfig
-
-from cmk import messaging
 from cmk.crypto.certificate import (
     CertificateSigningRequest,
     CertificateWithPrivateKey,
@@ -43,6 +30,18 @@ from cmk.crypto.x509 import (
     SAN,
     SubjectAlternativeNames,
     X509Name,
+)
+from cmk.gui.config import Config
+from cmk.gui.http import Request
+from cmk.gui.http import request as _request
+from cmk.gui.watolib.automation_commands import AutomationCommand
+from cmk.gui.watolib.automations import do_remote_automation, RemoteAutomationConfig
+from cmk.utils import paths
+from cmk.utils.certs import (
+    LocalBrokerCertificate,
+    MessagingTrustedCAs,
+    SiteBrokerCA,
+    SiteBrokerCertificate,
 )
 
 logger = logging.getLogger("cmk.web.background-job")
@@ -322,7 +321,7 @@ class AutomationStoreBrokerCertificates(AutomationCommand[StoreBrokerCertificate
     def command_name(self) -> str:
         return "store-broker-certs"
 
-    def get_request(self) -> StoreBrokerCertificatesData:
+    def get_request(self, config: Config, request: Request) -> StoreBrokerCertificatesData:
         request_certificates = _request.get_str_input_mandatory("certificates")
         request_site = _request.get_str_input_mandatory("site_id")
         return StoreBrokerCertificatesData(
@@ -360,7 +359,7 @@ class AutomationCreateBrokerCertificates(AutomationCommand[None]):
     def command_name(self) -> str:
         return "create-broker-certs"
 
-    def get_request(self) -> None:
+    def get_request(self, config: Config, request: Request) -> None:
         pass
 
     def execute(self, api_request: None) -> BrokerCertsCSR:

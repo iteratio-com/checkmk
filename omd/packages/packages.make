@@ -38,7 +38,7 @@ $(DEPS_INSTALL_BAZEL):
 	    --execution_log_json_file="$(REPO_PATH)/deps_install.json" \
 	    //omd:deps_install_$(EDITION_SHORT)
 	$(MKDIR) $(DESTDIR)
-	tar -C $(DESTDIR) -xf $(BAZEL_BIN)/omd/deps_install_$(EDITION_SHORT).tar.gz
+	tar -C $(DESTDIR) -xf $(BAZEL_BIN)/omd/deps_install_$(EDITION_SHORT).tar.xz
 
 	#TODO: The following code should be executed by Bazel instead of make
 	# Fix sysconfigdata
@@ -185,7 +185,6 @@ include \
     packages/check_mk/check_mk.make \
     packages/omd/omd.make \
     packages/appliance/appliance.make \
-    packages/xmlsec1/xmlsec1.make \
 
 ifeq ($(EDITION),enterprise)
 include \
@@ -209,8 +208,4 @@ include \
     packages/enterprise/enterprise.make \
     packages/cloud/cloud.make \
     packages/saas/saas.make
-else
-# Ship nagvis for all but saas edition: CMK-14926
-include \
-    packages/nagvis/nagvis.make
 endif

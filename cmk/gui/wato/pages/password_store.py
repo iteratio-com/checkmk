@@ -5,8 +5,7 @@
 import copy
 from collections.abc import Collection
 
-from cmk.utils.password_store import Password
-
+from cmk.gui.config import Config
 from cmk.gui.exceptions import MKUserError
 from cmk.gui.htmllib.html import html
 from cmk.gui.http import request
@@ -42,8 +41,8 @@ from cmk.gui.watolib.groups_io import load_contact_group_information
 from cmk.gui.watolib.mode import ModeRegistry, WatoMode
 from cmk.gui.watolib.password_store import PasswordStore
 from cmk.gui.watolib.passwords import sorted_contact_group_choices
-
 from cmk.rulesets.v1.form_specs import DictElement
+from cmk.utils.password_store import Password
 
 
 def register(mode_registry: ModeRegistry) -> None:
@@ -123,7 +122,7 @@ class ModePasswords(SimpleListMode[Password]):
         else:
             super()._show_delete_action(nr, ident, entry)
 
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         html.p(
             _(
                 "This password management module stores the passwords you use in your checks and "
@@ -138,7 +137,7 @@ class ModePasswords(SimpleListMode[Password]):
                 "for monitoring. So all those passwords have to be stored readable by the monitoring."
             )
         )
-        super().page()
+        super().page(config)
 
     def _show_entry_cells(self, table: Table, ident: str, entry: Password) -> None:
         table.cell(_("ID"), ident)

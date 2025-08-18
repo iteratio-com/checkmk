@@ -4,14 +4,8 @@
 # conditions defined in the file COPYING, which is part of this source code package.
 import pytest
 
-from cmk.utils.notify_types import (
-    NotificationParameterGeneralInfos,
-    NotificationParameterID,
-    NotificationParameterItem,
-)
-
 from cmk.gui.form_specs.private import DictionaryExtended, not_empty
-from cmk.gui.form_specs.vue.form_spec_visitor import FormSpecValidationError
+from cmk.gui.form_specs.vue import FormSpecValidationError, RawFrontendData
 from cmk.gui.form_specs.vue.visitors import SingleChoiceVisitor
 from cmk.gui.valuespec import Dictionary as ValueSpecDictionary
 from cmk.gui.watolib.notification_parameter import (
@@ -23,7 +17,6 @@ from cmk.gui.watolib.notification_parameter import (
 )
 from cmk.gui.watolib.notification_parameter._utils import NotificationParameterDescription
 from cmk.gui.watolib.notifications import NotificationParameterConfigFile
-
 from cmk.rulesets.v1 import Title
 from cmk.rulesets.v1.form_specs import (
     DefaultValue,
@@ -31,6 +24,11 @@ from cmk.rulesets.v1.form_specs import (
     SingleChoice,
     SingleChoiceElement,
     String,
+)
+from cmk.utils.notify_types import (
+    NotificationParameterGeneralInfos,
+    NotificationParameterID,
+    NotificationParameterItem,
 )
 
 
@@ -81,10 +79,12 @@ def test_save_notification_params(registry: NotificationParameterRegistry) -> No
     save_return = save_notification_parameter(
         registry,
         "dummy_params",
-        {
-            "general": {"description": "foo", "comment": "bar", "docu_url": "baz"},
-            "parameter_properties": {"method_parameters": {"test_param": "bar"}},
-        },
+        RawFrontendData(
+            {
+                "general": {"description": "foo", "comment": "bar", "docu_url": "baz"},
+                "parameter_properties": {"method_parameters": {"test_param": "bar"}},
+            }
+        ),
         object_id=None,
         pprint_value=False,
     )
@@ -102,29 +102,35 @@ def test_save_notification_params(registry: NotificationParameterRegistry) -> No
     "params",
     [
         pytest.param(
-            {
-                "general": {},
-                "parameter_properties": {"test_param": "bar"},
-            },
+            RawFrontendData(
+                {
+                    "general": {},
+                    "parameter_properties": {"test_param": "bar"},
+                }
+            ),
             id="no description",
         ),
         pytest.param(
-            {
-                "general": {"description": "foo", "comment": "bar", "docu_url": "baz"},
-                "parameter_properties": {"test_param": ""},
-            },
+            RawFrontendData(
+                {
+                    "general": {"description": "foo", "comment": "bar", "docu_url": "baz"},
+                    "parameter_properties": {"test_param": ""},
+                }
+            ),
             id="empty value",
         ),
         pytest.param(
-            {
-                "parameter_properties": {"test_param": "bar"},
-            },
+            RawFrontendData(
+                {
+                    "parameter_properties": {"test_param": "bar"},
+                }
+            ),
             id="missing general section",
         ),
     ],
 )
 def test_validation_on_saving_notification_params(
-    registry: NotificationParameterRegistry, params: dict
+    registry: NotificationParameterRegistry, params: RawFrontendData
 ) -> None:
     # WHEN
     with pytest.raises(FormSpecValidationError):

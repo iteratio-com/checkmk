@@ -7,12 +7,12 @@
 Cares about the main navigation of our GUI. This is a) the small sidebar and b) the main menu
 """
 
+from dataclasses import asdict
 from typing import NamedTuple, TypedDict
 
 from cmk.ccc.exceptions import MKGeneralException
-
 from cmk.gui import message
-from cmk.gui.config import active_config
+from cmk.gui.config import Config
 from cmk.gui.exceptions import MKAuthException
 from cmk.gui.htmllib.generator import HTMLWriter
 from cmk.gui.htmllib.html import html
@@ -26,7 +26,9 @@ from cmk.gui.type_defs import Icon, MainMenu, MainMenuItem, MainMenuTopic, MainM
 from cmk.gui.utils.html import HTML
 from cmk.gui.utils.output_funnel import output_funnel
 from cmk.gui.utils.popups import MethodInline
+from cmk.gui.watolib.activate_changes import ActivateChanges
 from cmk.gui.werks import may_acknowledge, num_unacknowledged_incompatible_werks
+from cmk.shared_typing.unified_search import UnifiedSearchConfig
 
 
 class MainMenuPopupTrigger(NamedTuple):
@@ -41,8 +43,35 @@ class MainMenuRenderer:
 
     def show(self) -> None:
         html.open_ul(id_="main_menu")
+        self._modify_unified_search_config()
         self._show_main_menu_content()
         html.close_ul()
+
+    def _modify_unified_search_config(
+        self,
+    ) -> None:
+        if search_item := main_menu_registry.get("search"):
+            if search_item.vue_app and isinstance(search_item.vue_app.data, UnifiedSearchConfig):
+                if mon_item := main_menu_registry.get("monitoring"):
+                    search_item.vue_app.data.providers.monitoring.active = bool(
+                        mon_item.topics and mon_item.topics()
+                    )
+                    search_item.vue_app.data.providers.setup.sort = mon_item.sort_index
+
+                if customize_item := main_menu_registry.get("customize"):
+                    search_item.vue_app.data.providers.customize.active = bool(
+                        customize_item.topics and customize_item.topics()
+                    )
+                    search_item.vue_app.data.providers.customize.sort = customize_item.sort_index
+
+                if search_item.vue_app.data.providers.setup.active:
+                    if setup_item := main_menu_registry.get("setup"):
+                        search_item.vue_app.data.providers.setup.active = bool(
+                            setup_item.topics and setup_item.topics()
+                        )
+                        search_item.vue_app.data.providers.setup.sort = setup_item.sort_index
+
+                search_item.vue_app.data = asdict(search_item.vue_app.data)
 
     def _show_main_menu_content(self) -> None:
         for popup_trigger in self._get_main_menu_popup_triggers():
@@ -130,7 +159,7 @@ class MainMenuRenderer:
             if menu.vue_app:
                 html.vue_component(
                     component_name=menu.vue_app.name,
-                    data=menu.vue_app.data,
+                    data=asdict(menu.vue_app.data(request)),
                 )
             else:
                 MainMenuPopupRenderer().show(menu)
@@ -138,15 +167,29 @@ class MainMenuRenderer:
             return output_funnel.drain()
 
 
-def ajax_message_read():
+def ajax_message_read(config: Config) -> None:
     response.set_content_type("application/json")
     try:
         message.delete_gui_message(request.get_str_input_mandatory("id"))
         html.write_text_permissive("OK")
     except Exception:
-        if active_config.debug:
+        if config.debug:
             raise
         html.write_text_permissive("ERROR")
+
+
+class PageAjaxSidebarChangesMenu(AjaxPage):
+    def page(self, config: Config) -> PageResult:
+        return {
+            "number_of_pending_changes": ActivateChanges().number_of_changes_requiring_activation(
+                config.sites
+            )
+        }
+
+
+class PageAjaxSitesAndChanges(AjaxPage):
+    def page(self, config: Config) -> PageResult:
+        return ActivateChanges().get_all_data_required_for_activation_popout(config.sites)
 
 
 class PopUpMessage(TypedDict):
@@ -155,7 +198,7 @@ class PopUpMessage(TypedDict):
 
 
 class PageAjaxSidebarGetMessages(AjaxPage):
-    def page(self) -> PageResult:
+    def page(self, config: Config) -> PageResult:
         popup_msg: list[PopUpMessage] = []
         hint_msg: int = 0
 
@@ -176,7 +219,7 @@ class PageAjaxSidebarGetMessages(AjaxPage):
 
 
 class PageAjaxSidebarGetUnackIncompWerks(AjaxPage):
-    def page(self) -> PageResult:
+    def page(self, config: Config) -> PageResult:
         if not may_acknowledge():
             raise MKAuthException(_("You are not allowed to acknowlegde werks"))
 
@@ -334,7 +377,10 @@ class MainMenuPopupRenderer:
         html.open_li(class_="multilevel_item")
         html.open_a(
             href="javascript:void(0);",
-            onclick="cmk.popup_menu.main_menu_show_all_items('%s')" % multilevel_topic_id,
+            onclick="""
+cmk.popup_menu.main_menu_show_all_items('%s');
+oncontextmenu = e => e.preventDefault();"""
+            % multilevel_topic_id,
             title=_("Show entries for %s") % multilevel_topic.title,
         )
         if user.get_attribute("icons_per_item"):

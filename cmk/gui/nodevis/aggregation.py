@@ -6,12 +6,15 @@ import json
 import time
 from typing import Any
 
+from cmk.bi.aggregation_functions import BIAggregationFunctionSchema
+from cmk.bi.computer import BIAggregationFilter
+from cmk.bi.lib import NodeResultBundle
+from cmk.bi.trees import BICompiledLeaf, BICompiledRule
 from cmk.ccc.user import UserId
-
 from cmk.gui import bi as bi
 from cmk.gui.bi import bi_config_aggregation_function_registry
 from cmk.gui.breadcrumb import make_simple_page_breadcrumb
-from cmk.gui.config import active_config
+from cmk.gui.config import Config
 from cmk.gui.htmllib.header import make_header
 from cmk.gui.htmllib.html import html
 from cmk.gui.http import request
@@ -27,11 +30,6 @@ from cmk.gui.utils.csrf_token import check_csrf_token
 from cmk.gui.views.icon import IconRegistry
 from cmk.gui.views.store import multisite_builtin_views
 from cmk.gui.visuals.filter import FilterRegistry
-
-from cmk.bi.aggregation_functions import BIAggregationFunctionSchema
-from cmk.bi.computer import BIAggregationFilter
-from cmk.bi.lib import NodeResultBundle
-from cmk.bi.trees import BICompiledLeaf, BICompiledRule
 
 
 def register(
@@ -56,7 +54,7 @@ def register(
 
 
 class AjaxFetchAggregationData(AjaxPage):
-    def page(self) -> PageResult:
+    def page(self, config: Config) -> PageResult:
         aggregations_var = request.get_str_input_mandatory("aggregations", "[]")
         filter_names = json.loads(aggregations_var)
 
@@ -92,26 +90,30 @@ class AjaxFetchAggregationData(AjaxPage):
                     layout["origin_info"] = _("Explicit set")
                     layout["explicit_id"] = aggr_name
                 else:
-                    layout.update(self._get_template_based_layout_settings(aggr_settings))
+                    layout.update(self._get_template_based_layout_settings(aggr_settings, config))
                 layout.setdefault("force_config", {})
 
                 if "ignore_rule_styles" not in layout:
                     layout["ignore_rule_styles"] = aggr_settings.get("ignore_rule_styles", False)
                 if "line_config" not in layout:
-                    layout["line_config"] = self._get_line_style_config(aggr_settings)
+                    layout["line_config"] = self._get_line_style_config(aggr_settings, config)
 
                 aggregation_info["node_config"] = data
                 aggregation_info["layout"] = layout
 
         return aggregation_info
 
-    def _get_line_style_config(self, aggr_settings: dict[str, Any]) -> dict[str, Any]:
-        line_style = aggr_settings.get("line_style", active_config.default_bi_layout["line_style"])
+    def _get_line_style_config(
+        self, aggr_settings: dict[str, Any], config: Config
+    ) -> dict[str, Any]:
+        line_style = aggr_settings.get("line_style", config.default_bi_layout["line_style"])
         if line_style == "default":
-            line_style = active_config.default_bi_layout["line_style"]
+            line_style = config.default_bi_layout["line_style"]
         return {"style": line_style}
 
-    def _get_template_based_layout_settings(self, aggr_settings: dict[str, Any]) -> dict[str, Any]:
+    def _get_template_based_layout_settings(
+        self, aggr_settings: dict[str, Any], config: Config
+    ) -> dict[str, Any]:
         template_layout_id = aggr_settings.get("layout_id", "builtin_default")
 
         layout_settings: dict[str, Any] = {}
@@ -130,16 +132,16 @@ class AjaxFetchAggregationData(AjaxPage):
             )
 
             if template_layout_id == "builtin_default":
-                template_layout_id = active_config.default_bi_layout["node_style"]
+                template_layout_id = config.default_bi_layout["node_style"]
             layout_settings["default_id"] = template_layout_id[8:]
         else:
             # Any Unknown/Removed layout id gets the default template
             layout_settings["origin_type"] = "default_template"
             layout_settings["origin_info"] = _("Fallback template (%s): Unknown ID %s") % (
-                active_config.default_bi_layout["node_style"][8:].title(),
+                config.default_bi_layout["node_style"][8:].title(),
                 template_layout_id,
             )
-            layout_settings["default_id"] = active_config.default_bi_layout["node_style"][8:]
+            layout_settings["default_id"] = config.default_bi_layout["node_style"][8:]
 
         return layout_settings
 
@@ -269,31 +271,31 @@ class NodeVisualizationBIDataMapper:
 
 
 class AjaxSaveBIAggregationLayout(AjaxPage):
-    def page(self) -> PageResult:
+    def page(self, config: Config) -> PageResult:
         check_csrf_token()
         layout_var = request.get_str_input_mandatory("layout", "{}")
         layout_config = json.loads(layout_var)
-        active_config.bi_layouts["aggregations"].update(layout_config)
+        config.bi_layouts["aggregations"].update(layout_config)
         BILayoutManagement.save_layouts()
         return {}
 
 
 class AjaxDeleteBIAggregationLayout(AjaxPage):
-    def page(self) -> PageResult:
+    def page(self, config: Config) -> PageResult:
         check_csrf_token()
         for_aggregation = request.var("aggregation_name")
-        active_config.bi_layouts["aggregations"].pop(for_aggregation)
+        config.bi_layouts["aggregations"].pop(for_aggregation)
         BILayoutManagement.save_layouts()
         return {}
 
 
 class AjaxLoadBIAggregationLayout(AjaxPage):
-    def page(self) -> PageResult:
+    def page(self, config: Config) -> PageResult:
         aggregation_name = request.var("aggregation_name")
         return BILayoutManagement.load_bi_aggregation_layout(aggregation_name)
 
 
-def _bi_map() -> None:
+def _bi_map(config: Config) -> None:
     aggr_name = request.var("aggr_name")
     layout_id = request.var("layout_id")
     title = _("BI visualization")

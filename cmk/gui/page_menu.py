@@ -18,9 +18,6 @@ from collections.abc import Iterator
 from dataclasses import dataclass, field
 
 import cmk.ccc.version as cmk_version
-
-from cmk.utils import paths
-
 from cmk.gui.breadcrumb import Breadcrumb
 from cmk.gui.htmllib.generator import HTMLWriter
 from cmk.gui.htmllib.html import html
@@ -42,6 +39,7 @@ from cmk.gui.utils.urls import (
     youtube_reference_url,
     YouTubeReference,
 )
+from cmk.utils import paths
 
 
 @dataclass
@@ -285,8 +283,6 @@ class PageMenu:
     dropdowns: list[PageMenuDropdown] = field(default_factory=list)
     breadcrumb: Breadcrumb | None = None
     inpage_search: PageMenuSearch | None = None
-    has_pending_changes: bool = False
-    pending_changes_tooltip: str | None = None
     enable_suggestions: bool = True
 
     def __post_init__(self) -> None:
@@ -593,8 +589,6 @@ class PageMenuRenderer:
         if menu.inpage_search:
             self._show_inpage_search_field(menu.inpage_search)
         self._show_shortcuts(menu)
-        if menu.has_pending_changes:
-            self._show_pending_changes_icon(menu.pending_changes_tooltip)
         html.close_tr()
 
         if menu.enable_suggestions:
@@ -719,11 +713,6 @@ class PageMenuRenderer:
     def _show_inpage_search_field(self, item: PageMenuSearch) -> None:
         html.open_td(class_="inpage_search")
         inpage_search_form(mode=item.target_mode, default_value=item.default_value)
-        html.close_td()
-
-    def _show_pending_changes_icon(self, tooltip: str | None) -> None:
-        html.open_td(class_="icon_container")
-        html.icon_button("wato.py?mode=changelog", tooltip if tooltip else "", "pending_changes")
         html.close_td()
 
     def _javascript(self) -> None:

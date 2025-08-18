@@ -21,17 +21,30 @@ py_library(
         "cmk/agent_receiver/log.py",
         "cmk/agent_receiver/main.py",
         "cmk/agent_receiver/models.py",
+        "cmk/agent_receiver/relay_backend/__init__.py",
+        "cmk/agent_receiver/relay_backend/api/__init__.py",
+        "cmk/agent_receiver/relay_backend/api/dependencies/get_relay_tasks_handler.py",
+        "cmk/agent_receiver/relay_backend/api/dependencies/register_relay_handler.py",
+        "cmk/agent_receiver/relay_backend/api/dependencies/relays_repository.py",
+        "cmk/agent_receiver/relay_backend/api/routers/__init__.py",
+        "cmk/agent_receiver/relay_backend/api/routers/base_router.py",
+        "cmk/agent_receiver/relay_backend/api/routers/relays/__init__.py",
+        "cmk/agent_receiver/relay_backend/api/routers/relays/endpoints.py",
+        "cmk/agent_receiver/relay_backend/api/routers/relays/handlers/__init__.py",
+        "cmk/agent_receiver/relay_backend/api/routers/relays/handlers/get_relay_tasks.py",
+        "cmk/agent_receiver/relay_backend/api/routers/relays/handlers/register_relay.py",
+        "cmk/agent_receiver/relay_backend/lib/relays_repository.py",
         "cmk/agent_receiver/site_context.py",
         "cmk/agent_receiver/utils.py",
         "cmk/agent_receiver/worker.py",
     ],
     data = [
-        ":cmk/agent_receiver/py.typed",
-        ":pyproject.toml",
+        "cmk/agent_receiver/py.typed",
     ],
     imports = ["."],
     visibility = ["//cmk:__pkg__"],
     deps = [
+        "//packages/cmk-relay-protocols",
         requirement("cryptography"),
         requirement("fastapi"),
         requirement("gunicorn"),
@@ -77,6 +90,29 @@ py_test(
     ],
 )
 
+py_pytest_main(
+    name = "__component_test__",
+    deps = [
+        requirement("pytest"),
+        requirement("pytest-xdist"),
+    ],
+)
+
+py_test(
+    name = "component",
+    size = "medium",
+    srcs = glob(["tests/component/**/*.py"]) + [":__component_test__.py"],
+    main = "__component_test__.py",
+    deps = [
+        ":__component_test__",
+        ":cmk-agent-receiver",
+        requirement("pytest"),
+        requirement("fastapi"),
+        requirement("starlette"),
+        requirement("httpx"),
+    ],
+)
+
 py_wheel(
     name = "wheel",
     distribution = "cmk-agent-receiver",
@@ -95,7 +131,15 @@ py_wheel(
     strip_path_prefixes = ["packages/cmk-agent-receiver"],
     # TODO: Duplicated from pyproject.toml
     version = "1.0.0",
-    deps = [":cmk-agent-receiver"],
+    deps = [
+        ":cmk-agent-receiver",
+        ":py_typed",
+    ],
+)
+
+filegroup(
+    name = "py_typed",
+    srcs = ["cmk/agent_receiver/py.typed"],
 )
 
 package_wheel(

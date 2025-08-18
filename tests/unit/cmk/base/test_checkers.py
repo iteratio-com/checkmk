@@ -9,21 +9,6 @@ from collections.abc import Iterable, Mapping
 from typing import Literal
 
 import pytest
-from pytest import MonkeyPatch
-
-from tests.testlib.unit.base_configuration_scenario import Scenario
-
-from cmk.ccc.hostaddress import HostName
-
-from cmk.utils import ip_lookup
-from cmk.utils.servicename import ServiceName
-
-from cmk.checkengine.checkresults import ServiceCheckResult, SubmittableServiceCheckResult
-from cmk.checkengine.fetcher import HostKey, SourceType
-from cmk.checkengine.parameters import TimespecificParameters, TimespecificParameterSet
-from cmk.checkengine.plugins import CheckPluginName, ConfiguredService
-
-from cmk.base import checkers
 
 from cmk.agent_based.prediction_backend import (
     InjectedParameters,
@@ -32,6 +17,13 @@ from cmk.agent_based.prediction_backend import (
 )
 from cmk.agent_based.v1 import Metric, Result, State
 from cmk.agent_based.v2 import CheckResult
+from cmk.base import checkers
+from cmk.ccc.hostaddress import HostName
+from cmk.checkengine.checkresults import ServiceCheckResult, SubmittableServiceCheckResult
+from cmk.checkengine.fetcher import HostKey, SourceType
+from cmk.checkengine.parameters import TimespecificParameters, TimespecificParameterSet
+from cmk.checkengine.plugins import CheckPluginName, ConfiguredService
+from cmk.utils.servicename import ServiceName
 
 
 def make_timespecific_params_list(
@@ -93,12 +85,7 @@ def test_consume_result_invalid() -> None:
         assert checkers.consume_check_results(offending_check_function())
 
 
-def test_config_cache_get_clustered_service_node_keys_no_cluster(monkeypatch: MonkeyPatch) -> None:
-    monkeypatch.setattr(
-        ip_lookup,
-        "lookup_ip_address",
-        lambda *args, **kw: "dummy.test.ip.0",
-    )
+def test_config_cache_get_clustered_service_node_keys_no_cluster() -> None:
     # empty, we have no cluster:
     assert [] == checkers._get_clustered_service_node_keys(
         HostName("cluster.test"),
@@ -109,18 +96,9 @@ def test_config_cache_get_clustered_service_node_keys_no_cluster(monkeypatch: Mo
     )
 
 
-def test_config_cache_get_clustered_service_node_keys_cluster_no_service(
-    monkeypatch: MonkeyPatch,
-) -> None:
+def test_config_cache_get_clustered_service_node_keys_cluster_no_service() -> None:
     cluster_test = HostName("cluster.test")
-    ts = Scenario()
-    ts.add_cluster(cluster_test, nodes=[HostName("node1.test"), HostName("node2.test")])
 
-    monkeypatch.setattr(
-        ip_lookup,
-        "lookup_ip_address",
-        lambda *args, **kw: "dummy.test.ip.0",
-    )
     # empty for a node:
     assert [] == checkers._get_clustered_service_node_keys(
         HostName("node1.test"),
@@ -143,31 +121,11 @@ def test_config_cache_get_clustered_service_node_keys_cluster_no_service(
     )
 
 
-def test_config_cache_get_clustered_service_node_keys_clustered(monkeypatch: MonkeyPatch) -> None:
+def test_config_cache_get_clustered_service_node_keys_clustered() -> None:
     node1 = HostName("node1.test")
     node2 = HostName("node2.test")
     cluster = HostName("cluster.test")
 
-    ts = Scenario()
-    ts.add_host(node1)
-    ts.add_host(node2)
-    ts.add_cluster(cluster, nodes=[node1, node2])
-    # add a fake rule, that defines a cluster
-    ts.set_option(
-        "clustered_services_mapping",
-        [
-            {
-                "value": "cluster.test",
-                "condition": {"service_description": ["Test Service"]},
-            }
-        ],
-    )
-
-    monkeypatch.setattr(
-        ip_lookup,
-        "lookup_ip_address",
-        lambda hostname, *args, **kw: "dummy.test.ip.%s" % hostname[4],
-    )
     assert checkers._get_clustered_service_node_keys(
         cluster,
         SourceType.HOST,
@@ -178,11 +136,6 @@ def test_config_cache_get_clustered_service_node_keys_clustered(monkeypatch: Mon
         HostKey(node1, SourceType.HOST),
         HostKey(node2, SourceType.HOST),
     ]
-    monkeypatch.setattr(
-        ip_lookup,
-        "lookup_ip_address",
-        lambda *args, **kw: "dummy.test.ip.0",
-    )
     assert [
         HostKey(hostname=HostName("node1.test"), source_type=SourceType.HOST),
         HostKey(hostname=HostName("node2.test"), source_type=SourceType.HOST),

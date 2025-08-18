@@ -26,9 +26,7 @@ from typing import IO, Literal, TypedDict
 
 # for now, we shamelessly violate the API:
 import cmk.ccc.debug  # pylint: disable=cmk-module-layer-violation
-
 import cmk.utils.paths  # pylint: disable=cmk-module-layer-violation
-
 from cmk.agent_based.v2 import (
     CheckPlugin,
     CheckResult,
@@ -565,17 +563,17 @@ def check_logwatch_generic(
     #
     # Render output
     #
-
+    summary, details = "", None
     if block_collector.worst <= 0:
-        yield Result(state=State.OK, summary="No error messages")
-        return
+        block_collector.worst = 0
+        summary = "No error messages"
 
-    info = block_collector.get_count_info()
-    info += ' (Last worst: "%s")' % block_collector.last_worst_line
+    if block_collector.last_worst_line != "":
+        summary = block_collector.get_count_info()
+        summary += ' (Last worst: "%s")' % block_collector.last_worst_line
 
-    summary, details = info, None
-    if "\n" in info.strip():
-        summary, details = info.split("\n", 1)
+        if "\n" in summary.strip():
+            summary, details = summary.split("\n", 1)
 
     yield Result(
         state=State(block_collector.worst),

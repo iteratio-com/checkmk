@@ -13,38 +13,24 @@ from pathlib import Path
 import requests
 import urllib3
 
-from livestatus import LocalConnection, SiteConfiguration
+from livestatus import LocalConnection, SiteConfiguration, SiteConfigurations
 
+import cmk.gui.utils
 from cmk.ccc.exceptions import MKGeneralException
-from cmk.ccc.site import omd_site, SiteId
+from cmk.ccc.site import SiteId
 from cmk.ccc.user import UserId
 from cmk.ccc.version import __version__, Version
-
-from cmk.utils.paths import (
-    local_agent_based_plugins_dir,
-    local_checks_dir,
-    local_gui_plugins_dir,
-    local_inventory_dir,
-    local_legacy_check_manpages_dir,
-    local_pnp_templates_dir,
-    local_web_dir,
-)
-from cmk.utils.rulesets.definition import RuleGroup, RuleGroupType
-
-import cmk.gui.userdb.ldap_connector as ldap
-import cmk.gui.utils
+from cmk.crypto.password import Password
 from cmk.gui import userdb
-from cmk.gui.backup.handler import Config as BackupConfig
-from cmk.gui.config import active_config
+from cmk.gui.backup.handler import BackupConfig
+from cmk.gui.config import active_config, Config
 from cmk.gui.http import request
 from cmk.gui.i18n import _
 from cmk.gui.site_config import (
     has_wato_slave_sites,
     is_wato_slave_site,
-    sitenames,
     wato_slave_sites,
 )
-from cmk.gui.userdb import active_connections as active_connections_
 from cmk.gui.userdb import htpasswd
 from cmk.gui.utils.urls import doc_reference_url, DocReference, werk_reference_url, WerkReference
 from cmk.gui.watolib.analyze_configuration import (
@@ -59,8 +45,16 @@ from cmk.gui.watolib.config_domain_name import ABCConfigDomain
 from cmk.gui.watolib.config_domains import ConfigDomainOMD
 from cmk.gui.watolib.rulesets import AllRulesets, SingleRulesetRecursively
 from cmk.gui.watolib.sites import site_management_registry
-
-from cmk.crypto.password import Password
+from cmk.utils.paths import (
+    local_agent_based_plugins_dir,
+    local_checks_dir,
+    local_gui_plugins_dir,
+    local_inventory_dir,
+    local_legacy_check_manpages_dir,
+    local_pnp_templates_dir,
+    local_web_dir,
+)
+from cmk.utils.rulesets.definition import RuleGroup, RuleGroupType
 
 # Disable python warnings in background job output or logs like "Unverified
 # HTTPS request is being made". We warn the user using analyze configuration.
@@ -72,7 +66,6 @@ def register(ac_test_registry: ACTestRegistry) -> None:
     ac_test_registry.register(ACTestLiveproxyd)
     ac_test_registry.register(ACTestLivestatusUsage)
     ac_test_registry.register(ACTestTmpfs)
-    ac_test_registry.register(ACTestLDAPSecured)
     ac_test_registry.register(ACTestLivestatusSecured)
     ac_test_registry.register(ACTestNumberOfUsers)
     ac_test_registry.register(ACTestHTTPSecured)
@@ -124,11 +117,12 @@ class ACTestPersistentConnections(ACTest):
 
     def is_relevant(self) -> bool:
         # This check is only executed on the central instance of multisite setups
-        return len(sitenames()) > 1
+        return len(active_config.sites) > 1
 
-    def execute(self) -> Iterator[ACSingleResult]:
+    def execute(self, site_id: SiteId, config: Config) -> Iterator[ACSingleResult]:
         yield from (
-            self._check_site(site_id, active_config.sites[site_id]) for site_id in sitenames()
+            self._check_site(site_id, active_config.sites[site_id])
+            for site_id in active_config.sites
         )
 
     def _check_site(self, site_id: SiteId, site_config: SiteConfiguration) -> ACSingleResult:
@@ -181,12 +175,14 @@ class ACTestLiveproxyd(ACTest):
 
     def is_relevant(self) -> bool:
         # This check is only executed on the central instance of multisite setups
-        return len(sitenames()) > 1
+        return len(active_config.sites) > 1
 
-    def execute(self) -> Iterator[ACSingleResult]:
-        yield from (self._check_site(site_id) for site_id in sitenames())
+    def execute(self, site_id: SiteId, config: Config) -> Iterator[ACSingleResult]:
+        yield from (
+            self._check_site(site_id, active_config.sites) for site_id in active_config.sites
+        )
 
-    def _check_site(self, site_id: SiteId) -> ACSingleResult:
+    def _check_site(self, site_id: SiteId, site_configs: SiteConfigurations) -> ACSingleResult:
         if _site_is_using_livestatus_proxy(site_id):
             return ACSingleResult(
                 state=ACResultState.OK,
@@ -194,7 +190,7 @@ class ACTestLiveproxyd(ACTest):
                 site_id=site_id,
             )
 
-        if not is_wato_slave_site():
+        if not is_wato_slave_site(site_configs):
             return ACSingleResult(
                 state=ACResultState.WARN,
                 text=_(
@@ -235,8 +231,7 @@ class ACTestLivestatusUsage(ACTest):
     def is_relevant(self) -> bool:
         return True
 
-    def execute(self) -> Iterator[ACSingleResult]:
-        site_id = omd_site()
+    def execute(self, site_id: SiteId, config: Config) -> Iterator[ACSingleResult]:
         local_connection = LocalConnection()
         site_status = local_connection.query_row(
             "GET status\n"
@@ -299,9 +294,8 @@ class ACTestTmpfs(ACTest):
     def is_relevant(self) -> bool:
         return True
 
-    def execute(self) -> Iterator[ACSingleResult]:
-        site_id = omd_site()
-        if self._tmpfs_mounted(omd_site()):
+    def execute(self, site_id: SiteId, config: Config) -> Iterator[ACSingleResult]:
+        if self._tmpfs_mounted(site_id):
             yield ACSingleResult(
                 state=ACResultState.OK,
                 text=_("The temporary filesystem is mounted"),
@@ -335,49 +329,6 @@ class ACTestTmpfs(ACTest):
         return False
 
 
-class ACTestLDAPSecured(ACTest):
-    def category(self) -> str:
-        return ACTestCategories.security
-
-    def title(self) -> str:
-        return _("Secure LDAP")
-
-    def help(self) -> str:
-        return _(
-            "When using the regular LDAP protocol all data transfered between the Checkmk "
-            "and LDAP servers is sent over the network in plain text (unencrypted). This also "
-            "includes the passwords users enter to authenticate with the LDAP Server. It is "
-            "highly recommended to enable SSL for securing the transported data."
-        )
-
-    # TODO: Only test master site?
-    def is_relevant(self) -> bool:
-        return bool([c for _cid, c in active_connections_() if c.type() == "ldap"])
-
-    def execute(self) -> Iterator[ACSingleResult]:
-        site_id = omd_site()
-        for connection_id, connection in active_connections_():
-            if connection.type() != "ldap":
-                continue
-
-            assert isinstance(connection, ldap.LDAPUserConnector)
-
-            if connection.use_ssl():
-                yield ACSingleResult(
-                    state=ACResultState.OK,
-                    text=_("%s: Uses SSL") % connection_id,
-                    site_id=site_id,
-                )
-
-            else:
-                yield ACSingleResult(
-                    state=ACResultState.WARN,
-                    text=_("%s: Not using SSL. Consider enabling it in the connection settings.")
-                    % connection_id,
-                    site_id=site_id,
-                )
-
-
 class ACTestLivestatusSecured(ACTest):
     def category(self) -> str:
         return ACTestCategories.security
@@ -400,8 +351,7 @@ class ACTestLivestatusSecured(ACTest):
         cfg = ConfigDomainOMD().default_globals()
         return bool(cfg["site_livestatus_tcp"])
 
-    def execute(self) -> Iterator[ACSingleResult]:
-        site_id = omd_site()
+    def execute(self, site_id: SiteId, config: Config) -> Iterator[ACSingleResult]:
         cfg = ConfigDomainOMD().default_globals()
         if not cfg["site_livestatus_tcp"]:
             yield ACSingleResult(
@@ -438,8 +388,7 @@ class ACTestNumberOfUsers(ACTest):
     def is_relevant(self) -> bool:
         return True
 
-    def execute(self) -> Iterator[ACSingleResult]:
-        site_id = omd_site()
+    def execute(self, site_id: SiteId, config: Config) -> Iterator[ACSingleResult]:
         users = userdb.load_users()
         num_users = len(users)
         user_warn_threshold = 500
@@ -488,8 +437,7 @@ class ACTestHTTPSecured(ACTest):
     def is_relevant(self) -> bool:
         return True
 
-    def execute(self) -> Iterator[ACSingleResult]:
-        site_id = omd_site()
+    def execute(self, site_id: SiteId, config: Config) -> Iterator[ACSingleResult]:
         if request.is_ssl_request:
             yield ACSingleResult(
                 state=ACResultState.OK,
@@ -522,8 +470,7 @@ class ACTestOldDefaultCredentials(ACTest):
     def is_relevant(self) -> bool:
         return userdb.user_exists(UserId("omdadmin"))
 
-    def execute(self) -> Iterator[ACSingleResult]:
-        site_id = omd_site()
+    def execute(self, site_id: SiteId, config: Config) -> Iterator[ACSingleResult]:
         if (
             htpasswd.HtpasswdUserConnector(
                 {
@@ -572,8 +519,7 @@ class ACTestBackupConfigured(ACTest):
     def is_relevant(self) -> bool:
         return True
 
-    def execute(self) -> Iterator[ACSingleResult]:
-        site_id = omd_site()
+    def execute(self, site_id: SiteId, config: Config) -> Iterator[ACSingleResult]:
         n_configured_jobs = len(BackupConfig.load().jobs)
         if n_configured_jobs:
             yield ACSingleResult(
@@ -607,8 +553,7 @@ class ACTestBackupNotEncryptedConfigured(ACTest):
     def is_relevant(self) -> bool:
         return True
 
-    def execute(self) -> Iterator[ACSingleResult]:
-        site_id = omd_site()
+    def execute(self, site_id: SiteId, config: Config) -> Iterator[ACSingleResult]:
         for job in BackupConfig.load().jobs.values():
             if job.is_encrypted():
                 yield ACSingleResult(
@@ -648,9 +593,8 @@ class ACTestEscapeHTMLDisabled(ACTest):
     def is_relevant(self) -> bool:
         return True
 
-    def execute(self) -> Iterator[ACSingleResult]:
-        site_id = omd_site()
-        if not self._get_effective_global_setting("escape_plugin_output"):
+    def execute(self, site_id: SiteId, config: Config) -> Iterator[ACSingleResult]:
+        if not self._get_effective_global_setting(site_id, config, "escape_plugin_output"):
             yield ACSingleResult(
                 state=ACResultState.CRIT,
                 text=_(
@@ -734,7 +678,7 @@ class ACTestApacheNumberOfProcesses(ABCACApacheTest):
     def is_relevant(self) -> bool:
         return True
 
-    def execute(self) -> Iterator[ACSingleResult]:
+    def execute(self, site_id: SiteId, config: Config) -> Iterator[ACSingleResult]:
         process_limit = self._get_maximum_number_of_processes()
         average_process_size = self._get_average_process_size()
 
@@ -753,7 +697,7 @@ class ACTestApacheNumberOfProcesses(ABCACApacheTest):
                 cmk.utils.render.fmt_bytes(average_process_size),
                 cmk.utils.render.fmt_bytes(estimated_memory_size),
             ),
-            site_id=omd_site(),
+            site_id=site_id,
         )
 
     def _get_average_process_size(self):
@@ -766,7 +710,14 @@ class ACTestApacheNumberOfProcesses(ABCACApacheTest):
 
         sizes = []
         for pid in subprocess.check_output(
-            ["ps", "--ppid", "%d" % ppid, "h", "o", "pid"]
+            [
+                "ps",
+                "--ppid",
+                "%d" % ppid,
+                "h",
+                "o",
+                "pid",
+            ]
         ).splitlines():
             sizes.append(self._get_process_size(pid))
 
@@ -817,7 +768,7 @@ class ACTestApacheProcessUsage(ABCACApacheTest):
     def is_relevant(self) -> bool:
         return True
 
-    def execute(self) -> Iterator[ACSingleResult]:
+    def execute(self, site_id: SiteId, config: Config) -> Iterator[ACSingleResult]:
         total_slots = self._get_maximum_number_of_processes()
         open_slots = self._get_number_of_idle_processes()
         used_slots = total_slots - open_slots
@@ -838,7 +789,7 @@ class ACTestApacheProcessUsage(ABCACApacheTest):
                 "%d of the configured maximum of %d processes have been started. This is a usage of %0.2f %%."
             )
             % (used_slots, total_slots, usage),
-            site_id=omd_site(),
+            site_id=site_id,
         )
 
 
@@ -875,7 +826,7 @@ class ACTestCheckMKHelperUsage(ACTest):
     def is_relevant(self) -> bool:
         return self._uses_microcore()
 
-    def execute(self) -> Iterator[ACSingleResult]:
+    def execute(self, site_id: SiteId, config: Config) -> Iterator[ACSingleResult]:
         local_connection = LocalConnection()
         row = local_connection.query_row(
             "GET status\nColumns: helper_usage_checker average_latency_checker\n"
@@ -898,7 +849,7 @@ class ACTestCheckMKHelperUsage(ACTest):
                 "The current checker usage is %.2f%%. The checkers have an average latency of %.3fs."
             )
             % (helper_usage_checker_percent, average_latency_checker),
-            site_id=omd_site(),
+            site_id=site_id,
         )
 
 
@@ -934,8 +885,7 @@ class ACTestCheckMKFetcherUsage(ACTest):
     def is_relevant(self) -> bool:
         return self._uses_microcore()
 
-    def execute(self) -> Iterator[ACSingleResult]:
-        site_id = omd_site()
+    def execute(self, site_id: SiteId, config: Config) -> Iterator[ACSingleResult]:
         local_connection = LocalConnection()
         row = local_connection.query_row(
             "GET status\nColumns: helper_usage_fetcher average_latency_fetcher\n"
@@ -965,7 +915,7 @@ class ACTestCheckMKFetcherUsage(ACTest):
         # Only report this as warning in case the user increased the default helper configuration
         default_values = ABCConfigDomain.get_all_default_globals()
         if (
-            self._get_effective_global_setting("cmc_fetcher_helpers")
+            self._get_effective_global_setting(site_id, config, "cmc_fetcher_helpers")
             > default_values["cmc_fetcher_helpers"]
             and fetcher_usage_perc < 50
         ):
@@ -1012,8 +962,7 @@ class ACTestCheckMKCheckerUsage(ACTest):
     def is_relevant(self) -> bool:
         return self._uses_microcore()
 
-    def execute(self) -> Iterator[ACSingleResult]:
-        site_id = omd_site()
+    def execute(self, site_id: SiteId, config: Config) -> Iterator[ACSingleResult]:
         local_connection = LocalConnection()
         row = local_connection.query_row(
             "GET status\nColumns: helper_usage_checker average_latency_fetcher\n"
@@ -1043,7 +992,7 @@ class ACTestCheckMKCheckerUsage(ACTest):
         # Only report this as warning in case the user increased the default helper configuration
         default_values = ABCConfigDomain.get_all_default_globals()
         if (
-            self._get_effective_global_setting("cmc_checker_helpers")
+            self._get_effective_global_setting(site_id, config, "cmc_checker_helpers")
             > default_values["cmc_checker_helpers"]
             and checker_usage_perc < 50
         ):
@@ -1083,8 +1032,7 @@ class ACTestGenericCheckHelperUsage(ACTest):
     def is_relevant(self) -> bool:
         return self._uses_microcore()
 
-    def execute(self) -> Iterator[ACSingleResult]:
-        site_id = omd_site()
+    def execute(self, site_id: SiteId, config: Config) -> Iterator[ACSingleResult]:
         local_connection = LocalConnection()
         row = local_connection.query_row(
             "GET status\nColumns: helper_usage_generic average_latency_generic\n"
@@ -1136,12 +1084,14 @@ class ACTestSizeOfExtensions(ACTest):
         )
 
     def is_relevant(self) -> bool:
-        return has_wato_slave_sites() and self._replicates_mkps()
+        return has_wato_slave_sites(active_config.sites) and self._replicates_mkps(
+            active_config.sites
+        )
 
-    def _replicates_mkps(self) -> bool:
-        return any(site.get("replicate_mkps") for site in wato_slave_sites().values())
+    def _replicates_mkps(self, site_configs: SiteConfigurations) -> bool:
+        return any(site.get("replicate_mkps") for site in wato_slave_sites(site_configs).values())
 
-    def execute(self) -> Iterator[ACSingleResult]:
+    def execute(self, site_id: SiteId, config: Config) -> Iterator[ACSingleResult]:
         size = self._size_of_extensions()
         if size > 100 * 1024 * 1024:
             state = ACResultState.CRIT
@@ -1151,7 +1101,7 @@ class ACTestSizeOfExtensions(ACTest):
         yield ACSingleResult(
             state=state,
             text=_("Your extensions have a size of %s.") % cmk.utils.render.fmt_bytes(size),
-            site_id=omd_site(),
+            site_id=site_id,
         )
 
     def _size_of_extensions(self):
@@ -1177,8 +1127,7 @@ class ACTestBrokenGUIExtension(ACTest):
     def is_relevant(self) -> bool:
         return True
 
-    def execute(self) -> Iterator[ACSingleResult]:
-        site_id = omd_site()
+    def execute(self, site_id: SiteId, config: Config) -> Iterator[ACSingleResult]:
         errors = cmk.gui.utils.get_failed_plugins()
         if not errors:
             yield ACSingleResult(
@@ -1222,8 +1171,7 @@ class ACTestESXDatasources(ACTest):
     def is_relevant(self) -> bool:
         return self._get_rules()
 
-    def execute(self) -> Iterator[ACSingleResult]:
-        site_id = omd_site()
+    def execute(self, site_id: SiteId, config: Config) -> Iterator[ACSingleResult]:
         all_rules_ok = True
         for folder, rule_index, rule in self._get_rules():
             vsphere_queries_agent = rule.value.get("direct") in ["agent", "hostsystem_agent"]
@@ -1365,8 +1313,7 @@ class ACTestDeprecatedRuleSets(ACTest):
     def is_relevant(self) -> bool:
         return True
 
-    def execute(self) -> Iterator[ACSingleResult]:
-        site_id = omd_site()
+    def execute(self, site_id: SiteId, config: Config) -> Iterator[ACSingleResult]:
         unknown_check_parameter_rule_sets = [
             f"{RuleGroupType.CHECKGROUP_PARAMETERS.value}:{r}"
             for r in find_unknown_check_parameter_rule_sets(debug=active_config.debug).result
@@ -1416,8 +1363,7 @@ class ACTestUnknownCheckParameterRuleSets(ACTest):
     def is_relevant(self) -> bool:
         return True
 
-    def execute(self) -> Iterator[ACSingleResult]:
-        site_id = omd_site()
+    def execute(self, site_id: SiteId, config: Config) -> Iterator[ACSingleResult]:
         if rule_sets := find_unknown_check_parameter_rule_sets(debug=active_config.debug).result:
             for rule_set in rule_sets:
                 yield ACSingleResult(
@@ -1468,8 +1414,7 @@ class ACTestDeprecatedV1CheckPlugins(ACTest):
     def is_relevant(self) -> bool:
         return True
 
-    def execute(self) -> Iterator[ACSingleResult]:
-        site_id = omd_site()
+    def execute(self, site_id: SiteId, config: Config) -> Iterator[ACSingleResult]:
         if plugin_files := self._get_files():
             for plugin_filepath in plugin_files:
                 yield _compute_deprecation_result(
@@ -1517,8 +1462,7 @@ class ACTestDeprecatedCheckPlugins(ACTest):
     def is_relevant(self) -> bool:
         return True
 
-    def execute(self) -> Iterator[ACSingleResult]:
-        site_id = omd_site()
+    def execute(self, site_id: SiteId, config: Config) -> Iterator[ACSingleResult]:
         if files := self._get_files():
             for plugin_filepath in files:
                 yield _compute_deprecation_result(
@@ -1562,8 +1506,7 @@ class ACTestDeprecatedInventoryPlugins(ACTest):
     def is_relevant(self) -> bool:
         return True
 
-    def execute(self) -> Iterator[ACSingleResult]:
-        site_id = omd_site()
+    def execute(self, site_id: SiteId, config: Config) -> Iterator[ACSingleResult]:
         if files := self._get_files():
             for plugin_filepath in files:
                 yield _compute_deprecation_result(
@@ -1607,8 +1550,7 @@ class ACTestDeprecatedCheckManpages(ACTest):
     def is_relevant(self) -> bool:
         return True
 
-    def execute(self) -> Iterator[ACSingleResult]:
-        site_id = omd_site()
+    def execute(self, site_id: SiteId, config: Config) -> Iterator[ACSingleResult]:
         if files := self._get_files():
             for plugin_filepath in files:
                 yield _compute_deprecation_result(
@@ -1659,8 +1601,7 @@ class ACTestDeprecatedGUIExtensions(ACTest):
     def is_relevant(self) -> bool:
         return True
 
-    def execute(self) -> Iterator[ACSingleResult]:
-        site_id = omd_site()
+    def execute(self, site_id: SiteId, config: Config) -> Iterator[ACSingleResult]:
         if files := self._get_files():
             for plugin_filepath in files:
                 yield ACSingleResult(
@@ -1707,8 +1648,7 @@ class ACTestDeprecatedLegacyGUIExtensions(ACTest):
     def is_relevant(self) -> bool:
         return True
 
-    def execute(self) -> Iterator[ACSingleResult]:
-        site_id = omd_site()
+    def execute(self, site_id: SiteId, config: Config) -> Iterator[ACSingleResult]:
         if files := self._get_files():
             for plugin_filepath in files:
                 match plugin_filepath.parent.name:
@@ -1785,8 +1725,7 @@ class ACTestDeprecatedPNPTemplates(ACTest):
     def is_relevant(self) -> bool:
         return True
 
-    def execute(self) -> Iterator[ACSingleResult]:
-        site_id = omd_site()
+    def execute(self, site_id: SiteId, config: Config) -> Iterator[ACSingleResult]:
         if files := self._get_files():
             for plugin_filepath in files:
                 yield ACSingleResult(
@@ -1838,8 +1777,7 @@ class ACTestUnexpectedAllowedIPRanges(ACTest):
     def is_relevant(self) -> bool:
         return bool(self._get_rules())
 
-    def execute(self) -> Iterator[ACSingleResult]:
-        site_id = omd_site()
+    def execute(self, site_id: SiteId, config: Config) -> Iterator[ACSingleResult]:
         rules = self._get_rules()
         if not rules:
             yield ACSingleResult(
@@ -1889,8 +1827,7 @@ class ACTestCheckMKCheckerNumber(ACTest):
     def is_relevant(self) -> bool:
         return self._uses_microcore()
 
-    def execute(self) -> Iterator[ACSingleResult]:
-        site_id = omd_site()
+    def execute(self, site_id: SiteId, config: Config) -> Iterator[ACSingleResult]:
         try:
             num_cpu = multiprocessing.cpu_count()
         except NotImplementedError:
@@ -1901,7 +1838,7 @@ class ACTestCheckMKCheckerNumber(ACTest):
             )
             return
 
-        if self._get_effective_global_setting("cmc_checker_helpers") > num_cpu:
+        if self._get_effective_global_setting(site_id, config, "cmc_checker_helpers") > num_cpu:
             yield ACSingleResult(
                 state=ACResultState.WARN,
                 text=_(

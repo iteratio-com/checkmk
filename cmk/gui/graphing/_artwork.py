@@ -16,14 +16,13 @@ from dateutil.relativedelta import relativedelta
 from pydantic import BaseModel
 
 import cmk.utils.render
-
+from cmk.gui.color import fade_color, parse_color, render_color
 from cmk.gui.config import active_config
 from cmk.gui.http import request
 from cmk.gui.i18n import _
 from cmk.gui.logged_in import user
+from cmk.gui.unit_formatter import Label, NotationFormatter
 
-from ._color import fade_color, parse_color, render_color
-from ._formatter import Label, NotationFormatter
 from ._from_api import RegisteredMetric
 from ._graph_specification import (
     FixedVerticalRange,
@@ -601,7 +600,7 @@ def _compute_labels_from_api(
                 )
             )
         case False, True:
-            if mirrored or abs_min_y == abs_max_y:
+            if mirrored:
                 labels = formatter.render_y_labels(
                     min_y=0,
                     max_y=max(abs_min_y, abs_max_y),
@@ -612,6 +611,19 @@ def _compute_labels_from_api(
                     + [Label(0, "0")]
                     + list(labels)
                 )
+
+            if abs_min_y == abs_max_y:
+                labels = formatter.render_y_labels(
+                    min_y=0,
+                    max_y=max(abs_min_y, abs_max_y),
+                    mean_num_labels=height_ex / 8.0 + 1,
+                )
+                return (
+                    [Label(-1 * l.position, f"-{l.text}") for l in labels]
+                    + [Label(0, "0")]
+                    + list(labels)
+                )
+
             mean_num_labels = height_ex / 4.0 + 1
             min_mean_num_labels = round(mean_num_labels * abs_min_y / (abs_min_y + abs_max_y))
             max_mean_num_labels = mean_num_labels - min_mean_num_labels
@@ -635,7 +647,7 @@ def _compute_labels_from_api(
             )
         case False, False:
             return [
-                Label(-1 * l.position, l.text)
+                Label(-1 * l.position, f"-{l.text}")
                 for l in formatter.render_y_labels(
                     min_y=min(abs_min_y, abs_max_y),
                     max_y=max(abs_min_y, abs_max_y),
@@ -752,7 +764,7 @@ def _compute_min_max(
                 if (lc_values := list(_extract_lc_values(True)))
                 else (None, None)
             )
-            min_values = [lc_min_value, 0]
+            min_values = [lc_min_value]
             max_values = [lc_max_value]
         case _:
             assert_never(explicit_vertical_range)

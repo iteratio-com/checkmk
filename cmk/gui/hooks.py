@@ -10,9 +10,8 @@ import typing
 from collections.abc import Callable
 from typing import Any, Literal, NamedTuple
 
-from cmk.ccc.exceptions import MKGeneralException
-
 from cmk import trace
+from cmk.ccc.exceptions import MKGeneralException
 
 # mypy: disable-error-code="no-any-return"
 
@@ -132,9 +131,9 @@ class ThreadLocalLRUCache:
         """Create a decorator to cache a function with a thread-local LRU cache."""
 
         def decorator(func: Callable[P, R]) -> Callable[P, R]:
-            def wrapper(*args: object, **kwargs: object) -> R:
+            def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
                 cached_func = self._get_cached_func(func, maxsize)
-                return cached_func(*args, **kwargs)  # type: ignore[arg-type]
+                return cached_func(*args, **kwargs)
 
             return wrapper
 

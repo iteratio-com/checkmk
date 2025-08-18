@@ -19,14 +19,13 @@ from typing import NamedTuple, NewType
 import isort
 import pytest
 
+import requirements
 from tests.testlib.common.repo import (
     branch_from_env,
     current_base_branch_name,
     is_enterprise_repo,
     repo_path,
 )
-
-import requirements
 
 IGNORED_LIBS = {
     "agent_receiver",
@@ -404,7 +403,7 @@ def test_dependencies_are_declared() -> None:
         "ibm_db_dbi",  # active_checks/check_sql
         "sqlanydb",  # active_checks/check_sql
         "libcst",  # doc/treasures/migration_helpers
-        "tests",  # buildscripts/scripts/assert_build_artifactsa.py and buildscripts/scripts/lib/registry.py
+        "tests",  # buildscripts/scripts/assert_build_artifactsa.py and buildscripts/scripts/lib/_registry.py
     }
 
     assert undeclared_dependencies_str >= known_undeclared_dependencies, (

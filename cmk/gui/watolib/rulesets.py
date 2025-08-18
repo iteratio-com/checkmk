@@ -16,32 +16,14 @@ from enum import auto, Enum
 from pathlib import Path
 from typing import Any, assert_never, cast, Final, Literal, override
 
+from cmk import trace
 from cmk.ccc import store
 from cmk.ccc.exceptions import MKGeneralException
 from cmk.ccc.hostaddress import HostName
 from cmk.ccc.version import Edition, edition
-
-from cmk.utils import paths
-from cmk.utils.global_ident_type import GlobalIdent
-from cmk.utils.labels import LabelGroups, Labels
-from cmk.utils.object_diff import make_diff, make_diff_text
-from cmk.utils.regex import escape_regex_chars
-from cmk.utils.rulesets import ruleset_matcher
-from cmk.utils.rulesets.conditions import HostOrServiceConditionRegex, HostOrServiceConditions
-from cmk.utils.rulesets.definition import RuleGroup
-from cmk.utils.rulesets.ruleset_matcher import (
-    RuleConditionsSpec,
-    RuleOptionsSpec,
-    RulesetName,
-    RuleSpec,
-    TagCondition,
-    TagConditionNE,
-)
-from cmk.utils.tags import get_tag_to_group_map, TagGroupID, TagID
-
 from cmk.gui import hooks, utils
-from cmk.gui.config import active_config
 from cmk.gui.exceptions import MKUserError
+from cmk.gui.form_specs.vue import get_visitor, RawDiskData, VisitorOptions
 from cmk.gui.htmllib.html import html
 from cmk.gui.i18n import _, _l
 from cmk.gui.log import logger
@@ -58,9 +40,24 @@ from cmk.gui.watolib.check_mk_automations import (
     analyze_service_rule_matches,
 )
 from cmk.gui.watolib.configuration_bundle_store import is_locked_by_quick_setup
-
-from cmk import trace
 from cmk.server_side_calls_backend.config_processing import process_configuration_to_parameters
+from cmk.utils import paths
+from cmk.utils.global_ident_type import GlobalIdent
+from cmk.utils.labels import LabelGroups, Labels
+from cmk.utils.object_diff import make_diff, make_diff_text
+from cmk.utils.regex import escape_regex_chars
+from cmk.utils.rulesets import ruleset_matcher
+from cmk.utils.rulesets.conditions import HostOrServiceConditionRegex, HostOrServiceConditions
+from cmk.utils.rulesets.definition import RuleGroup
+from cmk.utils.rulesets.ruleset_matcher import (
+    RuleConditionsSpec,
+    RuleOptionsSpec,
+    RulesetName,
+    RuleSpec,
+    TagCondition,
+    TagConditionNE,
+)
+from cmk.utils.tags import TagGroupID, TagID
 
 from .changes import add_change
 from .check_mk_automations import get_services_labels, update_merged_password_file
@@ -74,6 +71,7 @@ from .hosts_and_folders import (
 )
 from .objref import ObjectRef, ObjectRefType
 from .rulespecs import (
+    FormSpecNotImplementedError,
     MatchType,
     Rulespec,
     rulespec_group_registry,
@@ -358,9 +356,8 @@ class RulesetCollection:
     def _initialize_rulesets(
         only_varname: RulesetName | None = None,
     ) -> Mapping[RulesetName, Ruleset]:
-        tag_to_group_map = get_tag_to_group_map(active_config.tags)
         varnames = [only_varname] if only_varname else rulespec_registry.keys()
-        return {varname: Ruleset(varname, tag_to_group_map) for varname in varnames}
+        return {varname: Ruleset(varname) for varname in varnames}
 
     def _load_folder_rulesets(
         self, folder: Folder, only_varname: RulesetName | None = None
@@ -665,12 +662,10 @@ class Ruleset:
     def __init__(
         self,
         name: RulesetName,
-        tag_to_group_map: Mapping[TagID, TagGroupID],
         rulespec: Rulespec | None = None,
     ) -> None:
         super().__init__()
         self.name: Final = name
-        self.tag_to_group_map: Final = tag_to_group_map
         self.rulespec: Final = rulespec_registry[name] if rulespec is None else rulespec
 
         # Holds list of the rules. Using the folder paths as keys.
@@ -681,7 +676,7 @@ class Ruleset:
         self.search_matching_rules: list[Rule] = []
 
     def clone(self):
-        cloned = Ruleset(self.name, self.tag_to_group_map, self.rulespec)
+        cloned = Ruleset(self.name, self.rulespec)
         for folder, _rule_index, rule in self.get_rules():
             cloned.append_rule(folder, rule)
         return cloned
@@ -741,7 +736,7 @@ class Ruleset:
         self._rules_by_id[rule.id] = rule
         self._on_change()
 
-    def clone_rule(self, orig_rule: Rule, rule: Rule) -> None:
+    def clone_rule(self, orig_rule: Rule, rule: Rule, *, use_git: bool) -> None:
         if rule.folder == orig_rule.folder:
             self.insert_rule_after(rule, orig_rule)
         else:
@@ -755,7 +750,7 @@ class Ruleset:
             sites=rule.folder.all_site_ids(),
             diff_text=self.diff_rules(None, rule),
             object_ref=rule.object_ref(),
-            use_git=active_config.wato_use_git,
+            use_git=use_git,
         )
 
     def move_to_folder(
@@ -790,7 +785,7 @@ class Ruleset:
         self._on_change()
         return index
 
-    def add_new_rule_change(self, index: int, folder: Folder, rule: Rule) -> None:
+    def add_new_rule_change(self, index: int, folder: Folder, rule: Rule, *, use_git: bool) -> None:
         add_change(
             action_name="new-rule",
             text=_('Created new rule #%d in ruleset "%s" in folder "%s"')
@@ -799,7 +794,7 @@ class Ruleset:
             sites=folder.all_site_ids(),
             diff_text=self.diff_rules(None, rule),
             object_ref=rule.object_ref(),
-            use_git=active_config.wato_use_git,
+            use_git=use_git,
         )
 
     def insert_rule_after(self, rule: Rule, after: Rule) -> None:
@@ -973,7 +968,7 @@ class Ruleset:
             return make_diff_text({}, new.to_log())
         return old.diff_to(new)
 
-    def edit_rule(self, orig_rule: Rule, rule: Rule) -> None:
+    def edit_rule(self, orig_rule: Rule, rule: Rule, *, use_git: bool) -> None:
         folder_rules = self._rules[orig_rule.folder.path()]
         index = folder_rules.index(orig_rule)
 
@@ -987,11 +982,11 @@ class Ruleset:
             sites=rule.folder.all_site_ids(),
             diff_text=self.diff_rules(orig_rule, rule),
             object_ref=rule.object_ref(),
-            use_git=active_config.wato_use_git,
+            use_git=use_git,
         )
         self._on_change()
 
-    def delete_rule(self, rule: Rule, create_change: bool = True) -> None:
+    def delete_rule(self, rule: Rule, *, create_change: bool, use_git: bool) -> None:
         folder_rules = self._rules[rule.folder.path()]
         index = folder_rules.index(rule)
 
@@ -1006,11 +1001,11 @@ class Ruleset:
                 user_id=user.id,
                 sites=rule.folder.all_site_ids(),
                 object_ref=rule.object_ref(),
-                use_git=active_config.wato_use_git,
+                use_git=use_git,
             )
         self._on_change()
 
-    def move_rule_to(self, rule: Rule, index: int) -> int:
+    def move_rule_to(self, rule: Rule, *, index: int, use_git: bool) -> int:
         rules = self._rules[rule.folder.path()]
         old_index = rules.index(rule)
         index = self.get_index_for_move(rule.folder, rule, index)
@@ -1026,7 +1021,7 @@ class Ruleset:
             user_id=user.id,
             sites=rule.folder.all_site_ids(),
             object_ref=self.object_ref(),
-            use_git=active_config.wato_use_git,
+            use_git=use_git,
         )
         return index
 
@@ -1274,6 +1269,14 @@ class Rule:
 
     def value_masked(self) -> RuleValue:
         """Return a copy of the value with all secrets masked"""
+        try:
+            return get_visitor(
+                self.ruleset.rulespec.form_spec,
+                VisitorOptions(migrate_values=True, mask_values=True),
+            ).to_disk(RawDiskData(self.value))
+        except FormSpecNotImplementedError:
+            pass
+
         return self.ruleset.valuespec().mask(self.value)
 
     def diff_to(self, other: Rule) -> str:
@@ -1316,10 +1319,9 @@ class Rule:
     def to_log(self) -> RuleSpec:
         """Returns a JSON compatible format suitable for logging, where passwords are replaced"""
         vs = self.ruleset.valuespec()
-        return self._to_config(
-            use_host_folder=UseHostFolder.NONE,
-            transform_value=lambda value: vs.value_to_json(vs.mask(self.value)),
-        )
+        masked_value_fn = lambda value: vs.value_to_json(vs.mask(self.value))
+
+        return self._to_config(use_host_folder=UseHostFolder.NONE, transform_value=masked_value_fn)
 
     def _to_config(
         self,
@@ -1448,7 +1450,9 @@ class Rule:
         current_folder = folder_tree().folder(current_folder)
         search_in_folders = [current_folder.path()]
         if do_recursion:
-            search_in_folders = [x for x, _y in current_folder.recursive_subfolder_choices()]
+            search_in_folders = [
+                x for x, _y in current_folder.recursive_subfolder_choices(pretty=True)
+            ]
         return search_in_folders
 
     def index(self) -> int:
@@ -1586,6 +1590,7 @@ class EnabledDisabledServicesEditor:
         automation_config: LocalAutomationConfig | RemoteAutomationConfig,
         pprint_value: bool,
         debug: bool,
+        use_git: bool,
     ) -> None:
         self._save_service_enable_disable_rules(
             to_enable,
@@ -1593,6 +1598,7 @@ class EnabledDisabledServicesEditor:
             automation_config=automation_config,
             pprint_value=pprint_value,
             debug=debug,
+            use_git=use_git,
         )
         self._save_service_enable_disable_rules(
             to_disable,
@@ -1600,6 +1606,7 @@ class EnabledDisabledServicesEditor:
             automation_config=automation_config,
             pprint_value=pprint_value,
             debug=debug,
+            use_git=use_git,
         )
 
     def _save_service_enable_disable_rules(
@@ -1610,6 +1617,7 @@ class EnabledDisabledServicesEditor:
         automation_config: LocalAutomationConfig | RemoteAutomationConfig,
         pprint_value: bool,
         debug: bool,
+        use_git: bool,
     ) -> None:
         """
         Load all disabled services rules from the folder, then check whether or not there is a
@@ -1629,15 +1637,13 @@ class EnabledDisabledServicesEditor:
         try:
             ruleset = rulesets.get("ignored_services")
         except KeyError:
-            ruleset = Ruleset("ignored_services", get_tag_to_group_map(active_config.tags))
+            ruleset = Ruleset("ignored_services")
 
         modified_folders = []
 
-        service_patterns: HostOrServiceConditions = [
-            service_description_to_condition(s) for s in services
-        ]
+        service_patterns = [service_description_to_condition(s) for s in services]
         modified_folders += self._remove_from_rule_of_host(
-            ruleset, service_patterns, value=not value
+            ruleset, service_patterns, value=not value, use_git=use_git
         )
 
         # Check whether or not the service still needs a host specific setting after removing
@@ -1666,7 +1672,14 @@ class EnabledDisabledServicesEditor:
         for folder in modified_folders:
             rulesets.save_folder(folder, pprint_value=pprint_value, debug=debug)
 
-    def _remove_from_rule_of_host(self, ruleset, service_patterns, value):
+    def _remove_from_rule_of_host(
+        self,
+        ruleset: Ruleset,
+        service_patterns: Sequence[HostOrServiceConditionRegex],
+        value: Any,
+        *,
+        use_git: bool,
+    ) -> list[Folder]:
         other_rule = self._get_rule_of_host(ruleset, value)
         if other_rule and isinstance(other_rule.conditions.service_description, list):
             for service_condition in service_patterns:
@@ -1674,21 +1687,24 @@ class EnabledDisabledServicesEditor:
                     other_rule.conditions.service_description.remove(service_condition)
 
             if not other_rule.conditions.service_description:
-                ruleset.delete_rule(other_rule)
+                ruleset.delete_rule(other_rule, create_change=True, use_git=use_git)
 
             return [other_rule.folder]
 
         return []
 
     def _update_rule_of_host(
-        self, ruleset: Ruleset, service_patterns: HostOrServiceConditions, value: Any
+        self, ruleset: Ruleset, service_patterns: Sequence[HostOrServiceConditionRegex], value: Any
     ) -> list[Folder]:
         folder = self._host.folder()
         rule = self._get_rule_of_host(ruleset, value)
 
-        if rule:
+        if rule and isinstance(rule.conditions.service_description, list):
+            rule_service_conditions = cast(
+                list[HostOrServiceConditionRegex], rule.conditions.service_description
+            )
             for service_condition in service_patterns:
-                if service_condition not in rule.conditions.service_description:
+                if service_condition not in rule_service_conditions:
                     rule.conditions.service_description.append(service_condition)
 
         elif service_patterns:
@@ -1696,7 +1712,8 @@ class EnabledDisabledServicesEditor:
             conditions = RuleConditions(
                 folder.path(),
                 host_name=[self._host.name()],
-                service_description=sorted(service_patterns, key=lambda x: x["$regex"]),
+                # Mypy seems to get the type wrong. Didn't investigate a lot
+                service_description=sorted(service_patterns, key=lambda x: x["$regex"]),  # type: ignore[index]
             )
             rule.update_conditions(conditions)
 
@@ -1707,7 +1724,7 @@ class EnabledDisabledServicesEditor:
             return [rule.folder]
         return []
 
-    def _get_rule_of_host(self, ruleset, value):
+    def _get_rule_of_host(self, ruleset: Ruleset, value: Any) -> Rule | None:
         for _folder, _index, rule in ruleset.get_rules():
             if rule.is_disabled():
                 continue
@@ -1758,6 +1775,7 @@ def find_timeperiod_usage_in_time_specific_parameters(
                         ("varname", ruleset.name),
                         ("rulenr", rule_index),
                         ("rule_folder", rule_folder.path()),
+                        ("rule_id", rule.id),
                     ]
                 )
                 used_in.append((_("Time specific check parameter #%d") % (index + 1), edit_url))
@@ -1838,7 +1856,6 @@ class RuleConfigFile(WatoConfigFile[Mapping[RulesetName, Any]]):
                 # files around. The real FOLDER_PATH will be added dynamically while
                 # loading the file in cmk.base.config
                 "".join(content).replace("'%s'" % _FOLDER_PATH_MACRO, "'/%s/' % FOLDER_PATH"),
-                add_header=not active_config.wato_use_git,
             )
         finally:
             if may_use_redis():

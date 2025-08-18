@@ -7,6 +7,7 @@
 
 from collections.abc import Callable
 
+from cmk.gui.config import Config
 from cmk.gui.exceptions import MKUserError
 from cmk.gui.http import request
 from cmk.gui.i18n import _, _l
@@ -182,7 +183,7 @@ def default_user_menu_topics(
 class ModeAjaxCycleThemes(AjaxPage):
     """AJAX handler for quick access option 'Interface theme" in user menu"""
 
-    def page(self) -> PageResult:
+    def page(self, config: Config) -> PageResult:
         check_csrf_token()
         themes = [theme for theme, _title in theme_choices()]
         current_theme = theme.get()
@@ -196,16 +197,16 @@ class ModeAjaxCycleThemes(AjaxPage):
         else:
             new_theme = themes[theme_index + 1]
 
-        _set_user_attribute("ui_theme", new_theme)
+        set_user_attribute("ui_theme", new_theme)
         return {}
 
 
 class ModeAjaxCycleSidebarPosition(AjaxPage):
     """AJAX handler for quick access option 'Sidebar position" in user menu"""
 
-    def page(self) -> PageResult:
+    def page(self, config: Config) -> PageResult:
         check_csrf_token()
-        _set_user_attribute(
+        set_user_attribute(
             "ui_sidebar_position",
             None if _sidebar_position_id(_get_sidebar_position()) == "left" else "left",
         )
@@ -213,21 +214,27 @@ class ModeAjaxCycleSidebarPosition(AjaxPage):
 
 
 class ModeAjaxSetStartURL(AjaxPage):
-    """AJAX handler to set the start URL of a user to a dashboard"""
+    """AJAX handler to set the start URL of a user"""
 
-    def page(self) -> PageResult:
+    def page(self, config: Config) -> PageResult:
         try:
             check_csrf_token()
-            name = request.get_str_input_mandatory("name")
-            url = makeuri_contextless(request, [("name", name)], "dashboard.py")
-            validate_start_url(url, "")
-            _set_user_attribute("start_url", repr(url))
-        except Exception:
-            raise MKUserError(None, _("Failed to set start URL"))
+            if request.var("name"):
+                name = request.get_str_input_mandatory("name")
+                if name == "welcome.py":
+                    set_user_attribute("start_url", repr(name))
+                else:
+                    url = makeuri_contextless(request, [("name", name)], "dashboard.py")
+                    validate_start_url(url, "")
+                    set_user_attribute("start_url", repr(url))
+            else:
+                set_user_attribute("start_url", None)
+        except Exception as e:
+            raise MKUserError(None, _("Failed to set start URL: %s") % e)
         return {}
 
 
-def _set_user_attribute(key: str, value: str | None) -> None:
+def set_user_attribute(key: str, value: str | None) -> None:
     assert user.id is not None
     user_id = user.id
 

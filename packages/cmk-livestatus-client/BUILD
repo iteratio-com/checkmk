@@ -11,11 +11,17 @@ exports_files([
 
 py_library(
     name = "cmk-livestatus-client",
-    srcs = ["cmk/livestatus_client/__init__.py"],
+    srcs = [
+        "cmk/livestatus_client/__init__.py",
+        "cmk/livestatus_client/commands.py",
+    ],
+    data = ["cmk/livestatus_client/py.typed"],
     imports = ["."],
     visibility = ["//visibility:public"],
     deps = [
+        "//packages/cmk-ccc:hostaddress",
         "//packages/cmk-ccc:site",
+        "//packages/cmk-ccc:user",
         "//packages/cmk-trace",
         requirement("opentelemetry-api"),
     ],
@@ -24,6 +30,7 @@ py_library(
 py_library(
     name = "py_livestatus",
     srcs = ["livestatus/__init__.py"],
+    data = ["livestatus/py.typed"],
     imports = ["."],
     visibility = ["//visibility:public"],
     deps = [":cmk-livestatus-client"],
@@ -61,7 +68,15 @@ py_wheel(
     strip_path_prefixes = ["packages/cmk-livestatus-client"],
     # TODO: VERSION is duplicated in pyproject.toml
     version = "1.0.0",
-    deps = [":cmk-livestatus-client"],
+    deps = [
+        ":cmk-livestatus-client",
+        ":cmk_livestatus_client_py_typed",
+    ],
+)
+
+filegroup(
+    name = "cmk_livestatus_client_py_typed",
+    srcs = ["cmk/livestatus_client/py.typed"],
 )
 
 py_wheel(
@@ -70,7 +85,15 @@ py_wheel(
     strip_path_prefixes = ["packages/cmk-livestatus-client"],
     # TODO: VERSION is duplicated in pyproject.toml
     version = "1.0.0",
-    deps = [":py_livestatus"],
+    deps = [
+        "livestatus_py_typed",
+        ":py_livestatus",
+    ],
+)
+
+filegroup(
+    name = "livestatus_py_typed",
+    srcs = ["livestatus/py.typed"],
 )
 
 package_wheel(

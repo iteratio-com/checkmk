@@ -6,12 +6,8 @@
 import cmk.ccc.version as cmk_version
 from cmk.ccc import store
 from cmk.ccc.exceptions import MKGeneralException
-
-from cmk.utils import paths
-from cmk.utils.paths import configuration_lockfile
-
 from cmk.gui.breadcrumb import make_main_menu_breadcrumb
-from cmk.gui.config import active_config
+from cmk.gui.config import Config
 from cmk.gui.customer import customer_api
 from cmk.gui.display_options import display_options
 from cmk.gui.exceptions import FinalizeRequest, MKAuthException, MKUserError
@@ -26,6 +22,8 @@ from cmk.gui.watolib.activate_changes import update_config_generation
 from cmk.gui.watolib.git import do_git_commit
 from cmk.gui.watolib.mode import mode_registry, WatoMode
 from cmk.gui.watolib.sidebar_reload import is_sidebar_reload_needed
+from cmk.utils import paths
+from cmk.utils.paths import configuration_lockfile
 
 from .pages._html_elements import initialize_wato_html_head, wato_html_footer, wato_html_head
 from .pages.not_implemented import ModeNotImplemented
@@ -55,10 +53,10 @@ from .pages.not_implemented import ModeNotImplemented
 #   `----------------------------------------------------------------------'
 
 
-def page_handler() -> None:
+def page_handler(config: Config) -> None:
     initialize_wato_html_head()
 
-    if not active_config.wato_enabled:
+    if not config.wato_enabled:
         raise MKGeneralException(
             _(
                 "Setup is disabled. Please set <tt>wato_enabled = True</tt>"
@@ -72,7 +70,7 @@ def page_handler() -> None:
     # config.current_customer can not be checked with CRE repos
     if (
         cmk_version.edition(paths.omd_root) is cmk_version.Edition.CME
-        and not customer_api().is_provider(active_config.current_customer)
+        and not customer_api().is_provider(config.current_customer)
         and not current_mode.startswith(("backup", "edit_backup"))
     ):
         raise MKGeneralException(_("Checkmk can only be configured on the managers central site."))
@@ -88,19 +86,21 @@ def page_handler() -> None:
     # If we do an action, we acquire an exclusive lock on the complete Setup.
     if transactions.is_transaction():
         with store.lock_checkmk_configuration(configuration_lockfile):
-            _wato_page_handler(current_mode, mode_instance)
+            _wato_page_handler(config, current_mode, mode_instance)
     else:
-        _wato_page_handler(current_mode, mode_instance)
+        _wato_page_handler(config, current_mode, mode_instance)
 
 
-def _wato_page_handler(current_mode: str, mode: WatoMode) -> None:
+def _wato_page_handler(config: Config, current_mode: str, mode: WatoMode) -> None:
     # Do actions (might switch mode)
     if transactions.is_transaction():
         try:
-            if read_only.is_enabled() and not read_only.may_override():
-                raise MKUserError(None, read_only.message())
+            if read_only.is_enabled(config.wato_read_only) and not read_only.may_override(
+                config.wato_read_only
+            ):
+                raise MKUserError(None, read_only.message(config.wato_read_only))
 
-            result = mode.action()
+            result = mode.action(config)
             if isinstance(result, tuple | str | bool):
                 raise MKGeneralException(
                     f'WatoMode "{current_mode}" returns unsupported return value: {result!r}'
@@ -109,7 +109,7 @@ def _wato_page_handler(current_mode: str, mode: WatoMode) -> None:
             # We assume something has been modified and increase the config generation ID by one.
             update_config_generation()
 
-            if active_config.wato_use_git:
+            if config.wato_use_git:
                 do_git_commit()
 
             # Handle two cases:
@@ -126,7 +126,7 @@ def _wato_page_handler(current_mode: str, mode: WatoMode) -> None:
             user_errors.add(MKUserError(None, e.args[0]))
 
     breadcrumb = make_main_menu_breadcrumb(mode.main_menu()) + mode.breadcrumb()
-    page_menu = mode.page_menu(breadcrumb)
+    page_menu = mode.page_menu(config, breadcrumb)
     wato_html_head(
         title=mode.title(),
         breadcrumb=breadcrumb,
@@ -135,8 +135,10 @@ def _wato_page_handler(current_mode: str, mode: WatoMode) -> None:
         show_top_heading=display_options.enabled(display_options.T),
     )
 
-    if read_only.is_enabled() and (not transactions.is_transaction() or read_only.may_override()):
-        html.show_warning(read_only.message())
+    if read_only.is_enabled(config.wato_read_only) and (
+        not transactions.is_transaction() or read_only.may_override(config.wato_read_only)
+    ):
+        html.show_warning(read_only.message(config.wato_read_only))
 
     # Show outcome of failed action on this page
     html.show_user_errors()
@@ -150,7 +152,7 @@ def _wato_page_handler(current_mode: str, mode: WatoMode) -> None:
         )
 
     # Show content
-    mode.handle_page()
+    mode.handle_page(config)
 
     if is_sidebar_reload_needed():
         html.reload_whole_page()

@@ -10,7 +10,6 @@ from pathlib import Path
 from typing import NamedTuple
 
 import cmk.utils.paths
-
 from cmk.gui.ctx_stack import global_var, request_local_attr, set_global_var
 from cmk.gui.hooks import request_memoize
 from cmk.gui.utils.speaklater import LazyString
@@ -184,11 +183,6 @@ def _init_language(lang: str) -> gettext_module.NullTranslations | None:
         return None
 
     return translations[-1]
-
-
-def is_community_translation(lang: str) -> bool:
-    """All languages but English ("en") and German ("de") are community translations."""
-    return lang not in ["en", "de"]
 
 
 # .

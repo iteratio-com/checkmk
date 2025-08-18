@@ -11,11 +11,8 @@ from typing import Final
 
 import pytest
 
-from tests.testlib.unit.base_configuration_scenario import Scenario
-
 import cmk.ccc.version as cmk_version
 from cmk.ccc.hostaddress import HostName
-
 from cmk.utils.rulesets.ruleset_matcher import RuleSpec
 from cmk.utils.rulesets.tuple_rulesets import (
     ALL_HOSTS,
@@ -25,6 +22,7 @@ from cmk.utils.rulesets.tuple_rulesets import (
     in_extraconf_servicelist,
 )
 from cmk.utils.tags import TagGroupID, TagID
+from tests.testlib.unit.base_configuration_scenario import Scenario
 
 
 @pytest.fixture(autouse=True)
@@ -106,7 +104,7 @@ def test_service_extra_conf(ts: Scenario) -> None:
 
     matcher = ts.config_cache.ruleset_matcher
     label_manager = ts.config_cache.label_manager
-    assert matcher.service_extra_conf(
+    assert matcher.get_service_values_all(
         HostName("host1"), "service1", {}, ruleset, label_manager.labels_of_host
     ) == [
         "1",
@@ -119,7 +117,7 @@ def test_service_extra_conf(ts: Scenario) -> None:
         "12",
     ]
 
-    assert matcher.service_extra_conf(
+    assert matcher.get_service_values_all(
         HostName("host1"), "serv", {}, ruleset, label_manager.labels_of_host
     ) == [
         "1",
@@ -132,7 +130,7 @@ def test_service_extra_conf(ts: Scenario) -> None:
         "12",
     ]
 
-    assert matcher.service_extra_conf(
+    assert matcher.get_service_values_all(
         HostName("host2"), "service1", {}, ruleset, label_manager.labels_of_host
     ) == [
         "1",
@@ -196,7 +194,7 @@ HOST_RULESET: Final[Sequence[RuleSpec[Mapping[str, bool]]]] = [
 def test_get_host_values(ts: Scenario) -> None:
     ruleset_matcher = ts.config_cache.ruleset_matcher
     label_manager = ts.config_cache.label_manager
-    assert ruleset_matcher.get_host_values(
+    assert ruleset_matcher.get_host_values_all(
         HostName("host1"), HOST_RULESET, label_manager.labels_of_host
     ) == [
         {"1": True},
@@ -208,7 +206,7 @@ def test_get_host_values(ts: Scenario) -> None:
         {"9": True},
     ]
 
-    assert ruleset_matcher.get_host_values(
+    assert ruleset_matcher.get_host_values_all(
         HostName("host2"), HOST_RULESET, label_manager.labels_of_host
     ) == [
         {"1": True},
@@ -220,7 +218,7 @@ def test_get_host_values(ts: Scenario) -> None:
 def test_get_host_merged_dict(ts: Scenario) -> None:
     ruleset_matcher = ts.config_cache.ruleset_matcher
     label_manager = ts.config_cache.label_manager
-    assert ruleset_matcher.get_host_merged_dict(
+    assert ruleset_matcher.get_host_values_merged(
         HostName("host1"), HOST_RULESET, label_manager.labels_of_host
     ) == {
         "1": True,
@@ -232,7 +230,7 @@ def test_get_host_merged_dict(ts: Scenario) -> None:
         "9": True,
     }
 
-    assert ruleset_matcher.get_host_merged_dict(
+    assert ruleset_matcher.get_host_values_merged(
         HostName("host2"), HOST_RULESET, label_manager.labels_of_host
     ) == {
         "1": True,

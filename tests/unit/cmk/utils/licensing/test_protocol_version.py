@@ -9,7 +9,6 @@ from unittest.mock import Mock, patch
 import pytest
 
 from cmk.ccc.version import Edition
-
 from cmk.utils.licensing.protocol_version import get_licensing_protocol_version
 
 
@@ -22,11 +21,11 @@ def edition_fn_mock() -> Generator[Mock]:
 @pytest.mark.parametrize(
     "edition, expected_version",
     [
-        pytest.param(Edition.CSE, "3.1"),
-        pytest.param(Edition.CEE, "3.1"),
-        pytest.param(Edition.CCE, "3.1"),
-        pytest.param(Edition.CME, "3.1"),
-        pytest.param(Edition.CRE, "3.1"),
+        pytest.param(Edition.CSE, "3.2"),
+        pytest.param(Edition.CEE, "3.2"),
+        pytest.param(Edition.CCE, "3.2"),
+        pytest.param(Edition.CME, "3.2"),
+        pytest.param(Edition.CRE, "3.2"),
     ],
 )
 def test_get_licensing_protocol_version(

@@ -13,7 +13,6 @@ const spec: FormSpec.SingleChoice = {
   title: 'fooTitle',
   input_hint: 'some input hint',
   help: 'fooHelp',
-  i18n_base: { required: 'required' },
   no_elements_text: 'no_text',
   elements: [
     { name: 'choice1', title: 'Choice 1' },
@@ -51,7 +50,7 @@ test('FormSingleChoice renders something when noting is selected', () => {
   const element = screen.getByLabelText<HTMLInputElement>('fooLabel')
 
   expect(element).toHaveAccessibleName('fooLabel')
-  expect(element).toHaveTextContent('some input hint (required)')
+  expect(element).toHaveTextContent('some input hint(required)')
 })
 
 test('FormSingleChoice updates data', async () => {

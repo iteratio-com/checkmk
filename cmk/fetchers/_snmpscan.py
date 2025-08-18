@@ -10,15 +10,12 @@ from dataclasses import dataclass
 from logging import Logger
 from pathlib import Path
 
+import cmk.fetchers._snmpcache as snmp_cache
 from cmk.ccc import tty
 from cmk.ccc.exceptions import MKGeneralException, MKSNMPError, MKTimeout, OnError
 from cmk.ccc.tty import format_warning
-
-from cmk.utils.sectionname import SectionName
-
 from cmk.snmplib import get_single_oid, SNMPBackend, SNMPDetectAtom, SNMPDetectBaseType
-
-import cmk.fetchers._snmpcache as snmp_cache
+from cmk.utils.sectionname import SectionName
 
 SNMPScanSection = tuple[SectionName, SNMPDetectBaseType]
 
@@ -187,7 +184,7 @@ def _regex_cache(pattern: str, flags: int) -> re.Pattern[str]:
     try:
         return re.compile(pattern, flags=flags)
     except Exception as e:
-        raise RuntimeError("Invalid regular expression '%s': %s" % (pattern, e))
+        raise RuntimeError(f"Invalid regular expression '{pattern}': {e}")
 
 
 def _output_snmp_check_plugins(

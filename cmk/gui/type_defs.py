@@ -10,37 +10,27 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import (
-    Annotated,
-    Any,
-    Literal,
-    NamedTuple,
-    NewType,
-    NotRequired,
-    override,
-    TypedDict,
-)
+from enum import Enum
+from typing import Annotated, Any, Literal, NamedTuple, NewType, NotRequired, override, TypedDict
 
 from pydantic import BaseModel, PlainValidator, WithJsonSchema
 
+from cmk.ccc.cpu_tracking import Snapshot
 from cmk.ccc.site import SiteId
 from cmk.ccc.user import UserId
-
-from cmk.utils.cpu_tracking import Snapshot
-from cmk.utils.labels import Labels
-from cmk.utils.metrics import MetricName
-from cmk.utils.notify_types import DisabledNotificationsOptions, EventRule
-from cmk.utils.structured_data import SDPath
-
-from cmk.gui.exceptions import FinalizeRequest
-from cmk.gui.utils.speaklater import LazyString
-
 from cmk.crypto.certificate import Certificate, CertificatePEM, CertificateWithPrivateKey
 from cmk.crypto.hash import HashAlgorithm
 from cmk.crypto.keys import EncryptedPrivateKeyPEM, PrivateKey
 from cmk.crypto.password import Password
 from cmk.crypto.password_hashing import PasswordHash
 from cmk.crypto.secrets import Secret
+from cmk.gui.exceptions import FinalizeRequest
+from cmk.gui.http import Request
+from cmk.gui.utils.speaklater import LazyString
+from cmk.utils.labels import Labels
+from cmk.utils.metrics import MetricName
+from cmk.utils.notify_types import DisabledNotificationsOptions, EventRule
+from cmk.utils.structured_data import SDPath
 
 _ContactgroupName = str
 SizePT = NewType("SizePT", float)
@@ -54,6 +44,8 @@ ChoiceText = str
 ChoiceId = str | None
 Choice = tuple[ChoiceId, ChoiceText]
 Choices = list[Choice]  # TODO: Change to Sequence, perhaps DropdownChoiceEntries[str]
+ChoiceMapping = Mapping[str, ChoiceText]
+GraphPresentation = Literal["lines", "stacked", "sum", "average", "min", "max"]
 
 
 class TrustedCertificateAuthorities(TypedDict):
@@ -109,7 +101,7 @@ AuthType = Literal[
     "web_server",
 ]
 
-DismissableWarning = Literal["notification_fallback", "immediate_slideout_change"]
+DismissableWarning = Literal["notification_fallback", "immediate_slideout_change", "changes-info"]
 
 
 @dataclass
@@ -236,6 +228,7 @@ class UserSpec(TypedDict, total=False):
     serial: int
     service_notification_options: str
     store_automation_secret: bool
+    # TODO: do we need session_info in the user?
     session_info: dict[SessionId, SessionInfo]
     show_mode: NotRequired[
         Literal["default_show_less", "default_show_more", "enforce_show_more"] | None
@@ -259,8 +252,6 @@ class UserObjectValue(TypedDict):
     is_new_user: bool
 
 
-UserObject = dict[UserId, UserObjectValue]
-
 AnnotatedUserId = Annotated[
     UserId,
     PlainValidator(UserId.parse),
@@ -268,6 +259,7 @@ AnnotatedUserId = Annotated[
 ]
 
 Users = dict[AnnotatedUserId, UserSpec]  # TODO: Improve this type
+
 
 # Visual specific
 FilterName = str
@@ -643,10 +635,14 @@ class MainMenuTopic(NamedTuple):
     hide: bool = False
 
 
-class MainMenuVueApp(NamedTuple):
+@dataclass()
+class MainMenuData: ...
+
+
+@dataclass
+class MainMenuVueApp:
     name: str
-    data: dict[str, object]
-    class_: list[str] = []
+    data: Callable[[Request], MainMenuData]
 
 
 class MainMenu(NamedTuple):
@@ -675,6 +671,7 @@ class SearchResult:
 
 
 SearchResultsByTopic = Iterable[tuple[str, Iterable[SearchResult]]]
+
 
 # Metric & graph specific
 
@@ -807,3 +804,37 @@ class CustomHostAttrSpec(CustomAttrSpec): ...
 class CustomUserAttrSpec(CustomAttrSpec):
     # None case should be cleaned up to False
     user_editable: bool | None
+
+
+class VirtualHostTreeSpec(TypedDict):
+    id: str
+    title: str
+    exclude_empty_tag_choices: bool
+    tree_spec: Sequence[str]
+
+
+class RenderMode(Enum):
+    BACKEND = "backend"
+    FRONTEND = "frontend"
+    BACKEND_AND_FRONTEND = "backend_and_frontend"
+
+
+class ReadOnlySpec(TypedDict):
+    enabled: bool | tuple[float, float]
+    message: str
+    rw_users: Sequence[UserId]
+
+
+class AgentControllerCertificates(TypedDict):
+    lifetime_in_months: int
+
+
+class PasswordPolicy(TypedDict):
+    min_length: NotRequired[int]
+    num_groups: NotRequired[int]
+    max_age: NotRequired[int]
+
+
+class GraphTimerange(TypedDict):
+    title: str
+    duration: int

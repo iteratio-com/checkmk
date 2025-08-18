@@ -1,3 +1,4 @@
+load("@aspect_rules_js//js:defs.bzl", "js_run_binary", "js_run_devserver")
 load("@aspect_rules_js//npm:defs.bzl", "npm_link_package")
 load("@aspect_rules_lint//format:defs.bzl", "format_multirun")
 load("@npm_cmk_frontend_vue//:defs.bzl", "npm_link_all_packages")
@@ -6,10 +7,59 @@ load("@npm_cmk_frontend_vue//packages/cmk-frontend-vue:prettier/package_json.bzl
 load("@npm_cmk_frontend_vue//packages/cmk-frontend-vue:vite/package_json.bzl", vite_bin = "bin")
 load("@npm_cmk_frontend_vue//packages/cmk-frontend-vue:vitest/package_json.bzl", vitest_bin = "bin")
 load("@npm_cmk_frontend_vue//packages/cmk-frontend-vue:vue-tsc/package_json.bzl", vue_tsc_bin = "bin")
+load("@npm_cmk_frontend_vue//packages/cmk-frontend-vue:vue3-gettext/package_json.bzl", vue_gettext_bin = "bin")
 load("@rules_pkg//pkg:mappings.bzl", "pkg_files")
 load("@rules_pkg//pkg:tar.bzl", "pkg_tar")
 
 npm_link_all_packages(name = "node_modules")
+
+vue_gettext_bin.vue_gettext_extract_binary(
+    name = "gettext-extract",
+    chdir = package_name(),
+)
+
+vue_gettext_bin.vue_gettext_compile_binary(
+    name = "gettext-compile",
+    chdir = package_name(),
+)
+
+EXTRACTED_LOCALE_OUTS = [
+    "locale/messages.pot",
+    "locale/en.po",
+    "locale/de.po",
+]
+
+LOCALE_OUTS = [
+    "src/assets/locale/en.json",
+    "src/assets/locale/de.json",
+]
+
+js_run_binary(
+    name = "extract_i18n",
+    srcs = glob([
+        "src/**/*.ts",
+        "src/**/*.vue",
+        "demo/**/*.ts",
+        "demo/**/*.vue",
+    ]) + [
+        "gettext.config.js",
+        ":node_modules/vue3-gettext",
+    ],
+    outs = EXTRACTED_LOCALE_OUTS,
+    tool = ":gettext-extract",
+    visibility = ["//visibility:private"],
+)
+
+js_run_binary(
+    name = "compile_i18n",
+    srcs = EXTRACTED_LOCALE_OUTS + [
+        "gettext.config.js",
+        ":node_modules/vue3-gettext",
+    ],
+    outs = LOCALE_OUTS,
+    tool = ":gettext-compile",
+    visibility = ["//visibility:private"],
+)
 
 SRCS = [
     ".prettierrc.json",
@@ -23,8 +73,9 @@ SRCS = [
     "tsconfig.test.json",
     "vite.config.demo.ts",
     "vite.config.ts",
-    "src/components/_demo/index.html",
-    "//packages/cmk-frontend:src",
+    "demo/index.html",
+    "//packages/cmk-frontend:dist",
+    ":extract_i18n",
     ":node_modules/@eslint",
     ":node_modules/@testing-library",
     ":node_modules/@tsconfig",
@@ -44,14 +95,19 @@ SRCS = [
     ":node_modules/sanitize-html",
     ":node_modules/typescript-eslint",
     ":node_modules/vite",
+    ":node_modules/vite-plugin-vue-devtools",
     ":node_modules/vitest",
     ":node_modules/vitest-fail-on-console",
     ":node_modules/vue",
     ":node_modules/vue-router",
-] + glob([
+    ":node_modules/vue3-gettext",
+] + LOCALE_OUTS + glob([
     "src/**/*.ts",
     "src/**/*.vue",
     "src/**/*.css",
+    "demo/**/*.ts",
+    "demo/**/*.vue",
+    "demo/**/*.css",
 ])
 
 npm_link_package(
@@ -88,16 +144,13 @@ vue_tsc_bin.vue_tsc_test(
     include_types = True,
 )
 
-# this rule exposes the `vite` binary - for development purposes only
-vite_bin.vite_binary(
+vite_bin.vite_binary(name = "vite_server")
+
+js_run_devserver(
     name = "vite",
     chdir = package_name(),
     data = SRCS,
-    # The `ibazel_notify_changes` tag must not be provided since it would keep ibazel from
-    # re-starting the dev-server on changes. The `ibazel_notify_changes` protocol can be
-    # implemented manually but currently the `vite` wrapper doesn't support it per se
-    #   see https://github.com/bazelbuild/examples/tree/main/frontend/vue
-    # tags = ["ibazel_notify_changes"],
+    tool = ":vite_server",
 )
 
 # this rule exposes the `vitest` binary - for development purposes only

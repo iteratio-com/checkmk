@@ -8,10 +8,14 @@ from pathlib import Path
 from typing import Any, cast, Literal, NewType, NotRequired, override, TypedDict
 
 from cmk.ccc import store
-
+from cmk.ccc.site import SiteId
+from cmk.ccc.user import UserId
 from cmk.gui.config import active_config
 from cmk.gui.hooks import request_memoize
+from cmk.gui.i18n import _
 from cmk.gui.type_defs import DisableNotificationsAttribute
+from cmk.gui.watolib import changes as _changes
+from cmk.gui.watolib.config_domain_name import ABCConfigDomain
 from cmk.gui.watolib.simple_config_file import ConfigFileRegistry, WatoListConfigFile
 from cmk.gui.watolib.utils import multisite_dir
 
@@ -180,12 +184,19 @@ class SAMLRequestedAuthnContext(TypedDict):
     authn_context_class_ref: Sequence[str]
 
 
+SAML_IDP_METADATA = (
+    tuple[Literal["url"], str]
+    | tuple[Literal["text"], str]
+    | tuple[Literal["file"], tuple[str, str, bytes]]
+)
+
+
 class SAMLUserConnectionConfig(UserConnectionConfig, total=True):
     name: str
     description: str
     comment: str
     docu_url: str
-    idp_metadata: tuple[str, str] | tuple[str, tuple[str, str, bytes]]
+    idp_metadata: SAML_IDP_METADATA
     checkmk_entity_id: str
     checkmk_metadata_endpoint: str
     checkmk_assertion_consumer_service_endpoint: str
@@ -218,10 +229,6 @@ def get_connection(connection_id: str | None) -> UserConnector | None:
     return connections_with_id[0] if connections_with_id else None
 
 
-def active_connections_by_type(connection_type: str) -> list[dict[str, Any]]:
-    return [c for c in connections_by_type(connection_type) if not c["disabled"]]
-
-
 def connections_by_type(connection_type: str) -> list[dict[str, Any]]:
     return [c for c in _get_connection_configs() if c["type"] == connection_type]
 
@@ -231,9 +238,9 @@ def clear_user_connection_cache() -> None:
 
 
 def active_connections() -> list[tuple[str, UserConnector]]:
-    enabled_configs = [cfg for cfg in _get_connection_configs() if not cfg["disabled"]]  #
+    enabled_configs = [cfg for cfg in _get_connection_configs() if not cfg["disabled"]]
     return [
-        (connection_id, connection)  #
+        (connection_id, connection)
         for connection_id, connection in _get_connections_for(enabled_configs)
         if connection.is_enabled()
     ]
@@ -386,6 +393,68 @@ class UserConnectionConfigFile(WatoListConfigFile[ConfigurableUserConnectionSpec
             connector_class.config_changed()
 
         clear_user_connection_cache()
+
+    def update(
+        self,
+        user_id: UserId | None,
+        cfg: list[ConfigurableUserConnectionSpec],
+        connection_id: str,
+        connection_type: Literal["ldap", "saml2"],
+        sites: list[SiteId],
+        domains: Sequence[ABCConfigDomain] | None,
+        pprint_value: bool,
+        use_git: bool,
+    ) -> None:
+        _changes.add_change(
+            action_name=f"edit-{connection_type}-connection",
+            text=_("Changed %s connection %s") % (connection_type.upper(), connection_id),
+            user_id=user_id,
+            domains=domains,
+            sites=sites,
+            use_git=use_git,
+        )
+        self.save(cfg, pprint_value=pprint_value)
+
+    def create(
+        self,
+        user_id: UserId | None,
+        cfg: list[ConfigurableUserConnectionSpec],
+        connection_type: Literal["ldap", "saml2"],
+        sites: list[SiteId],
+        domains: Sequence[ABCConfigDomain] | None,
+        pprint_value: bool,
+        use_git: bool,
+    ) -> None:
+        _changes.add_change(
+            action_name=f"new-{connection_type}-connection",
+            text=_("Created new %s connection") % connection_type.upper(),
+            user_id=user_id,
+            domains=domains,
+            sites=sites,
+            use_git=use_git,
+        )
+        self.save(cfg, pprint_value=pprint_value)
+
+    def delete(
+        self,
+        user_id: UserId | None,
+        cfg: list[ConfigurableUserConnectionSpec],
+        connection_id: str,
+        connection_type: Literal["ldap", "saml2"],
+        sites: list[SiteId],
+        domains: Sequence[ABCConfigDomain] | None,
+        pprint_value: bool,
+        use_git: bool,
+    ) -> None:
+        _changes.add_change(
+            action_name=f"delete-{connection_type}-connection",
+            text=_("Deleted %s connection %s") % (connection_type.upper(), connection_id),
+            user_id=user_id,
+            domains=domains,
+            sites=sites,
+            use_git=use_git,
+        )
+        self.save(cfg, pprint_value=pprint_value)
 
 
 def register_config_file(config_file_registry: ConfigFileRegistry) -> None:

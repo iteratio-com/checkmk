@@ -7,10 +7,10 @@ conditions defined in the file COPYING, which is part of this source code packag
 <script setup lang="ts">
 import usei18n from '@/lib/i18n'
 import CmkIcon from '@/components/CmkIcon.vue'
-import CmkHeading1 from '@/components/typography/CmkHeading1.vue'
-import CmkBody from '@/components/typography/CmkBodyText.vue'
+import CmkParagraph from '@/components/typography/CmkParagraph.vue'
+import CmkHeading from '@/components/typography/CmkHeading.vue'
 import StepsProgressBar, { type StepsProgressBarProps } from './StepsProgressBar.vue'
-const { t } = usei18n('welcome-banner')
+const { _t } = usei18n()
 
 const { completedSteps = 1, totalSteps = 5 } = defineProps<StepsProgressBarProps>()
 </script>
@@ -19,12 +19,12 @@ const { completedSteps = 1, totalSteps = 5 } = defineProps<StepsProgressBarProps
   <section class="welcome-banner">
     <CmkIcon name="checkmk-logo-min" size="xxxlarge" />
     <div class="welcome-banner__content">
-      <CmkHeading1 class="welcome-banner__title">
-        {{ t('title', 'Welcome to Checkmk!') }}
-      </CmkHeading1>
-      <CmkBody class="welcome-banner__subtitle">
-        {{ t('subtitle', 'Get started with Checkmk in 5 easy steps.') }}
-      </CmkBody>
+      <CmkHeading type="h1" class="welcome-banner__title">
+        {{ _t('Welcome to Checkmk!') }}
+      </CmkHeading>
+      <CmkParagraph class="welcome-banner__subtitle">
+        {{ _t('Get started with Checkmk in 5 easy steps.') }}
+      </CmkParagraph>
       <StepsProgressBar :completed-steps="completedSteps" :total-steps="totalSteps" />
     </div>
   </section>
@@ -38,11 +38,7 @@ const { completedSteps = 1, totalSteps = 5 } = defineProps<StepsProgressBarProps
   justify-content: flex-start;
   padding: 40px 32px;
   border-radius: var(--border-radius);
-  background: linear-gradient(
-    90deg,
-    var(--default-bg-color) 0%,
-    var(--color-corporate-green-60) 100%
-  );
+  background: var(--default-table-th-color);
   height: 100%;
 }
 

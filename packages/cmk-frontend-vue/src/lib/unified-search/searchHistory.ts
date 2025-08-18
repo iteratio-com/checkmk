@@ -5,22 +5,22 @@
  */
 import type { Ref } from 'vue'
 import usePersistentRef from '../usePersistentRef'
-import type { UnifiedSearchResultElement } from './providers/unified-search-result'
+import type { UnifiedSearchResultElement } from './providers/unified'
+import type { UnifiedSearchQueryLike } from '@/unified-search/providers/search-utils.types'
 
 export class HistoryEntry {
   public hitCount = 1
   public date = Date.now()
 
   constructor(
-    public query: string,
-    public provider: string,
-    public element: UnifiedSearchResultElement,
-    public topic: string
+    public query: UnifiedSearchQueryLike,
+    public element: UnifiedSearchResultElement
   ) {}
 }
 
 export class SearchHistoryService {
   private entries: Ref<HistoryEntry[]>
+  private queries: Ref<UnifiedSearchQueryLike[]>
 
   constructor(public searchId: string) {
     this.entries = usePersistentRef<HistoryEntry[]>(
@@ -28,22 +28,41 @@ export class SearchHistoryService {
       [],
       'local'
     )
+
+    this.queries = usePersistentRef<UnifiedSearchQueryLike[]>(
+      'search-queries-'.concat(this.searchId),
+      [],
+      'local'
+    )
   }
-  public get(
+  public getEntries(
     provider: string | null = null,
     by: 'date' | 'hitCount' = 'date',
     limit?: number
   ): HistoryEntry[] {
     return this.entries.value
-      .filter((e) => e.provider === provider || provider === null)
+      .filter((e) => e.element.provider === provider || provider === null)
       .sort((a, b) => b[by] - a[by])
+      .slice(0, limit)
+  }
+
+  public getQueries(limit?: number): UnifiedSearchQueryLike[] {
+    return this.queries.value
+      .filter((q) => q.input !== '')
+      .filter((value, index, array) => {
+        return (
+          array.findIndex(
+            (i) => i.input === value.input && i.filters.toString() === value.filters.toString()
+          ) === index
+        )
+      })
       .slice(0, limit ? limit - 1 : limit)
   }
 
   public add(historyEntry: HistoryEntry): void {
     let found = false
 
-    const entries = this.getEntriesCopy()
+    const [entries, queries] = this.getCopy()
 
     entries.forEach((hist) => {
       if (historyEntry.element.title === hist.element.title) {
@@ -57,13 +76,15 @@ export class SearchHistoryService {
       entries.push(historyEntry)
     }
 
+    queries.push(historyEntry.query as UnifiedSearchQueryLike)
+    this.queries.value = queries
     this.entries.value = entries
   }
 
   public remove(historyEntry: HistoryEntry): void {
     let idx = -1
 
-    const entries = this.getEntriesCopy()
+    const [entries, queries] = this.getCopy()
     entries.forEach((hist, i) => {
       if (historyEntry.element.title === hist.element.title) {
         idx = i
@@ -74,11 +95,26 @@ export class SearchHistoryService {
       delete entries[idx]
     }
 
+    idx = queries.indexOf(historyEntry.query as UnifiedSearchQueryLike)
+    if (idx !== -1) {
+      queries.splice(idx, 1)
+    }
+
+    this.queries.value = queries
     this.entries.value = entries
   }
 
-  private getEntriesCopy(): HistoryEntry[] {
+  public resetEntries(): void {
+    this.entries.value = []
+  }
+
+  public resetQueries(): void {
+    this.queries.value = []
+  }
+
+  private getCopy(): [HistoryEntry[], UnifiedSearchQueryLike[]] {
     const entries: HistoryEntry[] = []
-    return entries.concat(this.entries.value)
+    const queries: UnifiedSearchQueryLike[] = []
+    return [entries.concat(this.entries.value), queries.concat(this.queries.value)]
   }
 }

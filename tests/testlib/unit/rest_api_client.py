@@ -18,20 +18,30 @@ import pprint
 import time
 import urllib.parse
 from collections.abc import Mapping, Sequence
-from typing import Any, cast, Literal, NoReturn, NotRequired, Self, TYPE_CHECKING, TypedDict
+from typing import (
+    Any,
+    cast,
+    ClassVar,
+    Literal,
+    NoReturn,
+    NotRequired,
+    Self,
+    TYPE_CHECKING,
+    TypedDict,
+)
 
 from cmk.ccc import version
-
-from cmk.utils import paths
-
+from cmk.ccc.crash_reporting import crash_dir
 from cmk.gui.http import HTTPMethod
 from cmk.gui.openapi.endpoints.configuration_entity._common import to_domain_type
 from cmk.gui.openapi.endpoints.contact_group_config.common import APIInventoryPaths
+from cmk.gui.openapi.framework import APIVersion
+from cmk.gui.openapi.restful_objects.type_defs import DomainType
 from cmk.gui.rest_api_types.notifications_rule_types import APINotificationRule
 from cmk.gui.rest_api_types.site_connection import SiteConfig
 from cmk.gui.type_defs import DismissableWarning
-
 from cmk.shared_typing.configuration_entity import ConfigEntityType
+from cmk.utils import paths
 
 if TYPE_CHECKING:
     from cmk.gui.openapi.endpoints.downtime import FindByType
@@ -39,51 +49,6 @@ if TYPE_CHECKING:
 JSON = int | str | bool | list[Any] | dict[str, Any] | None
 JSON_HEADERS = {"Accept": "application/json", "Content-Type": "application/json"}
 IF_MATCH_HEADER_OPTIONS = Literal["valid_etag", "invalid_etag", "star"] | None
-
-API_DOMAIN = Literal[
-    "configuration_entity",
-    "licensing",
-    "activation_run",
-    "user_config",
-    "host",
-    "host_config",
-    "folder_config",
-    "aux_tag",
-    "time_period",
-    "rule",
-    "ruleset",
-    "host_tag_group",
-    "password",
-    "agent",
-    "downtime",
-    "host_group_config",
-    "service_group_config",
-    "contact_group_config",
-    "site_connection",
-    "notification_rule",
-    "comment",
-    "event_console",
-    "audit_log",
-    "bi_pack",
-    "bi_aggregation",
-    "bi_rule",
-    "user_role",
-    "autocomplete",
-    "service",
-    "service_discovery",
-    "discovery_run",
-    "ldap_connection",
-    "saml_connection",
-    "parent_scan",
-    "quick_setup",
-    "quick_setup_stage",
-    "managed_robots",
-    "notification_parameter",
-    "broker_connection",
-    "background_job",
-    "acknowledge",
-    "otel_collector_config",
-]
 
 
 def _only_set_keys(body: dict[str, Any | None]) -> dict[str, Any]:
@@ -126,7 +91,7 @@ class Response:
 
 def assert_and_delete_rest_crash_report(crash_id: str) -> None:
     """Assert that the REST API crash report with the given ID exists and delete it."""
-    crash_file = paths.crash_dir / "rest_api" / crash_id / "crash.info"
+    crash_file = crash_dir(paths.omd_root) / "rest_api" / crash_id / "crash.info"
     assert crash_file.exists()
     crash_file.unlink()
 
@@ -331,6 +296,8 @@ class RestApiClient:
     Please feel free to shuffle or convert function arguments if you believe it will increase the usability of the client.
     """
 
+    default_version: ClassVar[APIVersion] = APIVersion.V1
+
     def __init__(self, request_handler: RequestHandler, url_prefix: str):
         self.request_handler = request_handler
         self._url_prefix = url_prefix
@@ -343,6 +310,7 @@ class RestApiClient:
         self,
         method: HTTPMethod,
         url: str,
+        *,
         body: JSON | None = None,
         query_params: Mapping[str, Any] | None = None,
         headers: Mapping[str, str] | None = None,
@@ -351,6 +319,7 @@ class RestApiClient:
         url_is_complete: bool = False,
         use_default_headers: bool = True,
         redirect_timeout_seconds: int = 60,
+        api_version: APIVersion | None = None,
     ) -> Response:
         default_headers: Mapping[str, str] = {
             **(JSON_HEADERS if use_default_headers else {}),
@@ -358,7 +327,7 @@ class RestApiClient:
         }
 
         if not url_is_complete:
-            url = self._url_prefix + url
+            url = f"{self._url_prefix}/{(api_version or self.default_version).value}{url}"
 
         req_body = None if body is None else json.dumps(body)
         resp = self.request_handler.request(
@@ -468,7 +437,7 @@ class RestApiClient:
 
 
 class LicensingClient(RestApiClient):
-    domain: API_DOMAIN = "licensing"
+    domain: DomainType = "licensing"
 
     def call_online_verification(self, expect_ok: bool = False) -> Response:
         return self.request(
@@ -507,7 +476,7 @@ class LicensingClient(RestApiClient):
 
 
 class ActivateChangesClient(RestApiClient):
-    domain: API_DOMAIN = "activation_run"
+    domain: DomainType = "activation_run"
 
     def get_activation(self, activation_id: str, expect_ok: bool = True) -> Response:
         return self.request(
@@ -582,7 +551,7 @@ class ActivateChangesClient(RestApiClient):
 
 
 class UserClient(RestApiClient):
-    domain: API_DOMAIN = "user_config"
+    domain: DomainType = "user_config"
 
     def create(
         self,
@@ -755,7 +724,7 @@ class UserClient(RestApiClient):
 
 
 class HostConfigClient(RestApiClient):
-    domain: API_DOMAIN = "host_config"
+    domain: DomainType = "host_config"
 
     def get(
         self, host_name: str, effective_attributes: bool = False, expect_ok: bool = True
@@ -986,7 +955,7 @@ DELETE_MODE = Literal["recursive", "abort_on_nonempty"]
 
 
 class FolderClient(RestApiClient):
-    domain: API_DOMAIN = "folder_config"
+    domain: DomainType = "folder_config"
 
     def get(self, folder_name: str, expect_ok: bool = True) -> Response:
         return self.request(
@@ -1138,7 +1107,7 @@ class FolderClient(RestApiClient):
 
 
 class AuxTagClient(RestApiClient):
-    domain: API_DOMAIN = "aux_tag"
+    domain: DomainType = "aux_tag"
 
     def get(self, aux_tag_id: str, expect_ok: bool = True) -> Response:
         return self.request(
@@ -1193,8 +1162,27 @@ class AuxTagClient(RestApiClient):
         )
 
 
+class GraphTimerangeClient(RestApiClient):
+    domain: DomainType = "graph_timerange"
+    default_version = APIVersion.UNSTABLE
+
+    def get(self, graph_timerange_index: int, expect_ok: bool = True) -> Response:
+        return self.request(
+            "get",
+            url=f"/objects/{self.domain}/{graph_timerange_index}",
+            expect_ok=expect_ok,
+        )
+
+    def get_all(self, expect_ok: bool = True) -> Response:
+        return self.request(
+            "get",
+            url=f"/domain-types/{self.domain}/collections/all",
+            expect_ok=expect_ok,
+        )
+
+
 class TimePeriodClient(RestApiClient):
-    domain: API_DOMAIN = "time_period"
+    domain: DomainType = "time_period"
 
     def get(self, time_period_id: str, expect_ok: bool = True) -> Response:
         return self.request(
@@ -1244,7 +1232,7 @@ class TimePeriodClient(RestApiClient):
 
 
 class RuleClient(RestApiClient):
-    domain: API_DOMAIN = "rule"
+    domain: DomainType = "rule"
 
     def get(self, rule_id: str, expect_ok: bool = True) -> Response:
         return self.request(
@@ -1336,7 +1324,7 @@ class RuleClient(RestApiClient):
 
 
 class RulesetClient(RestApiClient):
-    domain: API_DOMAIN = "ruleset"
+    domain: DomainType = "ruleset"
 
     def get(self, ruleset_id: str, expect_ok: bool = True) -> Response:
         return self.request(
@@ -1374,7 +1362,7 @@ class RulesetClient(RestApiClient):
 
 
 class HostTagGroupClient(RestApiClient):
-    domain: API_DOMAIN = "host_tag_group"
+    domain: DomainType = "host_tag_group"
 
     def create(
         self,
@@ -1461,7 +1449,7 @@ class HostTagGroupClient(RestApiClient):
 
 
 class PasswordClient(RestApiClient):
-    domain: API_DOMAIN = "password"
+    domain: DomainType = "password"
 
     def create(
         self,
@@ -1521,6 +1509,7 @@ class PasswordClient(RestApiClient):
         shared: Sequence[str] | None = None,
         customer: str | None = None,
         expect_ok: bool = True,
+        etag: IF_MATCH_HEADER_OPTIONS = "star",
     ) -> Response:
         return self.request(
             "put",
@@ -1536,22 +1525,32 @@ class PasswordClient(RestApiClient):
                 }
             ),
             expect_ok=expect_ok,
+            headers=self._set_etag_header(ident, etag),
         )
 
     def delete(
         self,
         ident: str,
         expect_ok: bool = True,
+        etag: IF_MATCH_HEADER_OPTIONS = "star",
     ) -> Response:
         return self.request(
             "delete",
             url=f"/objects/{self.domain}/{ident}",
             expect_ok=expect_ok,
+            headers=self._set_etag_header(ident, etag),
         )
+
+    def _set_etag_header(
+        self, ident: str, etag: IF_MATCH_HEADER_OPTIONS
+    ) -> Mapping[str, str] | None:
+        if etag == "valid_etag":
+            return {"If-Match": self.get(ident).headers["ETag"]}
+        return set_if_match_header(etag)
 
 
 class AgentClient(RestApiClient):
-    domain: API_DOMAIN = "agent"
+    domain: DomainType = "agent"
 
     def bake(self, expect_ok: bool = True) -> Response:
         return self.request(
@@ -1588,7 +1587,7 @@ class AgentClient(RestApiClient):
 
 
 class DowntimeClient(RestApiClient):
-    domain: API_DOMAIN = "downtime"
+    domain: DomainType = "downtime"
 
     def get(self, downtime_id: int, site_id: str, expect_ok: bool = True) -> Response:
         return self.request(
@@ -1806,7 +1805,7 @@ class DowntimeClient(RestApiClient):
 
 
 class GroupConfig(RestApiClient):
-    domain: API_DOMAIN
+    domain: DomainType
 
     def get(self, group_id: str, expect_ok: bool = True) -> Response:
         return self.request(
@@ -1873,7 +1872,7 @@ class ContactGroupClient(GroupConfig):
 
 
 class SiteManagementClient(RestApiClient):
-    domain: API_DOMAIN = "site_connection"
+    domain: DomainType = "site_connection"
 
     def get(self, site_id: str, expect_ok: bool = True) -> Response:
         return self.request(
@@ -2013,7 +2012,7 @@ class HostClient(RestApiClient):
 
 
 class RuleNotificationClient(RestApiClient):
-    domain: API_DOMAIN = "notification_rule"
+    domain: DomainType = "notification_rule"
 
     def get(self, rule_id: str, expect_ok: bool = True) -> Response:
         return self.request(
@@ -2056,7 +2055,7 @@ class RuleNotificationClient(RestApiClient):
 
 
 class EventConsoleClient(RestApiClient):
-    domain: API_DOMAIN = "event_console"
+    domain: DomainType = "event_console"
 
     def get(
         self,
@@ -2252,7 +2251,7 @@ class EventConsoleClient(RestApiClient):
 
 
 class CommentClient(RestApiClient):
-    domain: API_DOMAIN = "comment"
+    domain: DomainType = "comment"
 
     def delete(
         self,
@@ -2514,7 +2513,7 @@ class DcdClient(RestApiClient):
 
 
 class AuditLogClient(RestApiClient):
-    domain: API_DOMAIN = "audit_log"
+    domain: DomainType = "audit_log"
 
     def get_all(
         self,
@@ -2561,7 +2560,7 @@ class AuditLogClient(RestApiClient):
 
 
 class BiPackClient(RestApiClient):
-    domain: API_DOMAIN = "bi_pack"
+    domain: DomainType = "bi_pack"
 
     def get(self, pack_id: str, expect_ok: bool = True) -> Response:
         return self.request(
@@ -2602,7 +2601,7 @@ class BiPackClient(RestApiClient):
 
 
 class BiAggregationClient(RestApiClient):
-    domain: API_DOMAIN = "bi_aggregation"
+    domain: DomainType = "bi_aggregation"
 
     def get(self, aggregation_id: str, expect_ok: bool = True) -> Response:
         return self.request(
@@ -2663,7 +2662,7 @@ class BiAggregationClient(RestApiClient):
 
 
 class BiRuleClient(RestApiClient):
-    domain: API_DOMAIN = "bi_rule"
+    domain: DomainType = "bi_rule"
 
     def get(self, rule_id: str, expect_ok: bool = True) -> Response:
         return self.request(
@@ -2697,7 +2696,7 @@ class BiRuleClient(RestApiClient):
 
 
 class UserRoleClient(RestApiClient):
-    domain: API_DOMAIN = "user_role"
+    domain: DomainType = "user_role"
 
     def get(self, role_id: str, expect_ok: bool = True) -> Response:
         return self.request(
@@ -2738,7 +2737,7 @@ class UserRoleClient(RestApiClient):
 
 
 class AutocompleteClient(RestApiClient):
-    domain: API_DOMAIN = "autocomplete"
+    domain: DomainType = "autocomplete"
 
     def invoke(
         self,
@@ -2756,7 +2755,7 @@ class AutocompleteClient(RestApiClient):
 
 
 class SAMLConnectionClient(RestApiClient):
-    domain: API_DOMAIN = "saml_connection"
+    domain: DomainType = "saml_connection"
 
     def get(self, saml_connection_id: str, expect_ok: bool = True) -> Response:
         return self.request(
@@ -2808,7 +2807,7 @@ class SAMLConnectionClient(RestApiClient):
 
 
 class ServiceClient(RestApiClient):
-    domain: API_DOMAIN = "service"
+    domain: DomainType = "service"
 
     def get_all(
         self,
@@ -2833,8 +2832,8 @@ class ServiceClient(RestApiClient):
 
 
 class ServiceDiscoveryClient(RestApiClient):
-    service_discovery_domain: API_DOMAIN = "service_discovery"
-    discovery_run_domain: API_DOMAIN = "discovery_run"
+    service_discovery_domain: DomainType = "service_discovery"
+    discovery_run_domain: DomainType = "discovery_run"
 
     def bulk_discovery(
         self,
@@ -2883,7 +2882,7 @@ class ServiceDiscoveryClient(RestApiClient):
 
 
 class LDAPConnectionClient(RestApiClient):
-    domain: API_DOMAIN = "ldap_connection"
+    domain: DomainType = "ldap_connection"
 
     def get(
         self,
@@ -2957,7 +2956,7 @@ class LDAPConnectionClient(RestApiClient):
 
 
 class ParentScanClient(RestApiClient):
-    domain: API_DOMAIN = "parent_scan"
+    domain: DomainType = "parent_scan"
 
     def start(
         self,
@@ -2987,8 +2986,8 @@ class ParentScanClient(RestApiClient):
 
 
 class QuickSetupClient(RestApiClient):
-    domain: API_DOMAIN = "quick_setup"
-    domain_stage: API_DOMAIN = "quick_setup_stage"
+    domain: DomainType = "quick_setup"
+    domain_stage: DomainType = "quick_setup_stage"
 
     def get_overview_mode_or_guided_mode(
         self,
@@ -3073,7 +3072,7 @@ class QuickSetupClient(RestApiClient):
 
 
 class ConfigurationEntityClient(RestApiClient):
-    domain: API_DOMAIN = "configuration_entity"
+    domain: DomainType = "configuration_entity"
 
     def create_configuration_entity(
         self,
@@ -3137,7 +3136,7 @@ class ConfigurationEntityClient(RestApiClient):
 
 
 class ManagedRobotsClient(RestApiClient):
-    domain: API_DOMAIN = "managed_robots"
+    domain: DomainType = "managed_robots"
 
     def show(self, robot_id: str, expect_ok: bool = True) -> Response:
         return self.request(
@@ -3163,7 +3162,7 @@ class ManagedRobotsClient(RestApiClient):
 
 
 class BrokerConnectionClient(RestApiClient):
-    domain: API_DOMAIN = "broker_connection"
+    domain: DomainType = "broker_connection"
 
     def get_all(self, expect_ok: bool = True) -> Response:
         return self.request(
@@ -3230,7 +3229,8 @@ class BrokerConnectionClient(RestApiClient):
 
 
 class OtelConfigClient(RestApiClient):
-    domain: API_DOMAIN = "otel_collector_config"
+    domain: DomainType = "otel_collector_config"
+    default_version = APIVersion.UNSTABLE
 
     def get_all(self, expect_ok: bool = True) -> Response:
         return self.request(
@@ -3262,7 +3262,7 @@ class OtelConfigClient(RestApiClient):
 
 
 class BackgroundJobClient(RestApiClient):
-    domain: API_DOMAIN = "background_job"
+    domain: DomainType = "background_job"
 
     def get(self, job_id: str, expect_ok: bool = True) -> Response:
         return self.request(
@@ -3273,7 +3273,7 @@ class BackgroundJobClient(RestApiClient):
 
 
 class AcknowledgeClient(RestApiClient):
-    domain: API_DOMAIN = "acknowledge"
+    domain: DomainType = "acknowledge"
 
     def remove_for_host(self, host_name: str, expect_ok: bool = True) -> Response:
         return self.request(
@@ -3334,6 +3334,60 @@ class AcknowledgeClient(RestApiClient):
         )
 
 
+class VisualFilterClient(RestApiClient):
+    domain: DomainType = "visual_filter"
+    default_version = APIVersion.UNSTABLE
+
+    def get_all(self, expect_ok: bool = True) -> Response:
+        return self.request(
+            "get",
+            url=f"/domain-types/{self.domain}/collections/all",
+            expect_ok=expect_ok,
+        )
+
+
+class DashboardClient(RestApiClient):
+    domain: DomainType = "dashboard"
+    default_version = APIVersion.UNSTABLE
+
+    def get_all(self, expect_ok: bool = True) -> Response:
+        return self.request(
+            "get",
+            url=f"/domain-types/{self.domain}/collections/all",
+            expect_ok=expect_ok,
+        )
+
+    def get(self, dashboard_id: str, expect_ok: bool = True) -> Response:
+        return self.request(
+            "get",
+            url=f"/objects/{self.domain}/{dashboard_id}",
+            expect_ok=expect_ok,
+        )
+
+    def create(self, payload: dict[str, Any], expect_ok: bool = True) -> Response:
+        return self.request(
+            "post",
+            url=f"/domain-types/{self.domain}/collections/all",
+            body=payload,
+            expect_ok=expect_ok,
+        )
+
+    def edit(self, dashboard_id: str, payload: dict[str, Any], expect_ok: bool = True) -> Response:
+        return self.request(
+            "put",
+            url=f"/objects/{self.domain}/{dashboard_id}",
+            body=payload,
+            expect_ok=expect_ok,
+        )
+
+    def delete(self, dashboard_id: str, expect_ok: bool = True) -> Response:
+        return self.request(
+            "delete",
+            url=f"/objects/{self.domain}/{dashboard_id}",
+            expect_ok=expect_ok,
+        )
+
+
 @dataclasses.dataclass
 class ClientRegistry:
     """Overall client registry for all available endpoint family clients.
@@ -3355,6 +3409,7 @@ class ClientRegistry:
     Folder: FolderClient
     AuxTag: AuxTagClient
     TimePeriod: TimePeriodClient
+    GraphTimerange: GraphTimerangeClient
     Rule: RuleClient
     Ruleset: RulesetClient
     HostTagGroup: HostTagGroupClient
@@ -3386,6 +3441,8 @@ class ClientRegistry:
     BackgroundJob: BackgroundJobClient
     Acknowledge: AcknowledgeClient
     OtelConfigClient: OtelConfigClient
+    VisualFilterClient: VisualFilterClient
+    DashboardClient: DashboardClient
 
 
 def get_client_registry(request_handler: RequestHandler, url_prefix: str) -> ClientRegistry:
@@ -3397,6 +3454,7 @@ def get_client_registry(request_handler: RequestHandler, url_prefix: str) -> Cli
         HostConfig=HostConfigClient(request_handler, url_prefix),
         Host=HostClient(request_handler, url_prefix),
         Folder=FolderClient(request_handler, url_prefix),
+        GraphTimerange=GraphTimerangeClient(request_handler, url_prefix),
         AuxTag=AuxTagClient(request_handler, url_prefix),
         TimePeriod=TimePeriodClient(request_handler, url_prefix),
         Rule=RuleClient(request_handler, url_prefix),
@@ -3430,4 +3488,6 @@ def get_client_registry(request_handler: RequestHandler, url_prefix: str) -> Cli
         BackgroundJob=BackgroundJobClient(request_handler, url_prefix),
         Acknowledge=AcknowledgeClient(request_handler, url_prefix),
         OtelConfigClient=OtelConfigClient(request_handler, url_prefix),
+        VisualFilterClient=VisualFilterClient(request_handler, url_prefix),
+        DashboardClient=DashboardClient(request_handler, url_prefix),
     )

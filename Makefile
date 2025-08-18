@@ -65,18 +65,10 @@ $(SOURCE_BUILT_OHM) $(SOURCE_BUILT_WINDOWS):
 dist: $(SOURCE_BUILT_AGENTS) $(SOURCE_BUILT_AGENT_UPDATER)
 	$(MAKE) -C agents/plugins
 	set -e -o pipefail ; EXCLUDES= ; \
-	if [ -d .git ]; then \
-	    git rev-parse HEAD > COMMIT ; \
-	    for X in $$(git ls-files --directory --others -i --exclude-standard) ; do \
-	    if [[ ! "$(DIST_DEPS)" =~ (^|[[:space:]])$$X($$|[[:space:]]) && $$X != omd/packages/mk-livestatus/mk-livestatus-$(VERSION).tar.gz && $$X != livestatus/* && $$X != enterprise/* ]]; then \
-		    EXCLUDES+=" --exclude $${X%*/}" ; \
-		fi ; \
-	    done ; \
-	else \
-	    for F in $(DIST_ARCHIVE) non-free/packages/cmk-update-agent/{build,build-32,src} non-free/packages/cmk-update-agent/{build,build-32,src} enterprise/agents/winbuild; do \
-		EXCLUDES+=" --exclude $$F" ; \
-	    done ; \
-	fi ; \
+	git rev-parse HEAD > COMMIT ; \
+	for X in $$(git ls-files --directory --others -i --exclude-standard) ; do \
+		EXCLUDES+=" --exclude $${X%*/}" ; \
+	done ; \
 	if [ -d check-mk-$(EDITION)-$(OMD_VERSION) ]; then \
 	    rm -rf check-mk-$(EDITION)-$(OMD_VERSION) ; \
 	fi ; \
@@ -88,6 +80,8 @@ dist: $(SOURCE_BUILT_AGENTS) $(SOURCE_BUILT_AGENT_UPDATER)
 	    --exclude .gitignore \
 	    --exclude .gitmodules \
 	    --exclude .gitattributes \
+	    --exclude non-free \
+	    --exclude tests/qa-test-data \
 	    $$EXCLUDES \
 	    * .werks | tar x -C check-mk-$(EDITION)-$(OMD_VERSION)
 	if [ -f COMMIT ]; then \
@@ -192,7 +186,7 @@ format-c:
 	packages/unixcat/run --format
 	packages/neb/run --format
 ifeq ($(ENTERPRISE),yes)
-	packages/cmc/run --format
+	non-free/packages/cmc/run --format
 endif
 
 test-format-c:
@@ -200,7 +194,7 @@ test-format-c:
 	packages/unixcat/run --check-format
 	packages/neb/run --check-format
 ifeq ($(ENTERPRISE),yes)
-	packages/cmc/run --check-format
+	non-free/packages/cmc/run --check-format
 endif
 
 format-python:

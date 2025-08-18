@@ -11,12 +11,10 @@ from livestatus import SiteConfiguration
 
 from cmk.ccc.hostaddress import HostName
 from cmk.ccc.site import SiteId
-
 from cmk.checkengine.plugins import CheckPluginName
-
 from cmk.gui import forms
 from cmk.gui.breadcrumb import Breadcrumb
-from cmk.gui.config import active_config
+from cmk.gui.config import Config
 from cmk.gui.exceptions import MKUserError
 from cmk.gui.htmllib.generator import HTMLWriter
 from cmk.gui.htmllib.html import html
@@ -28,6 +26,12 @@ from cmk.gui.page_menu import (
     PageMenuDropdown,
     PageMenuEntry,
     PageMenuTopic,
+)
+from cmk.gui.search import (
+    ABCMatchItemGenerator,
+    MatchItem,
+    MatchItemGeneratorRegistry,
+    MatchItems,
 )
 from cmk.gui.table import Foldable, table_element
 from cmk.gui.type_defs import PermissionName
@@ -48,12 +52,6 @@ from cmk.gui.watolib.config_hostname import ConfigHostname
 from cmk.gui.watolib.hosts_and_folders import folder_from_request, folder_preserving_link
 from cmk.gui.watolib.mode import ModeRegistry, WatoMode
 from cmk.gui.watolib.rulesets import Rule, rules_grouped_by_folder, SingleRulesetRecursively
-from cmk.gui.watolib.search import (
-    ABCMatchItemGenerator,
-    MatchItem,
-    MatchItemGeneratorRegistry,
-    MatchItems,
-)
 from cmk.gui.watolib.utils import mk_repr
 
 
@@ -124,7 +122,7 @@ class ModePatternEditor(WatoMode):
             return _("Log file patterns of host %s") % (self._hostname)
         return _("Log file patterns of log file %s on host %s") % (self._item, self._hostname)
 
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         menu = PageMenu(
             dropdowns=[
                 PageMenuDropdown(
@@ -167,7 +165,7 @@ class ModePatternEditor(WatoMode):
                 ),
             )
 
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         html.help(
             _(
                 "On this page you can test the defined log file patterns against a custom text, "
@@ -177,7 +175,7 @@ class ModePatternEditor(WatoMode):
         )
 
         self._show_try_form()
-        self._show_patterns(site_configs=active_config.sites, debug=active_config.debug)
+        self._show_patterns(site_configs=config.sites, debug=config.debug)
 
     def _show_try_form(self) -> None:
         with html.form_context("try"):

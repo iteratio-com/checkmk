@@ -3,17 +3,13 @@
 # This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 # conditions defined in the file COPYING, which is part of this source code package.
 
-
 from collections.abc import Iterable
 from importlib import import_module
 from typing import assert_never
 
-from cmk.utils.sectionname import SectionName
-
-from cmk.checkengine import plugins
-
-from cmk import trace
+import cmk.trace
 from cmk.agent_based import v2
+from cmk.checkengine import plugins
 from cmk.discover_plugins import (
     discover_all_plugins,
     discover_plugins_from_modules,
@@ -21,6 +17,7 @@ from cmk.discover_plugins import (
     PluginGroup,
     PluginLocation,
 )
+from cmk.utils.sectionname import SectionName
 
 from .check_plugins import create_check_plugin
 from .inventory_plugins import create_inventory_plugin
@@ -30,7 +27,7 @@ _ABPlugins = (
     v2.SimpleSNMPSection | v2.SNMPSection | v2.AgentSection | v2.CheckPlugin | v2.InventoryPlugin
 )
 
-tracer = trace.get_tracer()
+tracer = cmk.trace.get_tracer()
 
 
 @tracer.instrument("load_all_plugins")
@@ -52,7 +49,7 @@ def load_all_plugins(
                 # right away. This is for convenience of the reviewer of a plugin migration only:
                 # This way we can separate migration and moving.
                 # For example:
-                # "cmk.base.legacy_checks.oracle_locks"
+                # "cmk.base.legacy_checks.oracle_locks",
             )
         ):
             more_discovered_plugins = discover_plugins_from_modules(

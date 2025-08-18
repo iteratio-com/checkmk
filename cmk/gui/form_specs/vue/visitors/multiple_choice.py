@@ -4,24 +4,31 @@
 # conditions defined in the file COPYING, which is part of this source code package.
 
 from collections.abc import Sequence
-from typing import assert_never, TypedDict
+from typing import assert_never, override, TypedDict
 
+from cmk.gui.config import active_config
 from cmk.gui.form_specs.private.multiple_choice import (
     MultipleChoiceExtended,
     MultipleChoiceExtendedLayout,
 )
-from cmk.gui.form_specs.vue.validators import build_vue_validators
-from cmk.gui.form_specs.vue.visitors._base import FormSpecVisitor
-from cmk.gui.form_specs.vue.visitors._type_defs import DataOrigin, DefaultValue, InvalidValue
-from cmk.gui.form_specs.vue.visitors._utils import (
+from cmk.gui.i18n import _, translate_to_current_language
+from cmk.gui.valuespec import autocompleter_registry
+from cmk.shared_typing import vue_formspec_components as shared_type_defs
+
+from .._type_defs import (
+    DefaultValue,
+    IncomingData,
+    InvalidValue,
+    RawDiskData,
+    RawFrontendData,
+)
+from .._utils import (
     compute_validators,
     get_prefill_default,
     get_title_and_help,
 )
-from cmk.gui.i18n import _, translate_to_current_language
-from cmk.gui.valuespec import autocompleter_registry
-
-from cmk.shared_typing import vue_formspec_components as shared_type_defs
+from .._visitor_base import FormSpecVisitor
+from ..validators import build_vue_validators
 
 
 class TransportFormat(TypedDict):
@@ -33,18 +40,20 @@ class TransportFormat(TypedDict):
 
 
 _ParsedValueModel = Sequence[TransportFormat]
-_FrontendModel = Sequence[TransportFormat]
+_FallbackModel = Sequence[TransportFormat]
 
 
 class MultipleChoiceVisitor(
-    FormSpecVisitor[MultipleChoiceExtended, _ParsedValueModel, _FrontendModel]
+    FormSpecVisitor[MultipleChoiceExtended, _ParsedValueModel, _FallbackModel]
 ):
-    def _get_elements(self) -> _FrontendModel:
+    def _get_elements(self) -> _FallbackModel:
         if isinstance(self.form_spec.elements, shared_type_defs.Autocompleter):
             autocompleter_ident = self.form_spec.elements.data.ident
             autocompleter_fn = autocompleter_registry[autocompleter_ident]
             return [
-                {"name": name, "title": title} for name, title in autocompleter_fn("", {}) if name
+                {"name": name, "title": title}
+                for name, title in autocompleter_fn(active_config, "", {})
+                if name
             ]
         return [
             {"name": element.name, "title": element.title.localize(translate_to_current_language)}
@@ -63,9 +72,12 @@ class MultipleChoiceVisitor(
     def _build_data_format_from_names(self, names: Sequence[str]) -> _ParsedValueModel:
         return [element for element in self._get_elements() if element["name"] in names]
 
-    def _parse_value(self, raw_value: object) -> _ParsedValueModel | InvalidValue[_FrontendModel]:
+    @override
+    def _parse_value(
+        self, raw_value: IncomingData
+    ) -> _ParsedValueModel | InvalidValue[_FallbackModel]:
         if isinstance(raw_value, DefaultValue):
-            fallback_value: _FrontendModel = []
+            fallback_value: _FallbackModel = []
             if isinstance(
                 prefill_default := get_prefill_default(self.form_spec.prefill, fallback_value),
                 InvalidValue,
@@ -75,24 +87,27 @@ class MultipleChoiceVisitor(
                 self._build_data_format_from_names(prefill_default), key=lambda v: v["name"]
             )
 
-        if not isinstance(raw_value, list):
+        if not isinstance(raw_value.value, list):
             return InvalidValue(reason=_("Invalid data"), fallback_value=[])
 
-        match self.options.data_origin:
-            case DataOrigin.DISK:
+        match raw_value:
+            case RawDiskData():
                 return sorted(
-                    self._build_data_format_from_names(raw_value), key=lambda v: v["name"]
+                    self._build_data_format_from_names(raw_value.value), key=lambda v: v["name"]
                 )
-            case DataOrigin.FRONTEND:
+            case RawFrontendData():
                 # Filter out invalid choices without warning
-                return sorted(self._filter_out_invalid_choices(raw_value), key=lambda v: v["name"])
+                return sorted(
+                    self._filter_out_invalid_choices(raw_value.value), key=lambda v: v["name"]
+                )
             case other:
                 assert_never(other)
 
+    @override
     def _to_vue(
-        self, parsed_value: _ParsedValueModel | InvalidValue[_FrontendModel]
+        self, parsed_value: _ParsedValueModel | InvalidValue[_FallbackModel]
     ) -> tuple[
-        shared_type_defs.DualListChoice | shared_type_defs.CheckboxListChoice, _FrontendModel
+        shared_type_defs.DualListChoice | shared_type_defs.CheckboxListChoice, _FallbackModel
     ]:
         title, help_text = get_title_and_help(self.form_spec)
 
@@ -155,5 +170,6 @@ class MultipleChoiceVisitor(
             and_x_more=_("and %s more"),
         )
 
+    @override
     def _to_disk(self, parsed_value: _ParsedValueModel) -> list[str]:
         return [v["name"] for v in parsed_value]

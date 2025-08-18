@@ -10,15 +10,9 @@ from pathlib import Path
 from termios import tcflush, TCIFLUSH
 from typing import Final
 
-from cmk.ccc import version
-
-from cmk.utils import paths
-from cmk.utils.setup_search_index import request_index_rebuild
-from cmk.utils.visuals import invalidate_visuals_cache
-
 # It's OK to import centralized config load logic
 import cmk.ec.export as ec  # pylint: disable=cmk-module-layer-violation
-
+from cmk.ccc import version
 from cmk.discover_plugins import addons_plugins_local_path, plugins_local_path
 from cmk.mkp_tool import (
     disable,
@@ -30,6 +24,9 @@ from cmk.mkp_tool import (
     PathConfig,
     reload_services_affected_by_mkp_changes,
 )
+from cmk.utils import paths
+from cmk.utils.setup_search_index import request_index_rebuild
+from cmk.utils.visuals import invalidate_visuals_cache
 
 AGENT_BASED_PLUGINS_PREACTION_SORT_INDEX = 30
 GUI_PLUGINS_PREACTION_SORT_INDEX = 20
@@ -44,13 +41,12 @@ def _prompt(message: str) -> str:
     return input(message)
 
 
-def get_path_config() -> PathConfig | None:
-    local_path = plugins_local_path()
-    addons_path = addons_plugins_local_path()
-    if local_path is None:
+def make_path_config() -> PathConfig | None:
+    if (local_path := plugins_local_path()) is None:
         return None
-    if addons_path is None:
+    if (addons_path := addons_plugins_local_path()) is None:
         return None
+    ec_paths = ec.create_paths(paths.omd_root)
     return PathConfig(
         cmk_plugins_dir=local_path,
         cmk_addons_plugins_dir=addons_path,
@@ -66,15 +62,15 @@ def get_path_config() -> PathConfig | None:
         lib_dir=paths.local_lib_dir,
         locale_dir=paths.local_locale_dir,
         local_root=paths.local_root,
-        mib_dir=paths.local_mib_dir,
-        mkp_rule_pack_dir=ec.mkp_rule_pack_dir(),
+        mib_dir=ec_paths.local_mibs_dir.value,
+        mkp_rule_pack_dir=ec_paths.mkp_rule_pack_dir.value,
         notifications_dir=paths.local_notifications_dir,
         pnp_templates_dir=paths.local_pnp_templates_dir,
         web_dir=paths.local_web_dir,
     )
 
 
-_CALLBACKS: Final = ec.mkp_callbacks()
+_CALLBACKS: Final = ec.mkp_callbacks(paths.omd_root)
 
 PACKAGE_STORE = PackageStore(
     enabled_dir=paths.local_enabled_packages_dir,

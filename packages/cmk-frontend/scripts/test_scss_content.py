@@ -25,24 +25,27 @@ def _scss_variables(_scss_files: Iterable[Path]) -> tuple[set[str], set[str]]:
 
     definitions, usages = set(), set()
     for file_ in _scss_files:
-        with open(file_) as f:
-            for l in f:
-                if definition := variable_definition.match(l):
-                    definitions.add(definition.group(1))
+        if file_.name not in [
+            "colors.scss"
+        ]:  # ignore colors.css cause this defines the complete cmk color palette
+            with open(file_) as f:
+                for l in f:
+                    if definition := variable_definition.match(l):
+                        definitions.add(definition.group(1))
 
-                # Need to search for usages like this - after splitting away potential definitions
-                # (before a colon) - because re does not support overlapping matches, and there may
-                # be more than one variable usage per line.
-                after_colon: str = l.split(":", 1)[-1]
-                if usage := variable_usage.findall(after_colon):
-                    usages.update(usage)
+                    # Need to search for usages like this - after splitting away potential definitions
+                    # (before a colon) - because re does not support overlapping matches, and there may
+                    # be more than one variable usage per line.
+                    after_colon: str = l.split(":", 1)[-1]
+                    if usage := variable_usage.findall(after_colon):
+                        usages.update(usage)
     assert definitions
     assert usages
     return definitions, usages
 
 
 def _get_regex_matches_in_scss_files(
-    regex_pattern: re.Pattern,
+    regex_pattern: re.Pattern[str],
     exclude_files: Iterable[str] | None = None,
 ) -> Iterable[tuple[str, Iterable[tuple[str, str]]]]:
     """Return a generator holding all matches of regex_pattern in scss_files (without exclude_files)
@@ -79,7 +82,7 @@ def test_unused_scss_variables() -> None:
 def test_rgb_color_codes() -> None:
     """No rgb color codes allowed outside of _variables*.scss files"""
     rgb_pattern = re.compile(r"rgb\([^\)]*\)")
-    exclude_files = ["_variables.scss", "_variables_common.scss"]
+    exclude_files = ["_variables.scss", "_variables_common.scss", "colors.scss"]
     matches = list(_get_regex_matches_in_scss_files(rgb_pattern, exclude_files))
     assert not matches, f"RGB color codes found outside of variable SCSS files: {matches}"
 
@@ -91,7 +94,7 @@ def test_hex_color_codes() -> None:
     assert not matches, f"Hex color codes found {matches}"
 
 
-def test(function: Callable) -> Literal["FAILED", "OK"]:
+def test(function: Callable[[], None]) -> Literal["FAILED", "OK"]:
     sys.stdout.write(function.__name__ + "\n")
     try:
         function()

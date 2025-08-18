@@ -20,7 +20,8 @@ from cmk.utils.licensing.export import (
 
 
 @pytest.mark.parametrize(
-    "protocol_version", ["1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "2.0", "2.1", "3.0", "3.1"]
+    "protocol_version",
+    ["1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "2.0", "2.1", "3.0", "3.1", "3.2"],
 )
 @pytest.mark.parametrize(
     "raw_subscription_details",
@@ -30,7 +31,9 @@ from cmk.utils.licensing.export import (
     ],
 )
 def test_subscription_details_broken(
-    protocol_version: Literal["1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "2.0", "2.1", "3.0", "3.1"],
+    protocol_version: Literal[
+        "1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "2.0", "2.1", "3.0", "3.1", "3.2"
+    ],
     raw_subscription_details: Mapping[str, Any],
 ) -> None:
     with pytest.raises(KeyError):
@@ -38,10 +41,13 @@ def test_subscription_details_broken(
 
 
 @pytest.mark.parametrize(
-    "protocol_version", ["1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "2.0", "2.1", "3.0", "3.1"]
+    "protocol_version",
+    ["1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "2.0", "2.1", "3.0", "3.1", "3.2"],
 )
 def test_subscription_details_empty_source(
-    protocol_version: Literal["1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "2.0", "2.1", "3.0", "3.1"],
+    protocol_version: Literal[
+        "1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "2.0", "2.1", "3.0", "3.1", "3.2"
+    ],
 ) -> None:
     assert make_parser(protocol_version).parse_subscription_details(
         {
@@ -60,7 +66,8 @@ def test_subscription_details_empty_source(
 
 
 @pytest.mark.parametrize(
-    "protocol_version", ["1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "2.0", "2.1", "3.0", "3.1"]
+    "protocol_version",
+    ["1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "2.0", "2.1", "3.0", "3.1", "3.2"],
 )
 @pytest.mark.parametrize(
     "raw_subscription_details_source",
@@ -70,7 +77,9 @@ def test_subscription_details_empty_source(
     ],
 )
 def test_subscription_details_source(
-    protocol_version: Literal["1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "2.0", "2.1", "3.0", "3.1"],
+    protocol_version: Literal[
+        "1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "2.0", "2.1", "3.0", "3.1", "3.2"
+    ],
     raw_subscription_details_source: str,
 ) -> None:
     assert make_parser(protocol_version).parse_subscription_details(
@@ -91,7 +100,8 @@ def test_subscription_details_source(
 
 
 @pytest.mark.parametrize(
-    "protocol_version", ["1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "2.0", "2.1", "3.0", "3.1"]
+    "protocol_version",
+    ["1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "2.0", "2.1", "3.0", "3.1", "3.2"],
 )
 @pytest.mark.parametrize(
     "raw_subscription_details_limit, subscription_details_limit",
@@ -169,7 +179,9 @@ def test_subscription_details_source(
     ],
 )
 def test_subscription_details_limit(
-    protocol_version: Literal["1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "2.0", "2.1", "3.0", "3.1"],
+    protocol_version: Literal[
+        "1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "2.0", "2.1", "3.0", "3.1", "3.2"
+    ],
     raw_subscription_details_limit: Any,
     subscription_details_limit: SubscriptionDetailsLimit,
 ) -> None:

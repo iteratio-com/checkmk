@@ -6,27 +6,30 @@
 
 from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import Any, Literal, TypedDict
+from typing import Any, Literal
 
 from livestatus import BrokerConnections, SiteConfigurations
 
 from cmk.ccc.version import Edition, edition
-
-from cmk.utils import paths
-from cmk.utils.tags import TagConfigSpec
-
 from cmk.checkengine.discovery import DiscoverySettingFlags
-
 from cmk.gui.type_defs import (
+    AgentControllerCertificates,
     BuiltinIconVisibility,
     CustomHostAttrSpec,
     CustomUserAttrSpec,
+    GraphTimerange,
     GroupSpec,
     IconSpec,
+    PasswordPolicy,
+    ReadOnlySpec,
     TrustedCertificateAuthorities,
     UserSpec,
+    VirtualHostTreeSpec,
 )
 from cmk.gui.utils.temperate_unit import TemperatureUnit
+from cmk.inventory.config import InvHousekeepingParams
+from cmk.utils import paths
+from cmk.utils.tags import TagConfigSpec
 
 CustomLinkSpec = tuple[str, bool, list[tuple[str, str, str | None, str]]]
 
@@ -81,13 +84,6 @@ def make_default_user_profile() -> UserSpec:
 ActivateChangesCommentMode = Literal["enforce", "optional", "disabled"]
 
 
-class VirtualHostTreeSpec(TypedDict):
-    id: str
-    title: str
-    exclude_empty_tag_choices: bool
-    tree_spec: Sequence[str]
-
-
 @dataclass
 class CREConfig:
     # .
@@ -137,6 +133,14 @@ class CREConfig:
     multisite_servicegroups: dict = field(default_factory=dict)
     multisite_contactgroups: dict = field(default_factory=dict)
 
+    inventory_housekeeping: InvHousekeepingParams = field(
+        default_factory=lambda: InvHousekeepingParams(
+            for_hosts=[],
+            default=None,
+            abandoned_file_age=30 * 86400,
+        )
+    )
+
     #    ____  _     _      _
     #   / ___|(_) __| | ___| |__   __ _ _ __
     #   \___ \| |/ _` |/ _ \ '_ \ / _` | '__|
@@ -146,6 +150,7 @@ class CREConfig:
 
     sidebar: list[tuple[str, str]] = field(
         default_factory=lambda: [
+            ("a_welcome", "open"),
             ("tactical_overview", "open"),
             ("bookmarks", "open"),
             ("master_control", "closed"),
@@ -299,12 +304,6 @@ class CREConfig:
     # Default language for l10n
     default_language: str = "en"
 
-    # Hide these languages from user selection
-    hide_languages: list[str] = field(default_factory=list)
-
-    # Enable/Disable choice of community translated languages
-    enable_community_translations: bool = True
-
     # Default timestamp format to be used in multisite
     default_ts_format: str = "mixed"
 
@@ -366,18 +365,18 @@ class CREConfig:
 
     use_siteicons: bool = False
 
-    graph_timeranges: list[dict[str, Any]] = field(
+    graph_timeranges: list[GraphTimerange] = field(
         default_factory=lambda: [
-            {"title": "The last 4 hours", "duration": 4 * 60 * 60},
-            {"title": "The last 25 hours", "duration": 25 * 60 * 60},
-            {"title": "The last 8 days", "duration": 8 * 24 * 60 * 60},
-            {"title": "The last 35 days", "duration": 35 * 24 * 60 * 60},
-            {"title": "The last 400 days", "duration": 400 * 24 * 60 * 60},
+            GraphTimerange(title="The last 4 hours", duration=4 * 60 * 60),
+            GraphTimerange(title="The last 25 hours", duration=25 * 60 * 60),
+            GraphTimerange(title="The last 8 days", duration=8 * 24 * 60 * 60),
+            GraphTimerange(title="The last 35 days", duration=35 * 24 * 60 * 60),
+            GraphTimerange(title="The last 400 days", duration=400 * 24 * 60 * 60),
         ]
     )
 
-    agent_controller_certificates: dict[str, int] = field(
-        default_factory=lambda: {"lifetime_in_months": 60}
+    agent_controller_certificates: AgentControllerCertificates = field(
+        default_factory=lambda: AgentControllerCertificates(lifetime_in_months=60)
     )
 
     # Default temperature unit
@@ -422,11 +421,7 @@ class CREConfig:
     # 2. with every successful login, all previous sessions of the user will be removed, only
     # one session (the one resulting from the successful login) will be kept
     single_user_session: int | None = None
-    password_policy: dict[str, Any] = field(
-        default_factory=lambda: {
-            "min_length": 12,
-        }
-    )
+    password_policy: PasswordPolicy = field(default_factory=lambda: PasswordPolicy(min_length=12))
 
     # Individual changes to user's authentication security will trigger either emails or use notifications
     # Default is 7 days
@@ -586,7 +581,13 @@ class CREConfig:
     wato_hidden_users: list = field(default_factory=list)
     wato_user_attrs: Sequence[CustomUserAttrSpec] = field(default_factory=list)
     wato_host_attrs: Sequence[CustomHostAttrSpec] = field(default_factory=list)
-    wato_read_only: dict = field(default_factory=dict)
+    wato_read_only: ReadOnlySpec = field(
+        default_factory=lambda: ReadOnlySpec(
+            enabled=False,
+            message="",
+            rw_users=[],
+        )
+    )
     wato_hide_folders_without_read_permissions: bool = False
     wato_pprint_config: bool = False
     wato_icon_categories: list[tuple[str, str]] = field(

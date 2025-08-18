@@ -12,19 +12,16 @@ import pytest
 from flask import Flask
 from pytest_mock import MockerFixture
 
-from tests.unit.cmk.web_test_app import (
-    WebTestAppForCMK,
-)
-
-from cmk.ccc.user import UserId
-
-import cmk.utils.log
-
 import cmk.gui.config as config_module
 import cmk.gui.watolib.password_store
+import cmk.utils.log
+from cmk.ccc.user import UserId
 from cmk.gui import hooks, http, main_modules
 from cmk.gui.utils import get_failed_plugins
 from cmk.gui.utils.script_helpers import session_wsgi_app
+from tests.unit.cmk.web_test_app import (
+    WebTestAppForCMK,
+)
 
 
 def create_flask_app() -> Iterator[Flask]:
@@ -96,7 +93,7 @@ def perform_gui_cleanup_after_test(
     mocker: MockerFixture,
 ) -> Iterator[None]:
     # deactivate_search_index_building_at_requenst_end.
-    mocker.patch("cmk.gui.watolib.search.updates_requested", return_value=False)
+    mocker.patch("cmk.gui.search.engines.setup.updates_requested", return_value=False)
     yield
     # In case some tests use @request_memoize but don't use the request context, we'll emit the
     # clear event after each request.

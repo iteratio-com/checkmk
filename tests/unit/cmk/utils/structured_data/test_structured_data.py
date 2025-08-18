@@ -10,10 +10,7 @@ from typing import Literal
 
 import pytest
 
-from tests.testlib.common.repo import repo_path
-
 from cmk.ccc.hostaddress import HostName
-
 from cmk.utils.structured_data import (
     _DeltaDict,
     _deserialize_retention_interval,
@@ -38,12 +35,13 @@ from cmk.utils.structured_data import (
     SDMetaAndRawTree,
     SDNodeName,
     SDPath,
+    SDRawDeltaTree,
     SDRawTree,
     SDRetentionFilterChoices,
     serialize_delta_tree,
     serialize_tree,
-    UpdateResult,
 )
+from tests.testlib.common.repo import repo_path
 
 
 @pytest.mark.parametrize(
@@ -310,55 +308,55 @@ def test_deserialize_empty_delta_tree() -> None:
 
 def test_deserialize_filled_delta_tree() -> None:
     delta_tree = deserialize_delta_tree(
-        {
-            "Attributes": {},
-            "Nodes": {
-                SDNodeName("path-to-nta"): {
-                    "Attributes": {},
-                    "Nodes": {
-                        SDNodeName("na"): {
-                            "Attributes": {
+        SDRawDeltaTree(
+            Attributes={},
+            Nodes={
+                SDNodeName("path-to-nta"): SDRawDeltaTree(
+                    Attributes={},
+                    Nodes={
+                        SDNodeName("na"): SDRawDeltaTree(
+                            Attributes={
                                 "Pairs": {
                                     SDKey("na0"): ("NA 0", None),
                                     SDKey("na1"): ("NA 1", None),
                                 }
                             },
-                            "Nodes": {},
-                            "Table": {},
-                        },
-                        SDNodeName("nt"): {
-                            "Attributes": {},
-                            "Nodes": {},
-                            "Table": {
+                            Nodes={},
+                            Table={},
+                        ),
+                        SDNodeName("nt"): SDRawDeltaTree(
+                            Attributes={},
+                            Nodes={},
+                            Table={
                                 "KeyColumns": [SDKey("nt0")],
                                 "Rows": [
                                     {SDKey("nt0"): ("NT 00", None), SDKey("nt1"): ("NT 01", None)},
                                     {SDKey("nt0"): ("NT 10", None), SDKey("nt1"): ("NT 11", None)},
                                 ],
                             },
-                        },
-                        SDNodeName("ta"): {
-                            "Attributes": {
+                        ),
+                        SDNodeName("ta"): SDRawDeltaTree(
+                            Attributes={
                                 "Pairs": {
                                     SDKey("ta0"): ("TA 0", None),
                                     SDKey("ta1"): ("TA 1", None),
                                 }
                             },
-                            "Nodes": {},
-                            "Table": {
+                            Nodes={},
+                            Table={
                                 "KeyColumns": [SDKey("ta0")],
                                 "Rows": [
                                     {SDKey("ta0"): ("TA 00", None), SDKey("ta1"): ("TA 01", None)},
                                     {SDKey("ta0"): ("TA 10", None), SDKey("ta1"): ("TA 11", None)},
                                 ],
                             },
-                        },
+                        ),
                     },
-                    "Table": {},
-                }
+                    Table={},
+                )
             },
-            "Table": {},
-        }
+            Table={},
+        )
     )
     assert len(delta_tree) == 12
     stats = delta_tree.get_stats()
@@ -1723,14 +1721,7 @@ def test_update_from_previous_1() -> None:
     choices = SDRetentionFilterChoices(path=(), interval=6)
     choices.add_columns_choice(choice="all", cache_info=(4, 5))
 
-    update_result = UpdateResult()
-    current_tree_.update(
-        now=0,
-        previous_tree=previous_tree,
-        choices=choices,
-        update_result=update_result,
-    )
-    assert bool(update_result)
+    assert len(current_tree_.update(now=0, previous_tree=previous_tree, choices=choices)) > 0
 
     current_tree = _make_immutable_tree(current_tree_)
     assert current_tree.table.key_columns == ["kc"]
@@ -1770,14 +1761,7 @@ def test_update_from_previous_2() -> None:
     choices = SDRetentionFilterChoices(path=(), interval=6)
     choices.add_columns_choice(choice=[SDKey("c2"), SDKey("c3")], cache_info=(4, 5))
 
-    update_result = UpdateResult()
-    current_tree_.update(
-        now=0,
-        previous_tree=previous_tree,
-        choices=choices,
-        update_result=update_result,
-    )
-    assert bool(update_result)
+    assert len(current_tree_.update(now=0, previous_tree=previous_tree, choices=choices)) > 0
 
     current_tree = _make_immutable_tree(current_tree_)
     assert current_tree.table.key_columns == ["kc"]

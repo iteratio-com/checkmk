@@ -4,11 +4,18 @@
 # conditions defined in the file COPYING, which is part of this source code package.
 import typing
 import urllib
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable
 from typing import Any
 
 import pytest
 
+from cmk.ccc.store import load_mk_file, save_mk_file, save_to_mk_file
+from cmk.gui.logged_in import user
+from cmk.gui.watolib.configuration_bundle_store import BundleId, ConfigBundleStore
+from cmk.gui.watolib.configuration_bundles import create_config_bundle, CreateBundleEntities
+from cmk.utils import paths
+from cmk.utils.global_ident_type import PROGRAM_ID_QUICK_SETUP
+from cmk.utils.rulesets.definition import RuleGroup
 from tests.testlib.unit.rest_api_client import (
     ClientRegistry,
     Response,
@@ -16,16 +23,6 @@ from tests.testlib.unit.rest_api_client import (
     RuleConditions,
     RuleProperties,
 )
-
-from cmk.ccc.store import load_mk_file, save_mk_file, save_to_mk_file
-
-from cmk.utils import paths
-from cmk.utils.global_ident_type import PROGRAM_ID_QUICK_SETUP
-from cmk.utils.rulesets.definition import RuleGroup
-
-from cmk.gui.logged_in import user
-from cmk.gui.watolib.configuration_bundle_store import BundleId, ConfigBundleStore
-from cmk.gui.watolib.configuration_bundles import create_config_bundle, CreateBundleEntities
 
 DEFAULT_VALUE_RAW = """{
     "ignore_fs_types": ["tmpfs", "nfs", "smbfs", "cifs", "iso9660"],
@@ -254,21 +251,15 @@ def test_create_rule_with_string_value(clients: ClientRegistry) -> None:
 
 def test_create_rule_stores_migrated_value(clients: ClientRegistry) -> None:
     ruleset = "diskstat_inventory"
-    clients.Rule.create(
+    resp = clients.Rule.create(
         ruleset=ruleset,
         folder="/",
         properties={"description": "Test", "disabled": False},
-        value_raw="{'summary': True }",
+        value_raw="{'summary': True}",
         conditions={},
+        expect_ok=False,
     )
-    rules_path = paths.omd_root / "etc/check_mk/conf.d/wato/rules.mk"
-    rules: Mapping[str, Any] = load_mk_file(rules_path, default={}, lock=False)
-    assert rules[ruleset][0]["value"] == {
-        "summary": True,
-        "lvm": False,
-        "vxvm": False,
-        "diskless": False,
-    }
+    resp.assert_status_code(400)
 
 
 def test_openapi_list_rules(
@@ -613,3 +604,29 @@ def test_openapi_cannot_change_locked_rule_conditions(
         expect_ok=False,
     ).assert_status_code(400)
     assert resp.json["detail"] == "Conditions cannot be modified for rules managed by Quick setup."
+
+
+def test_openapi_edit_conditions(clients: ClientRegistry) -> None:
+    # test that for rules that are not locked by Quick setup, the conditions can be edited
+    resp = clients.Rule.create(
+        ruleset="active_checks:http",
+        folder="/",
+        conditions=RuleConditions(
+            host_name={
+                "operator": "one_of",
+                "match_on": ["example.com"],
+            }
+        ),
+        value_raw='{"name": "check_localhost", "host": {"address": ("direct", "localhost")}, "mode": ("url", {})}',
+    )
+
+    clients.Rule.edit(
+        rule_id=resp.json["id"],
+        conditions=RuleConditions(
+            host_name={
+                "operator": "one_of",
+                "match_on": ["example.com", "localhost"],
+            }
+        ),
+        value_raw=resp.json["extensions"]["value_raw"],
+    )

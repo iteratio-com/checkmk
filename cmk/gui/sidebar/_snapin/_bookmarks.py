@@ -11,11 +11,8 @@ from dataclasses import dataclass
 from typing import Any, Self, TypedDict
 
 from cmk.ccc.user import UserId
-
-from cmk.utils.urls import is_allowed_url
-
 from cmk.gui import pagetypes
-from cmk.gui.config import active_config, Config
+from cmk.gui.config import Config
 from cmk.gui.exceptions import MKUserError
 from cmk.gui.htmllib.foldable_container import foldable_container
 from cmk.gui.http import request
@@ -33,6 +30,7 @@ from cmk.gui.valuespec import (
     Tuple,
     ValueSpec,
 )
+from cmk.utils.urls import is_allowed_url
 
 from ._base import SidebarSnapin
 from ._helpers import begin_footnote_links, end_footnote_links, iconlink, link
@@ -325,14 +323,14 @@ class Bookmarks(SidebarSnapin):
                     bookmark_list += bookmarks
         return sorted(topics.items())
 
-    def _ajax_add_bookmark(self) -> None:
+    def _ajax_add_bookmark(self, config: Config) -> None:
         check_csrf_token()
         title = request.var("title")
         url = request.var("url")
         if title and url:
             BookmarkList.validate_url(url, "url")
             self._add_bookmark(title, url)
-        self.show(active_config)
+        self.show(config)
 
     def _add_bookmark(self, title: str, url: str) -> None:
         assert user.id is not None
@@ -379,7 +377,7 @@ class Bookmarks(SidebarSnapin):
                     url = "../" + url
         return url
 
-    def page_handlers(self) -> dict[str, Callable[[], None]]:
+    def page_handlers(self) -> dict[str, Callable[[Config], None]]:
         return {
             "add_bookmark": self._ajax_add_bookmark,
         }

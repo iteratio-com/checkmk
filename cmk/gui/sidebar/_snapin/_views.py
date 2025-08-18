@@ -5,10 +5,9 @@
 
 
 import pprint
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 from cmk.ccc.user import UserId
-
 from cmk.gui import pagetypes
 from cmk.gui.config import active_config, Config
 from cmk.gui.dashboard import get_permitted_dashboards
@@ -68,17 +67,20 @@ class Views(SidebarSnapin):
         return _("Links to global views and dashboards")
 
     def show(self, config: Config) -> None:
-        show_main_menu(treename="views", menu=make_main_menu(view_menu_items()))
+        show_main_menu(
+            treename="views",
+            menu=make_main_menu(view_menu_items(config.visible_views, config.hidden_views)),
+        )
 
         links = []
         if user.may("general.edit_views"):
-            if active_config.debug:
+            if config.debug:
                 links.append((_("Export"), "export_views.py"))
             links.append((_("Edit"), "edit_views.py"))
             footnotelinks(links)
 
 
-def ajax_export_views() -> None:
+def ajax_export_views(config: Config) -> None:
     for view in get_permitted_views().values():
         view["owner"] = UserId.builtin()
         view["public"] = True
@@ -87,10 +89,12 @@ def ajax_export_views() -> None:
 
 @request_memoize()
 def default_view_menu_topics() -> list[MainMenuTopic]:
-    return make_main_menu(view_menu_items())
+    return make_main_menu(view_menu_items(active_config.visible_views, active_config.hidden_views))
 
 
-def view_menu_items() -> list[tuple[str, tuple[str, Visual]]]:
+def view_menu_items(
+    visible_views: Sequence[str] | None, hidden_views: Sequence[str] | None
+) -> list[tuple[str, tuple[str, Visual]]]:
     # The page types that are implementing the PageRenderer API should also be
     # part of the menu. Bring them into a visual like structure to make it easy to
     # integrate them.
@@ -112,8 +116,8 @@ def view_menu_items() -> list[tuple[str, tuple[str, Visual]]]:
     views_to_show = [
         (name, view)
         for name, view in get_permitted_views().items()
-        if (not active_config.visible_views or name in active_config.visible_views)
-        and (not active_config.hidden_views or name not in active_config.hidden_views)
+        if (not visible_views or name in visible_views)
+        and (not hidden_views or name not in hidden_views)
     ]
 
     network_topology_visual_spec = ParentChildTopologyPage.visual_spec()

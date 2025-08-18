@@ -2,7 +2,6 @@
 # Copyright (C) 2019 Checkmk GmbH - License: GNU General Public License v2
 # This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 # conditions defined in the file COPYING, which is part of this source code package.
-# ruff: noqa: A005
 
 import socket
 from codecs import BOM_UTF8
@@ -10,8 +9,6 @@ from collections.abc import Iterable, Mapping
 from datetime import datetime, UTC
 from pathlib import Path
 from typing import Literal
-
-import cmk.utils.paths
 
 from .settings import create_paths
 
@@ -365,15 +362,17 @@ class SyslogMessage:
 
 def forward_to_unix_socket(
     syslog_messages: Iterable[SyslogMessage],
+    *,
+    omd_root: Path,
     path: Path | None = None,
-    conn_timeout: float | None = None,
+    timeout: float | None = None,
 ) -> None:
     payload = b"".join(bytes(msg) + b"\n" for msg in syslog_messages)
     if not payload:
         return  # optimization: no need for any I/O
     if path is None:
-        path = create_paths(cmk.utils.paths.omd_root).event_socket.value
+        path = create_paths(omd_root).event_socket.value
     with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
-        sock.settimeout(conn_timeout)
+        sock.settimeout(timeout)
         sock.connect(str(path))
         sock.sendall(payload)

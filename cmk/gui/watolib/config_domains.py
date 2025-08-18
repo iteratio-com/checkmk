@@ -13,7 +13,6 @@ import warnings as warnings_module
 from collections.abc import Iterable, Mapping, Sequence
 from copy import deepcopy
 from dataclasses import dataclass, field
-from datetime import datetime
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, NewType, override
@@ -21,17 +20,13 @@ from typing import Any, NewType, override
 from pydantic import BaseModel
 
 import cmk.ccc.version as cmk_version
+import cmk.utils.paths
 from cmk.ccc import store
 from cmk.ccc.exceptions import MKGeneralException
 from cmk.ccc.hostaddress import HostName
 from cmk.ccc.site import omd_site, SiteId
-
-import cmk.utils.paths
-from cmk.utils.certs import CertManagementEvent, CN_TEMPLATE, RemoteSiteCertsStore
-from cmk.utils.config_warnings import ConfigurationWarnings
-from cmk.utils.encryption import raw_certificates_from_file
-from cmk.utils.log.security_event import log_security_event
-
+from cmk.crypto.certificate import Certificate, CertificatePEM
+from cmk.crypto.hash import HashAlgorithm
 from cmk.gui.background_job import (
     BackgroundJob,
     BackgroundProcessInterface,
@@ -40,12 +35,11 @@ from cmk.gui.background_job import (
 )
 from cmk.gui.config import active_config, get_default_config
 from cmk.gui.exceptions import MKUserError
-from cmk.gui.i18n import _, get_language_alias, is_community_translation
+from cmk.gui.i18n import _
 from cmk.gui.log import logger
 from cmk.gui.logged_in import user
-from cmk.gui.site_config import configured_sites, is_wato_slave_site
+from cmk.gui.site_config import is_wato_slave_site
 from cmk.gui.type_defs import GlobalSettings, TrustedCertificateAuthorities
-from cmk.gui.userdb import load_users, save_users
 from cmk.gui.utils.html import HTML
 from cmk.gui.watolib import config_domain_name
 from cmk.gui.watolib.audit_log import log_audit
@@ -58,9 +52,10 @@ from cmk.gui.watolib.config_domain_name import (
 )
 from cmk.gui.watolib.piggyback_hub import validate_piggyback_hub_config
 from cmk.gui.watolib.utils import multisite_dir, wato_root_dir
-
-from cmk.crypto.certificate import Certificate, CertificatePEM
-from cmk.crypto.hash import HashAlgorithm
+from cmk.utils.certs import CertManagementEvent, CN_TEMPLATE, RemoteSiteCertsStore
+from cmk.utils.config_warnings import ConfigurationWarnings
+from cmk.utils.encryption import raw_certificates_from_file
+from cmk.utils.log.security_event import log_security_event
 
 ProcessId = NewType("ProcessId", int)
 
@@ -164,33 +159,6 @@ class ConfigDomainGUI(ABCConfigDomain):
     @override
     def activate(self, settings: SerializedSettings | None = None) -> ConfigurationWarnings:
         warnings: ConfigurationWarnings = []
-        if not active_config.enable_community_translations:
-            # Check whether a community translated language is set either as default language or as
-            # user specific UI language. Fix the respective language settings to 'English'.
-            dflt_lang = active_config.default_language
-            if is_community_translation(dflt_lang):
-                warnings.append(
-                    f"Resetting the default language '{get_language_alias(dflt_lang)}' to 'English' due to "
-                    "globally disabled commmunity translations (Global settings > User interface)."
-                )
-                gui_config = {k: v for k, v in self.load().items() if k != "default_language"}
-                self.save(gui_config)
-                active_config.default_language = "en"
-
-            users = load_users()
-            for ident, user_config in users.items():
-                lang: str = user_config.get("language", "en")
-                if lang is None:
-                    lang = "en"
-                if is_community_translation(lang):
-                    warnings.append(
-                        f"For user '{ident}': Resetting the language '{get_language_alias(lang)}' to the default "
-                        f"language '{get_language_alias(active_config.default_language)}' due to "
-                        "globally disabled commmunity translations (Global settings > User "
-                        "interface)."
-                    )
-                    user_config.pop("language", None)
-            save_users(users, datetime.now())
 
         if active_config.wato_use_git and shutil.which("git") is None:
             raise MKUserError(
@@ -283,16 +251,16 @@ class ConfigDomainLiveproxy(ABCConfigDomain):
                 os.kill(pid, signal.SIGHUP)
             except ProcessLookupError:
                 # ESRCH: PID in pidfiles does not exist: No reload needed.
-                pass
+                logger.warning("Did not reload liveproxyd (PID not found)")
             except FileNotFoundError:
                 # ENOENT: No liveproxyd running: No reload needed.
-                pass
+                logger.warning("Did not reload liveproxyd (Missing PID file)")
             except ValueError:
                 # ignore empty pid file (may happen during locking in
                 # cmk.ccc.daemon.lock_with_pid_file().  We are in the
                 # situation where the livstatus proxy is in early phase of the
                 # startup. The configuration is loaded later -> no reload needed
-                pass
+                logger.warning("Did not reload liveproxyd (Empty PID file)")
 
         except Exception as e:
             logger.exception("error reloading liveproxyd")
@@ -667,7 +635,7 @@ class ConfigDomainOMD(ABCConfigDomain):
         if piggyback_hub_config_var_ident in settings and not custom_site_path:
             site_specific_settings = {
                 site_id: deepcopy(site_conf.get("globals", {}))
-                for site_id, site_conf in configured_sites().items()
+                for site_id, site_conf in active_config.sites.items()
             }
             if site_specific:
                 global_settings = self.load()
@@ -676,9 +644,10 @@ class ConfigDomainOMD(ABCConfigDomain):
                 global_settings = settings
 
             validate_piggyback_hub_config(
+                active_config.sites,
                 finalize_all_settings_per_site(
                     self.get_all_default_globals(), global_settings, site_specific_settings
-                )
+                ),
             )
 
         super().save(settings, site_specific=site_specific, custom_site_path=custom_site_path)
@@ -715,7 +684,7 @@ class ConfigDomainOMD(ABCConfigDomain):
         # On a central site, the waiting for the end of the restart is already
         # taken into account by the activate changes background job within
         # async_progress.js. Just execute the omd config change command
-        if is_wato_slave_site():
+        if is_wato_slave_site(active_config.sites):
             job = OMDConfigChangeBackgroundJob()
             if (
                 result := job.start(

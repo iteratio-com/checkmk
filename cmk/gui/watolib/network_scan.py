@@ -18,19 +18,17 @@ from cmk.ccc import store
 from cmk.ccc.exceptions import MKGeneralException
 from cmk.ccc.hostaddress import HostAddress, HostName
 from cmk.ccc.user import UserId
-
-from cmk.utils.paths import configuration_lockfile
-from cmk.utils.translations import translate_hostname, TranslationOptions
-
 from cmk.gui import userdb
+from cmk.gui.config import Config
 from cmk.gui.cron import CronJob, CronJobRegistry
-from cmk.gui.http import request
+from cmk.gui.http import Request
 from cmk.gui.i18n import _
 from cmk.gui.log import logger
 from cmk.gui.session import UserContext
 from cmk.gui.site_config import is_wato_slave_site, site_is_local
+from cmk.utils.paths import configuration_lockfile
+from cmk.utils.translations import translate_hostname, TranslationOptions
 
-from ..config import active_config
 from . import bakery, builtin_attributes
 from .automation_commands import AutomationCommand, AutomationCommandRegistry
 from .automations import do_remote_automation, RemoteAutomationConfig
@@ -50,11 +48,11 @@ class NetworkScanRequest(NamedTuple):
     folder_path: str
 
 
-def execute_network_scan_job() -> None:
+def execute_network_scan_job(config: Config) -> None:
     """Executed by the multisite cron job once a minute. Is only executed in the
     central site. Finds the next folder to scan and starts it via WATO
     automation. The result is written to the folder in the master site."""
-    if is_wato_slave_site():
+    if is_wato_slave_site(config.sites):
         return  # Don't execute this job on slaves.
 
     folder = _find_folder_to_scan()
@@ -82,16 +80,14 @@ def execute_network_scan_job() -> None:
         _save_network_scan_result(folder, result)
 
         try:
-            if site_is_local(
-                site_config := active_config.sites[folder.site_id()], folder.site_id()
-            ):
+            if site_is_local(site_config := config.sites[folder.site_id()]):
                 found = _do_network_scan(folder)
             else:
                 raw_response = do_remote_automation(
                     RemoteAutomationConfig.from_site_config(site_config),
                     "network-scan",
                     [("folder", folder.path())],
-                    debug=active_config.debug,
+                    debug=config.debug,
                 )
                 assert isinstance(raw_response, list)
                 found = raw_response
@@ -103,8 +99,9 @@ def execute_network_scan_job() -> None:
                 folder,
                 found,
                 run_as,
-                pprint_value=active_config.wato_pprint_config,
-                debug=active_config.debug,
+                pprint_value=config.wato_pprint_config,
+                debug=config.debug,
+                use_git=config.wato_use_git,
             )
 
             result.update(
@@ -147,6 +144,7 @@ def _add_scanned_hosts_to_folder(
     *,
     pprint_value: bool,
     debug: bool,
+    use_git: bool,
 ) -> None:
     if (network_scan_properties := folder.attributes.get("network_scan")) is None:
         return
@@ -180,7 +178,7 @@ def _add_scanned_hosts_to_folder(
             entries.append((host_name, attrs, None))
 
     with store.lock_checkmk_configuration(configuration_lockfile):
-        folder.create_hosts(entries, pprint_value=pprint_value)
+        folder.create_hosts(entries, pprint_value=pprint_value, use_git=use_git)
         folder.save_folder_attributes()
         folder_tree().invalidate_caches()
 
@@ -204,7 +202,7 @@ class AutomationNetworkScan(AutomationCommand[NetworkScanRequest]):
         return "network-scan"
 
     @override
-    def get_request(self) -> NetworkScanRequest:
+    def get_request(self, config: Config, request: Request) -> NetworkScanRequest:
         folder_path = request.var("folder")
         if folder_path is None:
             raise MKGeneralException(_("Folder path is missing"))

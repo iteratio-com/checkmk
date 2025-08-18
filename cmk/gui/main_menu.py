@@ -12,7 +12,6 @@ import copy
 from typing import override
 
 from cmk.ccc.plugin_registry import Registry
-
 from cmk.gui.type_defs import MainMenu, MainMenuItem, MainMenuTopic, MainMenuTopicSegment
 
 
@@ -78,6 +77,9 @@ class MainMenuRegistry(Registry[MainMenu]):
 
     def menu_help(self) -> MainMenu:
         return self["help"]
+
+    def menu_activate(self) -> MainMenu:
+        return self["activate"]
 
     def menu_user(self) -> MainMenu:
         return self["user"]

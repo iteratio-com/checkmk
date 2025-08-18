@@ -3,7 +3,6 @@
 # This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 # conditions defined in the file COPYING, which is part of this source code package.
 from collections.abc import Sequence
-from dataclasses import dataclass
 from typing import Annotated, Literal
 
 from pydantic import AfterValidator, WithJsonSchema
@@ -11,10 +10,6 @@ from pydantic import AfterValidator, WithJsonSchema
 from cmk.ccc.hostaddress import HostAddress, HostName
 from cmk.ccc.site import SiteId
 from cmk.ccc.version import Edition
-
-from cmk.utils.agent_registration import HostAgentConnectionMode
-from cmk.utils.tags import TagGroupID
-
 from cmk.gui.fields.utils import edition_field_description
 from cmk.gui.openapi.api_endpoints.models.attributes import (
     FolderCustomHostAttributesAndTagGroupsModel,
@@ -29,7 +24,7 @@ from cmk.gui.openapi.api_endpoints.models.attributes import (
     SNMPCredentialsModel,
 )
 from cmk.gui.openapi.endpoints._common.host_attribute_schemas import built_in_tag_group_config
-from cmk.gui.openapi.framework.model import api_field, ApiOmitted
+from cmk.gui.openapi.framework.model import api_field, api_model, ApiOmitted
 from cmk.gui.openapi.framework.model.converter import (
     HostAddressConverter,
     HostConverter,
@@ -38,6 +33,8 @@ from cmk.gui.openapi.framework.model.converter import (
 from cmk.gui.openapi.framework.model.restrict_editions import RestrictEditions
 from cmk.gui.watolib.builtin_attributes import HostAttributeLabels, HostAttributeWaitingForDiscovery
 from cmk.gui.watolib.host_attributes import HostAttributes
+from cmk.utils.agent_registration import HostAgentConnectionMode
+from cmk.utils.tags import TagGroupID
 
 HostNameOrIPv4 = Annotated[
     HostAddress,
@@ -63,7 +60,7 @@ def _validate_tag_id(tag_id: str, built_in_tag_group_id: TagGroupID) -> str:
     return tag_id
 
 
-@dataclass(kw_only=True)
+@api_model(slots=False)
 class BaseHostTagGroupModel:
     tag_address_family: (
         Annotated[
@@ -112,7 +109,7 @@ class BaseHostTagGroupModel:
     )
 
 
-@dataclass(kw_only=True)
+@api_model(slots=False)
 class BaseHostAttributeModel:
     alias: str | ApiOmitted = api_field(
         description="Add a comment or describe this host", default_factory=ApiOmitted
@@ -261,7 +258,7 @@ class BaseHostAttributeModel:
         return value
 
 
-@dataclass(kw_only=True, slots=True)
+@api_model
 class HostViewAttributeModel(
     BaseHostAttributeModel, BaseHostTagGroupModel, FolderCustomHostAttributesAndTagGroupsModel
 ):
@@ -341,7 +338,7 @@ class HostViewAttributeModel(
         )
 
 
-@dataclass(kw_only=True, slots=True)
+@api_model
 class HostUpdateAttributeModel(
     BaseHostAttributeModel, BaseHostTagGroupModel, FolderCustomHostAttributesAndTagGroupsModel
 ):

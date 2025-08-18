@@ -4,17 +4,12 @@
 # conditions defined in the file COPYING, which is part of this source code package.
 import re
 from collections.abc import Mapping, Sequence
-from typing import Any, assert_never, cast, Final, get_args, Literal
+from typing import assert_never, cast, Final, get_args, Literal
 
 from livestatus import SiteConfiguration
 
 from cmk.ccc.site import SiteId
 from cmk.ccc.user import UserId
-
-from cmk.utils.notify_types import HostEventType, ServiceEventType
-from cmk.utils.tags import AuxTag, TagGroup
-from cmk.utils.timeperiod import TimeperiodName
-
 from cmk.gui.config import active_config
 from cmk.gui.form_specs.converter import Tuple
 from cmk.gui.form_specs.private import (
@@ -95,9 +90,8 @@ from cmk.gui.watolib.hosts_and_folders import folder_tree
 from cmk.gui.watolib.mode import mode_url
 from cmk.gui.watolib.notifications import NotificationRuleConfigFile
 from cmk.gui.watolib.timeperiods import load_timeperiods
-from cmk.gui.watolib.user_scripts import load_notification_scripts
+from cmk.gui.watolib.user_scripts import load_notification_scripts, NotificationUserScripts
 from cmk.gui.watolib.users import notification_script_choices
-
 from cmk.rulesets.v1 import Help, Label, Message, Title
 from cmk.rulesets.v1.form_specs import (
     CascadingSingleChoice,
@@ -136,6 +130,9 @@ from cmk.shared_typing.vue_formspec_components import (
     ConditionGroup,
     ListOfStringsLayout,
 )
+from cmk.utils.notify_types import HostEventType, ServiceEventType
+from cmk.utils.tags import AuxTag, TagGroup
+from cmk.utils.timeperiod import TimeperiodName
 
 NEXT_BUTTON_ARIA_LABEL = _("Go to the next stage")
 PREV_BUTTON_ARIA_LABEL = _("Go to the previous stage")
@@ -187,14 +184,22 @@ def _service_to_state_choices() -> Sequence[SingleChoiceElementExtended[int]]:
     ]
 
 
-def _validate_host_state_change(state_change: tuple) -> None:
-    if host_event_mapper(state_change) not in list(get_args(get_args(HostEventType)[0])):
+def _validate_host_state_change(
+    state_change: object,
+) -> object:
+    if not isinstance(state_change, tuple) or host_event_mapper(state_change) not in list(
+        get_args(get_args(HostEventType)[0])
+    ):
         raise ValidationError(Message("Invalid state change for host"))
+    return state_change
 
 
-def _validate_service_state_change(state_change: tuple) -> None:
-    if service_event_mapper(state_change) not in list(get_args(get_args(ServiceEventType)[0])):
+def _validate_service_state_change(state_change: object) -> object:
+    if not isinstance(state_change, tuple) or service_event_mapper(state_change) not in list(
+        get_args(get_args(ServiceEventType)[0])
+    ):
         raise ValidationError(Message("Invalid state change for service"))
+    return state_change
 
 
 def _event_choices(
@@ -270,7 +275,7 @@ def _event_choices(
     ]
 
 
-def _validate_at_least_one_event(trigger_events: Mapping) -> None:
+def _validate_at_least_one_event(trigger_events: Mapping[str, object]) -> None:
     if (
         not trigger_events["host_events"]
         and not trigger_events["service_events"]
@@ -421,7 +426,7 @@ def _get_contact_group_users() -> list[tuple[UserId, str]]:
     )
 
 
-def _get_service_levels_single_choice() -> Sequence[SingleChoiceElementExtended]:
+def _get_service_levels_single_choice() -> Sequence[SingleChoiceElementExtended[int]]:
     return [
         SingleChoiceElementExtended(
             name=name,
@@ -1124,14 +1129,14 @@ def filter_for_hosts_and_services() -> QuickSetupStage:
     )
 
 
-def supports_bulk(script_name: str, notification_scripts: dict[str, Any]) -> bool:
+def supports_bulk(script_name: str, notification_scripts: NotificationUserScripts) -> bool:
     if script_name not in notification_scripts:
         return False
     return notification_scripts[script_name].get("bulk", False)
 
 
 def notification_method() -> QuickSetupStage:
-    def bulk_notification_dict_element() -> DictElement:
+    def bulk_notification_dict_element() -> DictElement[tuple[str, object]]:
         return DictElement(
             required=False,
             parameter_form=CascadingSingleChoiceExtended(
@@ -1167,8 +1172,9 @@ def notification_method() -> QuickSetupStage:
         )
 
     def bulk_notification_supported(
-        script_name: str, notification_scripts: dict[str, Any]
-    ) -> dict[str, DictElement]:
+        script_name: str,
+        notification_scripts: NotificationUserScripts,
+    ) -> dict[str, DictElement[tuple[str, object]]]:
         if not supports_bulk(script_name, notification_scripts):
             return {}
         return {
@@ -1935,14 +1941,16 @@ def save_and_test_action(
     mode: QuickSetupActionMode,
     _progress_logger: ProgressLogger,
     object_id: str | None,
+    use_git: bool,
+    pprint_value: bool,
 ) -> str:
     match mode:
         case QuickSetupActionMode.SAVE:
-            _save(all_stages_form_data)
+            _save(all_stages_form_data, use_git=use_git, pprint_value=pprint_value)
             result_msg = _("New notification rule successfully created!")
         case QuickSetupActionMode.EDIT:
             assert object_id is not None
-            _edit(all_stages_form_data, object_id)
+            _edit(all_stages_form_data, object_id, use_git=use_git, pprint_value=pprint_value)
             result_msg = _("Notification rule successfully edited!")
         case _:
             raise ValueError(f"Unknown mode {mode}")
@@ -1954,17 +1962,22 @@ def save_and_new_action(
     mode: QuickSetupActionMode,
     _progress_logger: ProgressLogger,
     object_id: str | None,
+    use_git: bool,
+    pprint_value: bool,
 ) -> str:
     match mode:
         case QuickSetupActionMode.SAVE:
-            _save(all_stages_form_data)
+            _save(all_stages_form_data, use_git=use_git, pprint_value=pprint_value)
+            result_msg = _("New notification rule successfully created!")
         case QuickSetupActionMode.EDIT:
             assert object_id is not None
-            _edit(all_stages_form_data, object_id)
+            _edit(all_stages_form_data, object_id, use_git=use_git, pprint_value=pprint_value)
+            result_msg = _("Notification rule successfully edited!")
         case _:
             raise ValueError(f"Unknown mode {mode}")
     return mode_url(
-        "notification_rule_quick_setup", result=_("New notification rule successfully created!")
+        "notification_rule_quick_setup",
+        result=result_msg,
     )
 
 
@@ -1972,25 +1985,36 @@ def register(quick_setup_registry: QuickSetupRegistry) -> None:
     quick_setup_registry.register(quick_setup_notifications)
 
 
-def _save(all_stages_form_data: ParsedFormData) -> None:
+def _save(all_stages_form_data: ParsedFormData, *, use_git: bool, pprint_value: bool) -> None:
     config_file = NotificationRuleConfigFile()
     notifications_rules = list(config_file.load_for_modification())
     notifications_rules += [
         migrate_to_event_rule(cast(NotificationQuickSetupSpec, all_stages_form_data))
     ]
-    config_file.save(notifications_rules, pprint_value=active_config.wato_pprint_config)
+    config_file.rule_created(
+        notifications_rules,
+        pprint_value=pprint_value,
+        use_git=use_git,
+    )
 
 
-def _edit(all_stages_form_data: ParsedFormData, object_id: str) -> None:
+def _edit(
+    all_stages_form_data: ParsedFormData, object_id: str, *, use_git: bool, pprint_value: bool
+) -> None:
     config_file = NotificationRuleConfigFile()
     notification_rules = list(config_file.load_for_modification())
+    rule_nr = "N/A"
     for n, rule in enumerate(notification_rules):
         if rule["rule_id"] == object_id:
             notification_rules[n] = migrate_to_event_rule(
                 cast(NotificationQuickSetupSpec, all_stages_form_data)
             )
+            rule_nr = str(n)
             break
-    config_file.save(notification_rules, pprint_value=active_config.wato_pprint_config)
+
+    config_file.rule_updated(
+        rules=notification_rules, rule_number=rule_nr, pprint_value=pprint_value, use_git=use_git
+    )
 
 
 def load_notifications(object_id: str) -> ParsedFormData:

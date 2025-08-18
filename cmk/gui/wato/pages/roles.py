@@ -25,7 +25,7 @@ from marshmallow import ValidationError
 import cmk.gui.watolib.changes as _changes
 from cmk.gui import forms, userdb
 from cmk.gui.breadcrumb import Breadcrumb
-from cmk.gui.config import active_config
+from cmk.gui.config import Config
 from cmk.gui.exceptions import MKUserError
 from cmk.gui.htmllib.generator import HTMLWriter
 from cmk.gui.htmllib.html import html
@@ -86,7 +86,7 @@ class ModeRoles(WatoMode):
     def title(self) -> str:
         return _("Roles & permissions")
 
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         menu = PageMenu(
             dropdowns=[
                 PageMenuDropdown(
@@ -114,35 +114,35 @@ class ModeRoles(WatoMode):
         menu.add_doc_reference(_("Users, roles and permissions"), DocReference.WATO_USER)
         return menu
 
-    def action(self) -> ActionResult:
+    def action(self, config: Config) -> ActionResult:
         if not transactions.check_transaction():
             return redirect(self.mode_url())
 
         if request.var("_delete"):
             role_id = RoleID(request.get_ascii_input_mandatory("_delete"))
-            userroles.delete_role(role_id, pprint_value=active_config.wato_pprint_config)
+            userroles.delete_role(role_id, pprint_value=config.wato_pprint_config)
             _changes.add_change(
                 action_name="edit-roles",
                 text=_("Deleted role '%s'") % role_id,
                 user_id=user.id,
-                sites=get_login_sites(),
-                use_git=active_config.wato_use_git,
+                sites=get_login_sites(config.sites),
+                use_git=config.wato_use_git,
             )
 
         elif request.var("_clone"):
             role_id = RoleID(request.get_ascii_input_mandatory("_clone"))
-            userroles.clone_role(role_id, pprint_value=active_config.wato_pprint_config)
+            userroles.clone_role(role_id, pprint_value=config.wato_pprint_config)
             _changes.add_change(
                 action_name="edit-roles",
                 text=_("Created new role '%s'") % role_id,
                 user_id=user.id,
-                sites=get_login_sites(),
-                use_git=active_config.wato_use_git,
+                sites=get_login_sites(config.sites),
+                use_git=config.wato_use_git,
             )
 
         return redirect(self.mode_url())
 
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         with table_element("roles") as table:
             users = userdb.load_users()
             for nr, role in enumerate(
@@ -233,7 +233,7 @@ class ModeRoleTwoFactor(WatoMode):
     def title(self) -> str:
         return _("Enforce two-factor on %s role") % self._role_id
 
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         request.get_ascii_input_mandatory("two_factor_enforce")
         confirm_url = makeactionuri(request, transactions, [("_action", "confirm")])
         cancel_url = makeuri_contextless(
@@ -260,7 +260,7 @@ class ModeRoleTwoFactor(WatoMode):
             confirm_text=_("Confirm"),
         )
 
-    def action(self) -> ActionResult:
+    def action(self, config: Config) -> ActionResult:
         check_csrf_token()
         if request.var("_action") != "confirm":
             return None
@@ -273,15 +273,15 @@ class ModeRoleTwoFactor(WatoMode):
             role=self._role,
             old_roleid=self._role_id,
             new_roleid=self._role_id,
-            pprint_value=active_config.wato_pprint_config,
+            pprint_value=config.wato_pprint_config,
         )
         userroles.logout_users_with_role(self._role_id)
         _changes.add_change(
             action_name="edit-roles",
             text=_("Modified user role '%s'") % self._role_id,
             user_id=user.id,
-            sites=get_login_sites(),
-            use_git=active_config.wato_use_git,
+            sites=get_login_sites(config.sites),
+            use_git=config.wato_use_git,
         )
         return redirect(mode_url(ModeRoles.name()))
 
@@ -313,14 +313,14 @@ class ModeEditRole(WatoMode):
     def title(self) -> str:
         return _("Edit role %s") % self._role_id
 
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         menu = make_simple_form_page_menu(
             _("Role"), breadcrumb, form_name="role", button_name="_save"
         )
         menu.inpage_search = PageMenuSearch()
         return menu
 
-    def action(self) -> ActionResult:
+    def action(self, config: Config) -> ActionResult:
         check_csrf_token()
 
         if html.form_submitted("search"):
@@ -363,7 +363,7 @@ class ModeEditRole(WatoMode):
             role=self._role,
             old_roleid=self._role_id,
             new_roleid=RoleID(new_id),
-            pprint_value=active_config.wato_pprint_config,
+            pprint_value=config.wato_pprint_config,
         )
         self._role_id = RoleID(new_id)
 
@@ -371,12 +371,12 @@ class ModeEditRole(WatoMode):
             action_name="edit-roles",
             text=_("Modified user role '%s'") % new_id,
             user_id=user.id,
-            sites=get_login_sites(),
-            use_git=active_config.wato_use_git,
+            sites=get_login_sites(config.sites),
+            use_git=config.wato_use_git,
         )
         return url
 
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         with html.form_context(
             "role",
             method="POST",
@@ -503,16 +503,16 @@ class ModeRoleMatrix(WatoMode):
     def title(self) -> str:
         return _("Permission matrix")
 
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         return PageMenu(breadcrumb=breadcrumb, inpage_search=PageMenuSearch())
 
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         for section in permission_section_registry.get_sorted_sections():
             with table_element(
                 section.name,
                 section.title,
                 foldable=Foldable.FOLDABLE_SAVE_STATE,
-                limit=max(200, active_config.table_row_limit),
+                limit=max(200, config.table_row_limit),
             ) as table:
                 permission_list = permission_registry.get_sorted_permissions(section)
 

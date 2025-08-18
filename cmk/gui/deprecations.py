@@ -6,7 +6,6 @@
 import abc
 import datetime
 import json
-import time
 from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
 from enum import auto, Enum
@@ -15,36 +14,31 @@ from typing import override
 
 from livestatus import SiteConfigurations
 
+import cmk.ec.export as ec  # pylint: disable=cmk-module-layer-violation
 from cmk.ccc import store
 from cmk.ccc.site import omd_site, SiteId
 from cmk.ccc.user import UserId
 from cmk.ccc.version import __version__, Version
-
-from cmk.utils import paths
-from cmk.utils.html import replace_state_markers
-
-import cmk.ec.export as ec  # pylint: disable=cmk-module-layer-violation
-
-from cmk.gui.config import active_config
+from cmk.discover_plugins import addons_plugins_local_path, plugins_local_path
+from cmk.gui.config import Config
 from cmk.gui.cron import CronJob, CronJobRegistry
 from cmk.gui.htmllib.generator import HTMLWriter
 from cmk.gui.http import request
 from cmk.gui.i18n import _
 from cmk.gui.job_scheduler_client import JobSchedulerClient
 from cmk.gui.log import logger
-from cmk.gui.message import get_gui_messages, Message, message_gui, MessageText
+from cmk.gui.message import create_message, get_gui_messages, MessageText, send_message
 from cmk.gui.site_config import is_wato_slave_site
 from cmk.gui.sites import states
 from cmk.gui.type_defs import Users
 from cmk.gui.userdb import load_users
-from cmk.gui.utils import gen_id
 from cmk.gui.utils.html import HTML
 from cmk.gui.utils.roles import user_may
 from cmk.gui.utils.urls import makeuri_contextless
 from cmk.gui.watolib.analyze_configuration import ACResultState, ACTestResult, perform_tests
-
-from cmk.discover_plugins import addons_plugins_local_path, plugins_local_path
 from cmk.mkp_tool import get_stored_manifests, Manifest, PackageStore, PathConfig
+from cmk.utils import paths
+from cmk.utils.html import replace_state_markers
 
 
 @dataclass(frozen=True)
@@ -88,13 +82,12 @@ def _filter_non_ok_ac_test_results(
     }
 
 
-def _make_path_config() -> PathConfig | None:
-    local_path = plugins_local_path()
-    addons_path = addons_plugins_local_path()
-    if local_path is None:
+def make_path_config() -> PathConfig | None:
+    if (local_path := plugins_local_path()) is None:
         return None
-    if addons_path is None:
+    if (addons_path := addons_plugins_local_path()) is None:
         return None
+    ec_paths = ec.create_paths(paths.omd_root)
     return PathConfig(
         cmk_plugins_dir=local_path,
         cmk_addons_plugins_dir=addons_path,
@@ -110,8 +103,8 @@ def _make_path_config() -> PathConfig | None:
         lib_dir=paths.local_lib_dir,
         locale_dir=paths.local_locale_dir,
         local_root=paths.local_root,
-        mib_dir=paths.local_mib_dir,
-        mkp_rule_pack_dir=ec.mkp_rule_pack_dir(),
+        mib_dir=ec_paths.local_mibs_dir.value,
+        mkp_rule_pack_dir=ec_paths.mkp_rule_pack_dir.value,
         notifications_dir=paths.local_notifications_dir,
         pnp_templates_dir=paths.local_pnp_templates_dir,
         web_dir=paths.local_web_dir,
@@ -447,8 +440,8 @@ def _find_problems_to_send(
             )
 
 
-def execute_deprecation_tests_and_notify_users() -> None:
-    if is_wato_slave_site():
+def execute_deprecation_tests_and_notify_users(config: Config) -> None:
+    if is_wato_slave_site(config.sites):
         return
 
     marker_file_store = _MarkerFileStore(paths.var_dir / "deprecations")
@@ -463,12 +456,13 @@ def execute_deprecation_tests_and_notify_users() -> None:
         not_ok_ac_test_results := _filter_non_ok_ac_test_results(
             perform_tests(
                 logger,
+                config,
                 request,
                 SiteConfigurations(
-                    {site_id: active_config.sites[site_id] for site_id in site_versions_by_site_id}
+                    {site_id: config.sites[site_id] for site_id in site_versions_by_site_id}
                 ),
                 categories=["deprecations"],
-                debug=active_config.debug,
+                debug=config.debug,
             )
         )
     ):
@@ -492,11 +486,10 @@ def execute_deprecation_tests_and_notify_users() -> None:
                 )
             ).local,
         )
-        if (path_config := _make_path_config())
+        if (path_config := make_path_config())
         else {}
     )
 
-    now = int(time.time())
     for problem_to_send in _find_problems_to_send(
         Version.from_str(__version__).version_base,
         _find_ac_test_result_problems(not_ok_ac_test_results, manifests_by_path),
@@ -508,21 +501,16 @@ def execute_deprecation_tests_and_notify_users() -> None:
                     if problem_to_send.content in user.sent_messages:
                         continue
 
-                    message_gui(
-                        user.user_id,
-                        Message(
+                    send_message(
+                        create_message(
                             dest=("list", [user.user_id]),
                             methods=["gui_hint"],
                             text=MessageText(
                                 content_type="html",
                                 content=problem_to_send.content,
                             ),
-                            valid_till=None,
-                            id=gen_id(),
-                            time=now,
-                            security=False,
-                            acknowledged=False,
                         ),
+                        config.multisite_users.keys(),
                     )
 
             case str():

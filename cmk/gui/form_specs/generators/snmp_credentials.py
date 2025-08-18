@@ -2,12 +2,11 @@
 # Copyright (C) 2024 Checkmk GmbH - License: GNU General Public License v2
 # This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 # conditions defined in the file COPYING, which is part of this source code package.
-from collections.abc import Sequence
+from collections.abc import Sequence, Sized
 from enum import Enum
 from typing import Any
 
 from cmk.ccc.exceptions import MKGeneralException
-
 from cmk.gui.form_specs.converter import (
     SimplePassword,
     TransformDataForLegacyFormatOrRecomposeFunction,
@@ -18,8 +17,7 @@ from cmk.gui.form_specs.private import (
     SingleChoiceElementExtended,
     SingleChoiceExtended,
 )
-from cmk.gui.form_specs.vue.visitors import DefaultValue as VueDefaultValue
-
+from cmk.gui.form_specs.vue import DefaultValue as VueDefaultValue
 from cmk.rulesets.v1 import Help, Label, Title
 from cmk.rulesets.v1.form_specs import (
     CascadingSingleChoice,
@@ -161,7 +159,9 @@ def _snmpv3_auth_priv_element(for_ec: bool = False) -> Tuple:
 
 
 def _find_element_name_for_value(value: object, only_v3: bool, allow_none: bool) -> SNMPFormat:
-    def alternative_match(x):
+    def alternative_match(x: object) -> SNMPFormat:
+        if x is not None and not isinstance(x, Sized):
+            raise MKGeneralException("Invalid SNMP credentials")
         if only_v3:
             if x is None or len(x) == 2:
                 return SNMPFormat.SNMPV3_NO_AUTH_NO_PRIV

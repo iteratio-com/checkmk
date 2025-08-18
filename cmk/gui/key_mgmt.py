@@ -12,15 +12,16 @@ from typing import Any, Literal
 
 from dateutil.relativedelta import relativedelta
 
+import cmk.utils.render
 from cmk.ccc import store
 from cmk.ccc.site import omd_site, SiteId
 from cmk.ccc.user import UserId
-
-import cmk.utils.render
-from cmk.utils.certs import CertManagementEvent
-from cmk.utils.log.security_event import log_security_event
-
+from cmk.crypto.certificate import Certificate, CertificateWithPrivateKey
+from cmk.crypto.hash import HashAlgorithm
+from cmk.crypto.password import Password as PasswordType
+from cmk.crypto.pem import PEMDecodingError
 from cmk.gui.breadcrumb import Breadcrumb
+from cmk.gui.config import Config
 from cmk.gui.exceptions import FinalizeRequest, HTTPRedirect, MKUserError
 from cmk.gui.htmllib.html import html
 from cmk.gui.http import ContentDispositionType, request, response
@@ -47,11 +48,8 @@ from cmk.gui.valuespec import (
     TextAreaUnicode,
     TextInput,
 )
-
-from cmk.crypto.certificate import Certificate, CertificateWithPrivateKey
-from cmk.crypto.hash import HashAlgorithm
-from cmk.crypto.password import Password as PasswordType
-from cmk.crypto.pem import PEMDecodingError
+from cmk.utils.certs import CertManagementEvent
+from cmk.utils.log.security_event import log_security_event
 
 
 class KeypairStore:
@@ -127,7 +125,7 @@ class PageKeyManagement:
     def name(cls) -> str:
         raise NotImplementedError()
 
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         if not self._may_edit_config():
             return PageMenu(dropdowns=[], breadcrumb=breadcrumb)
 
@@ -169,7 +167,7 @@ class PageKeyManagement:
     def _may_edit_config(self) -> bool:
         return True
 
-    def action(self) -> ActionResult:
+    def action(self, config: Config) -> ActionResult:
         check_csrf_token()
 
         if self._may_edit_config() and request.has_var("_delete"):
@@ -187,7 +185,7 @@ class PageKeyManagement:
                 raise MKUserError("", _("This key is still used."))
 
             del keys[key_id]
-            self._log_delete_action(key_id, key)
+            self._log_delete_action(key_id, key, use_git=config.wato_use_git)
             self.key_store.save(keys)
         return None
 
@@ -195,7 +193,7 @@ class PageKeyManagement:
     def component_name(self) -> CertManagementEvent.ComponentType:
         raise NotImplementedError()
 
-    def _log_delete_action(self, key_id: int, key: Key) -> None:
+    def _log_delete_action(self, key_id: int, key: Key, *, use_git: bool) -> None:
         log_security_event(
             CertManagementEvent(
                 event="certificate removed",
@@ -217,7 +215,7 @@ class PageKeyManagement:
     def _table_title(self) -> str:
         raise NotImplementedError()
 
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         with table_element(title=self._table_title(), searchable=False, sortable=False) as table:
             for nr, (key_id, key) in enumerate(sorted(self.key_store.load().items())):
                 table.row()
@@ -263,12 +261,12 @@ class PageEditKey:
         self._minlen = 12
         self.key_store = key_store
 
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         return make_simple_form_page_menu(
             _("Key"), breadcrumb, form_name="key", button_name="_save", save_title=_("Create")
         )
 
-    def action(self) -> ActionResult:
+    def action(self, config: Config) -> ActionResult:
         check_csrf_token()
 
         if transactions.check_transaction():
@@ -278,14 +276,16 @@ class PageEditKey:
             # leak the secret information
             request.del_var("key_p_passphrase")
             self._vs_key().validate_value(value, "key")
-            self._create_key(value["alias"], PasswordType(value["passphrase"]))
+            self._create_key(
+                value["alias"], PasswordType(value["passphrase"]), use_git=config.wato_use_git
+            )
             return HTTPRedirect(
                 makeuri_contextless(request, [("mode", self.back_mode)], filename="wato.py")
             )
         return None
 
     def _create_key(
-        self, alias: str, passphrase: PasswordType, default_key_size: int = 4096
+        self, alias: str, passphrase: PasswordType, *, use_git: bool, default_key_size: int = 4096
     ) -> None:
         keys = self.key_store.load()
 
@@ -313,7 +313,7 @@ class PageEditKey:
             )
         )
 
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         # Currently only "new" is supported
         with html.form_context("key", method="POST"):
             html.prevent_password_auto_completion()
@@ -360,12 +360,12 @@ class PageUploadKey:
         super().__init__()
         self.key_store = key_store
 
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         return make_simple_form_page_menu(
             _("Key"), breadcrumb, form_name="key", button_name="_save", save_title=_("Upload")
         )
 
-    def action(self) -> ActionResult:
+    def action(self, config: Config) -> ActionResult:
         check_csrf_token()
 
         if transactions.check_transaction():
@@ -434,7 +434,7 @@ class PageUploadKey:
             )
         )
 
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         # Note about the cert/key requirements:
         # * The private key has to be an RSA key because both backup encryption and agent signing
         #   currently assume that. The algorithms are still hardcoded.
@@ -520,12 +520,12 @@ class PageDownloadKey:
         super().__init__()
         self.key_store = key_store
 
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         return make_simple_form_page_menu(
             _("Key"), breadcrumb, form_name="key", button_name="_save", save_title=_("Download")
         )
 
-    def action(self) -> ActionResult:
+    def action(self, config: Config) -> ActionResult:
         check_csrf_token()
 
         if transactions.check_transaction():
@@ -565,7 +565,7 @@ class PageDownloadKey:
     def _file_name(self, key_id: int, key: Key) -> str:
         raise NotImplementedError()
 
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         html.p(
             _(
                 "To be able to download the key, you need to unlock the key by entering the "

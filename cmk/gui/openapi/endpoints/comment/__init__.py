@@ -26,11 +26,8 @@ from collections.abc import Mapping
 from datetime import datetime
 from typing import Any
 
+from cmk import fields
 from cmk.ccc.site import SiteId
-
-from cmk.utils.livestatus_helpers.expressions import And, Or, QueryExpression
-from cmk.utils.livestatus_helpers.tables.comments import Comments
-
 from cmk.gui import fields as gui_fields
 from cmk.gui import sites
 from cmk.gui.fields.utils import BaseSchema
@@ -54,8 +51,8 @@ from cmk.gui.openapi.restful_objects.registry import EndpointRegistry
 from cmk.gui.openapi.restful_objects.type_defs import DomainObject
 from cmk.gui.openapi.utils import problem, serve_json
 from cmk.gui.utils import permission_verification as permissions
-
-from cmk import fields
+from cmk.utils.livestatus_helpers.expressions import And, Or, QueryExpression
+from cmk.utils.livestatus_helpers.tables.comments import Comments
 
 PERMISSIONS = permissions.Undocumented(
     permissions.AnyPerm(
@@ -244,14 +241,13 @@ def create_host_comment(params: Mapping[str, Any]) -> Response:
     match body["comment_type"]:
         case "host":
             site_id = utils.get_site_id_for_host(live_connection, body["host_name"])
-            live_connection.command_obj(
-                comment_cmds.AddHostComment(
-                    host_name=body["host_name"],
-                    user=user.ident,
-                    comment=body["comment"],
-                    persistent=body["persistent"],
-                ),
-                site_id,
+            comment_cmds.add_host_comment(
+                connection=live_connection,
+                host_name=body["host_name"],
+                user=user.ident,
+                site_id=site_id,
+                comment=body["comment"],
+                persistent=body["persistent"],
             )
 
         case "host_group":

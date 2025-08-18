@@ -14,6 +14,8 @@ This module provides helper functions to:
 import os
 import re
 import subprocess
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Final
 
@@ -28,10 +30,10 @@ def create_agent_dump_rule(
     site: Site,
     dumps_path: Path | None = None,
     rule_folder: str = "/",
-) -> Path:
+) -> tuple[str, Path]:
     """Create a rule to read agent data from a dump path.
 
-    Returns the path of the dumps.
+    Returns the rule ID and the path of the dumps.
 
     Args:
         site: The test site.
@@ -45,23 +47,21 @@ def create_agent_dump_rule(
         logger.info('Creating folder "%s"...', dumps_path)
         _ = site.run(["mkdir", "-p", dumps_path.as_posix()])
     logger.info('Creating rule "%s"...', ruleset_name)
-    site.openapi.rules.create(
+    rule_id = site.openapi.rules.create(
         value=rule_value,
         ruleset_name=ruleset_name,
         folder=rule_folder,
     )
-    logger.info('Rule "%s" created!', ruleset_name)
-
-    return dumps_path
+    return rule_id, dumps_path
 
 
 def create_snmp_walk_rule(
     site: Site,
     rule_folder: str = "/",
-) -> Path:
+) -> tuple[str, Path]:
     """Create a rule to read snmp data from a walk path.
 
-    Returns the path of the walks.
+    Returns the rule ID and the path of the walks.
 
     Args:
         site: The test site.
@@ -71,22 +71,22 @@ def create_snmp_walk_rule(
     ruleset_name = "usewalk_hosts"
     rule_value = True
     logger.info('Creating rule "%s"...', ruleset_name)
-    site.openapi.rules.create(
+    rule_id = site.openapi.rules.create(
         value=rule_value,
         ruleset_name=ruleset_name,
         folder=rule_folder,
     )
-    logger.info('Rule "%s" created!', ruleset_name)
-
-    return walks_path
+    return rule_id, walks_path
 
 
 def create_program_call_rule(
     site: Site,
     program_call: str,
     rule_folder: str = "/",
-) -> None:
+) -> str:
     """Create a rule to read agent data from a program call.
+
+    Returns the rule ID.
 
     Args:
         site: The test site.
@@ -96,12 +96,12 @@ def create_program_call_rule(
     ruleset_name = "datasource_programs"
     rule_value = program_call
     logger.info('Creating rule "%s"...', ruleset_name)
-    site.openapi.rules.create(
+    rule_id = site.openapi.rules.create(
         value=rule_value,
         ruleset_name=ruleset_name,
         folder=rule_folder,
     )
-    logger.info('Rule "%s" created!', ruleset_name)
+    return rule_id
 
 
 def _dumps_up_to_date(dumps_dir: Path, min_version: CMKVersion) -> None:
@@ -148,8 +148,10 @@ def copy_dumps(
         run(["bash", "-c", f'cp -f {source_path} "{target_path}"'], sudo=True)
 
 
-def inject_dumps(site: Site, dumps_dir: Path, check_dumps_up_to_date: bool = True) -> None:
+def inject_dumps(site: Site, dumps_dir: Path, check_dumps_up_to_date: bool = True) -> str:
     """Create dump rule and copy agent dumps from dumps_dir to site.
+
+    Returns the rule_id of the agent dump rule.
 
     Args:
         site: The test site.
@@ -159,8 +161,10 @@ def inject_dumps(site: Site, dumps_dir: Path, check_dumps_up_to_date: bool = Tru
     if check_dumps_up_to_date:
         _dumps_up_to_date(dumps_dir, get_min_version())
 
-    site_dumps_path = create_agent_dump_rule(site)
+    rule_id, site_dumps_path = create_agent_dump_rule(site)
     copy_dumps(site, dumps_dir, site_dumps_path)
+
+    return rule_id
 
 
 def read_disk_dump(host_name: str, dump_dir: Path) -> str:
@@ -235,3 +239,58 @@ def get_dump_and_walk_names(
 ) -> list[str]:
     """Return a list of agent dumps and snmp walks in a directory."""
     return get_dump_names(directory, skipped_files) + get_walk_names(directory, skipped_files)
+
+
+@contextmanager
+def dummy_agent_dump_generator(
+    site: Site,
+    host_name: str = "$HOSTNAME$",
+    service_count: int = 10,
+    payload_lines: int = 0,
+    pb_host_count: int = 0,
+    pb_service_count: int = 10,
+    rule_folder: str = "/",
+    cleanup: bool = True,
+) -> Iterator[str]:
+    """
+    Simulate agent dump corresponding to a host using 'datasource' / 'create program call' rule.
+
+    NOTE: All existing hosts will be affected!
+
+    Args:
+        site: The test site.
+        host_name: The name of the base host.
+        service_count: The number of services to be added per host.
+        payload_lines: The number of payload lines to be added per host.
+        pb_host_count: The number of piggyback hosts to be added.
+        pb_service_count: The number of services to be added per piggyback host.
+        rule_folder: The host folder in the site to create the program call rule in.
+        cleanup: Specifies if the program call rule is cleaned up at the end.
+    """
+    source_path = Path(__file__).parent.parent / "scripts/dummy_agent_dump_generator.py"
+    with site.copy_file(source_path, "dump_generator.py") as target_path:
+        # Use a tilde path so that the script can be run in a copied site
+        tilde_path = f"~/{target_path.relative_to(site.root).as_posix()}"
+
+        args = [
+            "python3",
+            tilde_path,
+            "--host-name",
+            host_name,
+            "--service-count",
+            str(service_count),
+            "--payload",
+            str(payload_lines),
+            "--piggyback-hosts",
+            str(pb_host_count),
+            "--piggyback-services",
+            str(pb_service_count),
+        ]
+        rule_id = create_program_call_rule(site, f"{' '.join(args)}", rule_folder)
+        try:
+            site.openapi.changes.activate_and_wait_for_completion()
+            yield rule_id
+        finally:
+            if cleanup and site.openapi.rules.get(rule_id):
+                site.openapi.rules.delete(rule_id)
+                site.openapi.changes.activate_and_wait_for_completion(force_foreign_changes=True)

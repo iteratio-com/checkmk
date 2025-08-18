@@ -5,6 +5,7 @@
 from collections.abc import Sequence
 from typing import Any, TypeVar
 
+from cmk.gui.config import active_config
 from cmk.gui.form_specs.private import CascadingSingleChoiceExtended, LegacyValueSpec
 from cmk.gui.form_specs.private.cascading_single_choice_extended import (
     CascadingSingleChoiceElementExtended,
@@ -12,10 +13,10 @@ from cmk.gui.form_specs.private.cascading_single_choice_extended import (
 from cmk.gui.form_specs.private.list_extended import ListExtended
 from cmk.gui.watolib.host_attributes import (
     ABCHostAttributeValueSpec,
-    get_sorted_host_attribute_topics,
-    get_sorted_host_attributes_by_topic,
+    all_host_attributes,
+    sorted_host_attribute_topics,
+    sorted_host_attributes_by_topic,
 )
-
 from cmk.rulesets.v1 import Help, Label, Message, Title
 from cmk.rulesets.v1.form_specs import (
     DefaultValue,
@@ -31,8 +32,13 @@ def create_host_attributes_selection(
     exclude_host_attributes: Sequence[str] | None = None,
 ) -> ListExtended[tuple[str, object]]:
     attribute_choices: list[CascadingSingleChoiceElementExtended[Any]] = []
-    for topic, topic_title in get_sorted_host_attribute_topics(for_what="host", new=False):
-        for attr in get_sorted_host_attributes_by_topic(topic):
+    host_attributes = all_host_attributes(
+        active_config.wato_host_attrs, active_config.tags.get_tag_groups_by_topic()
+    )
+    for topic, topic_title in sorted_host_attribute_topics(
+        host_attributes, for_what="host", new=False
+    ):
+        for attr in sorted_host_attributes_by_topic(host_attributes, topic):
             if not isinstance(attr, ABCHostAttributeValueSpec):
                 continue
 

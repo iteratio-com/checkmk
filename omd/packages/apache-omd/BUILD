@@ -95,7 +95,6 @@ genrule(
                 mod_setenvif.so \
                 mod_status.so \
                 mod_unixd.so \
-                mod_version.so \
                 mod_proxy.so \
                 mod_proxy_http.so"
             for MODULE_FILE in $$APACHE_MODULES; do
@@ -107,6 +106,7 @@ genrule(
         )
         tar -czf $@ apache-omd
     """,
+    tags = ["manual"],
     visibility = ["//visibility:public"],
 )
 
@@ -116,11 +116,13 @@ pkg_files(
         include = ["skel/**/*"],
     ),
     strip_prefix = strip_prefix.from_pkg(""),
+    tags = ["manual"],
 )
 
 pkg_mklink(
     name = "85-apache-symlink",
     link_name = "skel/etc/rc.d/85-apache",
+    tags = ["manual"],
     target = "../init.d/apache",
 )
 
@@ -133,5 +135,6 @@ pkg_tar(
     extension = "tar.gz",
     package_file_name = "apache-skel.tar.gz",
     strip_prefix = ".",
+    tags = ["manual"],
     visibility = ["//visibility:public"],
 )

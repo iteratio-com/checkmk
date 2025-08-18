@@ -26,15 +26,7 @@ from cmk.ccc import version
 from cmk.ccc.exceptions import MKException
 from cmk.ccc.hostaddress import HostAddress, HostName
 from cmk.ccc.user import UserId
-
-from cmk.utils import paths
-from cmk.utils.livestatus_helpers.expressions import NothingExpression, QueryExpression
-from cmk.utils.livestatus_helpers.queries import Query
-from cmk.utils.livestatus_helpers.tables import Hostgroups, Hosts, Servicegroups
-from cmk.utils.livestatus_helpers.types import Column, Table
-from cmk.utils.regex import regex, REGEX_ID
-from cmk.utils.tags import TagConfig, TagGroup, TagGroupID
-
+from cmk.fields import base, Boolean, DateTime, validators
 from cmk.gui import sites
 from cmk.gui.config import active_config, builtin_role_ids
 from cmk.gui.customer import customer_api, SCOPE_GLOBAL
@@ -43,18 +35,21 @@ from cmk.gui.fields.base import BaseSchema, MultiNested, ValueTypedDictSchema
 from cmk.gui.fields.utils import edition_field_description, tree_to_expr
 from cmk.gui.groups import GroupName, GroupType
 from cmk.gui.logged_in import user
-from cmk.gui.permissions import permission_registry
-from cmk.gui.site_config import configured_sites
 from cmk.gui.userdb import load_users
 from cmk.gui.watolib import userroles
 from cmk.gui.watolib.groups_io import load_group_information
-from cmk.gui.watolib.host_attributes import ABCHostAttribute, all_host_attributes, host_attribute
+from cmk.gui.watolib.host_attributes import ABCHostAttribute, all_host_attributes
 from cmk.gui.watolib.hosts_and_folders import Folder, folder_tree, Host
 from cmk.gui.watolib.passwords import contact_group_choices, password_exists
 from cmk.gui.watolib.sites import site_management_registry
 from cmk.gui.watolib.tags import load_tag_config_read_only
-
-from cmk.fields import base, Boolean, DateTime, validators
+from cmk.utils import paths
+from cmk.utils.livestatus_helpers.expressions import NothingExpression, QueryExpression
+from cmk.utils.livestatus_helpers.queries import Query
+from cmk.utils.livestatus_helpers.tables import Hostgroups, Hosts, Servicegroups
+from cmk.utils.livestatus_helpers.types import Column, Table
+from cmk.utils.regex import regex, REGEX_ID
+from cmk.utils.tags import TagConfig, TagGroup, TagGroupID
 
 _logger = logging.getLogger(__name__)
 _CONNECTION_ID_PATTERN = "^[-a-z0-9A-Z_]+$"
@@ -732,51 +727,6 @@ def host_is_monitored(host_name: str) -> bool:
     return bool(Query([Hosts.name], Hosts.name == host_name).first_value(sites.live()))
 
 
-def validate_custom_host_attributes(
-    host_attributes: dict[str, str],
-    errors: Literal["warn", "raise"],
-) -> dict[str, str]:
-    """Validate only custom host attributes
-
-    Args:
-        host_attributes:
-            The host attributes a dictionary with the attributes as keys (without any prefixes)
-            and the values as values.
-
-        errors:
-            Either `warn` or `raise`. When set to `warn`, errors will just be logged, when set to
-            `raise`, errors will lead to a ValidationError being raised.
-
-    Returns:
-        The data unchanged.
-
-    Raises:
-        ValidationError: when `errors` is set to `raise`
-
-    """
-    for name, value in host_attributes.items():
-        try:
-            attribute = host_attribute(name)
-        except KeyError as exc:
-            if errors == "raise":
-                raise ValidationError(
-                    {name: f"No such attribute, {name!r}"}, field_name=name
-                ) from exc
-
-            _logger.error("No such attribute: %s", name)
-            return host_attributes
-
-        try:
-            attribute.validate_input(value, "")
-        except MKUserError as exc:
-            if errors == "raise":
-                raise ValidationError({name: str(exc)}) from exc
-
-            _logger.error("Error validating %s: %s", name, str(exc))
-
-    return host_attributes
-
-
 class CustomHostAttributesAndTagGroups(ValueTypedDictSchema):
     class ValueTypedDict:
         value_type = ValueTypedDictSchema.wrap_field(
@@ -810,7 +760,9 @@ class CustomHostAttributesAndTagGroups(ValueTypedDictSchema):
         if not original_data:
             return result_data
 
-        host_attributes = all_host_attributes(active_config)
+        host_attributes = all_host_attributes(
+            active_config.wato_host_attrs, active_config.tags.get_tag_groups_by_topic()
+        )
         tag_group_config = load_tag_config_read_only()
 
         for name, value in original_data.items():
@@ -1042,16 +994,16 @@ class SiteField(base.String):
             return
 
         if self.presence in ["should_exist", "might_not_exist_on_view"]:
-            if value not in configured_sites().keys():
+            if value not in active_config.sites:
                 raise self.make_error("should_exist", site=value)
 
         if self.presence == "should_not_exist":
-            if value in configured_sites().keys():
+            if value in active_config.sites:
                 raise self.make_error("should_not_exist", site=value)
 
     @override
     def _serialize(self, value: str, attr: str | None, obj: object, **kwargs: object) -> str | None:
-        if self.presence == "might_not_exist_on_view" and value not in configured_sites().keys():
+        if self.presence == "might_not_exist_on_view" and value not in active_config.sites:
             return "Unknown Site: " + value
         return super()._serialize(value, attr, obj, **kwargs)
 
@@ -1484,32 +1436,6 @@ class UserRoleID(base.String):
                 raise self.make_error("should_be_custom", role=value)
 
 
-class PermissionField(base.String):
-    default_error_messages = {
-        "invalid_permission": "The specified permission name doesn't exist: {value!r}",
-    }
-
-    def __init__(
-        self,
-        required: bool = True,
-        validate: Callable[[object], bool] | Collection[Callable[[object], bool]] | None = None,
-        **kwargs: Any,
-    ) -> None:
-        super().__init__(
-            example="general.edit_profile",
-            description="The name of a permission",
-            required=required,
-            validate=validate,
-            **kwargs,
-        )
-
-    @override
-    def _validate(self, value: str) -> None:
-        super()._validate(value)
-        if value not in permission_registry:
-            raise self.make_error("invalid_permission", value=value)
-
-
 class Username(base.String):
     default_error_messages = {
         "should_exist": "Username missing: {username!r}",
@@ -1522,16 +1448,16 @@ class Username(base.String):
         example: str,
         required: bool = True,
         validate: Callable[[object], bool] | Collection[Callable[[object], bool]] | None = None,
-        should_exist: bool = True,
+        presence: Literal["should_exist", "should_not_exist", "ignore"] = "ignore",
         **kwargs: Any,
     ):
-        self._should_exist = should_exist
         super().__init__(
             example=example,
             required=required,
             validate=validate,
             **kwargs,
         )
+        self.presence = presence
 
     @override
     def _validate(self, value: str) -> None:
@@ -1545,9 +1471,9 @@ class Username(base.String):
 
         # TODO: change to names list only
         usernames = load_users()
-        if self._should_exist and value not in usernames:
+        if self.presence == "should_exist" and value not in usernames:
             raise self.make_error("should_exist", username=value)
-        if not self._should_exist and value in usernames:
+        if self.presence == "should_not_exist" and value in usernames:
             raise self.make_error("should_not_exist", username=value)
 
 
@@ -1667,7 +1593,6 @@ __all__ = [
     "PasswordEditableBy",
     "PasswordIdent",
     "PasswordShare",
-    "PermissionField",
     "PythonString",
     "query_field",
     "SiteField",

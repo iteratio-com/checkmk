@@ -18,19 +18,23 @@ import sys
 import traceback
 import urllib.parse
 import uuid
-from collections.abc import Iterator, Sequence
+from collections.abc import Iterator, Mapping, Sequence
 from contextlib import suppress
 from itertools import islice
 from pathlib import Path
-from typing import Any, Final, Generic, NotRequired, TypedDict, TypeVar
+from typing import Any, Final, NotRequired, TypedDict
 
 import cmk.ccc.plugin_registry
 from cmk.ccc import store
 
+SENSITIVE_KEYWORDS = ["token", "secret", "pass", "key"]
+
+REDACTED_STRING: Final = "redacted"
+
 
 class BaseDetails(TypedDict):
-    argv: list
-    env: dict
+    argv: Sequence[str]
+    env: Mapping[str, str]
 
 
 class VersionInfo(TypedDict):
@@ -43,15 +47,12 @@ class VersionInfo(TypedDict):
     os: str
 
 
-T = TypeVar("T")
-
-
 class ContactDetails(TypedDict):
     name: NotRequired[str]
     email: NotRequired[str]
 
 
-class CrashInfo(Generic[T], VersionInfo):
+class CrashInfo[T](VersionInfo):
     exc_type: str | None
     crash_type: str
     exc_traceback: NotRequired[Sequence[tuple[str, int, str, str]]]
@@ -74,9 +75,9 @@ class CrashReportStore:
     _keep_num_crashes = 200
     """Caring about the persistance of crash reports in the local site"""
 
-    def save(self, crash: ABCCrashReport) -> None:
+    def save(self, crash: ABCCrashReport[Any]) -> None:
         """Save the crash report instance to it's crash report directory"""
-        self._prepare_crash_dump_directory(crash)
+        self._prepare_crash_dump_directory(crash.crash_dir())
 
         for key, value in crash.serialize().items():
             fname = "crash.info" if key == "crash_info" else key
@@ -96,7 +97,7 @@ class CrashReportStore:
         self._cleanup_old_crashes(crash.crash_dir().parent)
 
     @staticmethod
-    def dump_crash_info(crash_info: CrashInfo | bytes) -> str:
+    def dump_crash_info(crash_info: CrashInfo[object] | bytes) -> str:
         return json.dumps(
             CrashReportStore._dump_crash_info(crash_info),
             cls=RobustJSONEncoder,
@@ -115,8 +116,7 @@ class CrashReportStore:
             for k, v in d.items()
         }
 
-    def _prepare_crash_dump_directory(self, crash: ABCCrashReport) -> None:
-        crash_dir = crash.crash_dir()
+    def _prepare_crash_dump_directory(self, crash_dir: Path) -> None:
         crash_dir.mkdir(parents=True, exist_ok=True)
 
         # Remove all files of former crash reports
@@ -151,15 +151,19 @@ class CrashReportStore:
 
 
 class SerializedCrashReport(TypedDict):
-    crash_info: CrashInfo
+    crash_info: CrashInfo[object]
 
 
-class ABCCrashReport(Generic[T], abc.ABC):
+def crash_dir(omd_root: Path) -> Path:
+    return omd_root / "var/check_mk/crashes"
+
+
+class ABCCrashReport[T](abc.ABC):
     """Base class for the component specific crash report types"""
 
-    def __init__(self, crashdir: Path, crash_info: CrashInfo) -> None:
+    def __init__(self, *, omd_root: Path, crash_info: CrashInfo[T]) -> None:
         super().__init__()
-        self.crashdir: Final = crashdir
+        self.crashdir: Final = crash_dir(omd_root)
         self.crash_info = crash_info
 
     @classmethod
@@ -171,8 +175,8 @@ class ABCCrashReport(Generic[T], abc.ABC):
     def make_crash_info(
         cls,
         version_info: VersionInfo,
-        details: T | None = None,
-    ) -> CrashInfo:
+        details: T,
+    ) -> CrashInfo[T]:
         """Create a crash info object from the current exception context
 
         details - Is an optional dictionary of crash type specific attributes
@@ -181,16 +185,21 @@ class ABCCrashReport(Generic[T], abc.ABC):
         return _get_generic_crash_info(cls.type(), version_info, details)
 
     @classmethod
-    def deserialize(cls, crashdir: Path, serialized: SerializedCrashReport) -> ABCCrashReport:
+    def deserialize(
+        cls,
+        *,
+        omd_root: Path,
+        serialized: SerializedCrashReport,
+    ) -> ABCCrashReport[object]:
         """Deserialize the object"""
         class_ = crash_report_registry[serialized["crash_info"]["crash_type"]]
-        return class_(crashdir, **serialized)
+        return class_(omd_root=omd_root, **serialized)
 
-    def _serialize_attributes(self) -> dict[str, CrashInfo | bytes]:
+    def _serialize_attributes(self) -> dict[str, CrashInfo[T] | bytes]:
         """Serialize object type specific attributes for transport"""
         return {"crash_info": self.crash_info}
 
-    def serialize(self) -> dict[str, CrashInfo | bytes]:
+    def serialize(self) -> dict[str, CrashInfo[T] | bytes]:
         """Serialize the object
 
         Nested structures are allowed. Only objects that can be handled by
@@ -235,11 +244,11 @@ def _follow_exception_chain(exc: BaseException | None) -> list[BaseException]:
     )
 
 
-def _get_generic_crash_info(
+def _get_generic_crash_info[T](
     type_name: str,
     version_info: VersionInfo,
     details: T,
-) -> CrashInfo:
+) -> CrashInfo[T]:
     """Produces the crash info data structure.
 
     The top level keys of the crash info dict are standardized and need
@@ -252,6 +261,15 @@ def _get_generic_crash_info(
         )
     )
 
+    # TODO: The typing gets *really* chaotic here, hence the Any a.k.a implicit cast. :-P
+    modified_details: Any = details
+    if isinstance(details, Mapping) and "vars" in details:
+        modified_details = (
+            {k: _sanitize_variables(v) if k == "vars" else v for k, v in details.items()}
+            if details
+            else {}
+        )
+
     return CrashInfo(
         id=str(uuid.uuid1()),
         crash_type=type_name,
@@ -259,7 +277,7 @@ def _get_generic_crash_info(
         exc_value=str(exc_value),
         exc_traceback=[tuple(e) for e in tb_list],
         local_vars=_get_local_vars_of_last_exception(),
-        details=details,
+        details=modified_details,
         core=version_info["core"],
         python_version=version_info["python_version"],
         edition=version_info["edition"],
@@ -271,18 +289,24 @@ def _get_generic_crash_info(
 
 
 def _get_local_vars_of_last_exception() -> str:
-    local_vars = {}
-
     # Suppressing to handle case where sys.exc_info has no crash information
     # (https://docs.python.org/2/library/sys.html#sys.exc_info)
     with suppress(IndexError):
-        for key, val in inspect.trace()[-1][0].f_locals.items():
-            local_vars[key] = _format_var_for_export(val)
+        local_vars = _sanitize_variables(inspect.trace()[-1][0].f_locals)
     # This needs to be encoded as the local vars might contain binary data which can not be
     # transported using JSON.
     return base64.b64encode(
         _format_var_for_export(pprint.pformat(local_vars).encode("utf-8"), maxsize=5 * 1024 * 1024)
     ).decode()
+
+
+def _sanitize_variables(unsanitized_variables: dict[str, Any]) -> dict[str, Any]:
+    return {
+        key: REDACTED_STRING
+        if any(sensitive_keyword in key.lower() for sensitive_keyword in SENSITIVE_KEYWORDS)
+        else _format_var_for_export(value)
+        for key, value in unsanitized_variables.items()
+    }
 
 
 def _format_var_for_export(val: Any, maxdepth: int = 4, maxsize: int = 1024 * 1024) -> Any:
@@ -292,7 +316,12 @@ def _format_var_for_export(val: Any, maxdepth: int = 4, maxsize: int = 1024 * 10
     if isinstance(val, dict):
         val = val.copy()
         for item_key, item_val in val.items():
-            val[item_key] = _format_var_for_export(item_val, maxdepth - 1)
+            if any(
+                sensitive_keyword in item_key.lower() for sensitive_keyword in SENSITIVE_KEYWORDS
+            ):
+                val[item_key] = REDACTED_STRING
+            else:
+                val[item_key] = _format_var_for_export(item_val, maxdepth - 1)
 
     elif isinstance(val, list):
         val = val[:]
@@ -314,8 +343,8 @@ def _format_var_for_export(val: Any, maxdepth: int = 4, maxsize: int = 1024 * 10
     return val
 
 
-class CrashReportRegistry(cmk.ccc.plugin_registry.Registry[type[ABCCrashReport]]):
-    def plugin_name(self, instance: type[ABCCrashReport]) -> str:
+class CrashReportRegistry(cmk.ccc.plugin_registry.Registry[type[ABCCrashReport[Any]]]):
+    def plugin_name(self, instance: type[ABCCrashReport[Any]]) -> str:
         return instance.type()
 
 

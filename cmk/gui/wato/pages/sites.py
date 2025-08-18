@@ -24,21 +24,16 @@ from livestatus import (
     TLSParams,
 )
 
-from cmk.ccc.exceptions import MKGeneralException, MKTerminate, MKTimeout
-from cmk.ccc.site import omd_site, SiteId
-from cmk.ccc.user import UserId
-
-import cmk.utils.paths
-from cmk.utils.encryption import CertificateDetails, fetch_certificate_details
-from cmk.utils.licensing.registry import is_free
-from cmk.utils.paths import omd_root
-
 import cmk.gui.sites
 import cmk.gui.watolib.audit_log as _audit_log
 import cmk.gui.watolib.changes as _changes
+import cmk.utils.paths
+from cmk.ccc.exceptions import MKGeneralException, MKTerminate, MKTimeout
+from cmk.ccc.site import omd_site, SiteId
+from cmk.ccc.user import UserId
 from cmk.gui import forms
 from cmk.gui.breadcrumb import Breadcrumb
-from cmk.gui.config import active_config
+from cmk.gui.config import Config
 from cmk.gui.exceptions import FinalizeRequest, MKUserError
 from cmk.gui.htmllib.generator import HTMLWriter
 from cmk.gui.htmllib.html import html
@@ -58,8 +53,6 @@ from cmk.gui.page_menu import (
 )
 from cmk.gui.pages import AjaxPage, PageEndpoint, PageRegistry, PageResult
 from cmk.gui.site_config import (
-    configured_sites,
-    get_replication_site_id,
     has_wato_slave_sites,
     is_replication_enabled,
     is_wato_slave_site,
@@ -95,6 +88,7 @@ from cmk.gui.valuespec import (
     NetworkPort,
     TextInput,
     Tuple,
+    ValueSpec,
 )
 from cmk.gui.wato.pages._html_elements import wato_html_head
 from cmk.gui.wato.pages.global_settings import ABCEditGlobalSettingMode, ABCGlobalSettingsMode
@@ -147,8 +141,10 @@ from cmk.gui.watolib.sites import (
     site_globals_editable,
     site_management_registry,
 )
-
 from cmk.messaging import check_remote_connection, ConnectionFailed, ConnectionOK, ConnectionRefused
+from cmk.utils.encryption import CertificateDetails, fetch_certificate_details
+from cmk.utils.licensing.registry import is_free
+from cmk.utils.paths import omd_root
 
 
 def register(page_registry: PageRegistry, mode_registry: ModeRegistry) -> None:
@@ -200,11 +196,11 @@ class ModeEditSite(WatoMode):
         if is_free() and (self._new or self._site_id != omd_site()):
             raise MKUserError(None, get_free_message())
 
-        configured_sites = self._site_mgmt.load_sites()
+        self._configured_sites = self._site_mgmt.load_sites()
 
         if self._clone_id:
             try:
-                self._site = configured_sites[self._clone_id]
+                self._site = self._configured_sites[self._clone_id]
             except KeyError:
                 raise MKUserError(None, _("The requested site does not exist"))
 
@@ -244,7 +240,7 @@ class ModeEditSite(WatoMode):
         else:
             assert self._site_id is not None
             try:
-                self._site = configured_sites[self._site_id]
+                self._site = self._configured_sites[self._site_id]
             except KeyError:
                 raise MKUserError(None, _("The requested site does not exist"))
 
@@ -257,18 +253,21 @@ class ModeEditSite(WatoMode):
         assert self._site_id is not None
         return self.mode_url(site=self._site_id)
 
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         menu = make_simple_form_page_menu(
             _("Connection"), breadcrumb, form_name="site", button_name="_save"
         )
         if not self._new and isinstance(self._site_id, str):
             menu.dropdowns.insert(
-                1, _page_menu_dropdown_site_details(self._site_id, self._site, self.name())
+                1,
+                _page_menu_dropdown_site_details(
+                    self._site_id, self._site, self._configured_sites, self.name()
+                ),
             )
         return menu
 
-    def _site_from_valuespec(self) -> SiteConfiguration:
-        vs = self._valuespec()
+    def _site_from_valuespec(self, config: Config) -> SiteConfiguration:
+        vs = self._valuespec(config)
         raw_site_spec = vs.from_html_vars("site")
         vs.validate_value(raw_site_spec, "site")
 
@@ -278,11 +277,16 @@ class ModeEditSite(WatoMode):
 
         return site_spec
 
-    def save_site_changes(self, site_spec: SiteConfiguration) -> ActionResult:
+    def save_site_changes(
+        self,
+        site_spec: SiteConfiguration,
+        configured_sites: SiteConfigurations,
+        *,
+        pprint_value: bool,
+        use_git: bool,
+    ) -> ActionResult:
         if not transactions.check_transaction():
             return redirect(mode_url("sites"))
-
-        configured_sites = self._site_mgmt.load_sites()
 
         # Take over all unknown elements from existing site specs, like for
         # example, the replication secret
@@ -296,42 +300,50 @@ class ModeEditSite(WatoMode):
         self._site_mgmt.validate_configuration(self._site_id, site_spec, configured_sites)
 
         sites_to_update = site_management_registry["site_management"].get_connected_sites_to_update(
-            self._new,
-            self._site_id,
-            site_spec,
-            self._site,
+            new_or_deleted_connection=self._new,
+            modified_site=self._site_id,
+            current_config=site_spec,
+            old_config=self._site,
+            site_configs=configured_sites,
         )
 
         self._site = configured_sites[self._site_id] = site_spec
         self._site_mgmt.save_sites(
             configured_sites,
             activate=True,
-            pprint_value=active_config.wato_pprint_config,
+            pprint_value=pprint_value,
         )
 
         msg = add_changes_after_editing_site_connection(
             site_id=self._site_id,
             is_new_connection=self._new,
             replication_enabled=is_replication_enabled(site_spec),
+            is_local_site=site_is_local(site_spec),
             connected_sites=sites_to_update,
+            use_git=use_git,
         )
 
         flash(msg)
         return redirect(mode_url("sites"))
 
-    def action(self) -> ActionResult:
-        site_spec = self._site_from_valuespec()
-        return self.save_site_changes(site_spec)
+    def action(self, config: Config) -> ActionResult:
+        site_spec = self._site_from_valuespec(config)
+        return self.save_site_changes(
+            site_spec,
+            self._configured_sites,
+            pprint_value=config.wato_pprint_config,
+            use_git=config.wato_use_git,
+        )
 
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         with html.form_context("site"):
-            self._valuespec().render_input("site", dict(self._site))
+            self._valuespec(config).render_input("site", dict(self._site))
 
             forms.end()
             html.hidden_fields()
 
-    def _valuespec(self) -> Dictionary:
-        basic_elements = self._basic_elements()
+    def _valuespec(self, config: Config) -> Dictionary:
+        basic_elements = self._basic_elements(config)
         livestatus_elements = self._livestatus_elements()
         replication_elements = self._replication_elements()
 
@@ -347,7 +359,7 @@ class ModeEditSite(WatoMode):
             optional_keys=[],
         )
 
-    def _basic_elements(self):
+    def _basic_elements(self, config: Config) -> list[tuple[str, ValueSpec]]:
         if self._new:
             vs_site_id: TextInput | FixedValue = ID(
                 title=_("Site ID"),
@@ -680,7 +692,7 @@ class ModeEditBrokerConnection(WatoMode):
         assert self._edit_id is not None
         return self.mode_url(site=self._edit_id)
 
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         menu = make_simple_form_page_menu(
             _("Connection"), breadcrumb, form_name="broker_connection", button_name="_save"
         )
@@ -693,11 +705,11 @@ class ModeEditBrokerConnection(WatoMode):
                 _("Connection id %s already exists.") % connection_id,
             )
 
-    def action(self) -> ActionResult:
+    def action(self, config: Config) -> ActionResult:
         if not transactions.check_transaction():
             return redirect(mode_url("sites"))
 
-        vs = self._valuespec()
+        vs = self._valuespec(config)
         raw_site_spec = vs.from_html_vars("broker_connection")
         vs.validate_value(raw_site_spec, "broker_connection")
 
@@ -720,18 +732,19 @@ class ModeEditBrokerConnection(WatoMode):
             raw_site_spec["unique_id"],
             connection,
             is_new=self._is_new,
-            pprint_value=active_config.wato_pprint_config,
+            pprint_value=config.wato_pprint_config,
         )
         msg = add_changes_after_editing_broker_connection(
             connection_id=raw_site_spec["unique_id"],
             is_new_broker_connection=self._is_new,
             sites=[source_site, dest_site],
+            use_git=config.wato_use_git,
         )
 
         flash(msg)
         return redirect(mode_url("sites"))
 
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         with html.form_context("broker_connection"):
             connection_vs = (
                 {
@@ -743,12 +756,12 @@ class ModeEditBrokerConnection(WatoMode):
                 else {}
             )
 
-            self._valuespec().render_input("broker_connection", connection_vs)
+            self._valuespec(config).render_input("broker_connection", connection_vs)
             forms.end()
             html.hidden_fields()
 
-    def _valuespec(self) -> Dictionary:
-        basic_elements = self._basic_elements()
+    def _valuespec(self, config: Config) -> Dictionary:
+        basic_elements = self._basic_elements(config)
 
         return Dictionary(
             elements=basic_elements,
@@ -770,9 +783,9 @@ class ModeEditBrokerConnection(WatoMode):
             ),
         )
 
-    def _basic_elements(self):
+    def _basic_elements(self, config: Config) -> list[tuple[str, ValueSpec]]:
         replicated_sites_choices = [
-            (sk, si.get("alias", sk)) for sk, si in wato_slave_sites().items()
+            (sk, si.get("alias", sk)) for sk, si in wato_slave_sites(config.sites).items()
         ]
 
         return [
@@ -832,7 +845,7 @@ class ModeDistributedMonitoring(WatoMode):
     def title(self) -> str:
         return _("Distributed monitoring")
 
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         page_menu: PageMenu = PageMenu(
             dropdowns=[
                 PageMenuDropdown(
@@ -873,33 +886,50 @@ class ModeDistributedMonitoring(WatoMode):
         page_menu.add_doc_reference(title=self.title(), doc_ref=DocReference.DISTRIBUTED_MONITORING)
         return page_menu
 
-    def action(self) -> ActionResult:
+    def action(self, config: Config) -> ActionResult:
         check_csrf_token()
 
         delete_id = request.get_ascii_input("_delete")
         if delete_id and transactions.check_transaction():
-            return self._action_delete(SiteId(delete_id))
+            return self._action_delete(
+                SiteId(delete_id),
+                pprint_value=config.wato_pprint_config,
+                use_git=config.wato_use_git,
+            )
 
         delete_folders_id = request.get_ascii_input("_delete_folders")
         if delete_folders_id and transactions.check_transaction():
-            return self._action_delete_folders(SiteId(delete_folders_id))
+            return self._action_delete_folders(
+                SiteId(delete_folders_id), use_git=config.wato_use_git
+            )
 
         delete_connection_id = request.get_ascii_input("_delete_connection_id")
         if delete_connection_id and transactions.check_transaction():
-            return self._action_delete_broker_connection(ConnectionId(delete_connection_id))
+            return self._action_delete_broker_connection(
+                ConnectionId(delete_connection_id),
+                pprint_value=config.wato_pprint_config,
+                use_git=config.wato_use_git,
+            )
 
         logout_id = request.get_ascii_input("_logout")
         if logout_id:
-            return self._action_logout(SiteId(logout_id))
+            return self._action_logout(
+                SiteId(logout_id),
+                pprint_value=config.wato_pprint_config,
+                use_git=config.wato_use_git,
+            )
 
         login_id = request.get_ascii_input("_login")
         if login_id:
-            return self._action_login(SiteId(login_id), debug=active_config.debug)
+            return self._action_login(
+                SiteId(login_id),
+                debug=config.debug,
+                pprint_value=config.wato_pprint_config,
+                use_git=config.wato_use_git,
+            )
 
         if trigger_certs_site_id := request.get_ascii_input("_trigger_certs_creation"):
-            return self._action_trigger_certs(
-                SiteId(trigger_certs_site_id), debug=active_config.debug
-            )
+            return self._action_trigger_certs(SiteId(trigger_certs_site_id), debug=config.debug)
 
         return None
 
@@ -910,7 +940,9 @@ class ModeDistributedMonitoring(WatoMode):
         flash(_("Remote broker certificates created for site %s.") % trigger_certs_site_id)
         return redirect(mode_url("sites"))
 
-    def _action_delete(self, delete_id: SiteId) -> ActionResult:
+    def _action_delete(
+        self, delete_id: SiteId, *, pprint_value: bool, use_git: bool
+    ) -> ActionResult:
         # TODO: Can we delete this ancient code? The site attribute is always available
         # these days and the following code does not seem to have any effect.
         configured_sites = self._site_mgmt.load_sites()
@@ -983,12 +1015,12 @@ class ModeDistributedMonitoring(WatoMode):
 
         self._site_mgmt.delete_site(
             delete_id,
-            pprint_value=active_config.wato_pprint_config,
-            use_git=active_config.wato_use_git,
+            pprint_value=pprint_value,
+            use_git=use_git,
         )
         return redirect(mode_url("sites"))
 
-    def _action_delete_folders(self, delete_id: SiteId) -> ActionResult:
+    def _action_delete_folders(self, delete_id: SiteId, *, use_git: bool) -> ActionResult:
         folder_site_stats = FolderSiteStats.build(folder_tree().root_folder())
         folders_related_to_site = folder_site_stats.folders.get(delete_id, set())
         empty_folders = {folder for folder in folders_related_to_site if folder.is_empty()}
@@ -998,22 +1030,27 @@ class ModeDistributedMonitoring(WatoMode):
 
         for empty_folder in empty_folders:
             if (parent := empty_folder.parent()) is not None:
-                parent.delete_subfolder(empty_folder.name())
+                parent.delete_subfolder(empty_folder.name(), use_git=use_git)
 
         return redirect(mode_url("sites"))
 
-    def _action_delete_broker_connection(self, delete_connection_id: ConnectionId) -> ActionResult:
+    def _action_delete_broker_connection(
+        self, delete_connection_id: ConnectionId, *, pprint_value: bool, use_git: bool
+    ) -> ActionResult:
         source_site, dest_site = self._site_mgmt.delete_broker_connection(
-            delete_connection_id, pprint_value=active_config.wato_pprint_config
+            delete_connection_id, pprint_value=pprint_value
         )
         add_changes_after_editing_broker_connection(
             connection_id=delete_connection_id,
             is_new_broker_connection=False,
             sites=[source_site, dest_site],
+            use_git=use_git,
         )
         return redirect(mode_url("sites"))
 
-    def _action_logout(self, logout_id: SiteId) -> ActionResult:
+    def _action_logout(
+        self, logout_id: SiteId, *, pprint_value: bool, use_git: bool
+    ) -> ActionResult:
         configured_sites = self._site_mgmt.load_sites()
         site = configured_sites[logout_id]
         if "secret" in site:
@@ -1021,7 +1058,7 @@ class ModeDistributedMonitoring(WatoMode):
         self._site_mgmt.save_sites(
             configured_sites,
             activate=True,
-            pprint_value=active_config.wato_pprint_config,
+            pprint_value=pprint_value,
         )
         _changes.add_change(
             action_name="edit-site",
@@ -1029,12 +1066,14 @@ class ModeDistributedMonitoring(WatoMode):
             user_id=user.id,
             domains=[ConfigDomainGUI()],
             sites=[omd_site()],
-            use_git=active_config.wato_use_git,
+            use_git=use_git,
         )
         flash(_("Logged out."))
         return redirect(mode_url("sites"))
 
-    def _action_login(self, login_id: SiteId, *, debug: bool) -> ActionResult:
+    def _action_login(
+        self, login_id: SiteId, *, debug: bool, pprint_value: bool, use_git: bool
+    ) -> ActionResult:
         configured_sites = self._site_mgmt.load_sites()
         if request.get_ascii_input("_cancel"):
             return redirect(mode_url("sites"))
@@ -1064,7 +1103,7 @@ class ModeDistributedMonitoring(WatoMode):
                 self._site_mgmt.save_sites(
                     configured_sites,
                     activate=True,
-                    pprint_value=active_config.wato_pprint_config,
+                    pprint_value=pprint_value,
                 )
                 message = _("Successfully logged into remote site %s.") % HTMLWriter.render_tt(
                     site["alias"]
@@ -1075,7 +1114,7 @@ class ModeDistributedMonitoring(WatoMode):
                     action="edit-site",
                     message=message,
                     user_id=user.id,
-                    use_git=active_config.wato_use_git,
+                    use_git=use_git,
                 )
                 flash(message)
                 return redirect(mode_url("sites"))
@@ -1132,8 +1171,8 @@ class ModeDistributedMonitoring(WatoMode):
         html.footer()
         return FinalizeRequest(code=200)
 
-    def page(self) -> None:
-        sites = sort_sites(self._site_mgmt.load_sites())
+    def page(self, config: Config) -> None:
+        sites = sort_sites(site_configs := self._site_mgmt.load_sites())
 
         if is_free():
             html.show_message(get_free_message(format_html=True))
@@ -1152,8 +1191,8 @@ class ModeDistributedMonitoring(WatoMode):
             for site_id, site in sites:
                 table.row()
 
-                self._show_buttons(table, site_id, site)
-                self._show_basic_settings(table, site_id, site)
+                self._show_buttons(table, site_id, site, site_configs)
+                self._show_basic_settings(table, site_id, site, config)
                 self._show_status_connection_config(table, site_id, site)
                 self._show_status_connection_status(table, site_id, site)
                 self._show_config_connection_config(table, site_id, site)
@@ -1205,7 +1244,13 @@ class ModeDistributedMonitoring(WatoMode):
         )
         html.icon_button(delete_url, _("Delete"), "delete")
 
-    def _show_buttons(self, table: Table, site_id: SiteId, site: SiteConfiguration) -> None:
+    def _show_buttons(
+        self,
+        table: Table,
+        site_id: SiteId,
+        site: SiteConfiguration,
+        site_configs: SiteConfigurations,
+    ) -> None:
         table.cell(_("Actions"), css=["buttons"])
         edit_url = folder_preserving_link([("mode", "edit_site"), ("site", site_id)])
         html.icon_button(edit_url, _("Properties"), "edit")
@@ -1228,7 +1273,7 @@ class ModeDistributedMonitoring(WatoMode):
             )
             html.icon_button(delete_url, _("Delete"), "delete")
 
-        if site_globals_editable(site_id, site):
+        if site_globals_editable(site_configs, site):
             globals_url = folder_preserving_link([("mode", "edit_site_globals"), ("site", site_id)])
 
             has_site_globals = bool(site.get("globals"))
@@ -1248,7 +1293,9 @@ class ModeDistributedMonitoring(WatoMode):
         table.cell(_("Initiating peer"), connection.connecter.site_id)
         table.cell(_("Accepting peer"), connection.connectee.site_id)
 
-    def _show_basic_settings(self, table: Table, site_id: SiteId, site: SiteConfiguration) -> None:
+    def _show_basic_settings(
+        self, table: Table, site_id: SiteId, site: SiteConfiguration, config: Config
+    ) -> None:
         table.cell(_("ID"), site_id)
         table.cell(_("Alias"), site.get("alias", ""))
 
@@ -1360,7 +1407,7 @@ class ModeDistributedMonitoring(WatoMode):
 class PageAjaxFetchSiteStatus(AjaxPage):
     """AJAX handler for asynchronous fetching of the site status"""
 
-    def page(self) -> PageResult:
+    def page(self, config: Config) -> PageResult:
         user.need_permission("wato.sites")
 
         site_states = {}
@@ -1371,9 +1418,7 @@ class PageAjaxFetchSiteStatus(AjaxPage):
             for (site_id, site_config) in sites.items()
             if is_replication_enabled(site_config)
         ]
-        remote_status = ReplicationStatusFetcher().fetch(
-            replication_sites, debug=active_config.debug
-        )
+        remote_status = ReplicationStatusFetcher().fetch(replication_sites, debug=config.debug)
 
         for site_id, site in sites.items():
             site_id_str: str = site_id
@@ -1544,7 +1589,7 @@ class ModeEditSiteGlobals(ABCGlobalSettingsMode):
 
         # 3. Site specific global settings
 
-        if is_wato_slave_site():
+        if is_wato_slave_site(self._configured_sites):
             self._current_settings = dict(load_site_global_settings())
         else:
             self._current_settings = self._site.get("globals", {})
@@ -1555,10 +1600,12 @@ class ModeEditSiteGlobals(ABCGlobalSettingsMode):
     def _breadcrumb_url(self) -> str:
         return self.mode_url(site=self._site_id)
 
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         menu = PageMenu(
             dropdowns=[
-                _page_menu_dropdown_site_details(self._site_id, self._site, self.name()),
+                _page_menu_dropdown_site_details(
+                    self._site_id, self._site, self._configured_sites, self.name()
+                ),
             ],
             breadcrumb=breadcrumb,
             inpage_search=PageMenuSearch(),
@@ -1568,7 +1615,7 @@ class ModeEditSiteGlobals(ABCGlobalSettingsMode):
         return menu
 
     # TODO: Consolidate with ModeEditGlobals.action()
-    def action(self) -> ActionResult:
+    def action(self, config: Config) -> ActionResult:
         varname = request.get_ascii_input("_varname")
         action = request.get_ascii_input("_action")
         if not varname:
@@ -1591,14 +1638,15 @@ class ModeEditSiteGlobals(ABCGlobalSettingsMode):
         if varname == CONFIG_VARIABLE_PIGGYBACK_HUB_IDENT:
             site_specific_settings = {
                 site_id: deepcopy(site_conf.get("globals", {}))
-                for site_id, site_conf in configured_sites().items()
+                for site_id, site_conf in config.sites.items()
             }
             site_specific_settings[self._site_id][varname] = new_value
 
             validate_piggyback_hub_config(
+                config.sites,
                 finalize_all_settings_per_site(
                     self._default_values, self._global_settings, site_specific_settings
-                )
+                ),
             )
 
         self._current_settings[varname] = new_value
@@ -1612,7 +1660,7 @@ class ModeEditSiteGlobals(ABCGlobalSettingsMode):
         self._site_mgmt.save_sites(
             self._configured_sites,
             activate=False,
-            pprint_value=active_config.wato_pprint_config,
+            pprint_value=config.wato_pprint_config,
         )
 
         if self._site_id == omd_site():
@@ -1625,7 +1673,7 @@ class ModeEditSiteGlobals(ABCGlobalSettingsMode):
             sites=[self._site_id],
             domains=[config_variable.domain()],
             need_restart=config_variable.need_restart(),
-            use_git=active_config.wato_use_git,
+            use_git=config.wato_use_git,
         )
 
         if action == "_reset":
@@ -1639,7 +1687,7 @@ class ModeEditSiteGlobals(ABCGlobalSettingsMode):
     def edit_mode_name(self) -> str:
         return "edit_site_configvar"
 
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         html.help(
             _(
                 "Here you can configure global settings, that should just be applied "
@@ -1648,8 +1696,8 @@ class ModeEditSiteGlobals(ABCGlobalSettingsMode):
             )
         )
 
-        if not is_wato_slave_site():
-            if not has_wato_slave_sites():
+        if not is_wato_slave_site(self._configured_sites):
+            if not has_wato_slave_sites(self._configured_sites):
                 html.show_error(
                     _(
                         "You can not configure site specific global settings "
@@ -1659,7 +1707,7 @@ class ModeEditSiteGlobals(ABCGlobalSettingsMode):
                 return
 
             if not is_replication_enabled(self._site) and not site_is_local(
-                active_config.sites[self._site_id], self._site_id
+                self._configured_sites[self._site_id]
             ):
                 html.show_error(
                     _(
@@ -1669,7 +1717,7 @@ class ModeEditSiteGlobals(ABCGlobalSettingsMode):
                 )
                 return
 
-        self._show_configuration_variables()
+        self._show_configuration_variables(debug=config.debug)
 
 
 class ModeEditSiteGlobalSetting(ABCEditGlobalSettingMode):
@@ -1704,11 +1752,11 @@ class ModeEditSiteGlobalSetting(ABCEditGlobalSettingMode):
     def _affected_sites(self):
         return [self._site_id]
 
-    def _save(self) -> None:
+    def _save(self, *, pprint_value: bool, use_git: bool) -> None:
         site_management_registry["site_management"].save_sites(
             self._configured_sites,
             activate=False,
-            pprint_value=active_config.wato_pprint_config,
+            pprint_value=pprint_value,
         )
         if self._site_id == omd_site():
             save_site_global_settings(self._current_settings)
@@ -1749,15 +1797,17 @@ class ModeSiteLivestatusEncryption(WatoMode):
     def title(self) -> str:
         return _("Livestatus encryption of %s") % self._site_id
 
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         return PageMenu(
             dropdowns=[
-                _page_menu_dropdown_site_details(self._site_id, self._site, self.name()),
+                _page_menu_dropdown_site_details(
+                    self._site_id, self._site, self._configured_sites, self.name()
+                ),
             ],
             breadcrumb=breadcrumb,
         )
 
-    def action(self) -> ActionResult:
+    def action(self, config: Config) -> ActionResult:
         if not transactions.check_transaction():
             return None
 
@@ -1807,7 +1857,7 @@ class ModeSiteLivestatusEncryption(WatoMode):
             user_id=user.id,
             domains=[config_variable.domain()],
             need_restart=config_variable.need_restart(),
-            use_git=active_config.wato_use_git,
+            use_git=config.wato_use_git,
         )
         save_global_settings(
             {
@@ -1819,7 +1869,7 @@ class ModeSiteLivestatusEncryption(WatoMode):
         flash(_("Added CA with fingerprint %s to trusted certificate authorities") % digest_sha256)
         return None
 
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         if not is_livestatus_encrypted(self._site):
             html.show_message(
                 _("The livestatus connection to this site is configured not to be encrypted.")
@@ -1918,7 +1968,7 @@ class ModeSiteLivestatusEncryption(WatoMode):
 
 
 def _page_menu_dropdown_site_details(
-    site_id: str, site: SiteConfiguration, current_mode: str
+    site_id: str, site: SiteConfiguration, site_configs: SiteConfigurations, current_mode: str
 ) -> PageMenuDropdown:
     return PageMenuDropdown(
         name="connections",
@@ -1926,16 +1976,18 @@ def _page_menu_dropdown_site_details(
         topics=[
             PageMenuTopic(
                 title=_("This connection"),
-                entries=list(_page_menu_entries_site_details(site_id, site, current_mode)),
+                entries=list(
+                    _page_menu_entries_site_details(site_id, site, site_configs, current_mode)
+                ),
             ),
         ],
     )
 
 
 def _page_menu_entries_site_details(
-    site_id: str, site: SiteConfiguration, current_mode: str
+    site_id: str, site: SiteConfiguration, site_configs: SiteConfigurations, current_mode: str
 ) -> Iterator[PageMenuEntry]:
-    if current_mode != "edit_site_globals" and site_globals_editable(SiteId(site_id), site):
+    if current_mode != "edit_site_globals" and site_globals_editable(site_configs, site):
         yield PageMenuEntry(
             title=_("Global settings"),
             icon_name="configuration",
@@ -1970,5 +2022,9 @@ def sort_sites(sites: SiteConfigurations) -> list[tuple[SiteId, SiteConfiguratio
     """Sort given sites argument by local, followed by remote sites"""
     return sorted(
         sites.items(),
-        key=lambda sid_s: (get_replication_site_id(sid_s[1]), sid_s[1].get("alias", ""), sid_s[0]),
+        key=lambda sid_s: (
+            is_replication_enabled(sid_s[1]),
+            sid_s[1]["alias"],
+            sid_s[0],
+        ),
     )

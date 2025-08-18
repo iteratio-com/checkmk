@@ -4,51 +4,62 @@
 # conditions defined in the file COPYING, which is part of this source code package.
 
 from collections.abc import Callable, Sequence
+from typing import override
 
 from cmk.gui.form_specs.private.single_choice_editable import SingleChoiceEditable
-from cmk.gui.form_specs.vue.validators import build_vue_validators
 from cmk.gui.i18n import _
-
+from cmk.gui.watolib.configuration_entity.configuration_entity import (
+    get_list_of_configuration_entities,
+    get_readable_entity_selection,
+)
 from cmk.rulesets.v1 import Message
 from cmk.rulesets.v1.form_specs.validators import ValidationError
 from cmk.shared_typing import vue_formspec_components as shared_type_defs
 from cmk.shared_typing.configuration_entity import ConfigEntityType
 
-from ._base import FormSpecVisitor
-from ._type_defs import DefaultValue, InvalidValue
-from ._utils import (
-    base_i18n_form_spec,
+from .._type_defs import DefaultValue, IncomingData, InvalidValue
+from .._utils import (
     compute_title_input_hint,
     compute_validators,
     get_prefill_default,
     get_title_and_help,
     localize,
 )
+from .._visitor_base import FormSpecVisitor
+from ..validators import build_vue_validators
 
 _ParsedValueModel = str | None
-_FrontendModel = str | None
+_FallbackModel = str | None
 
 
 class SingleChoiceEditableVisitor(
-    FormSpecVisitor[SingleChoiceEditable, _ParsedValueModel, _FrontendModel]
+    FormSpecVisitor[SingleChoiceEditable, _ParsedValueModel, _FallbackModel]
 ):
-    def _parse_value(self, raw_value: object) -> _ParsedValueModel | InvalidValue[_FrontendModel]:
-        if raw_value is None:
-            return None
+    @override
+    def _parse_value(
+        self, raw_value: IncomingData
+    ) -> _ParsedValueModel | InvalidValue[_FallbackModel]:
         if isinstance(raw_value, DefaultValue):
-            fallback_value: _FrontendModel = None
+            fallback_value: _FallbackModel = None
             if isinstance(
                 prefill_default := get_prefill_default(self.form_spec.prefill, fallback_value),
                 InvalidValue,
             ):
                 return prefill_default
-            raw_value = prefill_default
-        if not isinstance(raw_value, str):
-            return InvalidValue[_FrontendModel](
+            value: object = prefill_default
+        else:
+            value = raw_value.value
+
+        if value is None:
+            return None
+
+        if not isinstance(value, str):
+            return InvalidValue[_FallbackModel](
                 reason=_("Invalid data: value is not a string."), fallback_value=None
             )
-        return raw_value
+        return value
 
+    @override
     def _validators(self) -> Sequence[Callable[[_ParsedValueModel], object]]:
         def _validate_not_none(value: str | None) -> None:
             if value is None:
@@ -60,15 +71,10 @@ class SingleChoiceEditableVisitor(
 
         return validators + compute_validators(self.form_spec)
 
+    @override
     def _to_vue(
-        self, parsed_value: _ParsedValueModel | InvalidValue[_FrontendModel]
-    ) -> tuple[shared_type_defs.SingleChoiceEditable, _FrontendModel]:
-        # This one here requires a local import to avoid circular dependencies at import time
-        from cmk.gui.watolib.configuration_entity.configuration_entity import (
-            get_list_of_configuration_entities,
-            get_readable_entity_selection,
-        )
-
+        self, parsed_value: _ParsedValueModel | InvalidValue[_FallbackModel]
+    ) -> tuple[shared_type_defs.SingleChoiceEditable, object]:
         title, help_text = get_title_and_help(self.form_spec)
         entity_type = ConfigEntityType(self.form_spec.entity_type.value)
         entity_selection = self.form_spec.entity_type_specifier
@@ -114,10 +120,10 @@ class SingleChoiceEditableVisitor(
                     ),
                     permanent_change_warning_dismiss=_("Do not show again"),
                 ),
-                i18n_base=base_i18n_form_spec(),
             ),
             None if isinstance(parsed_value, InvalidValue) else parsed_value,
         )
 
-    def _to_disk(self, parsed_value: _ParsedValueModel) -> _ParsedValueModel:
+    @override
+    def _to_disk(self, parsed_value: _ParsedValueModel) -> object:
         return parsed_value

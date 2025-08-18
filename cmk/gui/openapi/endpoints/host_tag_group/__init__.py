@@ -16,9 +16,7 @@ You can find an introduction to hosts including host tags and host tag groups in
 from collections.abc import Mapping
 from typing import Any
 
-from cmk.utils.regex import REGEX_ID
-from cmk.utils.tags import BuiltinTagConfig, TagGroup, TagGroupID, TagGroupSpec
-
+from cmk import fields
 from cmk.gui.config import active_config
 from cmk.gui.http import Response
 from cmk.gui.logged_in import user
@@ -49,8 +47,8 @@ from cmk.gui.watolib.tags import (
     TagCleanupMode,
     update_tag_config,
 )
-
-from cmk import fields
+from cmk.utils.regex import REGEX_ID
+from cmk.utils.tags import BuiltinTagConfig, TagGroup, TagGroupID, TagGroupSpec
 
 PERMISSIONS = permissions.AllPerm(
     [
@@ -190,6 +188,7 @@ def update_host_tag_group(params: Mapping[str, Any]) -> Response:
             allow_repair=body["repair"],
             pprint_value=active_config.wato_pprint_config,
             debug=active_config.debug,
+            use_git=active_config.wato_use_git,
         )
     except RepairError:
         return problem(
@@ -236,6 +235,7 @@ def delete_host_tag_group(params: Mapping[str, Any]) -> Response:
         TagCleanupMode.CHECK,
         pprint_value=active_config.wato_pprint_config,
         debug=active_config.debug,
+        use_git=active_config.wato_use_git,
     )
     if any(affected):
         mode = TagCleanupMode(params["mode"] or ("delete" if params["repair"] else "abort"))
@@ -269,6 +269,7 @@ def delete_host_tag_group(params: Mapping[str, Any]) -> Response:
             mode,
             pprint_value=active_config.wato_pprint_config,
             debug=active_config.debug,
+            use_git=active_config.wato_use_git,
         )
 
     tag_config = load_tag_config()

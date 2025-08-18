@@ -2,6 +2,7 @@
 // This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 // conditions defined in the file COPYING, which is part of this source code package.
 
+use crate::config::defines::defaults::DEFAULT_SEP;
 use derive_more::{Display, From, Into};
 
 #[derive(PartialEq, PartialOrd, Debug, Clone, From, Into)]
@@ -25,13 +26,39 @@ pub struct MaxConnections(pub u32);
 #[derive(PartialEq, From, Debug, Clone)]
 pub struct MaxQueries(pub u32);
 
-#[derive(PartialEq, From, Debug, Display, Clone, Default, Into, Hash, Eq)]
+#[derive(PartialEq, Debug, Display, Clone, Default, Into, Hash, Eq)]
 pub struct InstanceName(String);
 
 impl From<&str> for InstanceName {
     fn from(s: &str) -> Self {
-        Self(s.to_string())
+        Self(s.to_string().to_uppercase())
     }
+}
+
+impl InstanceName {
+    pub fn is_asm(&self) -> bool {
+        self.0.starts_with("+")
+    }
+
+    pub fn is_suitable_affinity(&self, affinity: &SectionAffinity) -> bool {
+        match affinity {
+            SectionAffinity::All => true,
+            SectionAffinity::Db => !self.is_asm(),
+            SectionAffinity::Asm => self.is_asm(),
+        }
+    }
+}
+impl From<&String> for InstanceName {
+    fn from(s: &String) -> Self {
+        Self(s.clone().to_uppercase())
+    }
+}
+
+#[derive(PartialEq, Debug, Clone)]
+pub enum SectionAffinity {
+    All,
+    Db,
+    Asm,
 }
 
 #[derive(PartialEq, From, Debug, Display, Clone, Default, Into, Hash, Eq)]
@@ -59,6 +86,33 @@ pub struct InstanceEdition(String);
 
 #[derive(PartialEq, From, Clone, Debug, Display, Default, Into)]
 pub struct InstanceVersion(String);
+
+#[derive(PartialEq, From, Clone, Copy, Debug, Display, Default, Into, PartialOrd)]
+pub struct InstanceNumVersion(u32);
+
+#[derive(PartialEq, Eq, Debug, Copy, Clone)]
+pub enum Tenant {
+    All,
+    Cdb,
+    NoCdb,
+}
+
+#[derive(PartialEq, Eq, Debug, Copy, Clone)]
+pub enum AsmInstance {
+    Yes,
+    No,
+}
+
+impl Tenant {
+    pub fn new(tenant: &str) -> Self {
+        match tenant.to_lowercase().as_str() {
+            "all" => Tenant::All,
+            "cdb" | "yes" => Tenant::Cdb,
+            "nocdb" | "no" => Tenant::NoCdb,
+            _ => panic!("Unknown tenant type: {}", tenant),
+        }
+    }
+}
 
 #[derive(PartialEq, From, Clone, Debug, Display, Default, Into)]
 pub struct InstanceCluster(String);
@@ -92,8 +146,199 @@ pub struct InstanceAlias(String);
 #[derive(PartialEq, From, Clone, Debug, Display, Default, Into)]
 pub struct HostName(String);
 
+#[derive(PartialEq, From, Clone, Debug, Display, Hash, Eq, Into)]
+pub struct SectionName(String);
+
+impl SectionName {
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
 #[derive(Debug)]
 pub struct Credentials {
     pub user: String,
     pub password: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, From)]
+pub enum Separator {
+    No,
+    Comma,
+    Decorated(char),
+}
+
+impl Default for Separator {
+    fn default() -> Self {
+        Separator::Decorated(DEFAULT_SEP)
+    }
+}
+
+pub type SqlBindParam = (String, u8);
+
+#[derive(Debug, Clone, PartialEq, Eq, From)]
+pub struct SqlQuery {
+    text: String,
+    separator: Separator,
+    params: Vec<SqlBindParam>,
+}
+
+impl SqlQuery {
+    pub fn new<T: AsRef<str> + Sized>(s: T, separator: Separator, params: &[SqlBindParam]) -> Self {
+        let p: Vec<SqlBindParam> = params
+            .iter()
+            .filter_map(|(k, v)| {
+                if s.as_ref().contains((":".to_string() + k).as_str()) {
+                    Some((k.clone(), *v))
+                } else {
+                    None
+                }
+            })
+            .collect();
+        match separator {
+            Separator::No => Self {
+                text: s.as_ref().to_owned(),
+                separator: crate::types::Separator::No,
+                params: p,
+            },
+            Separator::Comma => Self {
+                text: use_sep(s.as_ref(), ","),
+                separator: Separator::Comma,
+                params: p,
+            },
+            Separator::Decorated(c) => Self {
+                text: use_sep(s, format!("|| '{}' ||", c).as_str()),
+                separator: Separator::Decorated(c),
+                params: p,
+            },
+        }
+    }
+    pub fn params(&self) -> &Vec<SqlBindParam> {
+        &self.params
+    }
+
+    pub fn as_str(&self) -> &str {
+        &self.text
+    }
+
+    pub fn sep(&self) -> Option<char> {
+        match &self.separator {
+            Separator::No => None,
+            Separator::Comma => None,
+            Separator::Decorated(c) => Some(*c),
+        }
+    }
+}
+fn use_sep<T: AsRef<str>>(s: T, sep: &str) -> String {
+    s.as_ref().replace("{sep}", sep)
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Default)]
+pub enum SectionFilter {
+    #[default]
+    All,
+    Sync,
+    Async,
+}
+
+impl From<&str> for SectionFilter {
+    fn from(s: &str) -> Self {
+        match s.to_lowercase().as_str() {
+            "all" => SectionFilter::All,
+            "sync" => SectionFilter::Sync,
+            "async" => SectionFilter::Async,
+            _ => panic!("Invalid execution type: {}", s),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_instance_name() {
+        assert_eq!(&InstanceName::from("teST").to_string(), "TEST");
+    }
+
+    #[test]
+    fn test_sql_query() {
+        assert_eq!(
+            SqlQuery::new("a {sep} b", Separator::No, &[]).as_str(),
+            "a {sep} b"
+        );
+        assert_eq!(
+            SqlQuery::new("a {sep} b", Separator::Comma, &[]).as_str(),
+            "a , b"
+        );
+        assert_eq!(
+            SqlQuery::new("a {sep} b", Separator::default(), &[]).as_str(),
+            "a || '|' || b"
+        );
+        assert_eq!(
+            SqlQuery::new("a {sep} b", Separator::Decorated('x'), &[]).as_str(),
+            "a || 'x' || b"
+        );
+    }
+    #[test]
+    fn test_sql_query_params() {
+        let params = vec![("AAA".to_string(), 1), ("BBB".to_string(), 2)];
+        assert_eq!(
+            SqlQuery::new("a {sep} b", Separator::No, &params).params(),
+            &Vec::new()
+        );
+        assert_eq!(
+            SqlQuery::new("AAA {sep} b", Separator::No, &params).params(),
+            &Vec::new()
+        );
+        assert_eq!(
+            SqlQuery::new(":AAA {sep} b", Separator::No, &params).params(),
+            &vec![("AAA".to_string(), 1)]
+        );
+        assert_eq!(
+            SqlQuery::new(":AAA {sep} b :BBB", Separator::No, &params).params(),
+            &params
+        );
+    }
+
+    #[test]
+    fn test_make_query() {
+        const QUERY: &str = "a{sep}b{sep}c";
+        assert_eq!(use_sep(QUERY, ","), "a,b,c");
+    }
+
+    #[test]
+    fn test_tenant() {
+        assert_eq!(Tenant::new("all"), Tenant::All);
+        assert_eq!(Tenant::new("cdb"), Tenant::Cdb);
+        assert_eq!(Tenant::new("nocdb"), Tenant::NoCdb);
+        assert_eq!(Tenant::new("yEs"), Tenant::Cdb);
+        assert_eq!(Tenant::new("no"), Tenant::NoCdb);
+        // panic on unknown tenant
+        let result = std::panic::catch_unwind(|| Tenant::new("unknown"));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_affinity() {
+        assert!(InstanceName::from("+X").is_asm());
+        assert!(!InstanceName::from("X").is_asm());
+    }
+
+    #[test]
+    fn test_instance_affinity() {
+        assert!(!InstanceName::from("+X").is_suitable_affinity(&SectionAffinity::Db));
+        assert!(InstanceName::from("+X").is_suitable_affinity(&SectionAffinity::All));
+        assert!(InstanceName::from("+X").is_suitable_affinity(&SectionAffinity::Asm));
+        assert!(InstanceName::from("X").is_suitable_affinity(&SectionAffinity::Db));
+        assert!(InstanceName::from("X").is_suitable_affinity(&SectionAffinity::All));
+        assert!(!InstanceName::from("X").is_suitable_affinity(&SectionAffinity::Asm));
+    }
+
+    #[test]
+    fn test_execution() {
+        assert_eq!(SectionFilter::from("all"), SectionFilter::All);
+        assert_eq!(SectionFilter::from("SYNC"), SectionFilter::Sync);
+        assert_eq!(SectionFilter::from("aSync"), SectionFilter::Async);
+    }
 }

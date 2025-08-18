@@ -16,11 +16,13 @@ default value. For serializing the response, the `json_dump_without_omitted` fun
 to remove the `ApiOmitted` values from the response body.
 """
 
-from typing import Any, ClassVar, NoReturn
+from typing import Any, ClassVar, Literal, NoReturn, Self
 
-from pydantic import GetCoreSchemaHandler, GetJsonSchemaHandler, TypeAdapter
+from pydantic import GetCoreSchemaHandler, GetJsonSchemaHandler
 from pydantic_core import CoreSchema, PydanticOmit
 from pydantic_core.core_schema import is_instance_schema
+
+from cmk.gui.openapi._type_adapter import get_cached_type_adapter
 
 
 class ApiOmitted:
@@ -57,8 +59,22 @@ class ApiOmitted:
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}"
 
-    def __bool__(self) -> bool:
+    def __bool__(self) -> Literal[False]:
         return False
+
+    @staticmethod
+    def to_optional[T](value: "T | ApiOmitted") -> T | None:
+        """Convert a value to None if it is ApiOmitted, otherwise return the value."""
+        if isinstance(value, ApiOmitted):
+            return None
+        return value
+
+    @classmethod
+    def from_optional[T](cls, value: T | None) -> T | Self:
+        """Convert None to ApiOmitted, otherwise return the value."""
+        if value is None:
+            return cls()
+        return value
 
 
 def json_dump_without_omitted[T](
@@ -76,7 +92,7 @@ def json_dump_without_omitted[T](
           Other fields *must not* use defaults. This is checked for API models in a test.
     """
     # This will be called at most once per REST-API request
-    adapter = TypeAdapter(instance_type)  # nosemgrep: type-adapter-detected
+    adapter = get_cached_type_adapter(instance_type)
     # TODO: Rework how we deal with omitted values once pydantic supports either `PydanticOmit`
     #       in serializers or implements `exclude_if`
     # NOTE: keep in sync with CheckmkGenerateJsonSchema.encode_default for correct schemas

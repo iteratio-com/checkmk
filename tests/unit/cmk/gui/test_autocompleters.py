@@ -3,9 +3,8 @@
 # This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 # conditions defined in the file COPYING, which is part of this source code package.
 
-from tests.testlib.common.repo import is_cloud_repo, is_enterprise_repo
-
 from cmk.gui.valuespec import autocompleter_registry
+from tests.testlib.common.repo import is_cloud_repo, is_enterprise_repo
 
 
 def test_builtin_autocompleters_registered() -> None:
@@ -40,6 +39,7 @@ def test_builtin_autocompleters_registered() -> None:
     if is_cloud_repo():
         expected += [
             "otel_host_name_computation",
+            "otel_metric_name_autocompleter",
         ]
 
     assert sorted(registered) == sorted(expected)

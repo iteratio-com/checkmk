@@ -4,10 +4,8 @@
 # conditions defined in the file COPYING, which is part of this source code package.
 
 import cmk.ccc.version as cmk_version
-
-from cmk.utils import paths
-
 from cmk.gui import cron
+from cmk.utils import paths
 
 
 def test_registered_jobs() -> None:
@@ -16,6 +14,7 @@ def test_registered_jobs() -> None:
         "execute_housekeeping_job",
         "rebuild_folder_lookup_cache",
         "execute_userdb_job",
+        "execute_user_messages_spool_job",
         "execute_user_profile_cleanup_job",
         "execute_network_scan_job",
         "execute_activation_cleanup_job",

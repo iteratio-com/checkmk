@@ -6,26 +6,21 @@
 from collections.abc import Mapping, Sequence
 from typing import Literal
 
-from cmk.ccc.hostaddress import HostName
-
 import cmk.utils.paths
-from cmk.utils.structured_data import InventoryPaths
-from cmk.utils.tags import TagID
-
+from cmk.ccc.hostaddress import HostName
 from cmk.gui.http import request
 from cmk.gui.i18n import _, _l
 from cmk.gui.logged_in import user
 from cmk.gui.type_defs import Row, VisualLinkSpec
 from cmk.gui.views.icon import Icon
 from cmk.gui.visual_link import url_to_visual
+from cmk.inventory.paths import Paths as InventoryPaths
+from cmk.utils.tags import TagID
 
 
 def _has_inventory(host_name: HostName) -> bool:
-    return (
-        InventoryPaths(cmk.utils.paths.omd_root).inventory_tree(host_name).exists()
-        if host_name
-        else False
-    )
+    inventory_tree = InventoryPaths(cmk.utils.paths.omd_root).inventory_tree(host_name)
+    return (inventory_tree.path.exists() or inventory_tree.legacy.exists()) if host_name else False
 
 
 def _render_inventory_icon(
@@ -62,12 +57,15 @@ InventoryIcon = Icon(
 def _has_inventory_history(host_name: HostName) -> bool:
     if not host_name:
         return False
-    try:
-        return bool(
-            list(InventoryPaths(cmk.utils.paths.omd_root).archive_host(host_name).iterdir())
-        )
-    except FileNotFoundError:
-        return False
+    inv_paths = InventoryPaths(cmk.utils.paths.omd_root)
+    for directory in [inv_paths.archive_host(host_name), inv_paths.delta_cache_host(host_name)]:
+        try:
+            has_history_entries = any(directory.iterdir())
+        except FileNotFoundError:
+            has_history_entries = False
+        if has_history_entries:
+            return True
+    return False
 
 
 def _render_inventory_history_icon(

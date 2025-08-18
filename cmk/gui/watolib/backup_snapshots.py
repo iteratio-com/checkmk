@@ -18,18 +18,15 @@ from hashlib import sha256
 from pathlib import Path
 from typing import IO, Literal, NotRequired, TypedDict, TypeVar
 
-from cmk.ccc.exceptions import MKGeneralException
-from cmk.ccc.user import UserId
-
 import cmk.utils
 import cmk.utils.paths
-
+from cmk import trace
+from cmk.ccc.exceptions import MKGeneralException
+from cmk.ccc.user import UserId
 from cmk.gui.i18n import _
 from cmk.gui.log import logger
 from cmk.gui.utils.request_context import copy_request_context
 from cmk.gui.watolib.audit_log import log_audit
-
-from cmk import trace
 
 var_dir = str(cmk.utils.paths.var_dir) + "/wato/"
 snapshot_dir = var_dir + "snapshots/"
@@ -344,9 +341,8 @@ def get_snapshot_status(
             return
 
         cmk_tar = io.BytesIO(access_snapshot(lambda x: _get_file_content(x, "check_mk.tar.gz")))
-        files = _list_tar_content(cmk_tar)
+        snapshot_cmc = _file_exists_in_tar(cmk_tar, "conf.d/microcore.mk")
         using_cmc = (cmk.utils.paths.omd_root / "etc/check_mk/conf.d/microcore.mk").exists()
-        snapshot_cmc = "conf.d/microcore.mk" in files
         if using_cmc and not snapshot_cmc:
             raise MKGeneralException(
                 _(
@@ -487,6 +483,15 @@ def _list_tar_content(the_tarfile: str | IO[bytes]) -> dict[str, FileInfo]:
     except Exception:
         return {}
     return files
+
+
+def _file_exists_in_tar(the_tarfile: IO[bytes], filename: str) -> bool:
+    try:
+        the_tarfile.seek(0)
+        with tarfile.open("r", fileobj=the_tarfile) as tar:
+            return any(member.name == filename for member in tar)
+    except (tarfile.TarError, OSError, EOFError):
+        return False
 
 
 def _get_file_content(the_tarfile: str | IO[bytes], filename: str) -> bytes:

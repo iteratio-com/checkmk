@@ -4,47 +4,52 @@
 # conditions defined in the file COPYING, which is part of this source code package.
 
 from collections.abc import Sequence
+from typing import override
 
 from cmk.ccc.i18n import _
-
 from cmk.gui.form_specs.private import ListOfStrings
-from cmk.gui.form_specs.vue.validators import build_vue_validators
-
 from cmk.shared_typing import vue_formspec_components as shared_type_defs
 
-from ._base import FormSpecVisitor
-from ._registry import get_visitor
-from ._type_defs import DEFAULT_VALUE, DefaultValue, InvalidValue
-from ._utils import (
+from .._registry import get_visitor
+from .._type_defs import DEFAULT_VALUE, DefaultValue, IncomingData, InvalidValue, RawDiskData
+from .._utils import (
     compute_validators,
     get_title_and_help,
 )
+from .._visitor_base import FormSpecVisitor
+from ..validators import build_vue_validators
 
 _ParsedValueModel = Sequence[str]
-_FrontendModel = Sequence[str]
+_FallbackModel = Sequence[str]
 
 
-class ListOfStringsVisitor(FormSpecVisitor[ListOfStrings, _ParsedValueModel, _FrontendModel]):
-    def _parse_value(self, raw_value: object) -> _ParsedValueModel | InvalidValue[_FrontendModel]:
+class ListOfStringsVisitor(FormSpecVisitor[ListOfStrings, _ParsedValueModel, _FallbackModel]):
+    @override
+    def _parse_value(
+        self, raw_value: IncomingData
+    ) -> _ParsedValueModel | InvalidValue[_FallbackModel]:
         if isinstance(raw_value, DefaultValue):
             return self.form_spec.prefill.value
 
-        if not isinstance(raw_value, list):
+        value = raw_value.value
+
+        if not isinstance(value, list):
             return InvalidValue(reason=_("Not a list"), fallback_value=[""])
 
-        for value in raw_value:
-            if not isinstance(value, str):
+        for v in value:
+            if not isinstance(v, str):
                 return InvalidValue(reason=_("List element is not a number"), fallback_value=[""])
 
         # Filter empty strings
-        return [x for x in raw_value if x]
+        return [x for x in value if x]
 
+    @override
     def _to_vue(
-        self, parsed_value: _ParsedValueModel | InvalidValue[_FrontendModel]
-    ) -> tuple[shared_type_defs.ListOfStrings, _FrontendModel]:
+        self, parsed_value: _ParsedValueModel | InvalidValue[_FallbackModel]
+    ) -> tuple[shared_type_defs.ListOfStrings, object]:
         title, help_text = get_title_and_help(self.form_spec)
 
-        element_visitor = get_visitor(self.form_spec.string_spec, self.options)
+        element_visitor = get_visitor(self.form_spec.string_spec, self.visitor_options)
         string_spec, string_default_value = element_visitor.to_vue(DEFAULT_VALUE)
 
         assert isinstance(string_default_value, str)
@@ -60,14 +65,15 @@ class ListOfStringsVisitor(FormSpecVisitor[ListOfStrings, _ParsedValueModel, _Fr
             parsed_value.fallback_value if isinstance(parsed_value, InvalidValue) else parsed_value,
         )
 
+    @override
     def _validate(
         self, parsed_value: _ParsedValueModel
     ) -> list[shared_type_defs.ValidationMessage]:
         element_validations: list[shared_type_defs.ValidationMessage] = []
-        element_visitor = get_visitor(self.form_spec.string_spec, self.options)
+        element_visitor = get_visitor(self.form_spec.string_spec, self.visitor_options)
 
         for idx, entry in enumerate(parsed_value):
-            for validation in element_visitor.validate(entry):
+            for validation in element_visitor.validate(RawDiskData(entry)):
                 element_validations.append(
                     shared_type_defs.ValidationMessage(
                         location=[str(idx)] + validation.location,
@@ -77,5 +83,6 @@ class ListOfStringsVisitor(FormSpecVisitor[ListOfStrings, _ParsedValueModel, _Fr
                 )
         return element_validations
 
+    @override
     def _to_disk(self, parsed_value: _ParsedValueModel) -> Sequence[str]:
         return parsed_value

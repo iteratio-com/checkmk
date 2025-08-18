@@ -13,6 +13,7 @@ from cmk.server_side_calls.v1 import (
     EnvProxy,
     HostConfig,
     NoProxy,
+    replace_macros,
     Secret,
     SpecialAgentCommand,
     SpecialAgentConfig,
@@ -95,7 +96,7 @@ def agent_azure_arguments(
         ...
     elif params.subscription[0] == "explicit_subscriptions":
         args += [
-            item
+            replace_macros(item, host_config.macros)
             for subscription in params.subscription[1]
             for item in ("--subscription", subscription)
         ]
@@ -103,9 +104,6 @@ def agent_azure_arguments(
         args += ["--all-subscriptions"]
     else:
         assert_never(params.subscription[0])
-
-    if params.piggyback_vms:
-        args += ["--piggyback_vms", params.piggyback_vms]
 
     if params.proxy:
         match params.proxy:
@@ -115,6 +113,14 @@ def agent_azure_arguments(
                 args += ["--proxy", "FROM_ENVIRONMENT"]
             case NoProxy():
                 args += ["--proxy", "NO_PROXY"]
+
+    if params.connection_test:
+        args += ["--connection-test"]
+        yield SpecialAgentCommand(command_arguments=args)
+        return
+
+    if params.piggyback_vms:
+        args += ["--piggyback_vms", params.piggyback_vms]
 
     if params.services:
         args += [
@@ -131,9 +137,6 @@ def agent_azure_arguments(
         args += _explicit_args(config.explicit)
     if config.tag_based:
         args += _tag_based_args(config.tag_based)
-
-    if params.connection_test:
-        args += ["--connection-test"]
 
     args += [
         "--cache-id",

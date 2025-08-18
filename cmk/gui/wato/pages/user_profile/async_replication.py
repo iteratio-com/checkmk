@@ -7,18 +7,16 @@
 import time
 from typing import get_args
 
+import cmk.gui.sites
 from cmk.ccc.exceptions import MKGeneralException
 from cmk.ccc.site import SiteId
 from cmk.ccc.user import UserId
-
-import cmk.gui.sites
 from cmk.gui import userdb
-from cmk.gui.config import active_config
+from cmk.gui.config import Config
 from cmk.gui.exceptions import MKUserError
 from cmk.gui.i18n import _
 from cmk.gui.logged_in import user
 from cmk.gui.pages import AjaxPage, PageEndpoint, PageRegistry, PageResult
-from cmk.gui.site_config import sitenames
 from cmk.gui.type_defs import VisualTypeName
 from cmk.gui.user_async_replication import add_profile_replication_change
 from cmk.gui.utils.csrf_token import check_csrf_token
@@ -35,7 +33,7 @@ def register(page_registry: PageRegistry) -> None:
 class ModeAjaxProfileReplication(AjaxPage):
     """AJAX handler for asynchronous replication of user profiles (changed passwords)"""
 
-    def page(self) -> PageResult:
+    def page(self, config: Config) -> PageResult:
         check_csrf_token()
         ajax_request = self.webapi_request()
 
@@ -43,7 +41,7 @@ class ModeAjaxProfileReplication(AjaxPage):
         if not site_id_val:
             raise MKUserError(None, "The site_id is missing")
         site_id = site_id_val
-        if site_id not in sitenames():
+        if site_id not in config.sites:
             raise MKUserError(None, _("The requested site does not exist"))
 
         status = (
@@ -57,9 +55,9 @@ class ModeAjaxProfileReplication(AjaxPage):
         assert user.id is not None
         result = self._synchronize_profile(
             site_id,
-            RemoteAutomationConfig.from_site_config(active_config.sites[site_id]),
+            RemoteAutomationConfig.from_site_config(config.sites[site_id]),
             user.id,
-            debug=active_config.debug,
+            debug=config.debug,
         )
 
         if result is not True:

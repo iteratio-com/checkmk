@@ -67,17 +67,16 @@ nagios_startscript = _omd_path("etc/init.d/core")
 nagios_binary = _omd_path("bin/nagios")
 htpasswd_file = _omd_path("etc/htpasswd")
 livestatus_unix_socket = _omd_path("tmp/run/live")
+raw_data_socket = _omd_path("tmp/run/raw-data")
 base_discovered_host_labels_dir = _omd_path("var/check_mk/discovered_host_labels")
 discovered_host_labels_dir = base_discovered_host_labels_dir
 autodiscovery_dir = _omd_path("var/check_mk/autodiscovery")
 profile_dir = var_dir / "web"
-crash_dir = var_dir / "crashes"
 diagnostics_dir = var_dir / "diagnostics"
 site_config_dir = var_dir / "site_configs"
 visuals_cache_dir = tmp_dir / "visuals_cache"
 predictions_dir = var_dir / "prediction"
-ec_main_config_file = default_config_dir / "mkeventd.mk"
-ec_config_dir = default_config_dir / "mkeventd.d"
+user_messages_spool_dir = var_dir / "user_messages/spool"
 diskspace_config_dir = default_config_dir / "diskspace.d/wato/"
 
 configuration_lockfile = default_config_dir / "multisite.mk"
@@ -106,7 +105,6 @@ doc_dir = _omd_path("share/doc/check_mk")
 locale_dir = _omd_path("share/check_mk/locale")
 bin_dir = _omd_path("bin")
 lib_dir = _omd_path("lib")
-mib_dir = _omd_path("share/snmp/mibs")
 optional_packages_dir = _omd_path("share/check_mk/optional_packages")
 disabled_packages_dir = _omd_path("var/check_mk/disabled_packages")
 installed_packages_dir = _omd_path("var/check_mk/packages")
@@ -137,7 +135,6 @@ local_locale_dir = _local_path(locale_dir)
 local_bin_dir = _local_path(bin_dir)
 local_lib_dir = _local_path(lib_dir)
 local_nagios_plugins_dir = _local_path(nagios_plugins_dir)
-local_mib_dir = _local_path(mib_dir)
 local_alert_handlers_dir = _local_path(alert_handlers_dir)
 local_optional_packages_dir = _omd_path("var/check_mk/packages_local")
 local_enabled_packages_dir = local_share_dir / "enabled_packages"
@@ -158,15 +155,6 @@ r4r_pending_dir = _r4r_base_dir.joinpath("PENDING")
 r4r_declined_dir = _r4r_base_dir.joinpath("DECLINED")
 r4r_declined_bundles_dir = _r4r_base_dir.joinpath("DECLINED-BUNDLES")
 r4r_discoverable_dir = _r4r_base_dir.joinpath("DISCOVERABLE")
-
-
-def make_experimental_config_file() -> Path:
-    """Returns file with experimental settings to be used.
-    Used to enable features which is "in development" and not good enough to be enabled by default.
-    Example of experimental.mk:
-    config_storage_format = "raw"
-    """
-    return default_config_dir / "experimental.mk"
 
 
 cse_config_dir = Path("/etc/cse")

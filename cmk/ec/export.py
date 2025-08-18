@@ -26,8 +26,6 @@ from .defaults import default_rule_pack as default_rule_pack
 from .event import Event as Event
 from .event import EventPhase as EventPhase
 from .mkp import mkp_callbacks as mkp_callbacks
-from .mkp import mkp_rule_pack_dir as mkp_rule_pack_dir
-from .mkp import rule_pack_dir as rule_pack_dir
 from .rule_matcher import compile_rule as compile_rule
 from .rule_matcher import MatchFailure as MatchFailure
 from .rule_matcher import MatchResult as MatchResult
@@ -41,6 +39,8 @@ from .rule_packs import remove_exported_rule_pack as remove_exported_rule_pack
 from .rule_packs import RulePackType as RulePackType
 from .rule_packs import save_active_config as save_active_config
 from .rule_packs import save_rule_packs as save_rule_packs
+from .settings import create_paths as create_paths
+from .settings import Paths as Paths
 from .settings import Settings as Settings
 from .syslog import forward_to_unix_socket as forward_to_unix_socket
 from .syslog import SyslogFacility as SyslogFacility

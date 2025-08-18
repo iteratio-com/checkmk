@@ -33,11 +33,23 @@ from pathlib import Path
 from typing import cast, Literal
 
 import cmk.ccc.debug
+import cmk.utils.paths
+from cmk.base import events
 from cmk.ccc import store
 from cmk.ccc.exceptions import MKGeneralException
 from cmk.ccc.hostaddress import HostName
-
-import cmk.utils.paths
+from cmk.events.event_context import EnrichedEventContext, EventContext
+from cmk.events.log_to_history import (
+    log_to_history,
+    notification_message,
+    notification_result_message,
+)
+from cmk.events.notification_result import NotificationPluginName, NotificationResultCode
+from cmk.events.notification_spool_file import (
+    create_spool_file,
+    NotificationForward,
+    NotificationViaPlugin,
+)
 from cmk.utils import log
 from cmk.utils.http_proxy_config import HTTPProxyConfig
 from cmk.utils.log import console
@@ -71,21 +83,6 @@ from cmk.utils.timeperiod import (
     TimeperiodName,
     TimeperiodSpecs,
 )
-
-from cmk.events.event_context import EnrichedEventContext, EventContext
-from cmk.events.log_to_history import (
-    log_to_history,
-    notification_message,
-    notification_result_message,
-)
-from cmk.events.notification_result import NotificationPluginName, NotificationResultCode
-from cmk.events.notification_spool_file import (
-    create_spool_file,
-    NotificationForward,
-    NotificationViaPlugin,
-)
-
-from cmk.base import events
 
 logger = logging.getLogger("cmk.base.notify")
 
@@ -168,6 +165,20 @@ $LONGSERVICEOUTPUT$
 def _initialize_logging(logging_level: int) -> None:
     log.logger.setLevel(logging_level)
     log.setup_watched_file_logging_handler(notification_log)
+
+
+def make_ensure_nagios(monitoring_core: Literal["nagios", "cmc"]) -> Callable[[str], object]:
+    """
+    If the monitoring core is "nagios", return a no-op function.
+    Otherwise, return a function that raises a RuntimeError with the given message.
+    """
+    if monitoring_core == "nagios":
+        return lambda msg: None
+
+    def ensure_nagios(msg: str) -> None:
+        raise RuntimeError(msg)
+
+    return ensure_nagios
 
 
 # .
@@ -1541,28 +1552,35 @@ def rbn_match_event_console(
     _analyse: bool,
     _all_timeperiods: TimeperiodSpecs,
 ) -> str | None:
+    """
+    match_ec options:
+    missing -> do not match on Event Console notifications
+    empty dict -> match on all Event Console notifications
+    dict with keys -> match on specific Event Console notifications
+    """
+    is_ec_notification = "EC_ID" in context
+    if "match_ec" not in rule and is_ec_notification:
+        return "Notification has been created by the Event Console."
+
     if "match_ec" in rule:
-        match_ec = rule["match_ec"]
-        is_ec_notification = "EC_ID" in context
-        if match_ec is False and is_ec_notification:
-            return "Notification has been created by the Event Console."
-        if match_ec is not False and not is_ec_notification:
+        match_ec_options = rule["match_ec"]
+        if not is_ec_notification:
             return "Notification has not been created by the Event Console."
 
-        if match_ec is not False:
+        if match_ec_options:
             # Match Event Console rule ID
             if (
-                "match_rule_id" in match_ec
-                and context["EC_RULE_ID"] not in match_ec["match_rule_id"]
+                "match_rule_id" in match_ec_options
+                and context["EC_RULE_ID"] not in match_ec_options["match_rule_id"]
             ):
                 return "EC Event has rule ID '{}', but '{}' is required".format(
                     context["EC_RULE_ID"],
-                    match_ec["match_rule_id"],
+                    match_ec_options["match_rule_id"],
                 )
 
             # Match syslog priority of event
-            if "match_priority" in match_ec:
-                prio_from, prio_to = match_ec["match_priority"]
+            if "match_priority" in match_ec_options:
+                prio_from, prio_to = match_ec_options["match_priority"]
                 if prio_from > prio_to:
                     prio_to, prio_from = prio_from, prio_to
                     p = int(context["EC_PRIORITY"])
@@ -1572,21 +1590,21 @@ def rbn_match_event_console(
                         )
 
             # Match syslog facility of event
-            if "match_facility" in match_ec:
-                if match_ec["match_facility"] != int(context["EC_FACILITY"]):
+            if "match_facility" in match_ec_options:
+                if match_ec_options["match_facility"] != int(context["EC_FACILITY"]):
                     return "Wrong syslog facility {}, required is {}".format(
                         context["EC_FACILITY"],
-                        match_ec["match_facility"],
+                        match_ec_options["match_facility"],
                     )
 
             # Match event comment
-            if "match_comment" in match_ec:
-                r = regex(match_ec["match_comment"])
+            if "match_comment" in match_ec_options:
+                r = regex(match_ec_options["match_comment"])
                 if not r.search(context["EC_COMMENT"]):
                     return (
                         "The event comment '{}' does not match the regular expression '{}'".format(
                             context["EC_COMMENT"],
-                            match_ec["match_comment"],
+                            match_ec_options["match_comment"],
                         )
                     )
     return None

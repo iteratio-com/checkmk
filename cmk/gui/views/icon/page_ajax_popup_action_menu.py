@@ -9,21 +9,20 @@ from livestatus import livestatus_lql
 
 from cmk.ccc.hostaddress import HostName
 from cmk.ccc.site import SiteId
-
-from cmk.utils.servicename import ServiceName
-
 from cmk.gui import sites
+from cmk.gui.config import Config
 from cmk.gui.display_options import display_options
 from cmk.gui.htmllib.html import html
 from cmk.gui.http import request
 from cmk.gui.i18n import _
 from cmk.gui.painter.v0.helpers import replace_action_url_macros, transform_action_url
 from cmk.gui.type_defs import Row
+from cmk.utils.servicename import ServiceName
 
 from .painter import get_icons, IconEntry, IconObjectType, iconpainter_columns, LegacyIconEntry
 
 
-def ajax_popup_action_menu() -> None:
+def ajax_popup_action_menu(config: Config) -> None:
     site = SiteId(request.get_ascii_input_mandatory("site"))
     host = request.get_validated_type_input_mandatory(HostName, "host")
     svcdesc = request.get_str_input("service")

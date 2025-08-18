@@ -8,20 +8,6 @@ from typing import TypedDict
 
 from cmk.ccc.hostaddress import HostName
 from cmk.ccc.site import SiteId
-
-from cmk.utils.structured_data import (
-    ImmutableAttributes,
-    ImmutableDeltaTree,
-    ImmutableTree,
-    SDKey,
-    SDPath,
-    SDRawDeltaTree,
-    SDRawTree,
-    SDValue,
-    serialize_delta_tree,
-    serialize_tree,
-)
-
 from cmk.gui import sites
 from cmk.gui.hooks import request_memoize
 from cmk.gui.htmllib.html import html
@@ -36,15 +22,26 @@ from cmk.gui.utils.html import HTML
 from cmk.gui.utils.output_funnel import output_funnel
 from cmk.gui.valuespec import Checkbox, Dictionary, FixedValue
 from cmk.gui.view_utils import CellSpec, CSVExportError
+from cmk.utils.structured_data import (
+    ImmutableAttributes,
+    ImmutableDeltaTree,
+    ImmutableTree,
+    SDKey,
+    SDPath,
+    SDRawDeltaTree,
+    SDRawTree,
+    SDValue,
+    serialize_delta_tree,
+    serialize_tree,
+)
 
 from ._display_hints import (
     AttributeDisplayHint,
-    ColumnDisplayHint,
+    ColumnDisplayHintOfView,
     inv_display_hints,
     NodeDisplayHint,
 )
 from ._tree_renderer import SDItem, TreeRenderer
-from .registry import PaintFunction
 
 
 @request_memoize()
@@ -124,12 +121,12 @@ class PainterInventoryTree(Painter):
             return "", ""
 
         tree_renderer = TreeRenderer(
-            row["site"],
-            row["host_name"],
-            inv_display_hints,
-            theme,
-            self.request,
-            self._painter_options.get("show_internal_tree_paths"),
+            site_id=row["site"],
+            host_name=row["host_name"],
+            hints=inv_display_hints,
+            theme=theme,
+            request=self.request,
+            show_internal_tree_paths=self._painter_options.get("show_internal_tree_paths"),
         )
 
         with output_funnel.plugged():
@@ -206,12 +203,12 @@ class PainterInvhistDelta(Painter):
             return "", ""
 
         tree_renderer = TreeRenderer(
-            row["site"],
-            row["host_name"],
-            inv_display_hints,
-            theme,
-            self.request,
-            self._painter_options.get("show_internal_tree_paths"),
+            site_id=row["site"],
+            host_name=row["host_name"],
+            hints=inv_display_hints,
+            theme=theme,
+            request=self.request,
+            show_internal_tree_paths=self._painter_options.get("show_internal_tree_paths"),
         )
 
         with output_funnel.plugged():
@@ -295,6 +292,7 @@ class PainterInvhistChanged(Painter):
 
 
 class AttributePainterFromHint(TypedDict):
+    name: str
     title: str
     short: str
     tooltip_title: str
@@ -325,25 +323,26 @@ def _compute_attribute_painter_data(row: Row, path: SDPath, key: SDKey) -> SDVal
 
 
 def _paint_host_inventory_attribute(
-    row: Row, path: SDPath, key: SDKey, title: str, paint_function: PaintFunction
+    row: Row, path: SDPath, key: SDKey, hint: AttributeDisplayHint
 ) -> CellSpec:
     if (attributes := _get_attributes(row, path)) is None:
         return "", ""
     alignment_class, _coloring_class, rendered_value = SDItem(
         key=key,
-        title=title,
+        title=hint.title,
         value=attributes.pairs.get(key),
         retention_interval=attributes.retentions.get(key),
-        paint_function=paint_function,
+        paint_function=hint.paint_function,
         icon_path_svc_problems=theme.detect_icon_path("svc_problems", "icon_"),
     ).compute_cell_spec()
     return alignment_class, rendered_value
 
 
 def attribute_painter_from_hint(
-    path: SDPath, key: SDKey, ident: str, hint: AttributeDisplayHint
+    path: SDPath, key: SDKey, hint: AttributeDisplayHint
 ) -> AttributePainterFromHint:
     return AttributePainterFromHint(
+        name=hint.name,
         title=hint.long_inventory_title,
         # The short titles (used in column headers) may overlap for different painters, e.g.:
         # - BIOS > Version
@@ -369,10 +368,8 @@ def attribute_painter_from_hint(
         ),
         printable=True,
         load_inv=True,
-        sorter=ident,
-        paint=lambda row: _paint_host_inventory_attribute(
-            row, path, key, hint.title, hint.paint_function
-        ),
+        sorter=hint.name,
+        paint=lambda row: _paint_host_inventory_attribute(row, path, key, hint),
         export_for_python=lambda row, cell: _compute_attribute_painter_data(row, path, key),
         export_for_csv=lambda row, cell: (
             "" if (data := _compute_attribute_painter_data(row, path, key)) is None else str(data)
@@ -382,6 +379,7 @@ def attribute_painter_from_hint(
 
 
 class ColumnPainterFromHint(TypedDict):
+    name: str
     title: str
     short: str
     tooltip_title: str
@@ -394,24 +392,23 @@ class ColumnPainterFromHint(TypedDict):
     export_for_json: Callable[[Row, Cell], SDValue]
 
 
-def _paint_host_inventory_column(
-    row: Row, ident: str, title: str, paint_function: PaintFunction
-) -> CellSpec:
-    if ident not in row:
+def _paint_host_inventory_column(row: Row, hint: ColumnDisplayHintOfView) -> CellSpec:
+    if hint.name not in row:
         return "", ""
     alignment_class, _coloring_class, rendered_value = SDItem(
-        key=SDKey(ident),
-        title=title,
-        value=row[ident],
-        retention_interval=row.get("_".join([ident, "retention_interval"])),
-        paint_function=paint_function,
+        key=SDKey(hint.name),
+        title=hint.title,
+        value=row[hint.name],
+        retention_interval=row.get("_".join([hint.name, "retention_interval"])),
+        paint_function=hint.paint_function,
         icon_path_svc_problems=theme.detect_icon_path("svc_problems", "icon_"),
     ).compute_cell_spec()
     return alignment_class, rendered_value
 
 
-def column_painter_from_hint(ident: str, hint: ColumnDisplayHint) -> ColumnPainterFromHint:
+def column_painter_from_hint(hint: ColumnDisplayHintOfView) -> ColumnPainterFromHint:
     return ColumnPainterFromHint(
+        name=hint.name,
         title=hint.long_inventory_title,
         # The short titles (used in column headers) may overlap for different painters, e.g.:
         # - BIOS > Version
@@ -420,20 +417,23 @@ def column_painter_from_hint(ident: str, hint: ColumnDisplayHint) -> ColumnPaint
         # long_title in the column title tooltips
         short=hint.short_title,
         tooltip_title=hint.long_title,
-        columns=[ident],
+        columns=[hint.name],
         # See views/painter/v0/base.py::Cell.painter_parameters
         # We have to add a dummy value here such that the painter_parameters are not None and
         # the "real" parameters, ie. _painter_params, are used.
         params=FixedValue(PainterParameters(), totext=""),
-        sorter=ident,
-        paint=lambda row: _paint_host_inventory_column(row, ident, hint.title, hint.paint_function),
-        export_for_python=lambda row, cell: row.get(ident),
-        export_for_csv=lambda row, cell: ("" if (data := row.get(ident)) is None else str(data)),
-        export_for_json=lambda row, cell: row.get(ident),
+        sorter=hint.name,
+        paint=lambda row: _paint_host_inventory_column(row, hint),
+        export_for_python=lambda row, cell: row.get(hint.name),
+        export_for_csv=lambda row, cell: (
+            "" if (data := row.get(hint.name)) is None else str(data)
+        ),
+        export_for_json=lambda row, cell: row.get(hint.name),
     )
 
 
 class NodePainterFromHint(TypedDict):
+    name: str
     title: str
     short: str
     columns: Sequence[str]
@@ -462,12 +462,12 @@ def _paint_host_inventory_tree(row: Row, path: SDPath, painter_options: PainterO
         return "", ""
 
     tree_renderer = TreeRenderer(
-        row["site"],
-        row["host_name"],
-        inv_display_hints,
-        theme,
-        request,
-        painter_options.get("show_internal_tree_paths"),
+        site_id=row["site"],
+        host_name=row["host_name"],
+        hints=inv_display_hints,
+        theme=theme,
+        request=request,
+        show_internal_tree_paths=painter_options.get("show_internal_tree_paths"),
     )
 
     with output_funnel.plugged():
@@ -485,6 +485,7 @@ def node_painter_from_hint(
     hint: NodeDisplayHint, painter_options: PainterOptions
 ) -> NodePainterFromHint:
     return NodePainterFromHint(
+        name=hint.name,
         title=hint.long_inventory_title,
         short=hint.short_title,
         columns=["host_inventory", "host_structured_status"],
@@ -507,7 +508,7 @@ def node_painter_from_hint(
         # not look good for the HW/SW Inventory tree
         printable=False,
         load_inv=True,
-        sorter=hint.ident,
+        sorter=hint.name,
         paint=lambda row: _paint_host_inventory_tree(row, hint.path, painter_options),
         export_for_python=lambda row, cell: (
             serialize_tree(_compute_node_painter_data(row, hint.path))

@@ -3,7 +3,7 @@
  * This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
  * conditions defined in the file COPYING, which is part of this source code package.
  */
-import { render, screen, within } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import type * as FormSpec from 'cmk-shared-typing/typescript/vue_formspec_components'
 import FormEdit from '@/form/components/FormEdit.vue'
 
@@ -12,7 +12,6 @@ const stringSpec1: FormSpec.String = {
   title: 'firstFooTitle',
   help: 'firstFooHelp',
   label: null,
-  i18n_base: { required: 'required' },
   validators: [],
   input_hint: 'firstFooInputHint',
   autocompleter: null,
@@ -24,7 +23,6 @@ const stringSpec2: FormSpec.String = {
   title: 'secondFooTitle',
   help: 'secondFooHelp',
   label: null,
-  i18n_base: { required: 'required' },
   validators: [],
   input_hint: 'secondFooInputHint',
   autocompleter: null,
@@ -76,8 +74,8 @@ test('FormTuple renders value', async () => {
     }
   })
 
-  const element = screen.getByRole<HTMLInputElement>('cell', { name: /FirstFooTitle/ })
-  expect(within(element).getByRole<HTMLInputElement>('textbox').value).toBe('some value')
+  const element = screen.getByRole<HTMLInputElement>('textbox', { name: 'firstFooTitle' })
+  expect(element.value).toBe('some value')
   expect(screen.queryByText('Backend error message')).toBeNull()
 })
 
@@ -102,6 +100,6 @@ test('FormTuple renders updated validation', async () => {
 
   screen.getByText('Backend error message')
 
-  const element = screen.getByRole<HTMLInputElement>('cell', { name: /FirstFooTitle/ })
-  expect(within(element).getByRole<HTMLInputElement>('textbox').value).toBe('new_error_value')
+  const element = screen.getByRole<HTMLInputElement>('textbox', { name: 'firstFooTitle' })
+  expect(element.value).toBe('new_error_value')
 })

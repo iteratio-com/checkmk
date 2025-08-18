@@ -9,6 +9,7 @@ from cmk.gui.data_source import DataSourceRegistry
 from cmk.gui.openapi.restful_objects.registry import EndpointRegistry
 from cmk.gui.painter.v0 import PainterRegistry
 from cmk.gui.permissions import PermissionRegistry, PermissionSectionRegistry
+from cmk.gui.search import match_item_generator_registry
 from cmk.gui.sidebar import SnapinRegistry
 from cmk.gui.valuespec import AutocompleterRegistry
 from cmk.gui.views.command import CommandRegistry
@@ -27,7 +28,6 @@ from cmk.gui.watolib.main_menu import MainModuleRegistry
 from cmk.gui.watolib.mode import ModeRegistry
 from cmk.gui.watolib.notification_parameter import NotificationParameterRegistry
 from cmk.gui.watolib.rulespecs import RulespecGroupRegistry, RulespecRegistry
-from cmk.gui.watolib.search import match_item_generator_registry
 from cmk.gui.watolib.timeperiods import TimeperiodUsageFinderRegistry
 
 from . import _filters, views, wato
@@ -71,6 +71,8 @@ def register(
     endpoint_registry: EndpointRegistry,
     replication_path_registry: ReplicationPathRegistry,
     save_active_config: Callable[[], None],
+    *,
+    ignore_duplicate_endpoints: bool = False,
 ) -> None:
     views.register(
         data_source_registry,
@@ -107,4 +109,4 @@ def register(
         find_usages_of_contact_group_in_mkeventd_notify_contactgroup
     )
     timeperiod_usage_finder_registry.register(find_timeperiod_usage_in_ec_rules)
-    openapi_register(endpoint_registry, ignore_duplicates=False)
+    openapi_register(endpoint_registry, ignore_duplicates=ignore_duplicate_endpoints)

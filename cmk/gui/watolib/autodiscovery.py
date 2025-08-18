@@ -3,21 +3,18 @@
 # This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 # conditions defined in the file COPYING, which is part of this source code package.
 
-from cmk.ccc.site import omd_site
+from pydantic import BaseModel
 
 import cmk.utils.paths
-from cmk.utils.auto_queue import AutoQueue
-
+from cmk.ccc.site import omd_site
 from cmk.checkengine.discovery import DiscoveryReport as SingleHostDiscoveryResult
-
 from cmk.gui.background_job import (
     BackgroundJob,
     BackgroundProcessInterface,
     InitialStatusArgs,
-    NoArgs,
-    simple_job_target,
+    JobTarget,
 )
-from cmk.gui.config import active_config
+from cmk.gui.config import Config
 from cmk.gui.i18n import _
 from cmk.gui.log import logger
 from cmk.gui.logged_in import user
@@ -32,6 +29,7 @@ from cmk.gui.watolib.config_domain_name import (
     CORE as CORE_DOMAIN,
 )
 from cmk.gui.watolib.hosts_and_folders import Host
+from cmk.utils.auto_queue import AutoQueue
 
 
 class AutodiscoveryBackgroundJob(BackgroundJob):
@@ -66,7 +64,9 @@ class AutodiscoveryBackgroundJob(BackgroundJob):
             discovery_result.host_labels.kept,
         )
 
-    def execute(self, job_interface: BackgroundProcessInterface, *, debug: bool) -> None:
+    def execute(
+        self, job_interface: BackgroundProcessInterface, *, debug: bool, use_git: bool
+    ) -> None:
         result = autodiscovery(debug=debug)
 
         if not result.hosts:
@@ -87,7 +87,7 @@ class AutodiscoveryBackgroundJob(BackgroundJob):
                     object_ref=host.object_ref(),
                     user_id=user.id,
                     diff_text=discovery_result.diff_text,
-                    use_git=active_config.wato_use_git,
+                    use_git=use_git,
                 )
             else:
                 add_service_change(
@@ -99,7 +99,7 @@ class AutodiscoveryBackgroundJob(BackgroundJob):
                     domain_settings={CORE_DOMAIN: generate_hosts_to_update_settings([host.name()])},
                     site_id=self.site_id,
                     diff_text=discovery_result.diff_text,
-                    use_git=active_config.wato_use_git,
+                    use_git=use_git,
                 )
 
         if result.changes_activated:
@@ -107,13 +107,13 @@ class AutodiscoveryBackgroundJob(BackgroundJob):
                 action="activate-changes",
                 message="Started activation of site %s" % self.site_id,
                 user_id=user.id,
-                use_git=active_config.wato_use_git,
+                use_git=use_git,
             )
 
         job_interface.send_result_message(_("Successfully discovered hosts"))
 
 
-def execute_autodiscovery() -> None:
+def execute_autodiscovery(config: Config) -> None:
     # Only execute the job in case there is some work to do. The directory was so far internal to
     # "autodiscovery" automation which is implemented in cmk.base.automations.checkm_mk. But since
     # this condition saves us a lot of overhead and this function is part of the feature, it seems
@@ -125,7 +125,13 @@ def execute_autodiscovery() -> None:
     job = AutodiscoveryBackgroundJob()
     if (
         result := job.start(
-            simple_job_target(autodiscovery_job_entry_point),
+            JobTarget(
+                callable=autodiscovery_job_entry_point,
+                args=AutoDiscoveryJobArgs(
+                    debug=config.debug,
+                    use_git=config.wato_use_git,
+                ),
+            ),
             InitialStatusArgs(
                 title=job.gui_title(),
                 lock_wato=False,
@@ -137,6 +143,17 @@ def execute_autodiscovery() -> None:
         logger.error(str(result))
 
 
-def autodiscovery_job_entry_point(job_interface: BackgroundProcessInterface, args: NoArgs) -> None:
+class AutoDiscoveryJobArgs(BaseModel, frozen=True):
+    debug: bool
+    use_git: bool
+
+
+def autodiscovery_job_entry_point(
+    job_interface: BackgroundProcessInterface, args: AutoDiscoveryJobArgs
+) -> None:
     with job_interface.gui_context():
-        AutodiscoveryBackgroundJob().execute(job_interface, debug=active_config.debug)
+        AutodiscoveryBackgroundJob().execute(
+            job_interface,
+            debug=args.debug,
+            use_git=args.use_git,
+        )

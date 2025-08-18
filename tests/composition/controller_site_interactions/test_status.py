@@ -11,19 +11,14 @@ from typing import Any
 
 import pytest
 
+from cmk.ccc.hostaddress import HostName
+from cmk.utils.agent_registration import HostAgentConnectionMode
 from tests.testlib.agent import (
     controller_connection_json,
     controller_status_json,
     register_controller,
 )
-from tests.testlib.pytest_helpers.marks import (
-    skip_if_not_containerized,
-)
 from tests.testlib.site import Site
-
-from cmk.ccc.hostaddress import HostName
-
-from cmk.utils.agent_registration import HostAgentConnectionMode
 
 logger = logging.getLogger("agent-receiver")
 
@@ -47,7 +42,7 @@ def _get_status_output_json(
         site.openapi.changes.activate_and_wait_for_completion(force_foreign_changes=True)
 
 
-@skip_if_not_containerized
+@pytest.mark.skip_if_not_containerized
 def test_status_pull(
     central_site: Site,
     agent_ctl: Path,
@@ -70,7 +65,7 @@ def test_status_pull(
         )
 
 
-@skip_if_not_containerized
+@pytest.mark.skip_if_not_containerized
 @pytest.mark.skip_if_not_edition("cloud", "managed")
 def test_status_push(
     central_site: Site,

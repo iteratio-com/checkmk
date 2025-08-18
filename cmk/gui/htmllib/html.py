@@ -2,7 +2,6 @@
 # Copyright (C) 2019 Checkmk GmbH - License: GNU General Public License v2
 # This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 # conditions defined in the file COPYING, which is part of this source code package.
-# ruff: noqa: A005
 
 from __future__ import annotations
 
@@ -19,9 +18,7 @@ from typing import Any, Literal
 from flask import current_app, session
 
 import cmk.ccc.version as cmk_version
-
 import cmk.utils.paths
-
 from cmk.gui import log, utils
 from cmk.gui.config import active_config
 from cmk.gui.ctx_stack import request_local_attr

@@ -10,16 +10,18 @@ from collections.abc import Collection, Iterable
 from typing import Any, overload, TypedDict
 
 import cmk.ccc.version as cmk_version
+from cmk.bi.actions import BICallARuleAction
+from cmk.bi.aggregation import BIAggregation, BIAggregationSchema
+from cmk.bi.aggregation_functions import BIAggregationFunctionSchema
+from cmk.bi.compiler import BICompiler
+from cmk.bi.lib import SitesCallback
+from cmk.bi.packs import BIAggregationPack, BIPackConfig
+from cmk.bi.rule import BIRule, BIRuleSchema
+from cmk.bi.type_defs import AggrConfigDict
 from cmk.ccc.exceptions import MKGeneralException
-from cmk.ccc.site import omd_site
-
-from cmk.utils import paths
-from cmk.utils.rulesets.definition import RuleGroup
-
-import cmk.gui.watolib.changes as _changes
 from cmk.gui import forms
 from cmk.gui.breadcrumb import Breadcrumb
-from cmk.gui.config import active_config
+from cmk.gui.config import active_config, Config
 from cmk.gui.customer import customer_api
 from cmk.gui.default_name import unique_clone_increment_suggestion
 from cmk.gui.exceptions import MKAuthException, MKUserError
@@ -27,7 +29,6 @@ from cmk.gui.groups import GroupName
 from cmk.gui.htmllib.foldable_container import foldable_container
 from cmk.gui.htmllib.generator import HTMLWriter
 from cmk.gui.htmllib.html import html
-from cmk.gui.htmllib.type_defs import RequireConfirmation
 from cmk.gui.http import request
 from cmk.gui.i18n import _, _l, ungettext
 from cmk.gui.logged_in import user
@@ -45,7 +46,7 @@ from cmk.gui.page_menu import (
 )
 from cmk.gui.pages import AjaxPage, PageEndpoint, PageRegistry, PageResult
 from cmk.gui.permissions import Permission, PermissionRegistry
-from cmk.gui.site_config import wato_slave_sites
+from cmk.gui.site_config import wato_site_ids
 from cmk.gui.table import init_rowselect, table_element
 from cmk.gui.type_defs import ActionResult, Choices, HTTPVariables, Icon, PermissionName
 from cmk.gui.utils import escaping
@@ -85,6 +86,7 @@ from cmk.gui.valuespec import (
     ValueSpecValidateFunc,
 )
 from cmk.gui.wato import ContactGroupSelection, PERMISSION_SECTION_WATO, TileMenuRenderer
+from cmk.gui.watolib import changes as changes_
 from cmk.gui.watolib.audit_log import LogMessage
 from cmk.gui.watolib.config_domains import ConfigDomainGUI
 from cmk.gui.watolib.groups_io import load_contact_group_information
@@ -96,15 +98,8 @@ from cmk.gui.watolib.main_menu import (
     MenuItem,
 )
 from cmk.gui.watolib.mode import mode_url, ModeRegistry, redirect, WatoMode
-
-from cmk.bi.actions import BICallARuleAction
-from cmk.bi.aggregation import BIAggregation, BIAggregationSchema
-from cmk.bi.aggregation_functions import BIAggregationFunctionSchema
-from cmk.bi.compiler import BICompiler
-from cmk.bi.lib import SitesCallback
-from cmk.bi.packs import BIAggregationPack, BIPackConfig
-from cmk.bi.rule import BIRule, BIRuleSchema
-from cmk.bi.type_defs import AggrConfigDict
+from cmk.utils import paths
+from cmk.utils.rulesets.definition import RuleGroup
 
 from ._packs import get_cached_bi_packs
 from ._valuespecs import (
@@ -255,13 +250,12 @@ class ABCBIMode(WatoMode):
         return escaping.escape_attribute(bi_pack.title)
 
     def _add_change(self, action_name: str, text: LogMessage) -> None:
-        site_ids = list(wato_slave_sites().keys()) + [omd_site()]
-        _changes.add_change(
+        changes_.add_change(
             action_name=action_name,
             text=text,
             user_id=user.id,
             domains=[ConfigDomainGUI()],
-            sites=site_ids,
+            sites=wato_site_ids(active_config.sites),
             use_git=active_config.wato_use_git,
         )
 
@@ -356,7 +350,7 @@ class ModeBIEditPack(ABCBIMode):
             return _("Edit BI Pack %s") % self.bi_pack.title
         return _("Add BI Pack")
 
-    def action(self) -> ActionResult:
+    def action(self, config: Config) -> ActionResult:
         check_csrf_token()
 
         if transactions.check_transaction():
@@ -391,7 +385,7 @@ class ModeBIEditPack(ABCBIMode):
 
         return redirect(mode_url("bi_packs"))
 
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         return make_simple_form_page_menu(
             _("BI pack"),
             breadcrumb,
@@ -400,7 +394,7 @@ class ModeBIEditPack(ABCBIMode):
             save_title=_("Save") if self._bi_pack else _("Create"),
         )
 
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         with html.form_context("bi_pack", method="POST"):
             if self._bi_pack is None:
                 vs_config = self._vs_pack().from_html_vars("bi_pack")
@@ -500,7 +494,7 @@ class ModeBIPacks(ABCBIMode):
     def static_permissions() -> Collection[PermissionName]:
         return ["bi_rules"]
 
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         bi_config_entries = []
         if user.may("wato.bi_admin"):
             bi_config_entries.append(
@@ -570,7 +564,7 @@ class ModeBIPacks(ABCBIMode):
         page_menu.add_doc_reference(title=self.title(), doc_ref=DocReference.BI)
         return page_menu
 
-    def action(self) -> ActionResult:
+    def action(self, config: Config) -> ActionResult:
         if not transactions.check_transaction():
             return redirect(self.mode_url())
 
@@ -598,7 +592,7 @@ class ModeBIPacks(ABCBIMode):
         self._bi_packs.save_config()
         return redirect(self.mode_url())
 
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         with table_element("bi_packs", title=_("BI Configuration Packs")) as table:
             for nr, pack in enumerate(sorted(self._bi_packs.packs.values(), key=lambda x: x.id)):
                 if not may_use_rules_in_pack(pack):
@@ -711,7 +705,7 @@ class ModeBIRules(ABCBIMode):
             return self.title_for_pack(self.bi_pack) + " - " + _("Rules")
         return self.title_for_pack(self.bi_pack) + " - " + _("Unused Rules")
 
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         rules_entries = []
         if is_contact_for_pack(self.bi_pack):
             rules_entries.append(
@@ -818,7 +812,7 @@ class ModeBIRules(ABCBIMode):
             inpage_search=PageMenuSearch(),
         )
 
-    def action(self) -> ActionResult:
+    def action(self, config: Config) -> ActionResult:
         self.verify_pack_permission(self.bi_pack)
 
         if not transactions.check_transaction():
@@ -898,7 +892,7 @@ class ModeBIRules(ABCBIMode):
             )
         self._bi_packs.save_config()
 
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         self.verify_pack_permission(self.bi_pack)
         if self.bi_pack.num_aggregations() == 0 and self.bi_pack.num_rules() == 0:
             menu = TileMenuRenderer()
@@ -1169,7 +1163,7 @@ class ModeBIEditRule(ABCBIMode):
             return _("Add BI Rule")
         return _("Edit Rule") + " " + escaping.escape_attribute(self._rule_id)
 
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         return make_simple_form_page_menu(
             _("Rule"),
             breadcrumb,
@@ -1179,7 +1173,7 @@ class ModeBIEditRule(ABCBIMode):
             save_is_enabled=is_contact_for_pack(self.bi_pack),
         )
 
-    def action(self) -> ActionResult:
+    def action(self, config: Config) -> ActionResult:
         check_csrf_token()
 
         if not transactions.check_transaction():
@@ -1253,7 +1247,7 @@ class ModeBIEditRule(ABCBIMode):
                 forbidden_packs.add(pack_id)
         return forbidden_packs
 
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         self.verify_pack_permission(self.bi_pack)
         schema_inst = BIRuleSchema()
 
@@ -1533,7 +1527,7 @@ class BIAggregationForm(Dictionary):
 
 
 class AjaxBIRulePreview(AjaxPage):
-    def page(self) -> PageResult:
+    def page(self, config: Config) -> PageResult:
         sites_callback = SitesCallback(all_sites_with_id_and_online, bi_livestatus_query, _)
         compiler = BICompiler(BIManager.bi_configuration_file(), sites_callback)
         compiler.prepare_for_compilation(compiler.compute_current_configstatus()["online_sites"])
@@ -1574,7 +1568,7 @@ class AjaxBIRulePreview(AjaxPage):
 
 
 class AjaxBIAggregationPreview(AjaxPage):
-    def page(self) -> PageResult:
+    def page(self, config: Config) -> PageResult:
         # Prepare compiler
         sites_callback = SitesCallback(all_sites_with_id_and_online, bi_livestatus_query, _)
         compiler = BICompiler(BIManager.bi_configuration_file(), sites_callback)
@@ -1735,7 +1729,7 @@ class BIModeEditAggregation(ABCBIMode):
             return _("Add Aggregation")
         return _("Edit Aggregation")
 
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         return make_simple_form_page_menu(
             _("Aggregation"),
             breadcrumb,
@@ -1751,7 +1745,7 @@ class BIModeEditAggregation(ABCBIMode):
                 ids[bi_aggregation.id] = (bi_pack, bi_aggregation)
         return ids
 
-    def action(self) -> ActionResult:
+    def action(self, config: Config) -> ActionResult:
         check_csrf_token()
 
         self.verify_pack_permission(self.bi_pack)
@@ -1809,7 +1803,7 @@ class BIModeEditAggregation(ABCBIMode):
 
         return redirect(mode_url("bi_aggregations", **redirect_kwargs))
 
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         with html.form_context("biaggr", method="POST"):
             # For rendering of the BI aggregation valuespecs we need this
             # schema.load(schema.dump(...)) call, because the value for label conditions as given in
@@ -2060,7 +2054,7 @@ class BIModeAggregations(ABCBIMode):
     def have_rules(self) -> bool:
         return sum(x.num_rules() for x in self._bi_packs.get_packs().values()) > 0
 
-    def action(self) -> ActionResult:
+    def action(self, config: Config) -> ActionResult:
         self.verify_pack_permission(self.bi_pack)
         if not transactions.check_transaction():
             return redirect(self.mode_url(pack=self.bi_pack.id))
@@ -2123,7 +2117,7 @@ class BIModeAggregations(ABCBIMode):
             )
         self._bi_packs.save_config()
 
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         aggr_entries = []
         if self.have_rules() and is_contact_for_pack(self.bi_pack):
             aggr_entries.append(
@@ -2201,7 +2195,7 @@ class BIModeAggregations(ABCBIMode):
             inpage_search=PageMenuSearch(),
         )
 
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         if request.has_var("reload_page"):
             url = mode_url(self.name(), pack=self.bi_pack.id)
             html.reload_whole_page(url)
@@ -2209,9 +2203,6 @@ class BIModeAggregations(ABCBIMode):
         with html.form_context(
             "bulk_action_form",
             method="POST",
-            require_confirmation=RequireConfirmation(
-                html=_("Do you really want to move the selected aggregations?")
-            ),
         ):
             self._render_aggregations()
             html.hidden_field("selection_id", SelectionId.from_request(request))
@@ -2386,10 +2377,10 @@ class ModeBIRuleTree(ABCBIMode):
             self.title_for_pack(self._rule_tree_bi_pack) + _("Rule tree of") + " " + self._rule_id
         )
 
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         return make_simple_form_page_menu(_("Rule tree"), breadcrumb)
 
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         _aggr_refs, rule_refs, _level = self._bi_packs.count_rule_references(self._rule_id)
         if rule_refs == 0:
             with table_element(sortable=False, searchable=False) as table:

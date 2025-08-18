@@ -22,14 +22,7 @@ from cmk.ccc.exceptions import MKGeneralException
 from cmk.ccc.hostaddress import HostAddress, HostName
 from cmk.ccc.site import SiteId
 from cmk.ccc.user import UserId
-
-from cmk.utils.labels import Labels
-from cmk.utils.tags import TagGroup, TagGroupID, TagID
-from cmk.utils.translations import TranslationOptionsSpec
-
-from cmk.snmplib import SNMPCredentials  # pylint: disable=cmk-module-layer-violation
-
-from cmk.gui.config import active_config, Config
+from cmk.fields import String
 from cmk.gui.exceptions import MKUserError
 from cmk.gui.form_specs.converter import TransformDataForLegacyFormatOrRecomposeFunction
 from cmk.gui.form_specs.private import SingleChoiceElementExtended, SingleChoiceExtended
@@ -40,10 +33,12 @@ from cmk.gui.i18n import _, _u
 from cmk.gui.type_defs import Choices, CustomHostAttrSpec
 from cmk.gui.utils.html import HTML
 from cmk.gui.valuespec import Checkbox, DropdownChoice, TextInput, Transform, ValueSpec
-
-from cmk.fields import String
 from cmk.rulesets.v1 import Label, Title
 from cmk.rulesets.v1.form_specs import BooleanChoice, DefaultValue, FormSpec
+from cmk.snmplib import SNMPCredentials  # pylint: disable=cmk-module-layer-violation
+from cmk.utils.labels import Labels
+from cmk.utils.tags import TagGroup, TagGroupID, TagID
+from cmk.utils.translations import TranslationOptionsSpec
 
 _ContactgroupName = str
 
@@ -150,6 +145,8 @@ class BuiltInHostAttributes(TypedDict, total=False):
     bake_agent_package: bool
     # Enterprise editions only
     cmk_agent_connection: Literal["push-agent", "pull-agent"]
+    # Cloud editions only
+    relay: str
 
 
 class BuiltInHostTagGroups(TypedDict, total=False):
@@ -449,6 +446,17 @@ class ABCHostAttribute(abc.ABC):
     def get_tag_groups(self, value: Any) -> Mapping[TagGroupID, TagID]:
         """Each attribute may set multiple tag groups for a host
         This is used for calculating the effective host tags when writing the hosts{.mk|.cfg}
+
+        Only use this for tag group and tag combinations which are defined in the configuration of
+        existing tags. The 'site' attribute violates this principle, but is kept for compatibility
+        reasons. You may want to use labels instead, which give you more freedom.
+        """
+        return {}
+
+    def labels(self, value: Any) -> Labels:
+        """Set host labels based on the attributes value
+
+        Returns a set of host labels which are added to the effective explicit hosts labels.
         """
         return {}
 
@@ -496,23 +504,18 @@ class HostAttributeRegistry(cmk.ccc.plugin_registry.Registry[type[ABCHostAttribu
 host_attribute_registry = HostAttributeRegistry()
 
 
-def sorted_host_attributes() -> list[ABCHostAttribute]:
+def sorted_host_attributes(host_attributes: Sequence[ABCHostAttribute]) -> list[ABCHostAttribute]:
     """Return host attribute objects in the order they should be displayed (in edit dialogs)"""
-    return sorted(
-        all_host_attributes(active_config).values(),
-        key=lambda a: (a.sort_index(), a.topic().title),
-    )
+    return sorted(host_attributes, key=lambda a: (a.sort_index(), a.topic().title))
 
 
-def host_attribute_choices() -> Choices:
-    return [(a.name(), a.title()) for a in sorted_host_attributes()]
-
-
-def get_sorted_host_attribute_topics(for_what: str, new: bool) -> list[tuple[str, str]]:
+def sorted_host_attribute_topics(
+    host_attributes: Mapping[str, ABCHostAttribute], for_what: str, new: bool
+) -> list[tuple[str, str]]:
     """Return a list of needed topics for the given "what".
     Only returns the topics that are used by a visible attribute"""
     needed_topics: set[HostAttributeTopic] = set()
-    for attr in all_host_attributes(active_config).values():
+    for attr in host_attributes.values():
         if attr.topic().ident not in [t.ident for t in needed_topics] and attr.is_visible(
             for_what, new
         ):
@@ -527,7 +530,8 @@ def get_sorted_host_attribute_topics(for_what: str, new: bool) -> list[tuple[str
     ]
 
 
-def get_sorted_host_attributes_by_topic(
+def sorted_host_attributes_by_topic(
+    host_attributes: Mapping[str, ABCHostAttribute],
     topic_id: str,
 ) -> list[ABCHostAttribute]:
     # Hack to sort the address family host tag attribute above the IPv4/v6 addresses
@@ -539,7 +543,7 @@ def get_sorted_host_attributes_by_topic(
 
     sorted_attributes = []
     for attr in sorted(
-        sorted_host_attributes(),
+        sorted_host_attributes(list(host_attributes.values())),
         key=functools.cmp_to_key(sort_host_attributes),
     ):
         if attr.topic().ident == host_attribute_topic_registry[topic_id].ident:
@@ -823,31 +827,30 @@ def transform_attribute_topic_title_to_id(topic_title: str) -> str | None:
         return None
 
 
-def all_host_attributes(config: Config) -> dict[str, ABCHostAttribute]:
+def all_host_attributes(
+    host_attributes: Sequence[CustomHostAttrSpec],
+    tag_groups_by_topic: Sequence[tuple[str, Sequence[TagGroup]]],
+) -> dict[str, ABCHostAttribute]:
     result = (
         {ident: cls() for ident, cls in host_attribute_registry.items()}
-        | config_based_tag_group_attributes(
-            _HashableTagGroupsByTopic(config.tags.get_tag_groups_by_topic())
-        )
-        | config_based_custom_host_attribute_sync_plugins(
-            _HashableCustomHostAttrs(config.wato_host_attrs)
-        )
+        | config_based_tag_group_attributes(_HashableTagGroupsByTopic(tag_groups_by_topic))
+        | config_based_custom_host_attribute_sync_plugins(_HashableCustomHostAttrs(host_attributes))
     )
     return result
-
-
-def host_attribute(name: str) -> ABCHostAttribute:
-    return all_host_attributes(active_config)[name]
 
 
 # This is the counterpart of "configure_attributes". Another place which
 # is related to these HTTP variables and so on is SearchFolder.
 def collect_attributes(
-    for_what: str, new: bool, do_validate: bool = True, varprefix: str = ""
+    host_attributes: Mapping[str, ABCHostAttribute],
+    for_what: str,
+    new: bool,
+    do_validate: bool = True,
+    varprefix: str = "",
 ) -> HostAttributes:
     """Read attributes from HTML variables"""
     host = HostAttributes()
-    for attr in all_host_attributes(active_config).values():
+    for attr in host_attributes.values():
         attrname = attr.name()
         if not request.var(for_what + "_change_%s" % attrname, ""):
             continue

@@ -2,20 +2,23 @@
 # Copyright (C) 2024 Checkmk GmbH - License: GNU General Public License v2
 # This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 # conditions defined in the file COPYING, which is part of this source code package.
+from collections.abc import Callable
 from typing import Any
 
 import pytest
 
 from cmk.gui.form_specs.converter import Tuple
-from cmk.gui.form_specs.vue.visitors import (
-    DataOrigin,
-    DEFAULT_VALUE,
+from cmk.gui.form_specs.vue import (
     get_visitor,
-    SingleChoiceVisitor,
+    IncomingData,
+    RawDiskData,
+    RawFrontendData,
     VisitorOptions,
 )
-
-from cmk.rulesets.v1 import Help, Title
+from cmk.gui.form_specs.vue.visitors import (
+    SingleChoiceVisitor,
+)
+from cmk.rulesets.v1 import Help, Message, Title
 from cmk.rulesets.v1.form_specs import (
     DefaultValue,
     DictElement,
@@ -26,7 +29,7 @@ from cmk.rulesets.v1.form_specs import (
     SingleChoiceElement,
     String,
 )
-from cmk.rulesets.v1.form_specs.validators import NumberInRange
+from cmk.rulesets.v1.form_specs.validators import NumberInRange, ValidationError
 
 
 @pytest.fixture(scope="module", name="spec")
@@ -65,75 +68,121 @@ def tuple_spec() -> Tuple:
     )
 
 
-@pytest.mark.parametrize("data_origin", [DataOrigin.DISK, DataOrigin.FRONTEND])
 @pytest.mark.parametrize(
     ["value", "expected_value"],
     [
         [
-            DEFAULT_VALUE,
-            [7, "default string", {"test_float": 42.0}, SingleChoiceVisitor.option_id("choice1")],
-        ],
-        [
-            [9, DEFAULT_VALUE, DEFAULT_VALUE, "choice2"],
-            [9, "default string", {"test_float": 42.0}, SingleChoiceVisitor.option_id("choice2")],
-        ],
-        [
-            [3, "some_string", DEFAULT_VALUE, DEFAULT_VALUE],
-            [3, "some_string", {"test_float": 42.0}, SingleChoiceVisitor.option_id("choice1")],
-        ],
-        [
-            (3, "some_string", {"test_float": 42.0}, DEFAULT_VALUE),
-            [3, "some_string", {"test_float": 42.0}, SingleChoiceVisitor.option_id("choice1")],
-        ],
-    ],
-)
-def test_tuple_visitor_valid_value(
-    spec: Tuple, data_origin: DataOrigin, value: list[Any] | tuple[Any], expected_value: list[Any]
-) -> None:
-    visitor = get_visitor(spec, VisitorOptions(data_origin=DataOrigin.DISK))
-    vue_value = visitor.to_vue(value)[1]
-    assert vue_value == expected_value
-    assert len(visitor.validate(value)) == 0
-
-
-@pytest.mark.parametrize(
-    ["value", "expected_value"],
-    [
-        [
-            [7, "default string", {"test_float": 42.0}, SingleChoiceVisitor.option_id("choice1")],
+            RawFrontendData(
+                [
+                    7,
+                    "default string",
+                    {"test_float": 42.0},
+                    SingleChoiceVisitor.option_id("choice1"),
+                ]
+            ),
             (7, "default string", {"test_float": 42.0}, "choice1"),
         ],
         [
-            [7, "default string", {"test_float": 42.0}, SingleChoiceVisitor.option_id("choice2")],
+            RawFrontendData(
+                [
+                    7,
+                    "default string",
+                    {"test_float": 42.0},
+                    SingleChoiceVisitor.option_id("choice2"),
+                ]
+            ),
             (7, "default string", {"test_float": 42.0}, "choice2"),
         ],
     ],
 )
-def test_tuple_visitor_to_disk(
-    spec: Tuple, value: list[Any] | tuple[Any], expected_value: list[Any]
-) -> None:
-    visitor = get_visitor(spec, VisitorOptions(data_origin=DataOrigin.FRONTEND))
+def test_tuple_visitor_to_disk(spec: Tuple, value: IncomingData, expected_value: list[Any]) -> None:
+    visitor = get_visitor(spec, VisitorOptions(migrate_values=True, mask_values=False))
     disk_value = visitor.to_disk(value)
     assert disk_value == expected_value
     assert len(visitor.validate(value)) == 0
 
 
-@pytest.mark.parametrize("data_origin", [DataOrigin.DISK, DataOrigin.FRONTEND])
+@pytest.mark.parametrize(
+    ["value", "expected_value"],
+    [
+        [
+            RawDiskData(
+                (
+                    7,
+                    "default string",
+                    {"test_float": 42.0},
+                    "choice1",
+                )
+            ),
+            [7, "default string", {"test_float": 42.0}, SingleChoiceVisitor.option_id("choice1")],
+        ],
+        [
+            RawDiskData(
+                [
+                    7,
+                    "default string",
+                    {"test_float": 42.0},
+                    "choice2",
+                ]
+            ),
+            [7, "default string", {"test_float": 42.0}, SingleChoiceVisitor.option_id("choice2")],
+        ],
+    ],
+)
+def test_tuple_visitor_to_vue(spec: Tuple, value: IncomingData, expected_value: list[Any]) -> None:
+    visitor = get_visitor(spec, VisitorOptions(migrate_values=True, mask_values=False))
+    assert visitor.to_vue(value)[1] == expected_value
+    assert len(visitor.validate(value)) == 0
+
+
 @pytest.mark.parametrize(
     ["invalid_value", "expected_errors"],
     [
-        [(1, 2), 1],  # wrong tuple length
-        [("asd", 2, {"test_float": 42.0}, "choice1"), 2],  # wrong data type
-        [(15, "some_string", {"test_float": 42.0}, "choice2"), 1],  # int validator failed
-        [(1, "some_string", {}, "choice2"), 1],  # dict validator failed
-        [(1, "some_string", {"test_float": 42.0}, "choice3"), 1],  # single choice validator failed
+        [RawDiskData((1, 2)), 1],  # wrong tuple length
+        [RawDiskData(("asd", 2, {"test_float": 42.0}, "choice1")), 2],  # wrong data type
+        [
+            RawDiskData((15, "some_string", {"test_float": 42.0}, "choice2")),
+            1,
+        ],  # int validator failed
+        [RawDiskData((1, "some_string", {}, "choice2")), 1],  # dict validator failed
+        [
+            RawDiskData((1, "some_string", {"test_float": 42.0}, "choice3")),
+            1,
+        ],  # single choice validator failed
     ],
 )
 def test_tuple_visitor_invalid_value(
     spec: Tuple,
-    data_origin: DataOrigin,
-    invalid_value: list[Any] | tuple[Any],
+    invalid_value: IncomingData,
     expected_errors: int,
 ) -> None:
-    visitor = get_visitor(spec, VisitorOptions(data_origin=DataOrigin.DISK))
+    visitor = get_visitor(spec, VisitorOptions(migrate_values=True, mask_values=False))
     assert len(visitor.validate(invalid_value)) == expected_errors
+
+
+def test_tuple_validator() -> None:
+    def _i_dont_like(unliked_value: object) -> Callable[[object], object]:
+        def _validate(value: object) -> object:
+            if value == unliked_value:
+                raise ValidationError(Message("I don't like this value"))
+            return value
+
+        return _validate
+
+    spec = Tuple(
+        elements=[
+            Integer(
+                custom_validate=[_i_dont_like(5)],
+            ),
+        ],
+        custom_validate=[_i_dont_like((1,))],
+    )
+
+    visitor = get_visitor(spec, VisitorOptions(migrate_values=True, mask_values=False))
+
+    assert len(visitor.validate(RawDiskData((0,)))) == 0
+    assert len(visitor.validate(RawDiskData((1,)))) == 1
+    assert len(visitor.validate(RawDiskData((5,)))) == 1
+    assert len(visitor.validate(RawFrontendData([0]))) == 0
+    assert len(visitor.validate(RawFrontendData([1]))) == 1
+    assert len(visitor.validate(RawFrontendData([5]))) == 1

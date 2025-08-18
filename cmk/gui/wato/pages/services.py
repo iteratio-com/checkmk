@@ -14,30 +14,20 @@ from typing import Any, Literal, NamedTuple
 
 from pydantic import BaseModel, Field
 
+import cmk.utils.render
 from cmk.ccc.exceptions import MKGeneralException
 from cmk.ccc.hostaddress import HostName
-from cmk.ccc.site import omd_site, SiteId
-from cmk.ccc.version import __version__, Version
-
-import cmk.utils.render
-from cmk.utils.check_utils import worst_service_state
-from cmk.utils.everythingtype import EVERYTHING
-from cmk.utils.html import get_html_state_marker
-from cmk.utils.labels import HostLabelValueDict, Labels
-from cmk.utils.rulesets.definition import RuleGroup
-from cmk.utils.servicename import Item
-from cmk.utils.statename import short_service_state_name
-
+from cmk.ccc.site import get_omd_config, omd_site, SiteId
+from cmk.ccc.version import __version__, omd_version, Version
 from cmk.checkengine.discovery import CheckPreviewEntry
-
 from cmk.gui.background_job import JobStatusStates
 from cmk.gui.breadcrumb import Breadcrumb, make_main_menu_breadcrumb
-from cmk.gui.config import active_config
+from cmk.gui.config import active_config, Config
 from cmk.gui.exceptions import MKUserError
 from cmk.gui.htmllib.foldable_container import foldable_container
 from cmk.gui.htmllib.generator import HTMLWriter
 from cmk.gui.htmllib.html import html
-from cmk.gui.http import request
+from cmk.gui.http import Request, request
 from cmk.gui.i18n import _, ungettext
 from cmk.gui.logged_in import user
 from cmk.gui.page_menu import (
@@ -53,9 +43,9 @@ from cmk.gui.page_menu import (
 )
 from cmk.gui.page_menu_entry import disable_page_menu_entry, enable_page_menu_entry
 from cmk.gui.pages import AjaxPage, PageEndpoint, PageRegistry, PageResult
-from cmk.gui.site_config import sitenames
 from cmk.gui.table import Foldable, Table, table_element
 from cmk.gui.type_defs import HTTPVariables, PermissionName
+from cmk.gui.utils.agent_commands import agent_commands_registry
 from cmk.gui.utils.csrf_token import check_csrf_token
 from cmk.gui.utils.html import HTML
 from cmk.gui.utils.output_funnel import output_funnel
@@ -103,8 +93,20 @@ from cmk.gui.watolib.services import (
     UpdateType,
 )
 from cmk.gui.watolib.utils import mk_repr
-
-from cmk.shared_typing.setup import AgentDownload, AgentDownloadI18n
+from cmk.shared_typing.setup import (
+    AgentDownload,
+    AgentInstallCmds,
+    AgentRegistrationCmds,
+    AgentSlideout,
+)
+from cmk.utils.check_utils import worst_service_state
+from cmk.utils.everythingtype import EVERYTHING
+from cmk.utils.html import get_html_state_marker
+from cmk.utils.labels import HostLabelValueDict, Labels
+from cmk.utils.paths import omd_root
+from cmk.utils.rulesets.definition import RuleGroup
+from cmk.utils.servicename import Item
+from cmk.utils.statename import short_service_state_name
 
 from ._status_links import make_host_status_link
 
@@ -195,10 +197,10 @@ class ModeDiscovery(WatoMode):
     def title(self) -> str:
         return _("Services of host %s") % self._host.name()
 
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         return service_page_menu(breadcrumb, self._host, self._options)
 
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         # This is needed to make the discovery page show the help toggle
         # button. The help texts on this page are only added dynamically via
         # AJAX.
@@ -240,7 +242,7 @@ class AutomationServiceDiscoveryJobSnapshot(AutomationCommand[HostName]):
     def command_name(self) -> str:
         return "service-discovery-job-snapshot"
 
-    def get_request(self) -> HostName:
+    def get_request(self, config: Config, request: Request) -> HostName:
         return request.get_validated_type_input_mandatory(HostName, "hostname")
 
     def execute(self, api_request: HostName) -> str:
@@ -258,7 +260,7 @@ class AutomationServiceDiscoveryJob(AutomationCommand[_AutomationServiceDiscover
     def command_name(self) -> str:
         return "service-discovery-job"
 
-    def get_request(self) -> _AutomationServiceDiscoveryRequest:
+    def get_request(self, config: Config, request: Request) -> _AutomationServiceDiscoveryRequest:
         host_name = request.get_validated_type_input_mandatory(HostName, "host_name")
         options = json.loads(request.get_ascii_input_mandatory("options"))
         action = DiscoveryAction(options["action"])
@@ -301,7 +303,7 @@ class AutomationServiceDiscoveryJob(AutomationCommand[_AutomationServiceDiscover
 
 
 class ModeAjaxServiceDiscovery(AjaxPage):
-    def page(self) -> PageResult:
+    def page(self, config: Config) -> PageResult:
         check_csrf_token()
         user.need_permission("wato.hosts")
 
@@ -345,10 +347,11 @@ class ModeAjaxServiceDiscovery(AjaxPage):
             selected_services=self._resolve_selected_services(
                 api_request.update_services, api_request.discovery_options.show_checkboxes
             ),
-            automation_config=make_automation_config(active_config.sites[host.site_id()]),
+            automation_config=make_automation_config(config.sites[host.site_id()]),
             raise_errors=not api_request.discovery_options.ignore_errors,
-            pprint_value=active_config.wato_pprint_config,
-            debug=active_config.debug,
+            pprint_value=config.wato_pprint_config,
+            debug=config.debug,
+            use_git=config.wato_use_git,
         )
         if self._sources_failed_on_first_attempt(previous_discovery_result, discovery_result):
             discovery_result = discovery_result._replace(
@@ -385,7 +388,10 @@ class ModeAjaxServiceDiscovery(AjaxPage):
             api_request.discovery_options,
         )
         page_code = renderer.render(
-            discovery_result, api_request.update_services, debug=active_config.debug
+            discovery_result,
+            api_request.update_services,
+            debug=config.debug,
+            escape_plugin_output=config.escape_plugin_output,
         )
         datasources_code = renderer.render_datasources(discovery_result.sources)
         fix_all_code = renderer.render_fix_all(discovery_result)
@@ -407,8 +413,10 @@ class ModeAjaxServiceDiscovery(AjaxPage):
             "datasources": datasources_code,
             "fixall": fix_all_code,
             "page_menu": self._get_page_menu(discovery_options, host),
-            "pending_changes_info": ActivateChanges().get_pending_changes_info().message,
-            "pending_changes_tooltip": get_pending_changes_tooltip(),
+            "pending_changes_info": (
+                pending_changes_info := ActivateChanges.get_pending_changes_info(list(config.sites))
+            ).message,
+            "pending_changes_tooltip": get_pending_changes_tooltip(pending_changes_info),
             "discovery_options": discovery_options._asdict(),
             "discovery_result": discovery_result.serialize(Version.from_str(__version__)),
         }
@@ -426,6 +434,7 @@ class ModeAjaxServiceDiscovery(AjaxPage):
         raise_errors: bool,
         pprint_value: bool,
         debug: bool,
+        use_git: bool,
     ) -> DiscoveryResult:
         if action == DiscoveryAction.NONE or not transactions.check_transaction():
             return initial_discovery_result(
@@ -435,6 +444,7 @@ class ModeAjaxServiceDiscovery(AjaxPage):
                 automation_config=automation_config,
                 raise_errors=raise_errors,
                 debug=debug,
+                use_git=use_git,
             )
 
         if action in (
@@ -448,6 +458,7 @@ class ModeAjaxServiceDiscovery(AjaxPage):
                 automation_config=automation_config,
                 raise_errors=raise_errors,
                 debug=debug,
+                use_git=use_git,
             )
 
         discovery_result = initial_discovery_result(
@@ -457,6 +468,7 @@ class ModeAjaxServiceDiscovery(AjaxPage):
             automation_config=automation_config,
             raise_errors=raise_errors,
             debug=debug,
+            use_git=use_git,
         )
 
         match action:
@@ -468,6 +480,7 @@ class ModeAjaxServiceDiscovery(AjaxPage):
                     automation_config=automation_config,
                     pprint_value=pprint_value,
                     debug=debug,
+                    use_git=use_git,
                 )
             case DiscoveryAction.UPDATE_HOST_LABELS:
                 discovery_result = perform_host_label_discovery(
@@ -478,6 +491,7 @@ class ModeAjaxServiceDiscovery(AjaxPage):
                     automation_config=automation_config,
                     pprint_value=pprint_value,
                     debug=debug,
+                    use_git=use_git,
                 )
             case (
                 DiscoveryAction.SINGLE_UPDATE
@@ -498,6 +512,7 @@ class ModeAjaxServiceDiscovery(AjaxPage):
                     automation_config=automation_config,
                     pprint_value=pprint_value,
                     debug=debug,
+                    use_git=use_git,
                 )
             case DiscoveryAction.UPDATE_SERVICES:
                 discovery_result = perform_service_discovery(
@@ -511,6 +526,7 @@ class ModeAjaxServiceDiscovery(AjaxPage):
                     automation_config=automation_config,
                     pprint_value=pprint_value,
                     debug=debug,
+                    use_git=use_git,
                 )
             case _:
                 raise MKUserError("discovery", f"Unknown discovery action: {action}")
@@ -571,7 +587,7 @@ class ModeAjaxServiceDiscovery(AjaxPage):
             )
 
         job_title = discovery_result.job_status.get("title", _("Service discovery"))
-        duration_txt = cmk.utils.render.Age(discovery_result.job_status["duration"])
+        duration_txt = cmk.utils.render.approx_age(discovery_result.job_status["duration"])
         finished_time = (
             discovery_result.job_status["started"] + discovery_result.job_status["duration"]
         )
@@ -639,13 +655,23 @@ class DiscoveryPageRenderer:
         self._options = options
 
     def render(
-        self, discovery_result: DiscoveryResult, update_services: list[str], *, debug: bool
+        self,
+        discovery_result: DiscoveryResult,
+        update_services: list[str],
+        *,
+        debug: bool,
+        escape_plugin_output: bool,
     ) -> str:
         with output_funnel.plugged():
             self._toggle_action_page_menu_entries(discovery_result)
             enable_page_menu_entry(html, "inline_help")
             self._show_discovered_host_labels(discovery_result)
-            self._show_discovery_details(discovery_result, update_services, debug=debug)
+            self._show_discovery_details(
+                discovery_result,
+                update_services,
+                debug=debug,
+                escape_plugin_output=escape_plugin_output,
+            )
             return output_funnel.drain()
 
     def render_fix_all(self, discovery_result: DiscoveryResult) -> str:
@@ -653,23 +679,39 @@ class DiscoveryPageRenderer:
             self._show_fix_all(discovery_result)
             return output_funnel.drain()
 
-    def _render_agent_download_tooltip(self) -> None:
+    def _render_agent_download_tooltip(self, output: str) -> None:
+        omd_config = get_omd_config(omd_root)
+        site = omd_site()
+        ip_address = omd_config["CONFIG_APACHE_TCP_ADDR"]
+        version = ".".join(omd_version(omd_root).split(".")[:-1])
         html.vue_component(
             component_name="cmk-agent-download",
             data=asdict(
                 AgentDownload(
-                    url=folder_preserving_link(
-                        [("mode", "agent_of_host"), ("host", self._host.name())]
-                    ),
-                    i18n=AgentDownloadI18n(
-                        dialog_title=_("Already installed the agent?"),
-                        dialog_message=_(
-                            "This problem might be caused by a missing agent or "
-                            "the firewall settings."
+                    output=output,
+                    agent_slideout=AgentSlideout(
+                        all_agents_url=folder_preserving_link(
+                            [("mode", "agent_of_host"), ("host", self._host.name())]
                         ),
-                        slide_in_title=_("Agent Download"),
-                        slide_in_button_title=_("Download & install agent"),
-                        docs_button_title=_("Read Checkmk user guide"),
+                        host_name=self._host.name(),
+                        agent_install_cmds=AgentInstallCmds(
+                            **asdict(
+                                agent_commands_registry["agent_commands"].install_cmds(
+                                    site, ip_address, version
+                                )
+                            )
+                        ),
+                        agent_registration_cmds=AgentRegistrationCmds(
+                            **asdict(
+                                agent_commands_registry["agent_commands"].registration_cmds(
+                                    site, ip_address
+                                )
+                            )
+                        ),
+                        legacy_agent_url=agent_commands_registry[
+                            "agent_commands"
+                        ].legacy_agent_url(),
+                        save_host=False,
                     ),
                 ),
             ),
@@ -726,7 +768,7 @@ class DiscoveryPageRenderer:
                 )
                 if "[agent]" in output and state == 2:
                     html.open_td()
-                    self._render_agent_download_tooltip()
+                    self._render_agent_download_tooltip(output)
                     html.close_td()
                 html.close_tr()
             html.close_table()
@@ -836,7 +878,12 @@ class DiscoveryPageRenderer:
         return
 
     def _show_discovery_details(
-        self, discovery_result: DiscoveryResult, update_services: list[str], *, debug: bool
+        self,
+        discovery_result: DiscoveryResult,
+        update_services: list[str],
+        *,
+        debug: bool,
+        escape_plugin_output: bool,
     ) -> None:
         if not discovery_result.check_table:
             if not discovery_result.is_active() and self._host.is_cluster():
@@ -882,6 +929,7 @@ class DiscoveryPageRenderer:
                             check,
                             entry.show_bulk_actions,
                             debug=debug,
+                            escape_plugin_output=escape_plugin_output,
                         )
 
                 if entry.show_bulk_actions:
@@ -1101,6 +1149,7 @@ class DiscoveryPageRenderer:
         show_bulk_actions: bool,
         *,
         debug: bool,
+        escape_plugin_output: bool,
     ) -> None:
         statename = "" if entry.state is None else short_service_state_name(entry.state, "")
         if statename == "":
@@ -1129,7 +1178,7 @@ class DiscoveryPageRenderer:
         )
         table.cell(_("Service"), entry.description, css=["service"])
         table.cell(_("Summary"), css=["expanding"])
-        self._show_status_detail(entry)
+        self._show_status_detail(entry, escape_plugin_output=escape_plugin_output)
 
         if entry.check_source in [DiscoveryState.ACTIVE, DiscoveryState.ACTIVE_IGNORED]:
             ctype = "check_" + entry.check_plugin_name
@@ -1268,7 +1317,7 @@ class DiscoveryPageRenderer:
                 )
             )
 
-    def _show_status_detail(self, entry: CheckPreviewEntry) -> None:
+    def _show_status_detail(self, entry: CheckPreviewEntry, *, escape_plugin_output: bool) -> None:
         if entry.check_source not in [
             DiscoveryState.CUSTOM,
             DiscoveryState.ACTIVE,
@@ -1282,7 +1331,7 @@ class DiscoveryPageRenderer:
                     format_plugin_output(
                         output,
                         request=request,
-                        shall_escape=active_config.escape_plugin_output,
+                        shall_escape=escape_plugin_output,
                     )
                 )
             return
@@ -1850,7 +1899,7 @@ class DiscoveryPageRenderer:
 class ModeAjaxExecuteCheck(AjaxPage):
     def _from_vars(self) -> None:
         self._site = SiteId(request.get_ascii_input_mandatory("site"))
-        if self._site not in sitenames():
+        if self._site not in active_config.sites:
             raise MKUserError("site", _("You called this page with an invalid site."))
 
         self._host_name = request.get_validated_type_input_mandatory(HostName, "host")
@@ -1866,15 +1915,15 @@ class ModeAjaxExecuteCheck(AjaxPage):
         # TODO: Validate
         self._item = request.get_str_input_mandatory("item")
 
-    def page(self) -> PageResult:
+    def page(self, config: Config) -> PageResult:
         check_csrf_token()
         try:
             active_check_result = active_check(
-                make_automation_config(active_config.sites[self._site]),
+                make_automation_config(config.sites[self._site]),
                 self._host_name,
                 self._check_type,
                 self._item,
-                debug=active_config.debug,
+                debug=config.debug,
             )
             state = 3 if active_check_result.state is None else active_check_result.state
             output = active_check_result.output
@@ -2322,7 +2371,7 @@ def _start_js_call(host: Host, options: DiscoveryOptions, request_vars: dict | N
     return f"cmk.service_discovery.start({json.dumps(host.name())}, {json.dumps(host.folder().path())}, {json.dumps(options._asdict())}, {json.dumps(transactions.get())}, {json.dumps(request_vars)})"
 
 
-def ajax_popup_service_action_menu() -> None:
+def ajax_popup_service_action_menu(config: Config) -> None:
     checkbox_name = request.get_ascii_input_mandatory("checkboxname")
     hostname = request.get_validated_type_input_mandatory(HostName, "hostname")
     entry = CheckPreviewEntry(*json.loads(request.get_ascii_input_mandatory("entry")))

@@ -5,9 +5,14 @@
 
 from fastapi import FastAPI
 
+from cmk.agent_receiver.relay_backend.api.routers.base_router import RELAY_ROUTER
+from cmk.agent_receiver.relay_backend.api.routers.relays import (
+    endpoints as relay_endpoints,  # noqa: F401, RUF100
+)
+
 # NOTE: The import below is a hack, we should register endpoints explicitly!
 # TODO: The "bazel lint ..." calls for run_check_format() and run_check_ruff() don't agree on their findings. Why??
-from . import endpoints  # noqa: F401, RUF100
+from . import endpoints  # noqa: F401, RUF100,  # noqa: F401, RUF100
 from .apps_and_routers import AGENT_RECEIVER_APP, UUID_VALIDATION_ROUTER
 from .log import configure_logger
 from .site_context import log_path, site_name
@@ -18,6 +23,7 @@ def main_app() -> FastAPI:
 
     # this must happen *after* registering the endpoints
     AGENT_RECEIVER_APP.include_router(UUID_VALIDATION_ROUTER)
+    AGENT_RECEIVER_APP.include_router(RELAY_ROUTER)
 
     main_app_ = FastAPI(
         openapi_url=None,

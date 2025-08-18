@@ -13,14 +13,14 @@ from typing import Literal, NamedTuple
 from livestatus import LivestatusResponse, lqencode, quote_dict
 
 from cmk.ccc.site import SiteId
-
-from cmk.utils.labels import AndOrNotLiteral, LabelGroups, single_label_group_from_labels
-
 from cmk.gui import sites
+from cmk.gui.config import active_config
 from cmk.gui.exceptions import MKUserError
 from cmk.gui.i18n import _
 from cmk.gui.logged_in import user
+from cmk.gui.site_config import enabled_sites
 from cmk.gui.type_defs import FilterHTTPVariables
+from cmk.utils.labels import AndOrNotLiteral, LabelGroups, single_label_group_from_labels
 
 
 class Label(NamedTuple):
@@ -222,7 +222,9 @@ def _get_labels_from_livestatus(
 
     try:
         sites.live().set_auth_domain("labels")
-        with sites.only_sites(list(user.authorized_sites().keys())):
+        with sites.only_sites(
+            list(user.authorized_sites(unfiltered_sites=enabled_sites(active_config.sites)).keys())
+        ):
             label_rows = sites.live().query(query)
     finally:
         sites.live().set_auth_domain("read")

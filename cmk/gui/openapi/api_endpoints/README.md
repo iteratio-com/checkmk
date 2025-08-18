@@ -74,19 +74,19 @@ This would handler takes no parameters or request body and returns an empty
 response (204 No Content).
 
 #### Adding a request body
-To add a request body, you need to define a dataclass model for it. Every field
-in the model should have a description and an example. Fields of nested models
-will only need a description.
+To add a request body, you need to define an API model for it. The `@api_model`
+decorator behaves like the dataclass one, except that it sets some defaults.
+Every field in the model should have a description and an example. Fields of
+nested models will only need a description.
 
 See the [omitted fields](#omitted-fields) and
 [`api_field` sections](#the-api_field-function) for more details.
 
 Then, add a `body` parameter to the handler, with the correct type annotation.
 ```python
-from dataclasses import dataclass
-from cmk.gui.openapi.framework.model import api_field, ApiOmitted
+from cmk.gui.openapi.framework.model import api_field, api_model, ApiOmitted
 
-@dataclass(kw_only=True, slots=True)
+@api_model
 class RequestBodyModel:
     required_field: str = api_field(
         description="Required field.",
@@ -132,7 +132,8 @@ multiple times in the URL. For that, change the parameters type to `list[...]`
 and set the `is_list=True` flag in the `QueryParam` marker.
 
 #### Changing the response
-Similar to the request body, the response body should be defined as a dataclass.
+Similar to the request body, the response body should be defined as an
+`@api_model`.
 The same restrictions on descriptions and examples apply. Additionally, no
 defaults (except `ApiOmitted`) are allowed. Specify the model as the return type
 hint of the handler function.
@@ -141,10 +142,9 @@ Because we're using the typing, the handler must instantiate the response model.
 The type checking will be the closest we get to "validating" the response body.
 
 ```python
-from dataclasses import dataclass
-from cmk.gui.openapi.framework.model import api_field, ApiOmitted
+from cmk.gui.openapi.framework.model import api_field, api_model, ApiOmitted
 
-@dataclass(kw_only=True, slots=True)
+@api_model
 class ResponseModel:
     required_field: str = api_field(
         description="Required field.",
@@ -169,11 +169,10 @@ change the return type to `TypedResponse[ResponseModel]`.
 This allows you to return *either* your `ResponseModel` or an `ApiResponse`
 which wraps your `ResponseModel`.
 ```python
-from dataclasses import dataclass
-from cmk.gui.openapi.framework.model import api_field
+from cmk.gui.openapi.framework.model import api_field, api_model
 from cmk.gui.openapi.framework.model.response import ApiResponse, TypedResponse
 
-@dataclass(kw_only=True, slots=True)
+@api_model
 class ResponseModel:
     field: str = api_field(
         description="Required field.",
@@ -251,11 +250,10 @@ an endpoint handler function, you should convert `ApiOmitted` to whatever the
 correct internal representation is.
 
 ```python
-from dataclasses import dataclass
 from typing import TypedDict, NotRequired
-from cmk.gui.openapi.framework.model import api_field, ApiOmitted
+from cmk.gui.openapi.framework.model import api_field, api_model, ApiOmitted
 
-@dataclass(kw_only=True, slots=True)
+@api_model
 class MyModel:
     id: str = api_field(description="Unique identifier.", example="abc")
     name: str | ApiOmitted = api_field(
@@ -346,11 +344,10 @@ like a "flat" object. The only difference would be that the custom attributes
 don't show up in the schema.
 
 ```python
-from dataclasses import dataclass
-from cmk.gui.openapi.framework.model import api_field, json_dump_without_omitted
+from cmk.gui.openapi.framework.model import api_field, api_model, json_dump_without_omitted
 from cmk.gui.openapi.framework.model.dynamic_fields import WithDynamicFields
 
-@dataclass(kw_only=True, slots=True)
+@api_model
 class MyModel(WithDynamicFields):
     id: str = api_field(description="Unique identifier.")
 
@@ -362,13 +359,12 @@ print(json_dump_without_omitted(MyModel, x))
 Adding validations to the dynamic fields can be dony by overriding the
 `dynamic_fields` field or the `_populate_dynamic_fields` class method.
 ```python
-from dataclasses import dataclass
 from typing import Annotated, Mapping
 from pydantic import AfterValidator
-from cmk.gui.openapi.framework.model import api_field
+from cmk.gui.openapi.framework.model import api_field, api_model
 from cmk.gui.openapi.framework.model.dynamic_fields import WithDynamicFields
 
-@dataclass(kw_only=True, slots=True)
+@api_model
 class MyModel(WithDynamicFields):
     id: str = api_field(description="Unique identifier.")
 
@@ -376,10 +372,10 @@ class MyModel(WithDynamicFields):
     dynamic_fields: Mapping[str, Annotated[str, AfterValidator(...)]]
 ```
 
-## Marshmallow schema to dataclass models
+## Marshmallow schema to API models
 
-This guide provides a reference for translating Marshmallow schemas to modern
-dataclass implementations with strong typing and improved validation.
+This guide provides a reference for translating Marshmallow schemas to API model
+implementations with strong typing and improved validation.
 
 ### Example
 
@@ -482,16 +478,14 @@ class UserSchema(Schema):
 
 ```
 
-#### Equivalent Dataclass Model
+#### Equivalent API Model
 
 ```python
-from dataclasses import dataclass
 from typing import Literal, Any, Annotated
 from annotated_types import Interval
 from pydantic import AfterValidator
 
-from cmk.gui.openapi.framework.model.api_field import api_field
-from cmk.gui.openapi.framework.model.omitted import ApiOmitted
+from cmk.gui.openapi.framework.model import api_field, api_model, ApiOmitted
 
 
 def active_user_check(value: str) -> str:
@@ -501,13 +495,14 @@ def active_user_check(value: str) -> str:
     return value
 
 
-@dataclass(kw_only=True, slots=True)
+@api_model
 class LinkModel:
     """Model for link resources."""
     href: str
     rel: str
 
-@dataclass(kw_only=True, slots=True)
+
+@api_model
 class UserModel:
     """Model representing a user."""
 
@@ -529,7 +524,7 @@ class UserModel:
     # Optional field
     display_name: str | ApiOmitted = api_field(
         description="User's display name.",
-        default_factory = ApiOmitted
+        default_factory=ApiOmitted
     )
 
     # Nullable field
@@ -538,15 +533,15 @@ class UserModel:
     )
 
     # Optional and nullable field
-    location: str |  None | ApiOmitted = api_field(
+    location: str | None | ApiOmitted = api_field(
         description="User's location.",
-        default_factory = ApiOmitted
+        default_factory=ApiOmitted
     )
 
     # Field with custom JSON key name
     email_address: str = api_field(
         description="User's email.",
-        alias="emailAddress"
+        serialization_alias="emailAddress"
     )
 
     # Field with default value
@@ -577,11 +572,83 @@ class UserModel:
     # Nested object field
     links: list[LinkModel] | ApiOmitted = api_field(
         description="Related links.",
-        default_factory = ApiOmitted,
+        default_factory=ApiOmitted,
     )
 ```
 
 ### Additional Marshmallow Notes
 
 * the `cast_to_dict` functionality in some marshmallow schemas can be ignored
-  in the dataclass model, as the dataclass will automatically handle this.
+  in the API model, as the model will automatically handle this.
+
+
+## The API context
+The API context is a special handler parameter that provides access to various
+information about the request and other global state.
+It can be added to a handler function by adding an `api_context: ApiContext`
+parameter, similar to how request bodies work.
+
+Instead of using the `active_config` directly, you should use the `config` from
+the `api_context`.
+
+## ETags
+ETags are used as a sort of identifier for a specific version of a resource.
+Mostly, this is used to determine if the resource has changed since the last
+time it was accessed. This tries to prevent the "lost update problem", where
+two concurrent requests modify the same resource, and one of them overwrites
+the changes made by the other.
+
+### Returning an ETag
+To return an ETag, you need to set the `ETag` header in the response.
+This can be done by returning an `ApiResponse`, which provides an easy way to
+set this correctly.
+
+```python
+from cmk.gui.openapi.framework import ETag
+from cmk.gui.openapi.framework.model.response import ApiResponse
+
+def handler() -> ApiResponse[None]:
+    # this should contain everything that makes up this resource
+    # not just fields that are returned!
+    etag = ETag({"key": "value"})
+    return ApiResponse(
+        body=None,  # or some response body
+        etag=etag,
+    )
+```
+
+### Validating an ETag
+To validate the ETag, you need to check the `If-Match` header in the request.
+This header is automatically handled by the framework, and added to the
+`api_context`.
+
+```python
+from cmk.gui.openapi.framework import ETag, ApiContext
+
+def handler(api_context: ApiContext) -> None:
+    # lock the resource before checking the ETag!
+
+    if api_context.etag.enabled:
+        # this must be the same ETag as the one returned in the response
+        api_context.etag.verify(ETag({"key": "value"}))
+
+    # continue with the rest of the handler logic...
+```
+
+### Endpoint configuration
+To enable ETags for an endpoint, you need to set the `etag` parameter in the
+`EndpointBehavior` of the `VersionedEndpoint`. This will include the ETag
+headers in the schema. Generation and validation of the ETag is done manually
+in the handler function, as seen above.
+
+There are 4 possible values for the `etag` parameter:
+
+* `None`: the endpoint does not support ETags (list, some actions, etc.)
+* `"input"`: the endpoint checks the `If-Match` header,
+but does not return an ETag (delete)
+* `"output"`: the endpoint only returns an ETag (create, show)
+* `"both"`: the endpoint validates and returns an ETag (update)
+
+The framework will raise an error, when the ETag header is missing for the
+`"output"` or `"both"` cases. However, doesn't ensure that the ETag is validated
+in the handler function.

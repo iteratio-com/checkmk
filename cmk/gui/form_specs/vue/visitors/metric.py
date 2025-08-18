@@ -3,21 +3,25 @@
 # This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 # conditions defined in the file COPYING, which is part of this source code package.
 from dataclasses import asdict
+from typing import override
 
-from cmk.gui.form_specs.vue.visitors._type_defs import InvalidValue
-from cmk.gui.form_specs.vue.visitors._utils import (
-    create_validation_error,
-)
-from cmk.gui.form_specs.vue.visitors.string import StringVisitor
 from cmk.gui.graphing import registered_metric_ids_and_titles
 from cmk.gui.graphing._from_api import metrics_from_api
 from cmk.gui.i18n import _
-
 from cmk.shared_typing import vue_formspec_components as shared_type_defs
+
+from .._type_defs import InvalidValue
+from .._utils import (
+    create_validation_error,
+)
+from .string import StringVisitor
 
 
 class MetricVisitor(StringVisitor):
-    def _to_vue(self, parsed_value: str | InvalidValue[str]) -> tuple[shared_type_defs.Metric, str]:
+    @override
+    def _to_vue(
+        self, parsed_value: str | InvalidValue[str]
+    ) -> tuple[shared_type_defs.Metric, object]:
         string_autocompleter, value = super()._to_vue(parsed_value)
         string_autocompleter_args = asdict(string_autocompleter)
         del string_autocompleter_args["type"]
@@ -50,6 +54,7 @@ class MetricVisitor(StringVisitor):
             value,
         )
 
+    @override
     def _validate(self, parsed_value: str) -> list[shared_type_defs.ValidationMessage]:
         metrics = [name for (name, _) in registered_metric_ids_and_titles(metrics_from_api)]
         if parsed_value not in metrics:

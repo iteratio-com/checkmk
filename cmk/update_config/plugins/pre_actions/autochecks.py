@@ -9,20 +9,17 @@ from logging import Logger
 from typing import override
 
 from cmk.ccc.hostaddress import HostName
-
-from cmk.utils.log import VERBOSE
-
 from cmk.checkengine.plugins import CheckPluginName
-
 from cmk.gui.exceptions import MKUserError
-
 from cmk.update_config.plugins.pre_actions.utils import (
     AUTOCHECK_REWRITE_PREACTION_SORT_INDEX,
     ConflictMode,
     continue_per_users_choice,
 )
 from cmk.update_config.registry import pre_update_action_registry, PreUpdateAction
+from cmk.utils.log import VERBOSE
 
+from ...lib import ExpiryVersion
 from ..lib.autochecks import rewrite_yielding_errors
 
 
@@ -85,5 +82,6 @@ pre_update_action_registry.register(
         name="autochecks",
         title="Autochecks",
         sort_index=AUTOCHECK_REWRITE_PREACTION_SORT_INDEX,
+        expiry_version=ExpiryVersion.NEVER,
     )
 )

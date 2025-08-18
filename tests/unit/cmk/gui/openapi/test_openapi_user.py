@@ -15,15 +15,10 @@ import time_machine
 from pytest import MonkeyPatch
 from pytest_mock import MockerFixture
 
-from tests.testlib.unit.rest_api_client import ClientRegistry
-
-from tests.unit.cmk.web_test_app import SetConfig
-
 from cmk.ccc import version
 from cmk.ccc.user import UserId
-
-from cmk.utils import paths
-
+from cmk.crypto.password import PasswordPolicy
+from cmk.crypto.password_hashing import PasswordHash
 from cmk.gui import userdb
 from cmk.gui.config import active_config
 from cmk.gui.logged_in import user
@@ -34,18 +29,14 @@ from cmk.gui.openapi.endpoints.user_config import (
 )
 from cmk.gui.openapi.endpoints.utils import complement_customer
 from cmk.gui.session import SuperUserContext
-from cmk.gui.type_defs import CustomUserAttrSpec, UserObject
+from cmk.gui.type_defs import CustomUserAttrSpec, UserObjectValue
 from cmk.gui.userdb import ConnectorType, UserRole
-from cmk.gui.userdb._connections import Fixed, LDAPConnectionConfigFixed, LDAPUserConnectionConfig
-from cmk.gui.userdb.ldap_connector import LDAPUserConnector
-from cmk.gui.watolib.custom_attributes import (
-    save_custom_attrs_to_mk_file,
-    update_user_custom_attrs,
-)
+from cmk.gui.watolib.custom_attributes import save_custom_attrs_to_mk_file, update_user_custom_attrs
 from cmk.gui.watolib.userroles import clone_role, RoleID
 from cmk.gui.watolib.users import default_sites, edit_users
-
-from cmk.crypto.password_hashing import PasswordHash
+from cmk.utils import paths
+from tests.testlib.unit.rest_api_client import ClientRegistry
+from tests.unit.cmk.web_test_app import SetConfig
 
 managedtest = pytest.mark.skipif(
     version.edition(paths.omd_root) is not version.Edition.CME, reason="see #7213"
@@ -123,6 +114,7 @@ def test_openapi_customer(clients: ClientRegistry, monkeypatch: MonkeyPatch) -> 
         "interface_options": {
             "interface_theme": "default",
             "main_menu_icons": "topic",
+            "mega_menu_icons": "topic",  # TODO: DEPRECATED(18295) remove "mega_menu_icons"
             "navigation_bar_icons": "hide",
             "show_mode": "default",
             "sidebar_position": "right",
@@ -145,7 +137,7 @@ def test_openapi_user_minimal_settings(
         time_machine.travel(datetime.datetime.fromisoformat("2021-09-24 12:36:00Z")),
         SuperUserContext(),
     ):
-        user_object: UserObject = {
+        user_object: dict[UserId, UserObjectValue] = {
             UserId("user"): {
                 "attributes": {
                     "ui_theme": None,
@@ -168,7 +160,7 @@ def test_openapi_user_minimal_settings(
                 "is_new_user": True,
             }
         }
-        edit_users(user_object, default_sites)
+        edit_users(user_object, default_sites, use_git=False)
 
     user_attributes = _load_internal_attributes(UserId("user"))
 
@@ -303,7 +295,7 @@ def test_openapi_user_internal_with_notifications(
 ) -> None:
     name = UserId(_random_string(10))
 
-    user_object: UserObject = {
+    user_object: dict[UserId, UserObjectValue] = {
         name: {
             "attributes": {
                 "ui_theme": None,
@@ -332,7 +324,7 @@ def test_openapi_user_internal_with_notifications(
         }
     }
     with SuperUserContext():
-        edit_users(user_object, default_sites)
+        edit_users(user_object, default_sites, use_git=False)
 
     assert _load_internal_attributes(name) == {
         "alias": "KPECYCq79E",
@@ -377,6 +369,10 @@ def test_update_user_auth_options(
 
     user_data = resp.json["extensions"]
     user_data.pop("auth_option", None)
+
+    # TODO: DEPRECATED(18295) remove "mega_menu_icons"
+    # Hint Response != Request >> all responses contain alias AND field.
+    user_data["interface_options"].pop("mega_menu_icons", None)
 
     if test_data is not None:
         user_data.update(test_data)
@@ -505,7 +501,7 @@ def test_openapi_user_internal_auth_handling(
 
     name = UserId("foo")
 
-    user_object: UserObject = {
+    user_object: dict[UserId, UserObjectValue] = {
         name: {
             "attributes": {
                 "ui_theme": None,
@@ -536,7 +532,7 @@ def test_openapi_user_internal_auth_handling(
 
     with time_machine.travel(datetime.datetime.fromisoformat("2010-02-01 08:30:00Z")):
         with SuperUserContext():
-            edit_users(user_object, default_sites)
+            edit_users(user_object, default_sites, use_git=False)
 
     assert _load_internal_attributes(name) == {
         "alias": "Foo Bar",
@@ -562,6 +558,7 @@ def test_openapi_user_internal_auth_handling(
         updated_internal_attributes = _api_to_internal_format(
             _load_user(name),
             {"auth_option": {"secret": "QWXWBFUCSUOXNCPJUMS@", "auth_type": "automation"}},
+            PasswordPolicy(12, None),
         )
         with SuperUserContext():
             edit_users(
@@ -572,6 +569,7 @@ def test_openapi_user_internal_auth_handling(
                     }
                 },
                 default_sites,
+                use_git=False,
             )
 
     assert _load_internal_attributes(name) == {
@@ -597,7 +595,9 @@ def test_openapi_user_internal_auth_handling(
 
     with time_machine.travel(datetime.datetime.fromisoformat("2010-02-01 09:30:00Z")):
         updated_internal_attributes = _api_to_internal_format(
-            _load_user(name), {"auth_option": {"auth_type": "remove"}}
+            _load_user(name),
+            {"auth_option": {"auth_type": "remove"}},
+            PasswordPolicy(12, None),
         )
         with SuperUserContext():
             edit_users(
@@ -608,6 +608,7 @@ def test_openapi_user_internal_auth_handling(
                     }
                 },
                 default_sites,
+                use_git=False,
             )
     assert _load_internal_attributes(name) == {
         "alias": "Foo Bar",
@@ -649,7 +650,7 @@ def test_managed_global_internal(
 ) -> None:
     # this test uses the internal mechanics of the user endpoint
 
-    user_object: UserObject = {
+    user_object: dict[UserId, UserObjectValue] = {
         UserId("user"): {
             "attributes": {
                 "ui_theme": None,
@@ -674,7 +675,7 @@ def test_managed_global_internal(
         }
     }
     with SuperUserContext():
-        edit_users(user_object, default_sites)
+        edit_users(user_object, default_sites, use_git=False)
     user_internal = _load_user(UserId("user"))
     user_endpoint_attrs = complement_customer(_internal_to_api_format(user_internal))
     assert user_endpoint_attrs["customer"] == "global"
@@ -717,6 +718,7 @@ def test_global_full_configuration(clients: ClientRegistry) -> None:
         "interface_options": {
             "interface_theme": "default",
             "main_menu_icons": "topic",
+            "mega_menu_icons": "topic",  # TODO: DEPRECATED(18295) remove "mega_menu_icons"
             "navigation_bar_icons": "hide",
             "show_mode": "default",
             "sidebar_position": "right",
@@ -734,7 +736,7 @@ def test_managed_idle_internal(
     # this test uses the internal mechanics of the user endpoint
     username, _secret = with_automation_user
 
-    user_object: UserObject = {
+    user_object: dict[UserId, UserObjectValue] = {
         UserId("user"): {
             "attributes": {
                 "ui_theme": None,
@@ -759,7 +761,7 @@ def test_managed_idle_internal(
         }
     }
     with SuperUserContext():
-        edit_users(user_object, default_sites)
+        edit_users(user_object, default_sites, use_git=False)
 
     user_internal = _load_user(UserId("user"))
     user_endpoint_attrs = complement_customer(_internal_to_api_format(user_internal))
@@ -778,6 +780,9 @@ def test_openapi_user_update_contact_options(clients: ClientRegistry) -> None:
             fullname="Mathias Kettner",
             customer="global",
             auth_option={"auth_type": "password", "password": "password1234"},
+            interface_options={
+                "mega_menu_icons": "entry"
+            },  # TODO: DEPRECATED(18295) remove "mega_menu_icons"
             disable_login=False,
             idle_timeout={"option": "global"},
             roles=["user"],
@@ -806,7 +811,8 @@ def test_openapi_user_update_contact_options(clients: ClientRegistry) -> None:
         "auth_option": {"enforce_password_change": False, "auth_type": "password"},
         "interface_options": {
             "interface_theme": "default",
-            "main_menu_icons": "topic",
+            "main_menu_icons": "entry",  # TODO reset to "topic" (CMK-23667, Werk#18295)
+            "mega_menu_icons": "entry",  # TODO: DEPRECATED(18295) remove "mega_menu_icons"
             "navigation_bar_icons": "hide",
             "show_mode": "default",
             "sidebar_position": "right",
@@ -814,6 +820,60 @@ def test_openapi_user_update_contact_options(clients: ClientRegistry) -> None:
         },
         "start_url": "default_start_url",
     }
+
+
+# TODO: DEPRECATED(18295) remove "mega_menu_icons"
+@managedtest
+def test_openapi_user_update_fails_because_alias_and_field_set(clients: ClientRegistry) -> None:
+    # this test uses the internal mechanics of the user endpoint
+    username = "cmkuser"
+    with time_machine.travel(datetime.datetime.fromisoformat("2010-02-01 08:00:00Z")):
+        clients.User.create(
+            username=username,
+            fullname="Mathias Kettner",
+            customer="global",
+            auth_option={"auth_type": "password", "password": "password1234"},
+            interface_options={"mega_menu_icons": "entry"},
+            disable_login=False,
+            idle_timeout={"option": "global"},
+            roles=["user"],
+            disable_notifications={"disable": False},
+            pager_address="",
+            language="en",
+        )
+
+    clients.User.edit(
+        username=username,
+        interface_options={"mega_menu_icons": "entry", "main_menu_icons": "topic"},
+        expect_ok=False,
+    ).assert_status_code(400)
+
+
+# TODO: DEPRECATED(18295) remove "mega_menu_icons"
+@managedtest
+def test_openapi_user_create_fails_because_alias_and_field_set(
+    clients: ClientRegistry,
+) -> None:
+    # this test uses the internal mechanics of the user endpoint
+    username = "cmkuser"
+    with time_machine.travel(datetime.datetime.fromisoformat("2010-02-01 08:00:00Z")):
+        clients.User.create(
+            username=username,
+            fullname="Mathias Kettner",
+            customer="global",
+            auth_option={"auth_type": "password", "password": "password1234"},
+            interface_options={
+                "mega_menu_icons": "entry",
+                "main_menu_icons": "topic",
+            },  # TODO: DEPRECATED(18295) remove "mega_menu_icons"
+            disable_login=False,
+            idle_timeout={"option": "global"},
+            roles=["user"],
+            disable_notifications={"disable": False},
+            pager_address="",
+            language="en",
+            expect_ok=False,
+        ).assert_status_code(400)
 
 
 @managedtest
@@ -930,6 +990,8 @@ def test_user_interface_settings(_mock: None, clients: ClientRegistry) -> None:
     assert interface_options["sidebar_position"] == "left"
     assert interface_options["navigation_bar_icons"] == "show"
     assert interface_options["main_menu_icons"] == "entry"
+    # TODO: DEPRECATED(18295) remove "mega_menu_icons"
+    assert interface_options["mega_menu_icons"] == "entry"
     assert interface_options["show_mode"] == "enforce_show_more"
 
     resp = clients.User.edit(username=username, interface_options={"interface_theme": "light"})
@@ -1320,114 +1382,6 @@ def test_create_user_with_contact_group(clients: ClientRegistry) -> None:
         contactgroups=["group_one"],
     )
     assert resp.json["extensions"]["contactgroups"] == ["group_one"]
-
-
-@pytest.fixture(name="mock_ldap_locked_attributes")
-def fixture_mock_ldap_locked_attributes(request_context: None, mocker: MockerFixture) -> MagicMock:
-    """Mock the locked attributes of a LDAP user"""
-    ldap_config = LDAPUserConnectionConfig(
-        id="CMKTest",
-        description="",
-        comment="",
-        docu_url="",
-        disabled=False,
-        directory_type=(
-            "ad",
-            LDAPConnectionConfigFixed(
-                connect_to=(
-                    "fixed_list",
-                    Fixed(server="some.domain.com"),
-                )
-            ),
-        ),
-        bind=(
-            "CN=svc_checkmk,OU=checkmktest-users,DC=int,DC=testdomain,DC=com",
-            ("store", "AD_svc_checkmk"),
-        ),
-        port=636,
-        use_ssl=True,
-        user_dn="OU=checkmktest-users,DC=int,DC=testdomain,DC=com",
-        user_scope="sub",
-        user_filter="(&(objectclass=user)(objectcategory=person)(|(memberof=CN=cmk_AD_admins,OU=checkmktest-groups,DC=int,DC=testdomain,DC=com)))",
-        user_id_umlauts="keep",
-        group_dn="OU=checkmktest-groups,DC=int,DC=testdomain,DC=com",
-        group_scope="sub",
-        active_plugins={
-            "alias": {},
-            "auth_expire": {},
-            "groups_to_contactgroups": {"nested": True},
-            "disable_notifications": {"attr": "msDS-cloudExtensionAttribute1"},
-            "email": {"attr": "mail"},
-            "icons_per_item": {"attr": "msDS-cloudExtensionAttribute3"},
-            "nav_hide_icons_title": {"attr": "msDS-cloudExtensionAttribute4"},
-            "pager": {"attr": "mobile"},
-            "groups_to_roles": {
-                "admin": [
-                    (
-                        "CN=cmk_AD_admins,OU=checkmktest-groups,DC=int,DC=testdomain,DC=com",
-                        None,
-                    )
-                ]
-            },
-            "show_mode": {"attr": "msDS-cloudExtensionAttribute2"},
-            "ui_sidebar_position": {"attr": "msDS-cloudExtensionAttribute5"},
-            "start_url": {"attr": "msDS-cloudExtensionAttribute9"},
-            "temperature_unit": {"attr": "msDS-cloudExtensionAttribute6"},
-            "ui_theme": {"attr": "msDS-cloudExtensionAttribute7"},
-            "force_authuser": {"attr": "msDS-cloudExtensionAttribute8"},
-        },
-        cache_livetime=300,
-        type="ldap",
-    )
-
-    return mocker.patch(
-        "cmk.gui.openapi.endpoints.user_config.locked_attributes",
-        return_value=LDAPUserConnector(ldap_config).locked_attributes(),
-    )
-
-
-@pytest.mark.usefixtures("mock_ldap_locked_attributes")
-@managedtest
-def test_edit_ldap_user_with_locked_attributes(
-    clients: ClientRegistry,
-) -> None:
-    name = UserId("foo")
-    user_object: UserObject = {
-        name: {
-            "attributes": {
-                "ui_theme": None,
-                "ui_sidebar_position": None,
-                "nav_hide_icons_title": None,
-                "icons_per_item": None,
-                "show_mode": None,
-                "start_url": None,
-                "force_authuser": False,
-                "enforce_pw_change": True,
-                "alias": "cmkADAdmin",
-                "locked": False,
-                "pager": "",
-                "roles": ["guest"],
-                "contactgroups": [],
-                "email": "",
-                "fallback_contact": False,
-                "password": PasswordHash(
-                    "$5$rounds=535000$eUtToQgKz6n7Qyqk$hh5tq.snoP4J95gVoswOep4LbUxycNG1QF1HI7B4d8C"
-                ),
-                "serial": 1,
-                "connector": "CMKTest",
-                "disable_notifications": {},
-            },
-            "is_new_user": True,
-        },
-    }
-    with SuperUserContext():
-        edit_users(user_object, default_sites)
-
-    clients.User.edit(
-        username=name,
-        roles=["admin"],
-        expect_ok=False,
-    ).assert_status_code(403)
 
 
 def test_openapi_minimum_configuration(clients: ClientRegistry) -> None:

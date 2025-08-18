@@ -6,15 +6,13 @@
 import abc
 from collections.abc import Collection, Iterator, Sequence
 
+import cmk.utils.paths
 from cmk.ccc import version
 from cmk.ccc.user import UserId
 from cmk.ccc.version import edition_supports_nagvis
-
-import cmk.utils.paths
-
 from cmk.gui import forms, userdb
 from cmk.gui.breadcrumb import Breadcrumb
-from cmk.gui.config import active_config
+from cmk.gui.config import Config
 from cmk.gui.exceptions import MKUserError
 from cmk.gui.groups import GroupName, GroupSpec, GroupType
 from cmk.gui.htmllib.generator import HTMLWriter
@@ -86,7 +84,7 @@ class ModeGroups(WatoMode, abc.ABC):
         super().__init__()
         self._groups = self._load_groups()
 
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         return PageMenu(
             dropdowns=[
                 PageMenuDropdown(
@@ -138,7 +136,7 @@ class ModeGroups(WatoMode, abc.ABC):
             inpage_search=PageMenuSearch(),
         )
 
-    def action(self) -> ActionResult:
+    def action(self, config: Config) -> ActionResult:
         if not transactions.check_transaction():
             request.del_var("_transid")
             return redirect(makeuri(request=request, addvars=list(request.itervars())))
@@ -158,7 +156,10 @@ class ModeGroups(WatoMode, abc.ABC):
                 raise MKUserError(None, message)
 
             groups.delete_group(
-                delname, self.type_name, pprint_value=active_config.wato_pprint_config
+                delname,
+                self.type_name,
+                pprint_value=config.wato_pprint_config,
+                use_git=config.wato_use_git,
             )
             self._groups = self._load_groups()
 
@@ -174,7 +175,9 @@ class ModeGroups(WatoMode, abc.ABC):
     def _collect_additional_data(self) -> None:
         pass
 
-    def _show_row_cells(self, nr: int, table: Table, name: GroupName, group: GroupSpec) -> None:
+    def _show_row_cells(
+        self, nr: int, table: Table, name: GroupName, group: GroupSpec, config: Config
+    ) -> None:
         table.cell("#", css=["narrow nowrap"])
         html.write_text_permissive(nr)
 
@@ -198,7 +201,7 @@ class ModeGroups(WatoMode, abc.ABC):
         table.cell(_("Name"), name)
         table.cell(_("Alias"), group["alias"])
 
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         if not self._groups:
             self._page_no_groups()
             return
@@ -210,7 +213,7 @@ class ModeGroups(WatoMode, abc.ABC):
                 sorted(self._groups.items(), key=lambda x: x[1]["alias"])
             ):
                 table.row()
-                self._show_row_cells(nr, table, name, group)
+                self._show_row_cells(nr, table, name, group, config)
 
 
 class ABCModeEditGroup(WatoMode, abc.ABC):
@@ -258,7 +261,7 @@ class ABCModeEditGroup(WatoMode, abc.ABC):
     def _determine_additional_group_data(self) -> None:
         pass
 
-    def action(self) -> ActionResult:
+    def action(self, config: Config) -> ActionResult:
         check_csrf_token()
 
         if not transactions.check_transaction():
@@ -275,7 +278,8 @@ class ABCModeEditGroup(WatoMode, abc.ABC):
                 self._name,
                 self.type_name,
                 self.group,
-                pprint_value=active_config.wato_pprint_config,
+                pprint_value=config.wato_pprint_config,
+                use_git=config.wato_use_git,
             )
         else:
             assert self._name is not None
@@ -283,7 +287,8 @@ class ABCModeEditGroup(WatoMode, abc.ABC):
                 self._name,
                 self.type_name,
                 self.group,
-                pprint_value=active_config.wato_pprint_config,
+                pprint_value=config.wato_pprint_config,
+                use_git=config.wato_use_git,
             )
 
         return redirect(mode_url("%s_groups" % self.type_name))
@@ -291,12 +296,12 @@ class ABCModeEditGroup(WatoMode, abc.ABC):
     def _show_extra_page_elements(self) -> None:
         pass
 
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         return make_simple_form_page_menu(
             _("Group"), breadcrumb, form_name="group", button_name="_save"
         )
 
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         with html.form_context("group", method="POST"):
             forms.header(_("Properties"))
             forms.section(_("Name"), simple=not self._new, is_required=True)
@@ -424,8 +429,10 @@ class ModeContactgroups(ModeGroups):
             for cg in cgs:
                 self._members.setdefault(cg, []).append((userid, user.get("alias", userid)))
 
-    def _show_row_cells(self, nr: int, table: Table, name: GroupName, group: GroupSpec) -> None:
-        super()._show_row_cells(nr, table, name, group)
+    def _show_row_cells(
+        self, nr: int, table: Table, name: GroupName, group: GroupSpec, config: Config
+    ) -> None:
+        super()._show_row_cells(nr, table, name, group, config)
         table.cell(_("Members"))
         html.write_html(
             HTML.without_escaping(", ").join(

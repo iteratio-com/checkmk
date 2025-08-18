@@ -6,9 +6,6 @@
 import pytest
 
 import cmk.ccc.version as cmk_version
-
-from cmk.utils import paths
-
 from cmk.gui.watolib.automation_commands import automation_command_registry
 from cmk.gui.watolib.config_domain_name import (
     config_domain_registry,
@@ -16,6 +13,7 @@ from cmk.gui.watolib.config_domain_name import (
     config_variable_registry,
     configvar_order,
 )
+from cmk.utils import paths
 
 
 def test_registered_config_domains() -> None:
@@ -126,6 +124,7 @@ def test_registered_configvars() -> None:
         "inventory_check_autotrigger",
         "inventory_check_interval",
         "inventory_check_severity",
+        "inventory_housekeeping",
         "log_logon_failures",
         "lock_on_logon_failures",
         "log_level",
@@ -211,7 +210,6 @@ def test_registered_configvars() -> None:
         "rest_api_etag_locking",
         "enable_login_via_get",
         "enable_deprecated_automation_user_authentication",
-        "enable_community_translations",
         "default_language",
         "default_temperature_unit",
         "vue_experimental_features",

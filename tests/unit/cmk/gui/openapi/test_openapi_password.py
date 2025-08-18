@@ -5,11 +5,9 @@
 
 import pytest
 
-from tests.testlib.unit.rest_api_client import ClientRegistry
-
 from cmk.ccc import version
-
 from cmk.utils import password_store, paths
+from tests.testlib.unit.rest_api_client import ClientRegistry
 
 managedtest = pytest.mark.skipif(
     version.edition(paths.omd_root) is not version.Edition.CME, reason="see #7213"
@@ -152,6 +150,28 @@ def test_openapi_password_delete(clients: ClientRegistry) -> None:
 
 
 @managedtest
+@pytest.mark.usefixtures("suppress_remote_automation_calls", "mock_password_file_regeneration")
+def test_openapi_password_etag(clients: ClientRegistry) -> None:
+    ident = "test_etag"
+    clients.Password.create(
+        ident=ident,
+        title="Checkmk",
+        password="tt",
+        shared=[],
+        editable_by="admin",
+        customer="provider",
+    )
+
+    clients.Password.edit(
+        ident, title="Updated", expect_ok=False, etag="invalid_etag"
+    ).assert_status_code(412)
+    clients.Password.delete(ident, expect_ok=False, etag="invalid_etag").assert_status_code(412)
+
+    clients.Password.edit(ident, title="Updated", etag="valid_etag")
+    clients.Password.delete(ident, etag="valid_etag")
+
+
+@managedtest
 @pytest.mark.usefixtures("mock_password_file_regeneration")
 def test_password_with_newlines(clients: ClientRegistry) -> None:
     credentials_with_newlines = """{
@@ -207,7 +227,7 @@ def test_password_min_length_create(clients: ClientRegistry) -> None:
     )
 
     resp.assert_status_code(400)
-    assert resp.json["fields"] == {"password": ["string '' is too short. The minimum length is 1."]}
+    assert resp.json["fields"]["body.password"]["type"] == "string_too_short"
 
 
 @managedtest
@@ -230,7 +250,7 @@ def test_password_min_length_update(clients: ClientRegistry) -> None:
     )
 
     resp.assert_status_code(400)
-    assert resp.json["fields"] == {"password": ["string '' is too short. The minimum length is 1."]}
+    assert resp.json["fields"]["body.password.constrained-str"]["type"] == "string_too_short"
 
 
 @managedtest
@@ -245,8 +265,7 @@ def test_password_identifier_regex(clients: ClientRegistry) -> None:
     )
 
     resp.assert_status_code(400)
-    assert resp.json["fields"] == {
-        "ident": [
-            "'abcℕ' does not match pattern. An identifier must only consist of letters, digits, dash and underscore and it must start with a letter or underscore."
-        ]
-    }
+    assert (
+        resp.json["fields"]["body.ident"]["msg"]
+        == "Value error, 'abcℕ' does not match pattern. An identifier must only consist of letters, digits, dash and underscore and it must start with a letter or underscore."
+    )

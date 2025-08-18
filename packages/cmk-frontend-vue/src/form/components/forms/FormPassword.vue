@@ -5,14 +5,14 @@ conditions defined in the file COPYING, which is part of this source code packag
 -->
 <script setup lang="ts">
 import usei18n from '@/lib/i18n'
-import FormValidation from '@/form/components/FormValidation.vue'
+import FormValidation from '@/components/user-input/CmkInlineValidation.vue'
 import type { Password } from 'cmk-shared-typing/typescript/vue_formspec_components'
 import { validateValue, type ValidationMessages } from '@/form/components/utils/validation'
 import { computed, ref } from 'vue'
 import { immediateWatch } from '@/lib/watch'
 import CmkDropdown from '@/components/CmkDropdown.vue'
 
-const { t } = usei18n('form-password')
+const { _t } = usei18n()
 
 const props = defineProps<{
   spec: Password
@@ -101,7 +101,7 @@ const passwordStoreOptions = computed(() => {
   <template v-if="data[0] === 'explicit_password'">
     <input
       v-model="explicitPassword"
-      :aria-label="t('explicit-input-aria-label', 'explicit password')"
+      :aria-label="_t('explicit password')"
       type="password"
       :placeholder="'******'"
     />
@@ -114,8 +114,8 @@ const passwordStoreOptions = computed(() => {
       v-else
       v-model:selected-option="passwordStoreChoice"
       :options="{ type: 'fixed', suggestions: passwordStoreOptions }"
-      :required-text="props.spec.i18n_base.required"
       :label="props.spec.i18n.choose_password_from_store"
+      required
     />
   </template>
   <FormValidation :validation="validation"></FormValidation>

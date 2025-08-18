@@ -13,10 +13,9 @@ from pathlib import Path
 
 from cmk.ccc import store
 from cmk.ccc.site import omd_site, SiteId
-
-from cmk.gui.config import active_config
+from cmk.gui.config import Config
 from cmk.gui.cron import CronJob, CronJobRegistry
-from cmk.gui.http import request
+from cmk.gui.http import Request
 from cmk.gui.log import logger
 from cmk.gui.site_config import is_wato_slave_site, wato_slave_sites
 from cmk.gui.watolib.audit_log import AuditLogStore
@@ -82,7 +81,7 @@ class AutomationSyncRemoteSites(AutomationCommand[int]):
 
         return SyncRemoteSitesResult(audit_logs, site_changes).to_json()
 
-    def get_request(self) -> int:
+    def get_request(self, config: Config, request: Request) -> int:
         return int(request.get_str_input_mandatory("last_audit_log_timestamp"))
 
 
@@ -100,7 +99,7 @@ class AutomationClearSiteChanges(AutomationCommand[str]):
                     break
             site_entries[:] = site_entries[keep_idx:]
 
-    def get_request(self) -> str:
+    def get_request(self, config: Config, request: Request) -> str:
         return request.get_str_input_mandatory("last_change_id")
 
 
@@ -134,10 +133,6 @@ class SyncRemoteSitesJob:
             self._last_audit_log_timestamps_path
         )
         self._audit_log_store = AuditLogStore()
-
-    def shall_start(self) -> bool:
-        """Some basic preliminary check to decide quickly whether to start the job"""
-        return bool(wato_slave_sites())
 
     def do_execute(
         self, *, sites: Sequence[tuple[SiteId, RemoteAutomationConfig]], debug: bool
@@ -319,19 +314,24 @@ class SyncRemoteSitesJob:
         )
 
 
-def _execute_sync_remote_sites() -> None:
-    if is_wato_slave_site():
+def _execute_sync_remote_sites(config: Config) -> None:
+    if is_wato_slave_site(config.sites):
         return
 
-    if not wato_slave_sites():
+    if not (
+        remote_site_configs := [
+            (site_id, site_config)
+            for site_id, site_config in wato_slave_sites(config.sites).items()
+            if "secret" in site_config
+        ]
+    ):
         logger.debug("Job shall not start")
         return
 
     SyncRemoteSitesJob().do_execute(
         sites=[
             (site_id, RemoteAutomationConfig.from_site_config(site_config))
-            for site_id, site_config in wato_slave_sites().items()
-            if "secret" in site_config
+            for site_id, site_config in remote_site_configs
         ],
-        debug=active_config.debug,
+        debug=config.debug,
     )

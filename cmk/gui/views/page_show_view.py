@@ -16,12 +16,9 @@ from urllib.parse import quote_plus
 
 import livestatus
 
+from cmk.ccc.cpu_tracking import CPUTracker, Snapshot
 from cmk.ccc.site import omd_site, SiteId
 from cmk.ccc.user import UserId
-
-from cmk.utils.cpu_tracking import CPUTracker, Snapshot
-from cmk.utils.livestatus_helpers.queries import Query
-
 from cmk.gui import log, visuals
 from cmk.gui.config import active_config, Config
 from cmk.gui.ctx_stack import g
@@ -54,6 +51,7 @@ from cmk.gui.visuals import (
     get_only_sites_from_context,
 )
 from cmk.gui.visuals.filter import Filter
+from cmk.utils.livestatus_helpers.queries import Query
 
 from . import availability
 from .row_post_processing import post_process_rows
@@ -62,6 +60,7 @@ from .store import get_all_views, get_permitted_views
 
 
 def page_show_view(
+    config: Config,
     page_menu_dropdowns_callback: Callable[[View, Rows, list[PageMenuDropdown]], None],
 ) -> None:
     """Central entry point for the initial HTML page rendering of a view"""
@@ -104,14 +103,15 @@ def page_show_view(
                 show_buttons=True,
                 page_menu_dropdowns_callback=page_menu_dropdowns_callback,
             ),
-            debug=active_config.debug,
+            debug=config.debug,
         )
 
-    _may_create_slow_view_log_entry(page_view_tracker, view)
+    _may_create_slow_view_log_entry(page_view_tracker, view, config.slow_views_duration_threshold)
 
 
-def _may_create_slow_view_log_entry(page_view_tracker: CPUTracker, view: View) -> None:
-    duration_threshold = active_config.slow_views_duration_threshold
+def _may_create_slow_view_log_entry(
+    page_view_tracker: CPUTracker, view: View, duration_threshold: int
+) -> None:
     if page_view_tracker.duration.process.elapsed < duration_threshold:
         return
 
@@ -170,7 +170,7 @@ def _patch_view_context(view_spec: ViewSpec) -> None:
     # with the current mode.
     if _is_ec_unrelated_host_view(view_spec):
         # Set the value for the event host filter
-        if not request.has_var("event_host") and request.has_var("host"):
+        if not request.var("event_host") and request.has_var("host"):
             request.set_var("event_host", request.get_str_input_mandatory("host"))
 
 

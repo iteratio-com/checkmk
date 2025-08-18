@@ -19,28 +19,25 @@ from unittest.mock import patch
 import pytest
 from fakeredis import FakeRedis
 
-from tests.unit.mocks_and_helpers import DummyLicensingHandler, FixPluginLegacy
-
 import livestatus
 
 import cmk.ccc.debug
 import cmk.ccc.version as cmk_version
-from cmk.ccc import tty
-from cmk.ccc.site import omd_site, SiteId
-
+import cmk.crypto.password_hashing
 import cmk.utils.caching
 import cmk.utils.paths
+from cmk.ccc import tty
+from cmk.ccc.crash_reporting import crash_dir
+from cmk.ccc.site import omd_site, SiteId
+from cmk.checkengine.plugins import (  # pylint: disable=cmk-module-layer-violation
+    AgentBasedPlugins,
+)
 from cmk.utils import redis
 from cmk.utils.livestatus_helpers.testing import (
     mock_livestatus_communication,
     MockLiveStatusConnection,
 )
-
-from cmk.checkengine.plugins import (  # pylint: disable=cmk-module-layer-violation
-    AgentBasedPlugins,
-)
-
-import cmk.crypto.password_hashing
+from tests.unit.mocks_and_helpers import DummyLicensingHandler, FixPluginLegacy
 
 # TODO: Can we somehow push some of the registrations below to the subdirectories?
 # Needs to be executed before the import of those modules
@@ -389,7 +386,7 @@ def cleanup_after_test():
 
     # Fail the execution in case any crash reports were created
     try:
-        _report_crashes(cmk.utils.paths.crash_dir)
+        _report_crashes()
     finally:
         # Ensure there is no file left over in the unit test fake site
         # to prevent tests involving each other
@@ -406,8 +403,8 @@ def cleanup_after_test():
                 logger.debug("Failed to cleanup %s after test: %s. Keep going anyway", entry, e)
 
 
-def _report_crashes(crash_dir: Path) -> None:
-    for crash_file in crash_dir.glob("**/crash.info"):
+def _report_crashes() -> None:
+    for crash_file in crash_dir(cmk.utils.paths.omd_root).glob("**/crash.info"):
         crash = json.loads(crash_file.read_text())
         pytest.fail(
             f"Crash report detected! {crash.get('exc_type', '')}: {crash.get('exc_value', '')}\n"

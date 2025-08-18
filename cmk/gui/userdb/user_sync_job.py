@@ -10,32 +10,34 @@ from logging import Logger
 
 from pydantic import BaseModel
 
+from livestatus import SiteConfigurations
+
 from cmk.gui.background_job import (
     BackgroundJob,
     BackgroundProcessInterface,
     InitialStatusArgs,
     JobTarget,
 )
-from cmk.gui.config import active_config
+from cmk.gui.config import Config
 from cmk.gui.exceptions import MKUserError
 from cmk.gui.http import request, response
 from cmk.gui.i18n import _
 from cmk.gui.log import logger as gui_logger
+from cmk.gui.logged_in import user
 from cmk.gui.site_config import is_wato_slave_site
 from cmk.gui.type_defs import Users
 from cmk.gui.utils.urls import makeuri_contextless
 
-from ..logged_in import user
 from ._connections import active_connections
 from ._user_sync_config import user_sync_config
 from .store import general_userdb_job, load_users, save_users
 
 
-def execute_userdb_job() -> None:
+def execute_userdb_job(config: Config) -> None:
     """This function is called by the GUI cron job once a minute.
 
     Errors are logged to var/log/web.log."""
-    if not _userdb_sync_job_enabled():
+    if not _userdb_sync_job_enabled(config.sites):
         return
 
     job = UserSyncBackgroundJob()
@@ -71,19 +73,19 @@ def sync_entry_point(job_interface: BackgroundProcessInterface, args: UserSyncAr
     )
 
 
-def _userdb_sync_job_enabled() -> bool:
+def _userdb_sync_job_enabled(site_configs: SiteConfigurations) -> bool:
     cfg = user_sync_config()
 
     if cfg is None:
         return False  # not enabled at all
 
-    if cfg == "master" and is_wato_slave_site():
+    if cfg == "master" and is_wato_slave_site(site_configs):
         return False
 
     return True
 
 
-def ajax_sync() -> None:
+def ajax_sync(config: Config) -> None:
     try:
         job = UserSyncBackgroundJob()
         if (
@@ -103,7 +105,7 @@ def ajax_sync() -> None:
         response.set_data("OK Started synchronization\n")
     except Exception as e:
         gui_logger.exception("error synchronizing user DB")
-        if active_config.debug:
+        if config.debug:
             raise
         response.set_data("ERROR %s\n" % e)
 

@@ -7,9 +7,8 @@
 import time
 from collections.abc import Collection, Iterator
 
-from cmk.utils import render
-
 from cmk.gui.breadcrumb import Breadcrumb
+from cmk.gui.config import Config
 from cmk.gui.display_options import display_options
 from cmk.gui.exceptions import FinalizeRequest, MKUserError
 from cmk.gui.htmllib.generator import HTMLWriter
@@ -52,6 +51,7 @@ from cmk.gui.watolib.hosts_and_folders import folder_preserving_link
 from cmk.gui.watolib.mode import ModeRegistry, redirect, WatoMode
 from cmk.gui.watolib.objref import ObjectRefType
 from cmk.gui.watolib.paths import wato_var_dir
+from cmk.utils import render
 
 
 def register(mode_registry: ModeRegistry) -> None:
@@ -78,7 +78,7 @@ class ModeAuditLog(WatoMode):
     def title(self) -> str:
         return _("Audit log")
 
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         menu = PageMenu(
             dropdowns=[
                 PageMenuDropdown(
@@ -262,7 +262,7 @@ class ModeAuditLog(WatoMode):
             self._display_audit_log_options()
             return HTML.without_escaping(output_funnel.drain())
 
-    def action(self) -> ActionResult:
+    def action(self, config: Config) -> ActionResult:
         check_csrf_token()
 
         if not transactions.check_transaction():
@@ -280,7 +280,7 @@ class ModeAuditLog(WatoMode):
 
         return redirect(makeuri(request, []))
 
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         with html.form_context("fileselection_form", method="POST"):
             if not request.has_var("file_selection"):
                 html.write_text_permissive(_("Please choose an audit log to view:"))

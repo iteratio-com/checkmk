@@ -6,14 +6,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import assert_never, NamedTuple, NewType
 
-from cmk.utils.notify_types import NotificationParameterID, NotificationParameterMethod
-
-from cmk.gui.form_specs.vue.visitors import (
-    DataOrigin,
-    get_visitor,
-    VisitorOptions,
-)
-from cmk.gui.form_specs.vue.visitors._type_defs import DEFAULT_VALUE
+from cmk.gui.form_specs.vue import DEFAULT_VALUE, get_visitor, RawFrontendData, VisitorOptions
 from cmk.gui.i18n import _
 from cmk.gui.watolib.configuration_entity._folder import (
     get_folder_slidein_schema,
@@ -27,10 +20,10 @@ from cmk.gui.watolib.notification_parameter import (
     save_notification_parameter,
 )
 from cmk.gui.watolib.users import notification_script_title
-
 from cmk.rulesets.v1.form_specs import FormSpec
 from cmk.shared_typing import vue_formspec_components as shared_type_defs
 from cmk.shared_typing.configuration_entity import ConfigEntityType
+from cmk.utils.notify_types import NotificationParameterID, NotificationParameterMethod
 
 EntityId = NewType("EntityId", str)
 
@@ -47,6 +40,7 @@ def save_configuration_entity(
     data: object,
     object_id: EntityId | None,
     pprint_value: bool,
+    use_git: bool,
 ) -> ConfigurationEntityDescription:
     """Save a configuration entity.
 
@@ -58,7 +52,7 @@ def save_configuration_entity(
             param = save_notification_parameter(
                 notification_parameter_registry,
                 NotificationParameterMethod(entity_type_specifier),
-                data,
+                RawFrontendData(data),
                 object_id=NotificationParameterID(object_id) if object_id else None,
                 pprint_value=pprint_value,
             )
@@ -66,7 +60,9 @@ def save_configuration_entity(
                 ident=EntityId(param.ident), description=param.description
             )
         case ConfigEntityType.folder:
-            folder = save_folder_from_slidein_schema(data, pprint_value=pprint_value)
+            folder = save_folder_from_slidein_schema(
+                RawFrontendData(data), pprint_value=pprint_value, use_git=use_git
+            )
             return ConfigurationEntityDescription(
                 ident=EntityId(folder.path), description=folder.title
             )
@@ -97,7 +93,7 @@ def get_configuration_entity_schema(
     entity_type_specifier: str,
 ) -> ConfigurationEntitySchema:
     form_spec = _get_configuration_fs(entity_type, entity_type_specifier)
-    visitor = get_visitor(form_spec, VisitorOptions(DataOrigin.DISK))
+    visitor = get_visitor(form_spec, VisitorOptions(migrate_values=True, mask_values=False))
     schema, default_values = visitor.to_vue(DEFAULT_VALUE)
     return ConfigurationEntitySchema(schema=schema, default_values=default_values)
 

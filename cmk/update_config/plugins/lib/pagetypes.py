@@ -7,13 +7,12 @@ from logging import Logger
 from typing import Generic, override, Protocol, TypeVar
 
 from cmk.ccc.user import UserId
-
 from cmk.gui.exceptions import MKUserError
 from cmk.gui.pagetypes import (
     Overridable,
     OverridableInstances,
 )
-
+from cmk.update_config.lib import ExpiryVersion
 from cmk.update_config.plugins.pre_actions.utils import (
     ConflictMode,
     continue_per_users_choice,
@@ -44,7 +43,11 @@ class UpdatePagetypes(UpdateAction, Generic[_TOverridable_co]):
         continue_on_failure: bool = True,
     ):
         super().__init__(
-            name=name, title=title, sort_index=sort_index, continue_on_failure=continue_on_failure
+            name=name,
+            title=title,
+            sort_index=sort_index,
+            continue_on_failure=continue_on_failure,
+            expiry_version=ExpiryVersion.NEVER,
         )
         self._updater = updater
 
@@ -81,6 +84,7 @@ class PreUpdatePagetypes(PreUpdateAction, Generic[_TOverridable_co]):
             name=name,
             title=title,
             sort_index=sort_index,
+            expiry_version=ExpiryVersion.NEVER,
         )
         self._updater = updater
         self._element_name_for_logging = element_name

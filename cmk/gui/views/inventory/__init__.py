@@ -9,14 +9,10 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping, Sequence
 
 from cmk.ccc.user import UserId
-
-from cmk.utils.structured_data import SDKey, SDPath
-
 from cmk.gui import inventory
-from cmk.gui.data_source import data_source_registry
-from cmk.gui.i18n import _, _l
-from cmk.gui.inventory.filters import FilterInvBool, FilterInvFloat, FilterInvText
-from cmk.gui.painter.v0 import Painter, painter_registry
+from cmk.gui.data_source import DataSourceRegistry
+from cmk.gui.i18n import _l
+from cmk.gui.painter.v0 import Painter, PainterRegistry
 from cmk.gui.painter_options import PainterOptions
 from cmk.gui.type_defs import (
     ColumnSpec,
@@ -24,18 +20,20 @@ from cmk.gui.type_defs import (
     VisualContext,
     VisualLinkSpec,
 )
-from cmk.gui.views.sorter import Sorter, sorter_registry
+from cmk.gui.views.sorter import Sorter, SorterRegistry
 from cmk.gui.views.store import multisite_builtin_views
-from cmk.gui.visuals.filter import filter_registry
-from cmk.gui.visuals.info import visual_info_registry, VisualInfo
+from cmk.gui.visuals.filter import FilterRegistry
+from cmk.gui.visuals.info import VisualInfo, VisualInfoRegistry
 
 from ._data_sources import ABCDataSourceInventory, RowTableInventory
 from ._display_hints import (
-    AttributeDisplayHint,
     inv_display_hints,
+    load_inventory_ui_plugins,
     NodeDisplayHint,
+    OrderedColumnDisplayHintsOfView,
     PAINT_FUNCTION_NAME_PREFIX,
     register_display_hints,
+    TableWithView,
 )
 from ._painters import (
     attribute_painter_from_hint,
@@ -55,9 +53,11 @@ from .registry import (
 )
 
 __all__ = [
-    "inv_display_hints",
     "InventoryHintSpec",
     "NodeDisplayHint",
+    "OrderedColumnDisplayHintsOfView",
+    "TableWithView",
+    "inv_display_hints",
 ]
 
 
@@ -68,24 +68,29 @@ def register_inv_paint_functions(mapping: Mapping[str, object]) -> None:
 
 
 def _register_painter(
-    ident: str, spec: AttributePainterFromHint | ColumnPainterFromHint | NodePainterFromHint
+    painter_registry: PainterRegistry,
+    from_hint: AttributePainterFromHint | ColumnPainterFromHint | NodePainterFromHint,
 ) -> None:
     # TODO Clean this up one day
     cls = type(
-        "LegacyPainter%s" % ident.title(),
+        "LegacyPainter%s" % from_hint["name"].title(),
         (Painter,),
         {
-            "_ident": ident,
-            "_spec": spec,
+            "_ident": from_hint["name"],
+            "_spec": from_hint,
             "ident": property(lambda s: s._ident),
             "title": lambda s, cell: s._spec["title"],
             "short_title": lambda s, cell: s._spec.get("short", s.title),
             "tooltip_title": lambda s, cell: s._spec.get("tooltip_title", s.title),
             "columns": property(lambda s: s._spec["columns"]),
-            "render": lambda self, row, cell, user: spec["paint"](row),
-            "export_for_python": lambda self, row, cell, user: spec["export_for_python"](row, cell),
-            "export_for_csv": lambda self, row, cell, user: spec["export_for_csv"](row, cell),
-            "export_for_json": lambda self, row, cell, user: spec["export_for_json"](row, cell),
+            "render": lambda self, row, cell, user: from_hint["paint"](row),
+            "export_for_python": lambda self, row, cell, user: from_hint["export_for_python"](
+                row, cell
+            ),
+            "export_for_csv": lambda self, row, cell, user: from_hint["export_for_csv"](row, cell),
+            "export_for_json": lambda self, row, cell, user: from_hint["export_for_json"](
+                row, cell
+            ),
             "group_by": lambda self, row, cell: self._spec.get("groupby"),
             "parameters": property(lambda s: s._spec.get("params")),
             "painter_options": property(lambda s: s._spec.get("options", [])),
@@ -97,69 +102,20 @@ def _register_painter(
     painter_registry.register(cls)
 
 
-def _register_sorter(ident: str, spec: SorterFromHint) -> None:
+def _register_sorter(sorter_registry: SorterRegistry, from_hint: SorterFromHint) -> None:
     sorter_registry.register(
         Sorter(
-            ident=ident,
-            title=spec["title"],
-            columns=spec["columns"],
-            sort_function=lambda r1, r2, **_kwargs: spec["cmp"](r1, r2),
-            load_inv=spec.get("load_inv", False),
+            ident=from_hint["name"],
+            title=from_hint["title"],
+            columns=from_hint["columns"],
+            sort_function=lambda r1, r2, **_kwargs: from_hint["cmp"](r1, r2),
+            load_inv=from_hint.get("load_inv", False),
         )
     )
 
 
-def _make_attribute_filter(
-    ident: str, path: SDPath, key: SDKey, hint: AttributeDisplayHint
-) -> FilterInvText | FilterInvBool | FilterInvFloat:
-    inventory_path = inventory.InventoryPath(
-        path=path,
-        source=inventory.TreeSource.attributes,
-        key=key,
-    )
-    match hint.data_type:
-        case "str":
-            return FilterInvText(
-                ident=ident,
-                title=hint.long_title,
-                inventory_path=inventory_path,
-                is_show_more=hint.is_show_more,
-            )
-        case "bool":
-            return FilterInvBool(
-                ident=ident,
-                title=hint.long_title,
-                inventory_path=inventory_path,
-                is_show_more=hint.is_show_more,
-            )
-        case "bytes" | "bytes_rounded":
-            unit = _("MB")
-            scale = 1024 * 1024
-        case "hz":
-            unit = _("MHz")
-            scale = 1000000
-        case "volt":
-            unit = _("Volt")
-            scale = 1
-        case "timestamp":
-            unit = _("secs")
-            scale = 1
-        case _:
-            unit = ""
-            scale = 1
-
-    return FilterInvFloat(
-        ident=ident,
-        title=hint.long_title,
-        inventory_path=inventory_path,
-        unit=unit,
-        scale=scale,
-        is_show_more=hint.is_show_more,
-    )
-
-
 def _register_views(
-    hint: NodeDisplayHint,
+    table: TableWithView,
     painters: Sequence[ColumnSpec],
     filters: Iterable[FilterName],
 ) -> None:
@@ -167,12 +123,12 @@ def _register_views(
     context: VisualContext = {f: {} for f in filters}
 
     # View for searching for items
-    search_view_name = hint.table_view_name + "_search"
+    search_view_name = table.name + "_search"
     multisite_builtin_views[search_view_name] = {
         # General options
-        "title": _l("Search %s") % hint.title.lower(),
+        "title": _l("Search %s") % table.long_title.lower(),
         "description": (
-            _l("A view for searching in the inventory data for %s") % hint.title.lower()
+            _l("A view for searching in the inventory data for %s") % table.long_title.lower()
         ),
         "hidden": False,
         "hidebutton": False,
@@ -207,7 +163,7 @@ def _register_views(
         "link_from": {},
         "icon": None,
         "single_infos": [],
-        "datasource": hint.table_view_name,
+        "datasource": table.name,
         "topic": "inventory",
         "sort_index": 30,
         "public": True,
@@ -221,7 +177,7 @@ def _register_views(
         "mobile": False,
         "group_painters": [],
         "sorters": [],
-        "is_show_more": hint.table_is_show_more,
+        "is_show_more": table.is_show_more,
         "owner": UserId.builtin(),
         "add_context_to_title": True,
         "packaged": False,
@@ -229,26 +185,26 @@ def _register_views(
     }
 
     # View for the items of one host
-    host_view_name = make_table_view_name_of_host(hint.table_view_name)
+    host_view_name = make_table_view_name_of_host(table.name)
     multisite_builtin_views[host_view_name] = {
         # General options
-        "title": hint.title,
-        "description": _l("A view for the %s of one host") % hint.title,
+        "title": table.long_title,
+        "description": _l("A view for the %s of one host") % table.long_title,
         "hidden": True,
         "hidebutton": False,
         "mustsearch": False,
         "link_from": {
             "single_infos": ["host"],
-            "has_inventory_tree": hint.path,
+            "has_inventory_tree": table.path,
         },
         # Columns
         "painters": painters,
         # Filters
         "context": context,
-        "icon": hint.icon,
+        "icon": table.icon,
         "name": host_view_name,
         "single_infos": ["host"],
-        "datasource": hint.table_view_name,
+        "datasource": table.name,
         "topic": "inventory",
         "sort_index": 30,
         "public": True,
@@ -262,7 +218,7 @@ def _register_views(
         "mobile": False,
         "group_painters": [],
         "sorters": [],
-        "is_show_more": hint.table_is_show_more,
+        "is_show_more": table.is_show_more,
         "owner": UserId.builtin(),
         "add_context_to_title": True,
         "packaged": False,
@@ -270,21 +226,25 @@ def _register_views(
     }
 
 
-def _register_table_view(node_hint: NodeDisplayHint) -> None:
-    if not node_hint.table_view_name:
-        return
-
+def _register_table_view(
+    painter_registry: PainterRegistry,
+    sorter_registry: SorterRegistry,
+    filter_registry: FilterRegistry,
+    visual_info_registry: VisualInfoRegistry,
+    data_source_registry: DataSourceRegistry,
+    table: TableWithView,
+) -> None:
     # Declare the "info" (like a database table)
     visual_info_registry.register(
         type(
-            "VisualInfo%s" % node_hint.table_view_name.title(),
+            "VisualInfo%s" % table.name.title(),
             (VisualInfo,),
             {
-                "_ident": node_hint.table_view_name,
+                "_ident": table.name,
                 "ident": property(lambda self: self._ident),
-                "_title": node_hint.title,
+                "_title": table.long_title,
                 "title": property(lambda self: self._title),
-                "_title_plural": node_hint.title,
+                "_title_plural": table.long_title,
                 "title_plural": property(lambda self: self._title_plural),
                 "single_spec": property(lambda self: []),
             },
@@ -294,15 +254,15 @@ def _register_table_view(node_hint: NodeDisplayHint) -> None:
     # Create the datasource (like a database view)
     data_source_registry.register(
         type(
-            "DataSourceInventory%s" % node_hint.table_view_name.title(),
+            "DataSourceInventory%s" % table.name.title(),
             (ABCDataSourceInventory,),
             {
-                "_ident": node_hint.table_view_name,
+                "_ident": table.name,
                 "_inventory_path": inventory.InventoryPath(
-                    path=node_hint.path, source=inventory.TreeSource.table
+                    path=table.path, source=inventory.TreeSource.table
                 ),
-                "_title": node_hint.long_inventory_table_title,
-                "_infos": ["host", node_hint.table_view_name],
+                "_title": table.long_inventory_title,
+                "_infos": ["host", table.name],
                 "ident": property(lambda s: s._ident),
                 "title": property(lambda s: s._title),
                 "table": property(lambda s: RowTableInventory(s._ident, s._inventory_path)),
@@ -317,27 +277,26 @@ def _register_table_view(node_hint: NodeDisplayHint) -> None:
 
     painters: list[ColumnSpec] = []
     filters = []
-    for key, col_hint in node_hint.columns.items():
-        col_hint_ident = node_hint.column_ident(key)
-        _register_painter(col_hint_ident, column_painter_from_hint(col_hint_ident, col_hint))
-        _register_sorter(col_hint_ident, column_sorter_from_hint(col_hint_ident, col_hint))
-        filter_registry.register(
-            col_hint.filter_class(
-                inv_info=node_hint.table_view_name,
-                ident=col_hint_ident,
-                title=col_hint.long_title,
-            )
-        )
+    for col_hint in table.columns.values():
+        _register_painter(painter_registry, column_painter_from_hint(col_hint))
+        _register_sorter(sorter_registry, column_sorter_from_hint(col_hint))
+        filter_registry.register(col_hint.filter)
 
-        painters.append(ColumnSpec(col_hint_ident))
-        filters.append(col_hint_ident)
+        painters.append(ColumnSpec(col_hint.name))
+        filters.append(col_hint.name)
 
-    _register_views(node_hint, painters, filters)
+    _register_views(table, painters, filters)
 
 
-def register_table_views_and_columns() -> None:
-    register_display_hints(inventory_displayhints)
+def register_table_views_and_columns(
+    painter_registry: PainterRegistry,
+    sorter_registry: SorterRegistry,
+    filter_registry: FilterRegistry,
+    visual_info_registry: VisualInfoRegistry,
+    data_source_registry: DataSourceRegistry,
+) -> None:
     painter_options = PainterOptions.get_instance()
+    register_display_hints(load_inventory_ui_plugins(), inventory_displayhints)
     for node_hint in inv_display_hints:
         if "*" in node_hint.path:
             # FIXME DYNAMIC-PATHS
@@ -351,16 +310,25 @@ def register_table_views_and_columns() -> None:
             #   'DataSourceInventory' uses 'RowTableInventory'
             continue
 
-        _register_painter(node_hint.ident, node_painter_from_hint(node_hint, painter_options))
+        _register_painter(painter_registry, node_painter_from_hint(node_hint, painter_options))
 
         for key, attr_hint in node_hint.attributes.items():
-            attr_ident = node_hint.attribute_ident(key)
             _register_painter(
-                attr_ident, attribute_painter_from_hint(node_hint.path, key, attr_ident, attr_hint)
+                painter_registry,
+                attribute_painter_from_hint(node_hint.path, key, attr_hint),
             )
-            _register_sorter(attr_ident, attribute_sorter_from_hint(node_hint.path, key, attr_hint))
-            filter_registry.register(
-                _make_attribute_filter(attr_ident, node_hint.path, key, attr_hint)
+            _register_sorter(
+                sorter_registry,
+                attribute_sorter_from_hint(node_hint.path, key, attr_hint),
             )
+            filter_registry.register(attr_hint.filter)
 
-        _register_table_view(node_hint)
+        if isinstance(node_hint.table, TableWithView):
+            _register_table_view(
+                painter_registry,
+                sorter_registry,
+                filter_registry,
+                visual_info_registry,
+                data_source_registry,
+                node_hint.table,
+            )

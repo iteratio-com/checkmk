@@ -11,8 +11,7 @@ from cmk.gui.crash_handler import create_gui_crash_report
 from cmk.gui.exceptions import MKUserError
 from cmk.gui.watolib.hosts_and_folders import Folder
 from cmk.gui.watolib.rulesets import Ruleset, RulesetCollection
-
-from cmk.update_config.lib import format_warning
+from cmk.update_config.lib import ExpiryVersion, format_warning
 from cmk.update_config.plugins.lib.rulesets import load_and_transform, SKIP_ACTION
 from cmk.update_config.registry import update_action_registry, UpdateAction
 
@@ -20,7 +19,7 @@ from cmk.update_config.registry import update_action_registry, UpdateAction
 class UpdateRulesets(UpdateAction):
     @override
     def __call__(self, logger: Logger) -> None:
-        all_rulesets = load_and_transform(logger)
+        all_rulesets = load_and_transform(logger, use_git=active_config.wato_use_git)
         validate_rule_values(logger, all_rulesets)
         all_rulesets.save(pprint_value=active_config.wato_pprint_config, debug=active_config.debug)
 
@@ -96,5 +95,6 @@ update_action_registry.register(
         name="rulesets",
         title="Rulesets",
         sort_index=30,
+        expiry_version=ExpiryVersion.NEVER,
     )
 )

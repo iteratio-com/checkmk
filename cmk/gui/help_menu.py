@@ -6,10 +6,6 @@
 from collections.abc import Callable
 
 from cmk.ccc.version import __version__, edition
-
-from cmk.utils import paths
-from cmk.utils.licensing.registry import get_license_message
-
 from cmk.gui.htmllib.generator import HTMLWriter
 from cmk.gui.http import request
 from cmk.gui.i18n import _, _l
@@ -24,6 +20,8 @@ from cmk.gui.type_defs import (
 )
 from cmk.gui.utils.html import HTML
 from cmk.gui.utils.urls import doc_reference_url, DocReference, makeuri_contextless
+from cmk.utils import paths
+from cmk.utils.licensing.registry import get_license_message
 
 
 def register(
@@ -54,8 +52,8 @@ def default_info_line() -> str:
 def default_learning_entries() -> MainMenuTopicEntries:
     return [
         MainMenuItem(
-            name="getting_started",
-            title=_("Getting started"),
+            name="welcome_page",
+            title=_("Welcome page"),
             url="welcome.py",
             sort_index=10,
             icon="learning_beginner",

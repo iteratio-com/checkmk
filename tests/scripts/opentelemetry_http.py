@@ -7,6 +7,8 @@
 It sets up OpenTelemetry providers for metrics and logging, sends logs and metrics to a specified
 endpoint, and handles the shutdown on termination signals."""
 
+import argparse
+import base64
 import logging
 import signal
 import sys
@@ -26,10 +28,20 @@ from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
 from opentelemetry.sdk.resources import Resource
 
-ENDPOINT = "http://localhost:4318"
+HTTP_PORT = 4318
+ENDPOINT = f"http://localhost:{HTTP_PORT}"
 SERVICE_NAME = "test-service-http"
 LOG_LEVEL = logging.INFO
 SLEEP_DURATION = 30
+HTTP_METRIC_NAME = "test_counter_http"
+# Credentials for authentication
+USERNAME = "username"
+PASSWORD = "password"
+ENCODED_CREDENTIALS = base64.b64encode(f"{USERNAME}:{PASSWORD}".encode()).decode()
+AUTH_HEADERS = {"Authorization": f"Basic {ENCODED_CREDENTIALS}"}
+# OpenTelemetry logs configuration
+HTTP_LOG_LEVELS = ["info", "warning", "error"]
+HTTP_LOG_TEXT = "Test log level %s #%d"
 
 RESOURCE = Resource.create({"service.name": SERVICE_NAME})
 
@@ -42,6 +54,7 @@ def setup_metrics():
     console_logger.info("Setting up OpenTelemetry Metrics")
     metric_exporter = OTLPMetricExporter(
         endpoint=f"{ENDPOINT}/v1/metrics",
+        headers=AUTH_HEADERS,
     )
     metrics_reader = PeriodicExportingMetricReader(
         exporter=metric_exporter,
@@ -53,7 +66,7 @@ def setup_metrics():
 
 def setup_logging():
     console_logger.info("Setting up OpenTelemetry Logging")
-    log_exporter = OTLPLogExporter(endpoint=f"{ENDPOINT}/v1/logs")
+    log_exporter = OTLPLogExporter(endpoint=f"{ENDPOINT}/v1/logs", headers=AUTH_HEADERS)
     log_processor = BatchLogRecordProcessor(log_exporter)
     logger_provider = LoggerProvider(resource=RESOURCE)
     logger_provider.add_log_record_processor(log_processor)
@@ -66,39 +79,52 @@ def setup_logging():
 
 
 def shutdown_handler(
-    meter_provider: MeterProvider, logger_provider: LoggerProvider
+    meter_provider: MeterProvider, logger_provider: LoggerProvider | None
 ) -> Callable[[object, object], None]:
     def handler(signum: object, frame: object) -> None:
         console_logger.info("Shutting down OpenTelemetry providers and exiting")
         meter_provider.shutdown()
-        logger_provider.shutdown()
+        if logger_provider:
+            logger_provider.shutdown()
         sys.exit(0)
 
     return handler
 
 
 def main():
+    parser = argparse.ArgumentParser(description="OpenTelemetry GRPC Example")
+    parser.add_argument(
+        "--enable-logs",
+        action="store_true",
+        help="Enable OpenTelemetry logs",
+    )
+    args = parser.parse_args()
+
     meter, meter_provider = setup_metrics()
-    logger, logger_provider = setup_logging()
+    if args.enable_logs:
+        logger, logger_provider = setup_logging()
+        log_levels = [(level, getattr(logger, level)) for level in HTTP_LOG_LEVELS]
+    else:
+        logger, logger_provider = None, None
 
     success_shutdown_handler = shutdown_handler(meter_provider, logger_provider)
     signal.signal(signal.SIGINT, success_shutdown_handler)
     signal.signal(signal.SIGTERM, success_shutdown_handler)
 
     otel_counter = meter.create_counter(
-        name="test_counter",
+        name=HTTP_METRIC_NAME,
         unit="1",
         description="A simple counter for testing",
     )
 
-    console_logger.info("Starting sending logs and metrics to %s", ENDPOINT)
+    console_logger.info("Starting sending data to %s", ENDPOINT)
     counter = 0
 
     while True:
         console_logger.info(f"Counter value is {counter}.")
-        logger.info(f"Test log level INFO #{counter}")
-        logger.warning(f"Test log level WARNING #{counter}")
-        logger.error(f"Test log level ERROR #{counter}")
+        if logger:
+            for level_name, log_method in log_levels:
+                log_method(HTTP_LOG_TEXT % (level_name, counter))
         otel_counter.add(1, {"label": "test_label"})
         counter += 1
         time.sleep(SLEEP_DURATION)

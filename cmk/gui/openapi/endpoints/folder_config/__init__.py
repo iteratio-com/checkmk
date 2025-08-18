@@ -38,6 +38,7 @@ from typing import Any
 
 from werkzeug.datastructures import ETags
 
+from cmk import fields
 from cmk.gui import fields as gui_fields
 from cmk.gui.config import active_config
 from cmk.gui.exceptions import MKUserError
@@ -68,8 +69,6 @@ from cmk.gui.openapi.restful_objects.type_defs import CollectionObject, DomainOb
 from cmk.gui.openapi.utils import problem, ProblemException, serve_json
 from cmk.gui.utils import permission_verification as permissions
 from cmk.gui.watolib.hosts_and_folders import find_available_folder_name, Folder, folder_tree
-
-from cmk import fields
 
 PATH_FOLDER_FIELD = {
     "folder": gui_fields.FolderField(
@@ -132,7 +131,11 @@ def create(params: Mapping[str, Any]) -> Response:
         name = find_available_folder_name(title, parent_folder)
 
     folder = parent_folder.create_subfolder(
-        name, title, attributes, pprint_value=active_config.wato_pprint_config
+        name,
+        title,
+        attributes,
+        pprint_value=active_config.wato_pprint_config,
+        use_git=active_config.wato_use_git,
     )
 
     return _serve_folder(folder)
@@ -209,6 +212,7 @@ def update(params: Mapping[str, Any]) -> Response:
         folder.title() if "title" not in post_body else post_body["title"],
         attributes,
         pprint_value=active_config.wato_pprint_config,
+        use_git=active_config.wato_use_git,
     )
 
     return _serve_folder(folder)
@@ -261,7 +265,12 @@ def bulk_update(params: Mapping[str, Any]) -> Response:
                 faulty_folders.append(title)
                 continue
 
-        folder.edit(title, attributes, pprint_value=active_config.wato_pprint_config)
+        folder.edit(
+            title,
+            attributes,
+            pprint_value=active_config.wato_pprint_config,
+            use_git=active_config.wato_use_git,
+        )
         folders.append(folder)
 
     if faulty_folders:
@@ -303,7 +312,7 @@ def delete(params: Mapping[str, Any]) -> Response:
             status=409,
         )
 
-    parent.delete_subfolder(folder.name())
+    parent.delete_subfolder(folder.name(), use_git=active_config.wato_use_git)
 
     return Response(status=204)
 
@@ -338,7 +347,12 @@ def move(params: Mapping[str, Any]) -> Response:
     try:
         parent = folder.parent()
         assert parent is not None
-        parent.move_subfolder_to(folder, dest_folder, pprint_value=active_config.wato_pprint_config)
+        parent.move_subfolder_to(
+            folder,
+            dest_folder,
+            pprint_value=active_config.wato_pprint_config,
+            use_git=active_config.wato_use_git,
+        )
     except MKUserError as exc:
         raise ProblemException(
             title="Problem moving folder.",

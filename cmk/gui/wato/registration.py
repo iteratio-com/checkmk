@@ -12,6 +12,7 @@ from cmk.gui.pages import PageEndpoint, PageRegistry
 from cmk.gui.painter.v0 import PainterRegistry
 from cmk.gui.permissions import PermissionRegistry, PermissionSectionRegistry
 from cmk.gui.quick_setup.v0_unstable._registry import QuickSetupRegistry
+from cmk.gui.search import MatchItemGeneratorRegistry
 from cmk.gui.sidebar import SnapinRegistry
 from cmk.gui.type_defs import MainMenuTopic
 from cmk.gui.views.icon import IconRegistry
@@ -32,7 +33,6 @@ from cmk.gui.watolib.main_menu import MainModuleRegistry, MainModuleTopicRegistr
 from cmk.gui.watolib.mode import ModeRegistry
 from cmk.gui.watolib.notification_parameter import NotificationParameterRegistry
 from cmk.gui.watolib.rulespecs import RulespecGroupRegistry
-from cmk.gui.watolib.search import MatchItemGeneratorRegistry
 
 from . import (
     _ac_tests,
@@ -43,7 +43,6 @@ from . import (
     _omd_configuration,
     _permissions,
     _pre_21_plugin_api,
-    _rulespec_groups,
     _snapins,
     _tracing,
     filters,
@@ -126,7 +125,6 @@ def register(
     _permissions.register(permission_section_registry, permission_registry)
     _main_module_topics.register(main_module_topic_registry)
     _main_modules.register(main_module_registry)
-    _rulespec_groups.register(rulespec_group_registry)
     _pre_21_plugin_api.register()
     _check_mk_configuration.register(
         config_variable_registry,

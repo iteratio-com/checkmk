@@ -15,7 +15,6 @@ from cmk.gui.watolib.hosts_and_folders import folder_tree
 from cmk.gui.watolib.rulesets import Rule, RuleConditions, Ruleset, RulesetCollection
 from cmk.gui.watolib.rulespec_groups import RulespecGroupMonitoringConfigurationVarious
 from cmk.gui.watolib.rulespecs import Rulespec
-
 from cmk.update_config.plugins.lib import rulesets as rulesets_updater
 
 
@@ -92,7 +91,7 @@ def _instantiate_ruleset(
     rulespec: Rulespec | None = None,
     conditions: Mapping[str, Any] | None = None,
 ) -> Ruleset:
-    ruleset = Ruleset(ruleset_name, {}, rulespec=rulespec)
+    ruleset = Ruleset(ruleset_name, rulespec=rulespec)
     folder = folder_tree().root_folder()
     rule = Rule.from_ruleset_defaults(folder, ruleset)
     rule.value = param_value
@@ -156,7 +155,6 @@ def test_transform_replaced_wato_rulesets_and_params(
             ),
             rulespec_with_migration.name: Ruleset(
                 rulespec_with_migration.name,
-                {},
                 rulespec=rulespec_with_migration,
             ),
         }
@@ -212,5 +210,7 @@ def test_transform_remove_null_host_tag_conditions_from_rulesets(
     expected_keys_after = {"a", "b", "c", "d"}
 
     assert ruleset.get_rules()[0][2].get_rule_conditions().host_tags.keys() == expected_keys_before
-    rulesets_updater.transform_remove_null_host_tag_conditions_from_rulesets(getLogger(), rulesets)
+    rulesets_updater.transform_remove_null_host_tag_conditions_from_rulesets(
+        getLogger(), rulesets, raise_errors=False, use_git=False
+    )
     assert ruleset.get_rules()[0][2].get_rule_conditions().host_tags.keys() == expected_keys_after

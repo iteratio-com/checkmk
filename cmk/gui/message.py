@@ -4,27 +4,31 @@
 # conditions defined in the file COPYING, which is part of this source code package.
 
 import time
-from collections.abc import MutableSequence
-from datetime import datetime
+from collections.abc import Callable, Collection, Iterable, Mapping, Sequence, Set
+from datetime import datetime, timedelta
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from typing import Any, Literal, NotRequired, TypedDict
+from functools import partial
+from pathlib import Path
+from time import time as time_time
+from typing import Any, Final, Literal, NotRequired, TypedDict
 
-from cmk.ccc import store
-from cmk.ccc.user import UserId
+from pydantic import TypeAdapter
 
 import cmk.utils.paths
-from cmk.utils.mail import default_from_address, MailString, send_mail_sendmail, set_mail_headers
-
+from cmk.ccc.store import DimSerializer, ObjectStore
+from cmk.ccc.user import UserId
 from cmk.gui import userdb, utils
 from cmk.gui.breadcrumb import Breadcrumb, make_simple_page_breadcrumb
-from cmk.gui.config import active_config
+from cmk.gui.config import active_config, Config
+from cmk.gui.cron import CronJob, CronJobRegistry
 from cmk.gui.default_permissions import PERMISSION_SECTION_GENERAL
 from cmk.gui.exceptions import MKAuthException, MKInternalError, MKUserError
 from cmk.gui.htmllib.generator import HTMLWriter
 from cmk.gui.htmllib.header import make_header
 from cmk.gui.htmllib.html import html
 from cmk.gui.i18n import _, _l
+from cmk.gui.log import logger
 from cmk.gui.logged_in import user
 from cmk.gui.main_menu import main_menu_registry
 from cmk.gui.page_menu import (
@@ -37,6 +41,7 @@ from cmk.gui.page_menu import (
 )
 from cmk.gui.pages import PageEndpoint, PageRegistry
 from cmk.gui.permissions import Permission, permission_registry
+from cmk.gui.type_defs import AnnotatedUserId
 from cmk.gui.utils.html import HTML
 from cmk.gui.utils.transaction_manager import transactions
 from cmk.gui.valuespec import (
@@ -50,26 +55,12 @@ from cmk.gui.valuespec import (
     Optional,
     TextAreaUnicode,
 )
+from cmk.utils.mail import default_from_address, MailString, send_mail_sendmail, set_mail_headers
 
-MessageMethod = Literal["gui_hint", "gui_popup", "mail", "dashlet"]
-
-
-class MessageV0(TypedDict):
-    text: str
-    dest: tuple[str, list[UserId]]
-    methods: list[MessageMethod]
-    valid_till: int | None
-    id: str
-    time: int
-    security: NotRequired[bool]
-    acknowledged: NotRequired[bool]
-
-
-class MessageFromVS(TypedDict):
-    text: str
-    dest: tuple[str, list[UserId]]
-    methods: list[MessageMethod]
-    valid_till: int | None
+type MessageMethod = Literal["gui_hint", "gui_popup", "mail", "dashlet"]
+type MessageDestination = (
+    Literal["all_users", "online", "admin"] | tuple[Literal["list"], Sequence[AnnotatedUserId]]
+)
 
 
 class MessageText(TypedDict):
@@ -77,119 +68,140 @@ class MessageText(TypedDict):
     content: str
 
 
+# TODO: Use e.g. pydantic to *really* parse all parts.
 class Message(TypedDict):
     text: MessageText
-    dest: tuple[str, list[UserId]]
-    methods: list[MessageMethod]
+    dest: MessageDestination
+    methods: Sequence[MessageMethod]
     valid_till: int | None
-    # Later added by _process_message
     id: str
     time: int
     security: bool
     acknowledged: bool
 
 
-def register(page_registry: PageRegistry) -> None:
-    page_registry.register(PageEndpoint("message", page_message))
-
-
-def _parse_message(message: Message | MessageV0) -> Message:
-    if not isinstance(security := message.get("security"), bool):
-        security = False
-    if not isinstance(acknowledged := message.get("acknowledged"), bool):
-        acknowledged = False
+def create_message(
+    *,
+    text: MessageText,
+    dest: MessageDestination,
+    methods: Sequence[MessageMethod],
+    valid_till: int | None = None,
+    time: int | None = None,
+    security: bool = False,
+) -> Message:
     return Message(
-        text=(
-            MessageText(content_type="text", content=t)
-            if isinstance(t := message["text"], str)
-            else t
-        ),
-        dest=message["dest"],
-        methods=message["methods"],
-        valid_till=message.get("valid_till"),
-        id=message["id"],
-        time=message["time"],
+        text=text,
+        dest=dest,
+        methods=methods,
+        valid_till=valid_till,
+        id=utils.gen_id(),
+        time=int(time_time()) if time is None else time,
         security=security,
-        acknowledged=acknowledged,
+        acknowledged=False,
     )
 
 
-def get_gui_messages(user_id: UserId | None = None) -> MutableSequence[Message]:
-    if user_id is None:
-        user_id = user.ident
-    path = cmk.utils.paths.profile_dir / user_id / "messages.mk"
-    messages = [_parse_message(m) for m in store.load_object_from_file(path, default=[])]
+def register(
+    page_registry: PageRegistry,
+    cron_job_registry: CronJobRegistry,
+) -> None:
+    page_registry.register(PageEndpoint("message", page_message))
+    cron_job_registry.register(
+        CronJob(
+            name="execute_user_messages_spool_job",
+            callable=_execute_user_messages_spool_job,
+            # Usually there are no spooled messages, and the job is very fast then.
+            interval=timedelta(minutes=1),
+        )
+    )
 
-    # Delete too old messages and update security message durations
-    updated = False
-    for index, message in enumerate(messages):
-        now = time.time()
-        valid_till = message.get("valid_till")
-        valid_from = message.get("time")
-        if valid_till is not None:
+
+_MESSAGES_FILENAME = "messages.mk"
+
+
+def all_messages_paths() -> Iterable[Path]:
+    return cmk.utils.paths.profile_dir.glob(f"*/{_MESSAGES_FILENAME}")
+
+
+def _messages_path(user_id: UserId | None) -> Path:
+    return (
+        cmk.utils.paths.profile_dir
+        / (user.ident if user_id is None else user_id)
+        / _MESSAGES_FILENAME
+    )
+
+
+def _modify_gui_messages(
+    transform: Callable[[Iterable[Message]], list[Message]],
+    user_id: UserId | None = None,
+) -> list[Message]:
+    store = ObjectStore[list[Message]](_messages_path(user_id), serializer=DimSerializer())
+    with store.locked():
+        messages = store.read_obj(default=[])
+        updated_messages = transform(_remove_expired(_update_validity(messages)))
+        if messages != updated_messages:
+            store.write_obj(updated_messages)
+        return updated_messages
+
+
+def _update_validity(messages: Iterable[Message]) -> list[Message]:
+    duration = active_config.user_security_notification_duration
+    update_existing_duration = duration.get("update_existing_duration")
+    max_duration = duration.get("max_duration")
+    return [
+        (
+            {**message, "valid_till": message["time"] + max_duration}
             if (
-                message.get("security")
-                and active_config.user_security_notification_duration.get(
-                    "update_existing_duration"
-                )
-                and valid_from is not None
-                and (
-                    max_duration := active_config.user_security_notification_duration.get(
-                        "max_duration"
-                    )
-                )
-                is not None
-            ):
-                message["valid_till"] = valid_from + max_duration
-                updated = True
-            if valid_till < now:
-                messages.pop(index)
-                updated = True
+                message["valid_till"] is not None
+                and message["security"]
+                and update_existing_duration
+                and max_duration is not None
+            )
+            else message
+        )
+        for message in messages
+    ]
 
-    if updated:
-        save_gui_messages(messages, user_id)
 
-    return messages
+def get_gui_messages(user_id: UserId | None = None) -> list[Message]:
+    return _modify_gui_messages(list, user_id)
+
+
+def _remove_expired(messages: Iterable[Message]) -> list[Message]:
+    now = time.time()
+    return [
+        message
+        for message in messages
+        if (valid_till := message["valid_till"]) is None or valid_till >= now
+    ]
 
 
 def delete_gui_message(msg_id: str) -> None:
-    messages = get_gui_messages()
-    for index, msg in enumerate(messages):
-        if msg["id"] == msg_id and not msg.get("security"):
-            # If "Show popup message" and other options are combined,
-            # we have only to remove the popup method to avoid the
-            # popup appearing again
-            msg_methods = msg["methods"]
-            if len(msg_methods) != 1 and "gui_popup" in msg_methods:
-                messages[index]["methods"] = [
-                    method for method in msg_methods if method != "gui_popup"
-                ]
-                continue
-            messages.pop(index)
-    save_gui_messages(messages)
+    def keep_or_delete(message: Message) -> Message | None:
+        if message["id"] != msg_id or message["security"]:
+            return message
+        if len(message["methods"]) != 1 and "gui_popup" in message["methods"]:
+            # If "Show popup message" and other options are combined, we have only to remove the
+            # popup method to avoid the popup appearing again.
+            return {**message, "methods": [m for m in message["methods"] if m != "gui_popup"]}
+        return None
+
+    _modify_gui_messages(
+        lambda messages: [
+            updated_message
+            for message in messages
+            if (updated_message := keep_or_delete(message)) is not None
+        ]
+    )
 
 
-def acknowledge_gui_message(msg_id: str) -> None:
-    messages = get_gui_messages()
-    for index, msg in enumerate(messages):
-        if msg["id"] == msg_id:
-            messages[index]["acknowledged"] = True
-    save_gui_messages(messages)
-
-
-def acknowledge_all_messages() -> None:
-    messages = get_gui_messages()
-    for index, _msg in enumerate(messages):
-        messages[index]["acknowledged"] = True
-    save_gui_messages(messages)
-
-
-def save_gui_messages(messages: MutableSequence[Message], user_id: UserId | None = None) -> None:
-    if user_id is None:
-        user_id = user.ident
-    path = cmk.utils.paths.profile_dir / user_id / "messages.mk"
-    path.parent.mkdir(mode=0o770, exist_ok=True)
-    store.save_object_to_file(path, messages)
+def acknowledge_gui_message(msg_id: str | None) -> None:
+    _modify_gui_messages(
+        lambda messages: [
+            ({**message, "acknowledged": True} if msg_id in (message["id"], None) else message)
+            for message in messages
+        ]
+    )
 
 
 def _messaging_methods() -> dict[MessageMethod, dict[str, Any]]:
@@ -197,22 +209,22 @@ def _messaging_methods() -> dict[MessageMethod, dict[str, Any]]:
         "gui_popup": {
             "title": _("Show popup message"),
             "confirmation_title": _("as a popup message"),
-            "handler": message_gui,
+            "handler": _message_gui,
         },
         "gui_hint": {
             "title": _("Show hint in the 'User' menu"),
             "confirmation_title": _("as a hint in the 'User' menu"),
-            "handler": message_gui,
+            "handler": _message_gui,
         },
         "mail": {
             "title": _("Send email"),
             "confirmation_title": _("as an email"),
-            "handler": message_mail,
+            "handler": _message_mail,
         },
         "dashlet": {
             "title": _("Show in the dashboard element 'User messages'"),
             "confirmation_title": _("in the dashboard element 'User messages'"),
-            "handler": message_gui,
+            "handler": _message_gui,
         },
     }
 
@@ -231,7 +243,7 @@ permission_registry.register(
 )
 
 
-def page_message() -> None:
+def page_message(config: Config) -> None:
     if not user.may("general.message"):
         raise MKAuthException(_("You are not allowed to use the message module."))
 
@@ -240,19 +252,23 @@ def page_message() -> None:
     menu = _page_menu(breadcrumb)
     make_header(html, title, breadcrumb, menu)
 
-    vs_message = _vs_message()
+    vs_message = _vs_message(
+        userdb.UserData.from_userspec({"user_id": UserId(uid), **attrs})
+        for uid, attrs in config.multisite_users.items()
+    )
 
     if transactions.check_transaction():
         try:
             msg = vs_message.from_html_vars("_message")
             vs_message.validate_value(msg, "_message")
             _process_message(
-                MessageFromVS(
-                    text=msg["text"],
+                create_message(
+                    text=MessageText(content_type="text", content=msg["text"]),
                     dest=msg["dest"],
                     methods=msg["methods"],
                     valid_till=msg["valid_till"],
-                )
+                ),
+                multisite_user_ids=config.multisite_users.keys(),
             )
         except MKUserError as e:
             html.user_error(e)
@@ -296,7 +312,7 @@ def _page_menu(breadcrumb: Breadcrumb) -> PageMenu:
     return menu
 
 
-def _vs_message() -> Dictionary:
+def _vs_message(users: Iterable[userdb.UserData]) -> Dictionary:
     dest_choices: list[CascadingDropdownChoice] = [
         ("all_users", _("All users")),
         (
@@ -304,15 +320,13 @@ def _vs_message() -> Dictionary:
             _("A list of specific users"),
             DualListChoice(
                 choices=sorted(
-                    [
-                        (uid, u.get("alias", uid))
-                        for uid, u in active_config.multisite_users.items()
-                    ],
+                    [(u.user_id, u.alias) for u in users],
                     key=lambda x: x[1].lower(),
                 ),
                 allow_empty=False,
             ),
         ),
+        # TODO: Shall we add "admin" here, too?
         # ('contactgroup', _('All members of a contact group')),
         ("online", _("All online users")),
     ]
@@ -368,12 +382,14 @@ def _vs_message() -> Dictionary:
                 ),
             ),
         ],
-        validate=_validate_msg,
+        validate=partial(_validate_msg, all_users=users),
         optional_keys=[],
     )
 
 
-def _validate_msg(msg: DictionaryModel, _varprefix: str) -> None:
+def _validate_msg(
+    msg: DictionaryModel, _varprefix: str, all_users: Iterable[userdb.UserData]
+) -> None:
     if not msg.get("methods"):
         raise MKUserError("methods", _("Please select at least one messaging method."))
 
@@ -384,27 +400,15 @@ def _validate_msg(msg: DictionaryModel, _varprefix: str) -> None:
 
     # On manually entered list of users validate the names
     if isinstance(msg["dest"], tuple) and msg["dest"][0] == "list":
-        existing = set(active_config.multisite_users.keys())
-        for user_id in msg["dest"][1]:
-            if user_id not in existing:
-                raise MKUserError("dest", _('A user with the id "%s" does not exist.') % user_id)
+        known_user_ids = frozenset(user.user_id for user in all_users)
+        unknown_user_ids = set(msg["dest"][1]) - known_user_ids
+        if unknown_user_ids:
+            first_unknown = next(iter(unknown_user_ids))
+            raise MKUserError("dest", _('A user with the id "%s" does not exist.') % first_unknown)
 
 
-def _process_message(
-    msg_from_vs: MessageFromVS,
-) -> None:  # pylint: disable=too-many-branches
-    msg = Message(
-        text=MessageText(content_type="text", content=msg_from_vs["text"]),
-        dest=msg_from_vs["dest"],
-        methods=msg_from_vs["methods"],
-        valid_till=msg_from_vs["valid_till"],
-        id=utils.gen_id(),
-        time=int(time.time()),
-        security=False,
-        acknowledged=False,
-    )
-
-    recipients, num_success, errors = send_message(msg)
+def _process_message(msg: Message, multisite_user_ids: Set[str]) -> None:
+    recipients, num_success, errors = send_message(msg, multisite_user_ids)
     num_recipients = len(recipients)
 
     message = HTML.with_escaping(_("The message has successfully been sent..."))
@@ -442,52 +446,65 @@ def _process_message(
 
 
 def send_message(
-    msg: Message,
-) -> tuple[list[UserId], dict[str, int], dict[MessageMethod, list[tuple]]]:
-    if isinstance(msg["dest"], str):
-        dest_what = msg["dest"]
-    else:
-        dest_what = msg["dest"][0]
-
-    if dest_what == "all_users":
-        recipients = list(map(UserId, active_config.multisite_users.keys()))
-    elif dest_what == "online":
-        recipients = userdb.get_online_user_ids(datetime.now())
-    elif dest_what == "list":
-        recipients = list(map(UserId, msg["dest"][1]))
-    else:
-        recipients = []
-
-    num_success: dict[str, int] = {}
-    for method in msg["methods"]:
-        num_success[method] = 0
-
-    # Now loop all messaging methods to send the messages
-    errors: dict[MessageMethod, list[tuple]] = {}
+    msg: Message, multisite_user_ids: Set[str]
+) -> tuple[
+    Collection[UserId],
+    Mapping[MessageMethod, int],
+    Mapping[MessageMethod, Collection[tuple[UserId, Exception]]],
+]:
+    recipients = _recipients_for(msg["dest"], multisite_user_ids)
+    num_success = {method: 0 for method in msg["methods"]}
+    errors = dict[MessageMethod, list[tuple[UserId, Exception]]]()
     for user_id in recipients:
         for method in msg["methods"]:
             try:
-                handler = _messaging_methods()[method]["handler"]
-                handler(user_id, msg)
-                num_success[method] = num_success[method] + 1
+                _messaging_methods()[method]["handler"](user_id, msg)
+                num_success[method] += 1
             except MKInternalError as e:
                 errors.setdefault(method, []).append((user_id, e))
-
     return recipients, num_success, errors
+
+
+def _recipients_for(
+    destination: MessageDestination, multisite_user_ids: Set[str]
+) -> Collection[UserId]:
+    match destination:
+        case "all_users":
+            return [UserId(s) for s in multisite_user_ids]
+        case "online":
+            return userdb.get_online_user_ids(datetime.now())
+        case "admin":
+            return [
+                user_id
+                for user_id, attr in userdb.load_users(lock=False).items()
+                if attr.get("automation_user", False) is False and "admin" in attr.get("roles", [])
+            ]
+        case ("list", user_ids):
+            # Although the GUI has already validated the IDs, we need some "backend validation" here
+            # for e.g. the spool mechanism.
+            requested_user_ids = frozenset(user_ids)
+            # NOTE: It would be nice if the multisite_user_ids were a Set[UserId].
+            known_user_ids = frozenset(UserId(s) for s in multisite_user_ids)
+            if unknown_user_ids := requested_user_ids - known_user_ids:
+                logger.warning(f"ignoring unknown user ID(s) {', '.join(unknown_user_ids)}")
+            return requested_user_ids & known_user_ids
+        case other:
+            # assert_never(other) doesn't work here due to several mypy bugs
+            raise ValueError(f"Invalid message destination {other}")
 
 
 #   ---Message Plugins-------------------------------------------------------
 
 
-def message_gui(user_id: UserId, msg: Message) -> bool:
-    messages = get_gui_messages(user_id)
-    if msg not in messages:
-        messages.append(msg)
-        save_gui_messages(messages, user_id)
+def _message_gui(user_id: UserId, msg: Message) -> bool:
+    _modify_gui_messages(
+        lambda messages: msgs if msg in (msgs := list(messages)) else msgs + [msg],
+        user_id,
+    )
     return True
 
 
-def message_mail(user_id: UserId, msg: Message) -> bool:
+def _message_mail(user_id: UserId, msg: Message) -> bool:
     users = userdb.load_users(lock=False)
     user_spec = users.get(user_id)
 
@@ -497,14 +514,13 @@ def message_mail(user_id: UserId, msg: Message) -> bool:
     if not (user_email := user_spec.get("email")):
         raise MKInternalError(_("This user has no mail address configured."))
 
-    recipient_name = user_spec.get("alias")
-    if not recipient_name:
+    if not (recipient_name := user_spec.get("alias")):
         recipient_name = user_id
 
     if user.id is None:
         raise Exception("no user ID")
-    sender_name = users[user.id].get("alias")
-    if not sender_name:
+
+    if not (sender_name := users[user.id].get("alias")):
         sender_name = user_id
 
     body = _("""Greetings %s,\n\n%s sent you a message: \n\n---\n%s\n---""") % (
@@ -513,7 +529,7 @@ def message_mail(user_id: UserId, msg: Message) -> bool:
         msg["text"],
     )
 
-    if valid_till := msg.get("valid_till"):
+    if valid_till := msg["valid_till"]:
         body += _("This message has been created at %s and is valid till %s.") % (
             time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(msg["time"])),
             time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(valid_till)),
@@ -538,3 +554,46 @@ def message_mail(user_id: UserId, msg: Message) -> bool:
         raise MKInternalError(_("Mail could not be delivered: '%s'") % exc) from exc
 
     return True
+
+
+class SpooledMessage(TypedDict):
+    text: str | MessageText
+    dest: MessageDestination
+    methods: Sequence[MessageMethod]
+    valid_till: NotRequired[int]
+    time: NotRequired[int]
+    security: NotRequired[bool]
+
+
+_SPOOLED_MESSAGE_ADAPTER: Final = TypeAdapter(SpooledMessage)
+
+
+def to_message(spooled: SpooledMessage) -> Message:
+    return create_message(
+        text=(
+            MessageText(content_type="text", content=text)
+            if isinstance(text := spooled["text"], str)
+            else text
+        ),
+        dest=spooled["dest"],
+        methods=spooled["methods"],
+        valid_till=spooled.get("valid_till"),
+        time=spooled.get("time"),
+        security=spooled.get("security", False),
+    )
+
+
+def _execute_user_messages_spool_job(config: Config) -> None:
+    for path in sorted(
+        cmk.utils.paths.user_messages_spool_dir.glob("[!.]*"),
+        key=lambda p: p.stat().st_mtime,
+    ):
+        try:
+            message = to_message(_SPOOLED_MESSAGE_ADAPTER.validate_json(path.read_text()))
+            logger.debug("unspooled user message from %s: %s", path, message)
+            send_message(message, config.multisite_users.keys())
+        except Exception as exc:
+            logger.warning(f"ignoring spooled user message at {path}: {exc}")
+        finally:
+            logger.debug("removing spooled user message at %s", path)
+            path.unlink()

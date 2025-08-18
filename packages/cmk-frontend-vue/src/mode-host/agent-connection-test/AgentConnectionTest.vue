@@ -8,11 +8,18 @@ import { ref, onMounted, computed } from 'vue'
 import type { Ref } from 'vue'
 import usei18n from '@/lib/i18n'
 import CmkButton from '@/components/CmkButton.vue'
-import SlideIn from '@/components/SlideIn.vue'
+import CmkSlideInDialog from '@/components/CmkSlideInDialog.vue'
 import CmkIcon from '@/components/CmkIcon.vue'
-import { type I18NAgentConnection, type ModeHostSite } from 'cmk-shared-typing/typescript/mode_host'
+import AgentInstallSlideOutContent from '@/mode-host/agent-connection-test/components/AgentInstallSlideOutContent.vue'
+import AgentRegisterSlideOutContent from '@/mode-host/agent-connection-test/components/AgentRegisterSlideOutContent.vue'
+import {
+  type ModeHostSite,
+  type ModeHostAgentConnectionMode
+} from 'cmk-shared-typing/typescript/mode_host'
 
-const { t } = usei18n('agent_connection_test')
+import { type AgentSlideout } from 'cmk-shared-typing/typescript/agent_slideout'
+
+const { _t } = usei18n()
 
 interface Props {
   formElement: HTMLFormElement
@@ -24,24 +31,31 @@ interface Props {
   ipv6InputElement: HTMLInputElement
   siteSelectElement: HTMLSelectElement
   ipAddressFamilySelectElement: HTMLSelectElement
-  i18n: I18NAgentConnection
+  cmkAgentConnectionModeSelectElement: HTMLSelectElement | null
   sites: Array<ModeHostSite>
-  url: string
+  agentConnectionModes: Array<ModeHostAgentConnectionMode>
+  agent_slideout: AgentSlideout
 }
 
 const props = defineProps<Props>()
 
 const slideInOpen = ref(false)
-const externalContent = ref('')
 
 const showTest = ref(true)
 const switchVisibility = () => {
+  const agentConnectionModeHash = props.cmkAgentConnectionModeSelectElement?.value
+  const agentConnectionMode =
+    props.agentConnectionModes.find((mode) => mode.id_hash === agentConnectionModeHash)?.mode ?? ''
+  if (agentConnectionMode === 'push-agent') {
+    showTest.value = false
+    return
+  }
   if (props.changeTagAgent.checked) {
     showTest.value = props.tagAgent.value === 'all-agents' || props.tagAgent.value === 'cmk-agent'
-  } else {
-    /* TODO: Not the best solution but we have no value here */
-    showTest.value = !props.tagAgentDefault.textContent?.includes('no Checkmk agent')
+    return
   }
+  /* TODO: Not the best solution but we have no value here */
+  showTest.value = !props.tagAgentDefault.textContent?.includes('no Checkmk agent')
 }
 switchVisibility()
 
@@ -53,6 +67,14 @@ const targetElement = ref<HTMLElement>(
 )
 
 onMounted(() => {
+  if (sessionStorage.getItem('reopenSlideIn') === 'true') {
+    void startAjax().then(() => {
+      if (!props.agent_slideout.save_host) {
+        slideInOpen.value = true
+        sessionStorage.removeItem('reopenSlideIn')
+      }
+    })
+  }
   props.formElement.addEventListener('change', (e: Event) => {
     switch (e.target) {
       case props.formElement:
@@ -87,18 +109,33 @@ const isError = ref(false)
 const errorDetails = ref('')
 const tooltipText = computed(() => {
   if (isLoading.value) {
-    return props.i18n.msg_loading
+    return _t('Agent connection test running')
   }
   if (isSuccess.value) {
-    return props.i18n.msg_success
+    return _t('Agent connection successful')
   }
   if (isError.value) {
-    return props.i18n.msg_error
+    return _t(
+      'Connection failed, enter new hostname to check again or download and install the Checkmk agent.'
+    )
   }
   if (!hostname.value) {
-    return props.i18n.msg_missing
+    return _t('Please enter a hostname to test Checkmk agent connection')
   }
-  return props.i18n.msg_start
+  return _t('Test Checkmk agent connection')
+})
+const isNotRegistered = computed(() => {
+  if (errorDetails.value.includes('controller not registered')) {
+    return true
+  }
+  return false
+})
+
+const slideOutTitle = computed(() => {
+  if (isNotRegistered.value) {
+    return _t('Register agent')
+  }
+  return _t('Install Checkmk agent')
 })
 
 type AutomationResponse = {
@@ -163,77 +200,71 @@ async function callAjax(url: string, { method }: AjaxOptions): Promise<void> {
 }
 
 // Use general way for AjaxCalls if available
-const startAjax = (): void => {
+const startAjax = (): Promise<void> => {
   isSuccess.value = false
   isError.value = false
 
-  void callAjax('wato_ajax_diag_cmk_agent.py', {
+  return callAjax('wato_ajax_diag_cmk_agent.py', {
     method: 'POST'
   })
 }
 
-const reTestAgentTitle = t('re-test-agent-title', 'Re-test agent connection')
-const reTestAgentButton = t('re-test-agent-button', 'Re-test agent connection')
-const reTestAgentClick: () => void = startAjax
+const reTestAgentTitle = _t('Re-test agent connection')
+const reTestAgentButton = _t('Re-test agent connection')
+const reTestAgentClick: () => Promise<void> = startAjax
 const openSlideoutClick: () => void = () => {
   slideInOpen.value = true
 }
+const closeButtonTitle = _t('Close & test agent connection')
 
 interface ContainerValues {
   header: string
   txt: string
   buttonOneTitle: string
   buttonOneButton: string
-  buttonOneClick: () => void
+  buttonOneClick: () => void | Promise<void>
   buttonTwoTitle: string
   buttonTwoButton: string
-  buttonTwoClick: () => void
+  buttonTwoClick: () => void | Promise<void>
 }
 
 const warnContainerValues = computed<ContainerValues>(() => {
-  let header = t('test-agent-general-header', 'Agent connection failed')
+  let header = _t('Agent connection failed')
   let txt = errorDetails.value
   let buttonOneTitle = reTestAgentTitle
   let buttonOneButton = reTestAgentButton
-  let buttonOneClick = reTestAgentClick
+  let buttonOneClick: () => void | Promise<void> = reTestAgentClick
   let buttonTwoTitle = ''
   let buttonTwoButton = ''
-  let buttonTwoClick = () => {}
+  let buttonTwoClick: () => void | Promise<void> = () => {}
 
   if (errorDetails.value.includes('[Errno 111]')) {
-    header = t('test-agent-warning-header', 'Failed to connect to the Checkmk agent')
-    txt = t(
-      'test-agent-warning-msg',
-      'This may be because the agent is not installed or not running on the target system.'
-    )
-    buttonOneTitle = t('download-agent-title', 'Download % install agent')
-    buttonOneButton = t('download-agent-button', 'Download Checkmk agent')
+    header = _t('Failed to connect to the Checkmk agent')
+    txt = _t('This may be because the agent is not installed or not running on the target system.')
+    buttonOneTitle = _t('Download % install agent')
+    buttonOneButton = _t('Download Checkmk agent')
     buttonOneClick = openSlideoutClick
     buttonTwoTitle = reTestAgentTitle
     buttonTwoButton = reTestAgentButton
     buttonTwoClick = reTestAgentClick
   }
-  if (errorDetails.value.includes('controller not registered')) {
-    header = t('test-agent-not-registered-header', 'Agent not registered')
-    txt = t(
-      'test-agent-not-registered-msg',
-      'The agent has been installed on the target system but has not yet been registered.'
-    )
-    buttonOneTitle = t('register-agent-title', 'Register agent')
-    buttonOneButton = t('register-agent-button', 'Register Checkmk agent')
+  if (isNotRegistered.value) {
+    header = _t('Agent not registered')
+    txt = _t('The agent has been installed on the target system but has not yet been registered.')
+    buttonOneTitle = _t('Register agent')
+    buttonOneButton = _t('Register Checkmk agent')
     buttonOneClick = openSlideoutClick
     buttonTwoTitle = reTestAgentTitle
     buttonTwoButton = reTestAgentButton
     buttonTwoClick = reTestAgentClick
   }
   if (errorDetails.value.includes('is not providing it')) {
-    header = t('test-agent-no-tls-header', 'TLS connection not provided')
-    txt = t(
-      'test-agent-not-registered-msg',
+    header = _t('TLS connection not provided')
+    txt = _t(
       'The agent has been installed on the target system but is not providing a TLS connection.'
     )
-    buttonOneTitle = t('tls-agent-title', 'Provide TLS connection')
-    buttonOneButton = t('tls-agent-button', 'Provide TLS connection')
+    buttonOneTitle = _t('Provide TLS connection')
+    buttonOneButton = _t('Provide TLS connection')
     buttonOneClick = openSlideoutClick
     buttonTwoTitle = reTestAgentTitle
     buttonTwoButton = reTestAgentButton
@@ -264,18 +295,18 @@ const warnContainerValues = computed<ContainerValues>(() => {
       @click="startAjax"
     >
       <CmkIcon name="connection-tests" size="small" :title="tooltipText" class="button-icon" />
-      {{ t('msg-start-test', 'Test agent connection') }}
+      {{ _t('Test agent connection') }}
     </CmkButton>
 
     <div v-if="isLoading" class="loading-container">
       <CmkIcon name="load-graph" :title="tooltipText" size="medium" variant="inline" />
-      {{ t('test-agent-loading', 'Testing agent connection ...') }}
+      {{ _t('Testing agent connection ...') }}
     </div>
 
     <div v-if="isSuccess" class="success-container">
       <CmkIcon name="checkmark" :title="tooltipText" size="medium" variant="inline" />
-      {{ t('test-agent-success', 'Successfully connected to agent.') }}
-      <a href="#" @click.prevent="startAjax">{{ t('msg-retest', 'Re-test agent connection') }}</a>
+      {{ _t('Successfully connected to agent.') }}
+      <a href="#" @click.prevent="startAjax">{{ _t('Re-test agent connection') }}</a>
     </div>
 
     <div v-if="isError" class="warn-container">
@@ -305,14 +336,35 @@ const warnContainerValues = computed<ContainerValues>(() => {
       </div>
     </div>
 
-    <SlideIn
+    <CmkSlideInDialog
+      :header="{
+        title: slideOutTitle,
+        closeButton: true
+      }"
       :open="slideInOpen"
-      :header="{ title: i18n.slide_in_title, closeButton: true }"
       @close="slideInOpen = false"
     >
-      <!-- eslint-disable-next-line vue/no-v-html -->
-      <div v-html="externalContent"></div>
-    </SlideIn>
+      <AgentRegisterSlideOutContent
+        v-if="isNotRegistered"
+        :all_agents_url="agent_slideout.all_agents_url"
+        :host_name="hostname"
+        :agent_registration_cmds="agent_slideout.agent_registration_cmds"
+        :close_button_title="closeButtonTitle"
+        :save_host="agent_slideout.save_host"
+        @close="((slideInOpen = false), (isError = false), startAjax())"
+      />
+      <AgentInstallSlideOutContent
+        v-else
+        :all_agents_url="agent_slideout.all_agents_url"
+        :host_name="hostname"
+        :agent_install_cmds="agent_slideout.agent_install_cmds"
+        :agent_registration_cmds="agent_slideout.agent_registration_cmds"
+        :legacy_agent_url="agent_slideout.legacy_agent_url"
+        :close_button_title="closeButtonTitle"
+        :save_host="agent_slideout.save_host"
+        @close="((slideInOpen = false), (isError = false), startAjax())"
+      />
+    </CmkSlideInDialog>
   </Teleport>
 </template>
 

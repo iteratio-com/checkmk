@@ -8,16 +8,10 @@ from typing import Any, Literal
 
 import pytest
 
-from tests.unit.cmk.web_test_app import WebTestAppForCMK
-
 import cmk.ccc.version as cmk_version
-from cmk.ccc.site import SiteId
-
-from cmk.utils import paths
-from cmk.utils.livestatus_helpers.testing import MockLiveStatusConnection
-
 import cmk.gui.plugins.views
 import cmk.gui.views
+from cmk.ccc.site import SiteId
 from cmk.gui.config import active_config
 from cmk.gui.data_source import ABCDataSource, RowTable
 from cmk.gui.display_options import display_options
@@ -40,6 +34,9 @@ from cmk.gui.views.inventory.registry import inventory_displayhints
 from cmk.gui.views.layout import layout_registry
 from cmk.gui.views.page_show_view import get_limit
 from cmk.gui.views.store import multisite_builtin_views
+from cmk.utils import paths
+from cmk.utils.livestatus_helpers.testing import MockLiveStatusConnection
+from tests.unit.cmk.web_test_app import WebTestAppForCMK
 
 
 def test_registered_painter_options(request_context: None) -> None:
@@ -329,7 +326,7 @@ def test_legacy_register_command(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_painter_export_title(monkeypatch: pytest.MonkeyPatch, view: View) -> None:
-    registered_painters = all_painters(active_config)
+    registered_painters = all_painters(active_config.tags.tag_groups)
     painters: list[Painter] = [
         painter_class(
             config=active_config,
@@ -374,7 +371,7 @@ def test_legacy_register_painter(monkeypatch: pytest.MonkeyPatch, view: View) ->
         },
     )
 
-    registered_painters = all_painters(active_config)
+    registered_painters = all_painters(active_config.tags.tag_groups)
     painter = registered_painters["abc"](
         config=active_config,
         request=request,

@@ -15,17 +15,8 @@ import pytest
 from fastapi.testclient import TestClient
 from pytest_mock import MockerFixture
 
-from tests.testlib.common.utils import wait_until
-
-from tests.unit.cmk.base.emptyconfig import EMPTYCONFIG
-
-from cmk.ccc.version import Version
-
 from cmk.automations.helper_api import AutomationPayload, AutomationResponse
 from cmk.automations.results import ABCAutomationResult, SerializedResult
-
-from cmk.checkengine.plugins import AgentBasedPlugins
-
 from cmk.base.automation_helper._app import (
     _reloader_task,
     _State,
@@ -37,6 +28,10 @@ from cmk.base.automation_helper._cache import Cache
 from cmk.base.automation_helper._config import ReloaderConfig
 from cmk.base.automations import AutomationError
 from cmk.base.config import ConfigCache, LoadingResult
+from cmk.ccc.version import Version
+from cmk.checkengine.plugins import AgentBasedPlugins
+from tests.testlib.common.utils import wait_until
+from tests.unit.cmk.base.empty_config import EMPTY_CONFIG
 
 
 class _DummyAutomationResult(ABCAutomationResult):
@@ -238,7 +233,7 @@ def test_automation_reloads_if_necessary(mocker: MockerFixture, cache: Cache) ->
 
 
 def test_health_check(cache: Cache) -> None:
-    loaded_config = EMPTYCONFIG
+    loaded_config = EMPTY_CONFIG
     with _make_test_client(
         _DummyAutomationEngineSuccess(),
         cache,

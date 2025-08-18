@@ -24,9 +24,6 @@ from collections.abc import Mapping
 from typing import Any
 
 from cmk.ccc import version
-
-from cmk.utils import paths
-
 from cmk.gui.config import active_config
 from cmk.gui.http import Response
 from cmk.gui.logged_in import user
@@ -61,6 +58,7 @@ from cmk.gui.utils import permission_verification as permissions
 from cmk.gui.watolib import groups
 from cmk.gui.watolib.groups import GroupInUseException, UnknownGroupException
 from cmk.gui.watolib.groups_io import load_host_group_information
+from cmk.utils import paths
 
 PERMISSIONS = permissions.Perm("wato.groups")
 
@@ -90,7 +88,13 @@ def create(params: Mapping[str, Any]) -> Response:
     group_details = {"alias": body["alias"]}
     if version.edition(paths.omd_root) is version.Edition.CME:
         group_details = update_customer_info(group_details, body["customer"])
-    groups.add_group(name, "host", group_details, pprint_value=active_config.wato_pprint_config)
+    groups.add_group(
+        name,
+        "host",
+        group_details,
+        pprint_value=active_config.wato_pprint_config,
+        use_git=active_config.wato_use_git,
+    )
     group = fetch_group(name, "host")
     return serve_group(group, serialize_group("host_group_config"))
 
@@ -114,7 +118,11 @@ def bulk_create(params: Mapping[str, Any]) -> Response:
     host_group_names = []
     for group_name, group_details in host_group_details.items():
         groups.add_group(
-            group_name, "host", group_details, pprint_value=active_config.wato_pprint_config
+            group_name,
+            "host",
+            group_details,
+            pprint_value=active_config.wato_pprint_config,
+            use_git=active_config.wato_use_git,
         )
         host_group_names.append(group_name)
 
@@ -151,7 +159,12 @@ def delete(params: Mapping[str, Any]) -> Response:
     user.need_permission("wato.groups")
     name = params["name"]
     try:
-        groups.delete_group(name, "host", pprint_value=active_config.wato_pprint_config)
+        groups.delete_group(
+            name,
+            "host",
+            pprint_value=active_config.wato_pprint_config,
+            use_git=active_config.wato_use_git,
+        )
     except GroupInUseException as exc:
         raise ProblemException(
             status=409,
@@ -184,7 +197,12 @@ def bulk_delete(params: Mapping[str, Any]) -> Response:
     body = params["body"]
     for group_name in body["entries"]:
         try:
-            groups.delete_group(group_name, "host", pprint_value=active_config.wato_pprint_config)
+            groups.delete_group(
+                group_name,
+                "host",
+                pprint_value=active_config.wato_pprint_config,
+                use_git=active_config.wato_use_git,
+            )
         except GroupInUseException as exc:
             raise ProblemException(
                 status=409,
@@ -222,6 +240,7 @@ def update(params: Mapping[str, Any]) -> Response:
         "host",
         updated_group_details(name, "host", params["body"]),
         pprint_value=active_config.wato_pprint_config,
+        use_git=active_config.wato_use_git,
     )
     group = fetch_group(name, "host")
     return serve_group(group, serialize_group("host_group_config"))
@@ -247,7 +266,10 @@ def bulk_update(params: Mapping[str, Any]) -> Response:
     body = params["body"]
     entries = body["entries"]
     updated_host_groups = update_groups(
-        "host", entries, pprint_value=active_config.wato_pprint_config
+        "host",
+        entries,
+        pprint_value=active_config.wato_pprint_config,
+        use_git=active_config.wato_use_git,
     )
     return serve_json(serialize_group_list("host_group_config", updated_host_groups))
 

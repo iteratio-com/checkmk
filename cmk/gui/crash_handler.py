@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, NotRequired, override, Self, TypedDict
 
 import cmk.ccc.version as cmk_version
+import cmk.utils.paths
 from cmk.ccc.crash_reporting import (
     ABCCrashReport,
     CrashReportRegistry,
@@ -14,9 +15,6 @@ from cmk.ccc.crash_reporting import (
     VersionInfo,
 )
 from cmk.ccc.site import omd_site
-
-import cmk.utils.paths
-
 from cmk.gui.breadcrumb import Breadcrumb
 from cmk.gui.htmllib.header import make_header
 from cmk.gui.htmllib.html import html
@@ -64,19 +62,17 @@ class GUICrashReport(ABCCrashReport[GUIDetails]):
     @classmethod
     def from_exception(
         cls,
-        crashdir: Path,
+        *,
         version_info: VersionInfo,
         details: GUIDetails | None = None,
+        omd_root: Path,
     ) -> Self:
         try:
             # Access any attribute to trigger proxy object lookup
             _x = request.meta
             request_details = RequestDetails(
                 page=requested_file_name(request) + ".py",
-                vars={
-                    key: "***" if value in ["password", "_password"] else value
-                    for key, value in request.itervars()
-                },
+                vars=dict(request.itervars()),
                 username=user.id,
                 user_agent=request.user_agent.string,
                 referer=request.referer,
@@ -101,8 +97,11 @@ class GUICrashReport(ABCCrashReport[GUIDetails]):
             )
 
         return cls(
-            crashdir,
-            cls.make_crash_info(version_info, GUIDetails(**{**(details or {}), **request_details})),  # type: ignore[typeddict-item]
+            omd_root=omd_root,
+            crash_info=cls.make_crash_info(
+                version_info,
+                GUIDetails(**{**(details or {}), **request_details}),  # type: ignore[typeddict-item]
+            ),
         )
 
     def url(self) -> str:
@@ -132,9 +131,9 @@ def create_gui_crash_report(
     details: GUIDetails | None = None,
 ) -> GUICrashReport:
     crash = GUICrashReport.from_exception(
-        cmk.utils.paths.crash_dir,
-        cmk_version.get_general_version_infos(cmk.utils.paths.omd_root),
+        version_info=cmk_version.get_general_version_infos(cmk.utils.paths.omd_root),
         details=details,
+        omd_root=cmk.utils.paths.omd_root,
     )
     CrashReportStore().save(crash)
     return crash

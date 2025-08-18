@@ -8,12 +8,10 @@ from dataclasses import asdict
 
 import pytest
 
-from tests.testlib.common.repo import is_enterprise_repo, is_managed_repo
-
-import cmk.utils.paths
-
 import cmk.gui.config
+import cmk.utils.paths
 from cmk.gui.config import active_config
+from tests.testlib.common.repo import is_enterprise_repo, is_managed_repo
 
 
 def test_default_config_from_plugins() -> None:
@@ -66,7 +64,6 @@ def test_default_config_from_plugins() -> None:
         "snmp_walk_download_timeout",
         "filter_columns",
         "default_language",
-        "hide_languages",
         "default_ts_format",
         "selection_livetime",
         "auth_by_http_header",
@@ -148,7 +145,6 @@ def test_default_config_from_plugins() -> None:
         "tags",
         "enable_login_via_get",
         "enable_deprecated_automation_user_authentication",
-        "enable_community_translations",
         "default_temperature_unit",
         "vue_experimental_features",
         "inject_js_profiling_code",
@@ -156,6 +152,7 @@ def test_default_config_from_plugins() -> None:
         "configuration_bundles",
         "default_dynamic_visual_permission",
         "require_two_factor_all_users",
+        "inventory_housekeeping",
     ]
 
     # The below lines are confusing and incorrect. The reason we need them is

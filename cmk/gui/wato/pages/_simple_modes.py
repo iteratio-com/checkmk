@@ -17,25 +17,24 @@ import json
 from collections.abc import Mapping
 from typing import Any, cast, Generic, TypeVar
 
+import cmk.gui.watolib.changes as _changes
 from cmk.ccc.site import SiteId
 from cmk.ccc.user import UserId
-
-from cmk.utils.urls import is_allowed_url
-
-import cmk.gui.watolib.changes as _changes
 from cmk.gui import forms
 from cmk.gui.breadcrumb import Breadcrumb
-from cmk.gui.config import active_config
+from cmk.gui.config import Config
 from cmk.gui.default_name import unique_default_name_suggestion
 from cmk.gui.exceptions import MKUserError
 from cmk.gui.form_specs.generators.setup_site_choice import create_setup_site_choice
 from cmk.gui.form_specs.private import Catalog, CommentTextArea, LegacyValueSpec
-from cmk.gui.form_specs.vue.form_spec_visitor import (
+from cmk.gui.form_specs.vue import (
+    DEFAULT_VALUE,
+    IncomingData,
     parse_data_from_frontend,
+    RawDiskData,
+    RawFrontendData,
     render_form_spec,
-    RenderMode,
 )
-from cmk.gui.form_specs.vue.visitors import DataOrigin, DEFAULT_VALUE
 from cmk.gui.form_specs.vue.visitors.catalog import Dict2CatalogConverter, Headers
 from cmk.gui.htmllib.html import html
 from cmk.gui.http import request
@@ -51,7 +50,7 @@ from cmk.gui.page_menu import (
     PageMenuTopic,
 )
 from cmk.gui.table import Table, table_element
-from cmk.gui.type_defs import ActionResult
+from cmk.gui.type_defs import ActionResult, RenderMode
 from cmk.gui.utils.csrf_token import check_csrf_token
 from cmk.gui.utils.flashed_messages import flash
 from cmk.gui.utils.transaction_manager import transactions
@@ -73,11 +72,11 @@ from cmk.gui.watolib.config_domain_name import ABCConfigDomain
 from cmk.gui.watolib.hosts_and_folders import make_action_link
 from cmk.gui.watolib.mode import mode_url, redirect, WatoMode
 from cmk.gui.watolib.simple_config_file import WatoSimpleConfigFile
-
 from cmk.rulesets.v1 import form_specs, Help, Label, Message, Title
 from cmk.rulesets.v1.form_specs import DictElement, FieldSize, FormSpec
 from cmk.rulesets.v1.form_specs import Dictionary as FormSpecDictionary
 from cmk.rulesets.v1.form_specs.validators import ValidationError
+from cmk.utils.urls import is_allowed_url
 
 _T = TypeVar("_T", bound=Mapping[str, Any])
 
@@ -169,6 +168,7 @@ class _SimpleWatoModeBase(Generic[_T], WatoMode, abc.ABC):
         text: str,
         user_id: UserId | None,
         affected_sites: list[SiteId] | None,
+        use_git: bool,
     ) -> None:
         """Add a Setup change entry for this object type modifications"""
         _changes.add_change(
@@ -177,7 +177,7 @@ class _SimpleWatoModeBase(Generic[_T], WatoMode, abc.ABC):
             user_id=user_id,
             domains=self._mode_type.affected_config_domains(),
             sites=affected_sites,
-            use_git=active_config.wato_use_git,
+            use_git=use_git,
         )
 
 
@@ -206,7 +206,7 @@ class SimpleListMode(_SimpleWatoModeBase[_T]):
         """
         raise MKUserError("_action", _("The action '%s' is not implemented") % action)
 
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         return PageMenu(
             dropdowns=[
                 PageMenuDropdown(
@@ -240,7 +240,7 @@ class SimpleListMode(_SimpleWatoModeBase[_T]):
     def _new_button_label(self) -> str:
         return _("Add %s") % self._mode_type.name_singular()
 
-    def action(self) -> ActionResult:
+    def action(self, config: Config) -> ActionResult:
         if not transactions.transaction_valid():
             return None
 
@@ -268,7 +268,7 @@ class SimpleListMode(_SimpleWatoModeBase[_T]):
                 _("You are not allowed to delete this %s.") % self._mode_type.name_singular(),
             )
 
-        self._validate_deletion(ident, entries[ident], debug=active_config.debug)
+        self._validate_deletion(ident, entries[ident], debug=config.debug)
 
         entry = entries.pop(ident)
         self._add_change(
@@ -276,8 +276,9 @@ class SimpleListMode(_SimpleWatoModeBase[_T]):
             text=_("Removed the %s '%s'") % (self._mode_type.name_singular(), ident),
             user_id=user.id,
             affected_sites=self._mode_type.affected_sites(entry),
+            use_git=config.wato_use_git,
         )
-        self._store.save(entries, pprint_value=active_config.wato_pprint_config)
+        self._store.save(entries, pprint_value=config.wato_pprint_config)
 
         flash(_("The %s has been deleted.") % self._mode_type.name_singular())
         return redirect(mode_url(self._mode_type.list_mode_name()))
@@ -291,7 +292,7 @@ class SimpleListMode(_SimpleWatoModeBase[_T]):
     def _delete_confirm_message(self) -> str:
         return ""
 
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         self._show_table(self._store.filter_editable_entries(self._store.load_for_reading()))
 
     def _show_table(self, entries: dict[str, _T]) -> None:
@@ -423,7 +424,7 @@ class SimpleEditMode(_SimpleWatoModeBase[_T], abc.ABC):
             return _("Add %s") % self._mode_type.name_singular()
         return _("Edit %s: %s") % (self._mode_type.name_singular(), self._entry["title"])
 
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         return make_simple_form_page_menu(
             _("Actions"), breadcrumb, form_name="edit", button_name="_save"
         )
@@ -686,6 +687,8 @@ class SimpleEditMode(_SimpleWatoModeBase[_T], abc.ABC):
             self._vue_field_id(),
         )
 
+        assert isinstance(config, dict)
+
         # The form spec was rendered via a Catalog form spec, which introduced needless topics
         # We need to convert the config back to a flat dictionary
         config = self._get_catalog_converter().convert_catalog_to_flat_config(config)
@@ -704,7 +707,7 @@ class SimpleEditMode(_SimpleWatoModeBase[_T], abc.ABC):
         # No typing support from form specs here, so we need to cast
         self._entry = cast(_T, config)
 
-    def action(self) -> ActionResult:
+    def action(self, config: Config) -> ActionResult:
         check_csrf_token()
 
         if not transactions.transaction_valid():
@@ -730,6 +733,7 @@ class SimpleEditMode(_SimpleWatoModeBase[_T], abc.ABC):
                 text=_("Added the %s '%s'") % (self._mode_type.name_singular(), self._ident),
                 user_id=user.id,
                 affected_sites=self._mode_type.affected_sites(self._entry),
+                use_git=config.wato_use_git,
             )
         else:
             current_sites = self._mode_type.affected_sites(self._entry)
@@ -748,16 +752,24 @@ class SimpleEditMode(_SimpleWatoModeBase[_T], abc.ABC):
                 text=_("Edited the %s '%s'") % (self._mode_type.name_singular(), self._ident),
                 user_id=user.id,
                 affected_sites=affected_sites,
+                use_git=config.wato_use_git,
             )
 
-        self._save(entries)
+        self._save(
+            entries,
+            pprint_value=config.wato_pprint_config,
+            debug=config.debug,
+            use_git=config.wato_use_git,
+        )
 
         return redirect(mode_url(self._mode_type.list_mode_name()))
 
-    def _save(self, entries: dict[str, _T]) -> None:
-        self._store.save(entries, pprint_value=active_config.wato_pprint_config)
+    def _save(
+        self, entries: dict[str, _T], *, pprint_value: bool, debug: bool, use_git: bool
+    ) -> None:
+        self._store.save(entries, pprint_value=pprint_value)
 
-    def page(self, form_name: str = "edit") -> None:
+    def page(self, config: Config, form_name: str = "edit") -> None:
         html.enable_help_toggle()
         with html.form_context(form_name, method="POST"):
             self._page_form_quick_setup_warning()
@@ -801,24 +813,23 @@ class SimpleEditMode(_SimpleWatoModeBase[_T], abc.ABC):
         vs.set_focus("_edit")
 
     def _page_form_render_entry_form_spec(self, form_spec: FormSpec) -> None:
-        value, origin, do_validate = self._get_render_settings()
-        render_form_spec(form_spec, self._vue_field_id(), value, origin, do_validate)
+        value, do_validate = self._get_render_settings()
+        render_form_spec(form_spec, self._vue_field_id(), value, do_validate)
 
     def _vue_field_id(self) -> str:
         return f"_edit_{self._mode_type.type_name()}"
 
-    def _get_render_settings(self) -> tuple[Any, DataOrigin, DoValidate]:
+    def _get_render_settings(self) -> tuple[IncomingData, DoValidate]:
         if request.has_var(self._vue_field_id()):
             # The form was submitted, always validate data
             return (
-                json.loads(request.get_str_input_mandatory(self._vue_field_id())),
-                DataOrigin.FRONTEND,
+                RawFrontendData(json.loads(request.get_str_input_mandatory(self._vue_field_id()))),
                 True,
             )
 
         if self._new and self._clone is None:
             # New form, no validation
-            return DEFAULT_VALUE, DataOrigin.DISK, False
+            return DEFAULT_VALUE, False
 
         if self._clone is not None:
             self._ident = self._clone
@@ -831,7 +842,7 @@ class SimpleEditMode(_SimpleWatoModeBase[_T], abc.ABC):
         cloned_entry: Any = copy.deepcopy(self._entry)
         cloned_entry["ident"] = self._ident
         catalog_config = catalog_converter.convert_flat_to_catalog_config(cloned_entry)
-        return catalog_config, DataOrigin.DISK, True
+        return RawDiskData(catalog_config), True
 
 
 def convert_dict_elements_vs2fs(elements: list[DictionaryEntry]) -> dict[str, DictElement]:

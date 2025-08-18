@@ -13,6 +13,7 @@ import pytest
 
 import livestatus
 
+from cmk.discover_plugins import discover_families, PluginGroup
 from cmk.utils import man_pages
 from cmk.utils.licensing.export import (
     LicenseUsageExtensions,
@@ -33,8 +34,6 @@ from cmk.utils.licensing.usage import (
     save_extensions,
     try_update_license_usage,
 )
-
-from cmk.discover_plugins import discover_families, PluginGroup
 
 
 def test_try_update_license_usage() -> None:
@@ -216,13 +215,17 @@ def test_serialize_license_usage_report() -> None:
         instance_id=UUID("937495cb-78f7-40d4-9b5f-f2c5a81e66b8"),
         site_hash="site-hash",
     )
+    # This test will fail after every license protocol bump.
+    # This is because the protocol version is part of the serialized data.
+    # To fix it just look at the diff and update the expected value (or spend some time to improve
+    # this test)
     assert _serialize_dump(
         RawLicenseUsageReport(
             VERSION=get_licensing_protocol_version(),
             history=history.for_report(),
         )
     ) == (
-        b"LQ't#$x~}Qi Qb]`Q[ Q9:DE@CJQi ,LQ:?DE2?460:5Qi Qhbfchd43\\fg7f\\c_5c\\h3d7\\"
+        b"LQ't#$x~}Qi Qb]aQ[ Q9:DE@CJQi ,LQ:?DE2?460:5Qi Qhbfchd43\\fg7f\\c_5c\\h3d7\\"
         b"7a4d2g`6ee3gQ[ QD:E6092D9Qi QD:E6\\92D9Q[ QG6CD:@?Qi QQ[ Q65:E:@?Qi QQ[ Q"
         b"A=2E7@C>Qi Qp G6CJ =@?8 DEC:?8 H:E9 =6?md_ 56D4C:3:?8 E96 A=2EQ[ Q:D04>2Qi 7"
         b"2=D6[ QD2>A=60E:>6Qi `[ QE:>6K@?6Qi QQ[ Q?F>09@DEDQi a[ Q?F>09@DED04=@F5Qi _"
@@ -843,6 +846,67 @@ def test_serialize_license_usage_report() -> None:
                 ]
             ),
             id="3.1",
+        ),
+        pytest.param(
+            {
+                "VERSION": "3.2",
+                "history": [
+                    {
+                        "instance_id": "4b66f726-c4fc-454b-80a6-4917d1b386ce",
+                        "site_hash": "the-site-hash",
+                        "version": "",
+                        "edition": "",
+                        "platform": (
+                            "A very long string with len>50 describing the platform"
+                            " a Checkmk server is operating on."
+                        ),
+                        "is_cma": False,
+                        "sample_time": 1,
+                        "timezone": "",
+                        "num_hosts": 2,
+                        "num_hosts_cloud": 1,
+                        "num_hosts_shadow": 6,
+                        "num_hosts_excluded": 3,
+                        "num_services": 4,
+                        "num_services_cloud": 2,
+                        "num_services_shadow": 7,
+                        "num_services_excluded": 5,
+                        "num_synthetic_tests": 1,
+                        "num_synthetic_tests_excluded": 2,
+                        "num_synthetic_kpis": 3,
+                        "num_synthetic_kpis_excluded": 4,
+                        "extension_ntop": True,
+                    },
+                ],
+            },
+            LocalLicenseUsageHistory(
+                [
+                    LicenseUsageSample(
+                        instance_id=UUID("4b66f726-c4fc-454b-80a6-4917d1b386ce"),
+                        site_hash="the-site-hash",
+                        version="",
+                        edition="",
+                        platform="A very long string with len>50 describing the plat",
+                        is_cma=False,
+                        sample_time=1,
+                        timezone="",
+                        num_hosts=2,
+                        num_hosts_cloud=1,
+                        num_hosts_shadow=6,
+                        num_hosts_excluded=3,
+                        num_services=4,
+                        num_services_cloud=2,
+                        num_services_shadow=7,
+                        num_services_excluded=5,
+                        num_synthetic_tests=1,
+                        num_synthetic_tests_excluded=2,
+                        num_synthetic_kpis=3,
+                        num_synthetic_kpis_excluded=4,
+                        extension_ntop=True,
+                    ),
+                ]
+            ),
+            id="3.2",
         ),
     ],
 )

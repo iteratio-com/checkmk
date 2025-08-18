@@ -9,10 +9,25 @@ from typing import Literal
 import pytest
 
 import cmk.ccc.resulttype as result
+from cmk.agent_based.v1 import Attributes, TableRow
+from cmk.base.modes.check_mk import _get_save_tree_actions, _SaveTreeActions
+from cmk.ccc.cpu_tracking import Snapshot
 from cmk.ccc.hostaddress import HostAddress, HostName
-
+from cmk.checkengine.checkresults import ActiveCheckResult
+from cmk.checkengine.fetcher import FetcherType, SourceInfo, SourceType
+from cmk.checkengine.inventory import (
+    _check_fetched_data_or_trees,
+    _create_trees_from_inventory_plugin_items,
+    _inventorize_real_host,
+    _parse_inventory_plugin_item,
+    HWSWInventoryParameters,
+    inventorize_host,
+    ItemsOfInventoryPlugin,
+)
+from cmk.checkengine.parser import HostSections
+from cmk.checkengine.sectionparser import ParsedSectionName, SectionPlugin
+from cmk.snmplib import SNMPRawData
 from cmk.utils.agentdatatype import AgentRawData
-from cmk.utils.cpu_tracking import Snapshot
 from cmk.utils.everythingtype import EVERYTHING
 from cmk.utils.sectionname import SectionMap, SectionName
 from cmk.utils.structured_data import (
@@ -27,28 +42,9 @@ from cmk.utils.structured_data import (
     SDNodeName,
     SDRowIdent,
     serialize_tree,
-    UpdateResult,
+    UpdateResultAttributes,
+    UpdateResultTable,
 )
-
-from cmk.snmplib import SNMPRawData
-
-from cmk.checkengine.checkresults import ActiveCheckResult
-from cmk.checkengine.fetcher import FetcherType, SourceInfo, SourceType
-from cmk.checkengine.inventory import (
-    _check_fetched_data_or_trees,
-    _create_trees_from_inventory_plugin_items,
-    _inventorize_real_host,
-    _parse_inventory_plugin_item,
-    HWSWInventoryParameters,
-    inventorize_host,
-    ItemsOfInventoryPlugin,
-)
-from cmk.checkengine.parser import HostSections
-from cmk.checkengine.sectionparser import ParsedSectionName, SectionPlugin
-
-from cmk.base.modes.check_mk import _get_save_tree_actions, _SaveTreeActions
-
-from cmk.agent_based.v1 import Attributes, TableRow
 
 
 def _make_immutable_tree(tree: MutableTree) -> ImmutableTree:
@@ -114,7 +110,7 @@ def test_item_collisions(item: Attributes | TableRow, known_class_name: str) -> 
 
 
 def test__inventorize_real_host_only_items() -> None:
-    trees, update_result = _inventorize_real_host(
+    trees, update_results = _inventorize_real_host(
         now=0,
         items_of_inventory_plugins=[
             ItemsOfInventoryPlugin(
@@ -229,8 +225,7 @@ def test__inventorize_real_host_only_items() -> None:
         },
         "Table": {},
     }
-    assert not update_result.save_tree
-    assert not update_result.reasons_by_path
+    assert len(update_results) == 0
 
 
 @pytest.mark.parametrize(
@@ -284,7 +279,7 @@ def test__inventorize_real_host_only_intervals(
     table_choices: Literal["all"] | tuple[str, list[str]],
     table_expected_retentions: Mapping[SDRowIdent, Mapping[SDKey, RetentionInterval]],
 ) -> None:
-    trees, update_result = _inventorize_real_host(
+    trees, update_results = _inventorize_real_host(
         now=10,
         items_of_inventory_plugins=[
             ItemsOfInventoryPlugin(
@@ -437,11 +432,9 @@ def test__inventorize_real_host_only_intervals(
     }
 
     if attrs_expected_retentions or table_expected_retentions:
-        assert update_result.save_tree
-        assert update_result.reasons_by_path
+        assert len(update_results) > 0
     else:
-        assert not update_result.save_tree
-        assert not update_result.reasons_by_path
+        assert len(update_results) == 0
 
 
 @pytest.mark.parametrize(
@@ -495,7 +488,7 @@ def test__inventorize_real_host_raw_cache_info_and_only_intervals(
     table_choices: Literal["all"] | tuple[str, list[str]],
     table_expected_retentions: Mapping[SDRowIdent, Mapping[SDKey, RetentionInterval]],
 ) -> None:
-    trees, update_result = _inventorize_real_host(
+    trees, update_results = _inventorize_real_host(
         now=10,
         items_of_inventory_plugins=[
             ItemsOfInventoryPlugin(
@@ -648,11 +641,9 @@ def test__inventorize_real_host_raw_cache_info_and_only_intervals(
     }
 
     if attrs_expected_retentions or table_expected_retentions:
-        assert update_result.save_tree
-        assert update_result.reasons_by_path
+        assert len(update_results) > 0
     else:
-        assert not update_result.save_tree
-        assert not update_result.reasons_by_path
+        assert len(update_results) == 0
 
 
 def _make_tree_or_items(
@@ -787,7 +778,7 @@ def test__inventorize_real_host_no_items(
     raw_intervals: list,
     previous_node: ImmutableTree,
 ) -> None:
-    trees, update_result = _inventorize_real_host(
+    trees, update_results = _inventorize_real_host(
         now=10,
         items_of_inventory_plugins=[],
         raw_intervals_from_config=raw_intervals,
@@ -796,9 +787,7 @@ def test__inventorize_real_host_no_items(
 
     assert not trees.inventory
     assert not trees.status_data
-
-    assert not update_result.save_tree
-    assert not update_result.reasons_by_path
+    assert len(update_results) == 0
 
 
 #   ---previous node--------------------------------------------------------
@@ -820,7 +809,7 @@ def test_updater_merge_previous_attributes(
         previous_table_retentions={},
         raw_cache_info=(-1, -2),
     )
-    trees, update_result = _inventorize_real_host(
+    trees, update_results = _inventorize_real_host(
         now=-1,
         items_of_inventory_plugins=[],
         raw_intervals_from_config=[
@@ -834,11 +823,9 @@ def test_updater_merge_previous_attributes(
     )
 
     if expected_retentions:
-        assert update_result.save_tree
-        assert update_result.reasons_by_path
+        assert len(update_results) > 0
     else:
-        assert not update_result.save_tree
-        assert not update_result.reasons_by_path
+        assert len(update_results) == 0
 
     inv_node = _make_immutable_tree(
         trees.inventory.get_tree((SDNodeName("path-to"), SDNodeName("node-with-attrs")))
@@ -862,7 +849,7 @@ def test_updater_merge_previous_attributes_outdated(choices: tuple[str, list[str
         previous_table_retentions={},
         raw_cache_info=(-1, -2),
     )
-    trees, update_result = _inventorize_real_host(
+    trees, update_results = _inventorize_real_host(
         now=1000,
         items_of_inventory_plugins=[],
         raw_intervals_from_config=[
@@ -875,9 +862,7 @@ def test_updater_merge_previous_attributes_outdated(choices: tuple[str, list[str
         previous_tree=previous_tree,
     )
     assert not trees.inventory
-
-    assert not update_result.save_tree
-    assert not update_result.reasons_by_path
+    assert len(update_results) == 0
 
     inv_node = _make_immutable_tree(
         trees.inventory.get_tree((SDNodeName("path-to"), SDNodeName("node-with-attrs")))
@@ -910,7 +895,7 @@ def test_updater_merge_previous_tables(
         },
         raw_cache_info=(-1, -2),
     )
-    trees, update_result = _inventorize_real_host(
+    trees, update_results = _inventorize_real_host(
         now=-1,
         items_of_inventory_plugins=[],
         raw_intervals_from_config=[
@@ -924,11 +909,9 @@ def test_updater_merge_previous_tables(
     )
 
     if expected_retentions:
-        assert update_result.save_tree
-        assert update_result.reasons_by_path
+        assert len(update_results) > 0
     else:
-        assert not update_result.save_tree
-        assert not update_result.reasons_by_path
+        assert len(update_results) == 0
 
     inv_node = _make_immutable_tree(
         trees.inventory.get_tree((SDNodeName("path-to"), SDNodeName("node-with-table")))
@@ -956,7 +939,7 @@ def test_updater_merge_previous_tables_outdated(choices: tuple[str, list[str]]) 
         },
         raw_cache_info=(-1, -2),
     )
-    trees, update_result = _inventorize_real_host(
+    trees, update_results = _inventorize_real_host(
         now=1000,
         items_of_inventory_plugins=[],
         raw_intervals_from_config=[
@@ -970,8 +953,7 @@ def test_updater_merge_previous_tables_outdated(choices: tuple[str, list[str]]) 
     )
 
     assert not trees.inventory
-    assert not update_result.save_tree
-    assert not update_result.reasons_by_path
+    assert len(update_results) == 0
 
     inv_node = _make_immutable_tree(
         trees.inventory.get_tree((SDNodeName("path-to"), SDNodeName("node-with-table")))
@@ -1005,7 +987,7 @@ def test_updater_merge_attributes(
         previous_table_retentions={},
         raw_cache_info=(4, 5),
     )
-    trees, update_result = _inventorize_real_host(
+    trees, update_results = _inventorize_real_host(
         now=-1,
         items_of_inventory_plugins=items_of_inventory_plugins,
         raw_intervals_from_config=[
@@ -1019,11 +1001,9 @@ def test_updater_merge_attributes(
     )
 
     if expected_retentions:
-        assert update_result.save_tree
-        assert update_result.reasons_by_path
+        assert len(update_results) > 0
     else:
-        assert not update_result.save_tree
-        assert not update_result.reasons_by_path
+        assert len(update_results) == 0
 
     inv_node = _make_immutable_tree(
         trees.inventory.get_tree((SDNodeName("path-to"), SDNodeName("node-with-attrs")))
@@ -1060,7 +1040,7 @@ def test_updater_merge_attributes_outdated(
         previous_table_retentions={},
         raw_cache_info=(4, 5),
     )
-    trees, update_result = _inventorize_real_host(
+    trees, update_results = _inventorize_real_host(
         now=1000,
         items_of_inventory_plugins=items_of_inventory_plugins,
         raw_intervals_from_config=[
@@ -1074,11 +1054,9 @@ def test_updater_merge_attributes_outdated(
     )
 
     if expected_retentions:
-        assert update_result.save_tree
-        assert update_result.reasons_by_path
+        assert len(update_results) > 0
     else:
-        assert not update_result.save_tree
-        assert not update_result.reasons_by_path
+        assert len(update_results) == 0
 
     inv_node = _make_immutable_tree(
         trees.inventory.get_tree((SDNodeName("path-to"), SDNodeName("node-with-attrs")))
@@ -1128,7 +1106,7 @@ def test_updater_merge_tables(
         },
         raw_cache_info=(4, 5),
     )
-    trees, update_result = _inventorize_real_host(
+    trees, update_results = _inventorize_real_host(
         now=-1,
         items_of_inventory_plugins=items_of_inventory_plugins,
         raw_intervals_from_config=[
@@ -1142,11 +1120,9 @@ def test_updater_merge_tables(
     )
 
     if expected_retentions:
-        assert update_result.save_tree
-        assert update_result.reasons_by_path
+        assert len(update_results) > 0
     else:
-        assert not update_result.save_tree
-        assert not update_result.reasons_by_path
+        assert len(update_results) == 0
 
     inv_node = _make_immutable_tree(
         trees.inventory.get_tree((SDNodeName("path-to"), SDNodeName("node-with-table")))
@@ -1200,7 +1176,7 @@ def test_updater_merge_tables_outdated(
         },
         raw_cache_info=(4, 5),
     )
-    trees, update_result = _inventorize_real_host(
+    trees, update_results = _inventorize_real_host(
         now=1000,
         items_of_inventory_plugins=items_of_inventory_plugins,
         raw_intervals_from_config=[
@@ -1214,11 +1190,9 @@ def test_updater_merge_tables_outdated(
     )
 
     if expected_retentions:
-        assert update_result.save_tree
-        assert update_result.reasons_by_path
+        assert len(update_results) > 0
     else:
-        assert not update_result.save_tree
-        assert not update_result.reasons_by_path
+        assert len(update_results) == 0
 
     inv_node = _make_immutable_tree(
         trees.inventory.get_tree((SDNodeName("path-to"), SDNodeName("node-with-table")))
@@ -1428,7 +1402,7 @@ def _create_root_tree(pairs: Mapping[SDKey, int | float | str | None]) -> Mutabl
 
 
 @pytest.mark.parametrize(
-    "previous_tree, inventory_tree, update_result, expected_save_tree_actions",
+    "previous_tree, inventory_tree, update_results, expected_save_tree_actions",
     [
         (
             deserialize_tree(
@@ -1441,14 +1415,22 @@ def _create_root_tree(pairs: Mapping[SDKey, int | float | str | None]) -> Mutabl
             # No further impact, may not be realistic here
             MutableTree(),
             # Content of path does not matter here
-            UpdateResult(reasons_by_path={(SDNodeName("path-to"), SDNodeName("node")): []}),
+            [
+                UpdateResultAttributes(
+                    path=(SDNodeName("path-to-node"),), title="A title", message="A message"
+                )
+            ],
             _SaveTreeActions(do_archive=True, do_save=False),
         ),
         (
             ImmutableTree(),
             _create_root_tree({SDKey("key"): "new value"}),
             # Content of path does not matter here
-            UpdateResult(reasons_by_path={(SDNodeName("path-to"), SDNodeName("node")): []}),
+            [
+                UpdateResultAttributes(
+                    path=(SDNodeName("path-to-node"),), title="A title", message="A message"
+                )
+            ],
             _SaveTreeActions(do_archive=False, do_save=True),
         ),
         (
@@ -1461,7 +1443,11 @@ def _create_root_tree(pairs: Mapping[SDKey, int | float | str | None]) -> Mutabl
             ),
             _create_root_tree({SDKey("key"): "new value"}),
             # Content of path does not matter here
-            UpdateResult(reasons_by_path={(SDNodeName("path-to"), SDNodeName("node")): []}),
+            [
+                UpdateResultAttributes(
+                    path=(SDNodeName("path-to-node"),), title="A title", message="A message"
+                )
+            ],
             _SaveTreeActions(do_archive=True, do_save=True),
         ),
         (
@@ -1473,20 +1459,24 @@ def _create_root_tree(pairs: Mapping[SDKey, int | float | str | None]) -> Mutabl
                 }
             ),
             _create_root_tree({SDKey("key"): "new value"}),
-            UpdateResult(),
+            [],
             _SaveTreeActions(do_archive=True, do_save=True),
         ),
         (
             deserialize_tree({"Attributes": {"Pairs": {"key": "value"}}, "Table": {}, "Nodes": {}}),
             _create_root_tree({SDKey("key"): "value"}),
-            UpdateResult(),
+            [],
             _SaveTreeActions(do_archive=False, do_save=False),
         ),
         (
             deserialize_tree({"Attributes": {"Pairs": {"key": "value"}}, "Table": {}, "Nodes": {}}),
             _create_root_tree({SDKey("key"): "value"}),
             # Content of path does not matter here
-            UpdateResult(reasons_by_path={(SDNodeName("path-to"), SDNodeName("node")): []}),
+            [
+                UpdateResultAttributes(
+                    path=(SDNodeName("path-to-node"),), title="A title", message="A message"
+                )
+            ],
             _SaveTreeActions(do_archive=False, do_save=True),
         ),
     ],
@@ -1494,14 +1484,14 @@ def _create_root_tree(pairs: Mapping[SDKey, int | float | str | None]) -> Mutabl
 def test_save_tree_actions(
     previous_tree: ImmutableTree,
     inventory_tree: MutableTree,
-    update_result: UpdateResult,
+    update_results: Sequence[UpdateResultAttributes | UpdateResultTable],
     expected_save_tree_actions: _SaveTreeActions,
 ) -> None:
     assert (
         _get_save_tree_actions(
             previous_tree=previous_tree,
             inventory_tree=inventory_tree,
-            update_result=update_result,
+            update_results=update_results,
         )
         == expected_save_tree_actions
     )

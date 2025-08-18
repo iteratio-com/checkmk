@@ -9,6 +9,7 @@ from typing import override
 
 from cmk.gui import forms, message
 from cmk.gui.breadcrumb import Breadcrumb, make_simple_page_breadcrumb
+from cmk.gui.config import Config
 from cmk.gui.htmllib.header import make_header
 from cmk.gui.htmllib.html import html
 from cmk.gui.http import request
@@ -67,7 +68,7 @@ class PageUserMessage(Page):
         )
 
     @override
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         breadcrumb = make_simple_page_breadcrumb(main_menu_registry.menu_user(), _("Messages"))
         make_header(html, _("Your messages"), breadcrumb, self.page_menu(breadcrumb))
 
@@ -89,7 +90,7 @@ def _handle_ack_all() -> None:
 
     if request.var("_ack_all"):
         num = len([msg for msg in message.get_gui_messages() if not msg.get("acknowledged")])
-        message.acknowledge_all_messages()
+        message.acknowledge_gui_message(None)
         flash(
             _("%d %s.")
             % (
@@ -229,13 +230,13 @@ def show_message_actions(
         )
 
 
-def ajax_delete_user_message() -> None:
+def ajax_delete_user_message(config: Config) -> None:
     check_csrf_token()
     msg_id = request.get_str_input_mandatory("id")
     message.delete_gui_message(msg_id)
 
 
-def ajax_acknowledge_user_message() -> None:
+def ajax_acknowledge_user_message(config: Config) -> None:
     check_csrf_token()
     msg_id = request.get_str_input_mandatory("id")
     message.acknowledge_gui_message(msg_id)

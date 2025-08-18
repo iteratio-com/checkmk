@@ -17,14 +17,10 @@ from cmk.ccc.exceptions import MKGeneralException
 from cmk.ccc.hostaddress import HostName
 from cmk.ccc.site import SiteId
 from cmk.ccc.version import edition_supports_nagvis
-
-from cmk.utils import paths
-from cmk.utils.regex import regex
-
 from cmk.gui import forms
 from cmk.gui.background_job import BackgroundProcessInterface, InitialStatusArgs, JobTarget
 from cmk.gui.breadcrumb import Breadcrumb
-from cmk.gui.config import active_config
+from cmk.gui.config import Config
 from cmk.gui.exceptions import FinalizeRequest, MKAuthException, MKUserError
 from cmk.gui.htmllib.generator import HTMLWriter
 from cmk.gui.htmllib.html import html
@@ -76,6 +72,8 @@ from cmk.gui.watolib.hosts_and_folders import (
     validate_host_uniqueness,
 )
 from cmk.gui.watolib.mode import ModeRegistry, redirect, WatoMode
+from cmk.utils import paths
+from cmk.utils.regex import regex
 
 
 def register(mode_registry: ModeRegistry) -> None:
@@ -111,7 +109,7 @@ class ModeBulkRenameHost(WatoMode):
     def title(self) -> str:
         return _("Bulk renaming of hosts")
 
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         menu = make_simple_form_page_menu(
             _("Hosts"),
             breadcrumb,
@@ -138,7 +136,7 @@ class ModeBulkRenameHost(WatoMode):
 
         return menu
 
-    def action(self) -> ActionResult:
+    def action(self, config: Config) -> ActionResult:
         check_csrf_token()
 
         renaming_config = self._vs_renaming_config().from_html_vars("")
@@ -181,10 +179,10 @@ class ModeBulkRenameHost(WatoMode):
                         callable=rename_hosts_job_entry_point,
                         args=RenameHostsJobArgs(
                             renamings=_renamings_to_job_args(renamings),
-                            site_configs=active_config.sites,
-                            pprint_value=active_config.wato_pprint_config,
-                            use_git=active_config.wato_use_git,
-                            debug=active_config.debug,
+                            site_configs=config.sites,
+                            pprint_value=config.wato_pprint_config,
+                            use_git=config.wato_use_git,
+                            debug=config.debug,
                         ),
                     ),
                     InitialStatusArgs(
@@ -329,7 +327,7 @@ class ModeBulkRenameHost(WatoMode):
             return hostname
         return None
 
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         with html.form_context("bulk_rename_host", method="POST"):
             self._vs_renaming_config().render_input("", {})
             html.hidden_fields()
@@ -467,7 +465,7 @@ def rename_hosts_job_entry_point(
         )  # Already activates the changes!
 
         for site_id in group_renamings_by_site(renamings):
-            ActivateChanges().confirm_site_changes(site_id)
+            ActivateChanges.confirm_site_changes(site_id)
 
         action_txt = "".join(["<li>%s</li>" % a for a in actions])
         message = _("Renamed %d %s at the following places:<br><ul>%s</ul>") % (
@@ -514,7 +512,7 @@ class ModeRenameHost(WatoMode):
             self._host.name(),
         )
 
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         menu = make_simple_form_page_menu(
             _("Host"),
             breadcrumb,
@@ -554,9 +552,9 @@ class ModeRenameHost(WatoMode):
 
         return menu
 
-    def action(self) -> ActionResult:
+    def action(self, config: Config) -> ActionResult:
         renamed_host_site = self._host.site_id()
-        if ActivateChanges().get_pending_changes_info().has_changes():
+        if ActivateChanges.get_pending_changes_info(list(config.sites)).has_changes():
             raise MKUserError(
                 "newname",
                 _(
@@ -586,10 +584,10 @@ class ModeRenameHost(WatoMode):
                     callable=rename_hosts_job_entry_point,
                     args=RenameHostsJobArgs(
                         renamings=_renamings_to_job_args(renamings),
-                        site_configs=active_config.sites,
-                        pprint_value=active_config.wato_pprint_config,
-                        use_git=active_config.wato_use_git,
-                        debug=active_config.debug,
+                        site_configs=config.sites,
+                        pprint_value=config.wato_pprint_config,
+                        use_git=config.wato_use_git,
+                        debug=config.debug,
                     ),
                 ),
                 InitialStatusArgs(
@@ -613,7 +611,7 @@ class ModeRenameHost(WatoMode):
         validate_host_uniqueness(varname, host_name)
         Hostname().validate_value(host_name, varname)
 
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         html.help(
             _(
                 "The renaming of hosts is a complex operation since a host's name is being "

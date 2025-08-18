@@ -9,10 +9,7 @@ string_flag(
     values = [
         "almalinux-8",
         "almalinux-9",
-        "debian-11",
         "debian-12",
-        "sles-15sp3",
-        "sles-15sp4",
         "sles-15sp5",
         "sles-15sp6",
         "ubuntu-22.04",
@@ -39,11 +36,6 @@ selects.config_setting_group(
 )
 
 config_setting(
-    name = "debian-11",
-    flag_values = {":distro": "debian-11"},
-)
-
-config_setting(
     name = "debian-12",
     flag_values = {":distro": "debian-12"},
 )
@@ -51,19 +43,8 @@ config_setting(
 selects.config_setting_group(
     name = "debian",
     match_any = [
-        ":debian-11",
         ":debian-12",
     ],
-)
-
-config_setting(
-    name = "sles-15sp3",
-    flag_values = {":distro": "sles-15sp3"},
-)
-
-config_setting(
-    name = "sles-15sp4",
-    flag_values = {":distro": "sles-15sp4"},
 )
 
 config_setting(
@@ -79,8 +60,6 @@ config_setting(
 selects.config_setting_group(
     name = "sles",
     match_any = [
-        ":sles-15sp3",
-        ":sles-15sp4",
         ":sles-15sp5",
         ":sles-15sp6",
     ],

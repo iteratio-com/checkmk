@@ -16,13 +16,6 @@ from redis import Redis
 
 from livestatus import Query, QuerySpecification
 
-from cmk.ccc import store
-from cmk.ccc.exceptions import MKGeneralException
-from cmk.ccc.i18n import _
-
-from cmk.utils.log import logger
-from cmk.utils.redis import get_redis_client
-
 from cmk.bi import storage
 from cmk.bi.aggregation import BIAggregation
 from cmk.bi.data_fetcher import BIStructureFetcher, SiteProgramStart
@@ -31,8 +24,16 @@ from cmk.bi.lib import SitesCallback
 from cmk.bi.packs import BIAggregationPacks
 from cmk.bi.searcher import BISearcher
 from cmk.bi.trees import BICompiledAggregation, BICompiledRule, FrozenBIInfo
+from cmk.ccc import store
+from cmk.ccc.exceptions import MKGeneralException
+from cmk.ccc.i18n import _
+from cmk.utils.log import logger
+from cmk.utils.redis import get_redis_client
 
 _LOGGER = logger.getChild("web.bi.compilation")
+
+# NOTE: Multiprocessing support was reverted due to unexpected high resource usage. However, the
+# utility code was kept to further test on sandbox environments.
 _MAX_MULTIPROCESSING_POOL_SIZE = 8
 _AVAILABLE_MEMORY_RATIO = 0.75
 
@@ -191,11 +192,11 @@ class BICompiler:
 
             self.prepare_for_compilation(current_configstatus["online_sites"])
 
-            if aggregations := self._bi_packs.get_all_aggregations():
-                with self._get_multiprocessing_pool(len(aggregations)) as pool:
-                    compiled_aggregations = pool.imap_unordered(_process_compilation, aggregations)
-                    for compiled_aggregation in compiled_aggregations:
-                        self._compiled_aggregations[compiled_aggregation.id] = compiled_aggregation
+            for aggregation in self._bi_packs.get_all_aggregations():
+                start = time.perf_counter()
+                self._compiled_aggregations[aggregation.id] = aggregation.compile(self.bi_searcher)
+                end = time.perf_counter()
+                _LOGGER.debug(f"Compilation of {aggregation.id} took {end - start:f}")
 
             self._verify_aggregation_title_uniqueness(self._compiled_aggregations)
 

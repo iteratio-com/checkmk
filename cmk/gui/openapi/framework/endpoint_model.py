@@ -5,33 +5,21 @@
 import dataclasses
 import inspect
 from collections.abc import Callable, Mapping, Sequence
-from typing import (
-    Annotated,
-    cast,
-    get_args,
-    get_origin,
-    Literal,
-    Self,
-    TypedDict,
-)
+from functools import cache
+from typing import Annotated, cast, get_args, get_origin, Literal, Self, TypeAliasType, TypedDict
 
-from pydantic import BaseModel, ConfigDict, TypeAdapter, ValidationError, with_config
-
-from cmk.gui.openapi.framework._types import (
-    ApiContext,
-    DataclassInstance,
-    HeaderParam,
-    PathParam,
-    QueryParam,
-    RawRequestData,
-)
-from cmk.gui.openapi.framework._utils import iter_dataclass_fields
-from cmk.gui.openapi.framework.content_types import convert_request_body
-from cmk.gui.openapi.framework.model.api_field import api_field
-from cmk.gui.openapi.framework.model.response import ApiResponse, TypedResponse
-from cmk.gui.openapi.restful_objects.validators import RequestDataValidator
+from pydantic import BaseModel, ConfigDict, ValidationError, with_config
 
 from cmk import trace
+from cmk.gui.openapi.restful_objects.validators import RequestDataValidator
+
+from .._type_adapter import get_cached_type_adapter
+from ._context import ApiContext
+from ._types import DataclassInstance, HeaderParam, PathParam, QueryParam, RawRequestData
+from ._utils import iter_dataclass_fields
+from .content_types import convert_request_body
+from .model import api_field
+from .model.response import ApiResponse, TypedResponse
 
 type ApiInputModel[T: type[DataclassInstance]] = T
 """Dataclass with optional fields: body, path, query, headers
@@ -73,7 +61,13 @@ def _return_type(signature: inspect.Signature) -> type | None:
         raise ValueError("Missing return type annotation")
     annotation = signature.return_annotation
     if get_origin(annotation) in (TypedResponse, ApiResponse):
-        return get_args(annotation)[0]
+        type_ = get_args(annotation)[0]
+        if type_ is type(None):
+            # TypedResponse[None] or ApiResponse[None]
+            # instead of `None` we get `NoneType`, so we do the conversion here
+            return None
+        return type_
+
     return annotation
 
 
@@ -95,6 +89,11 @@ class ParameterInfo:
 
 
 def _collect_sources(type_: type) -> Sequence[SourceAnnotation]:
+    if isinstance(type_, TypeAliasType):
+        if type_.__type_params__:
+            # TypeAliasType with type parameters, we cannot handle this case
+            raise ValueError(f"Unsupported TypeAliasType with type parameters: {type_}")
+        return _collect_sources(type_.__value__)
     if get_origin(type_) is Annotated:
         return [
             annotation
@@ -186,7 +185,7 @@ def _make_parameter_model(
                 default=parameter.default,
                 description=parameter.description,
                 example=parameter.example,
-                alias=parameter.alias,
+                serialization_alias=parameter.alias,
             ),
         )
         for name, parameter in parameters.items()
@@ -296,6 +295,7 @@ class EndpointModel[**P, T]:
         self.uses_api_context = uses_api_context
 
     @classmethod
+    @cache
     @tracer.instrument("build_endpoint_model")
     def build(cls, handler: Callable[P, T]) -> Self:
         """Build the endpoint model from the handler function."""
@@ -385,7 +385,7 @@ class EndpointModel[**P, T]:
 
         # validate the input model
         # TypeAdapter performance: once per request
-        input_type_adapter = TypeAdapter(self._input_model)  # nosemgrep: type-adapter-detected
+        input_type_adapter = get_cached_type_adapter(self._input_model)
         input_data = input_type_adapter.validate_python(prepared_data, strict=False)
 
         # unwrap the parameters
@@ -407,6 +407,11 @@ class EndpointModel[**P, T]:
         # this also guarantees that all required parameters to call the handler are present
         return self._signature.bind(**out)
 
+    @staticmethod
+    def _contains_path_parameter_errors(error: ValidationError) -> bool:
+        """Check if the error is related to path parameters."""
+        return any(details["loc"][0] == "path" for details in error.errors())
+
     def validate_request_and_identify_args(
         self, request_data: RawRequestData, content_type: str | None, api_context: ApiContext
     ) -> inspect.BoundArguments:
@@ -417,7 +422,8 @@ class EndpointModel[**P, T]:
         try:
             return self._validate_request_parameters(request_data, content_type, api_context)
         except ValidationError as e:
-            RequestDataValidator.raise_formatted_pydantic_error(e)
+            status_code: Literal[400, 404] = 404 if self._contains_path_parameter_errors(e) else 400
+            RequestDataValidator.raise_formatted_pydantic_error(e, status_code=status_code)
 
     def get_annotation(self, field: Literal["body", "path", "query", "headers"], /) -> type | None:
         for field_instance in dataclasses.fields(self._input_model):

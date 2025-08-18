@@ -2,8 +2,6 @@
 
 /// file: trigger-post-submit-test-cascade-full.groovy
 
-/// Trigger post submit test cascade of heavy jobs
-
 def main() {
     def package_helper = load("${checkout_dir}/buildscripts/scripts/utils/package_helper.groovy");
     def versioning = load("${checkout_dir}/buildscripts/scripts/utils/versioning.groovy");
@@ -18,6 +16,9 @@ def main() {
         "test-composition-single-f12less-cme",
         "test-composition-single-f12less-cre",
         "test-gui-crawl-f12less",
+        "test-gui-e2e-f12less-cce",
+        "test-gui-e2e-f12less-cee",
+        "test-gui-e2e-f12less-cse",
         "test-integration-agent-plugin",
         "test-integration-single-f12less",
         "test-integration-single-f12less-cme",
@@ -30,7 +31,6 @@ def main() {
         "test-update-single-f12less-cce",
         "test-update-single-f12less-cme",
         "test-update-single-f12less-cre",
-        "trigger-test-gui-e2e",
     ];
 
     print(
@@ -58,6 +58,7 @@ def main() {
                         CIPARAM_OVERRIDE_BUILD_NODE: params.CIPARAM_OVERRIDE_BUILD_NODE,
                         CIPARAM_CLEANUP_WORKSPACE: params.CIPARAM_CLEANUP_WORKSPACE,
                         CIPARAM_BISECT_COMMENT: params.CIPARAM_BISECT_COMMENT,
+                        CIPARAM_OVERRIDE_DOCKER_TAG_BUILD: params.CIPARAM_OVERRIDE_DOCKER_TAG_BUILD,
                     ],
                     no_remove_others: true, // do not delete other files in the dest dir
                     download: false,    // use copyArtifacts to avoid nested directories

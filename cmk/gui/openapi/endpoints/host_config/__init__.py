@@ -8,9 +8,9 @@ from collections.abc import Callable, Iterable, Mapping, Sequence
 from typing import Any
 from urllib.parse import urlparse
 
+from cmk import fields
 from cmk.ccc.hostaddress import HostName
 from cmk.ccc.site import SiteId
-
 from cmk.gui import fields as gui_fields
 from cmk.gui.background_job import InitialStatusArgs, JobTarget
 from cmk.gui.config import active_config
@@ -46,14 +46,12 @@ from cmk.gui.openapi.utils import EXT, problem, serve_json
 from cmk.gui.utils import permission_verification as permissions
 from cmk.gui.wato.pages.host_rename import rename_hosts_job_entry_point, RenameHostsJobArgs
 from cmk.gui.watolib import bakery
-from cmk.gui.watolib.activate_changes import has_pending_changes
+from cmk.gui.watolib.activate_changes import ActivateChanges
 from cmk.gui.watolib.check_mk_automations import delete_hosts
 from cmk.gui.watolib.configuration_bundle_store import is_locked_by_quick_setup
 from cmk.gui.watolib.host_attributes import HostAttributes
 from cmk.gui.watolib.host_rename import RenameHostBackgroundJob, RenameHostsBackgroundJob
 from cmk.gui.watolib.hosts_and_folders import Folder, folder_tree, Host
-
-from cmk import fields
 
 BAKE_AGENT_PARAM_NAME = "bake_agent"
 BAKE_AGENT_PARAM = {
@@ -215,7 +213,9 @@ def create_host(params: Mapping[str, Any]) -> Response:
 
     # is_cluster is defined as "cluster_hosts is not None"
     folder.create_hosts(
-        [(host_name, body["attributes"], None)], pprint_value=active_config.wato_pprint_config
+        [(host_name, body["attributes"], None)],
+        pprint_value=active_config.wato_pprint_config,
+        use_git=active_config.wato_use_git,
     )
     if params[BAKE_AGENT_PARAM_NAME]:
         bakery.try_bake_agents_for_hosts([host_name], debug=active_config.debug)
@@ -251,6 +251,7 @@ def create_cluster_host(params: Mapping[str, Any]) -> Response:
     folder.create_hosts(
         [(host_name, body["attributes"], body["nodes"])],
         pprint_value=active_config.wato_pprint_config,
+        use_git=active_config.wato_use_git,
     )
     if params[BAKE_AGENT_PARAM_NAME]:
         bakery.try_bake_agents_for_hosts([host_name], debug=active_config.debug)
@@ -332,7 +333,9 @@ def bulk_create_hosts(params: Mapping[str, Any]) -> Response:
                 failed_hosts[host_name] = f"Validation failed: {e}"
 
         folder.create_validated_hosts(
-            validated_entries, pprint_value=active_config.wato_pprint_config
+            validated_entries,
+            pprint_value=active_config.wato_pprint_config,
+            use_git=active_config.wato_use_git,
         )
         succeeded_hosts.extend(entry[0] for entry in validated_entries)
 
@@ -513,7 +516,12 @@ def update_nodes(params: Mapping[str, Any]) -> Response:
     nodes = body["nodes"]
     host: Host = Host.load_host(host_name)
     _require_host_etag(host)
-    host.edit(host.attributes, nodes, pprint_value=active_config.wato_pprint_config)
+    host.edit(
+        host.attributes,
+        nodes,
+        pprint_value=active_config.wato_pprint_config,
+        use_git=active_config.wato_use_git,
+    )
 
     return serve_json(
         constructors.object_sub_property(
@@ -579,11 +587,18 @@ def update_host(params: Mapping[str, Any]) -> Response:
     if new_attributes := body.get("attributes"):
         new_attributes["meta_data"] = host.attributes.get("meta_data", {})
         host.edit(
-            new_attributes, host.cluster_nodes(), pprint_value=active_config.wato_pprint_config
+            new_attributes,
+            host.cluster_nodes(),
+            pprint_value=active_config.wato_pprint_config,
+            use_git=active_config.wato_use_git,
         )
 
     if update_attributes := body.get("update_attributes"):
-        host.update_attributes(update_attributes, pprint_value=active_config.wato_pprint_config)
+        host.update_attributes(
+            update_attributes,
+            pprint_value=active_config.wato_pprint_config,
+            use_git=active_config.wato_use_git,
+        )
 
     if remove_attributes := body.get("remove_attributes"):
         faulty_attributes = []
@@ -592,7 +607,9 @@ def update_host(params: Mapping[str, Any]) -> Response:
                 faulty_attributes.append(attribute)
 
         host.clean_attributes(
-            remove_attributes, pprint_value=active_config.wato_pprint_config
+            remove_attributes,
+            pprint_value=active_config.wato_pprint_config,
+            use_git=active_config.wato_use_git,
         )  # silently ignores missing attributes
 
         if faulty_attributes:
@@ -679,7 +696,7 @@ def bulk_update_hosts(params: Mapping[str, Any]) -> Response:
         if pending_changes:
             folder.save_hosts(pprint_value=active_config.wato_pprint_config)
             for host, diff, affected_sites in pending_changes:
-                host.add_edit_host_change(diff, affected_sites)
+                host.add_edit_host_change(diff, affected_sites, use_git=active_config.wato_use_git)
 
     return _bulk_host_action_response(failed_hosts, succeeded_hosts)
 
@@ -724,7 +741,7 @@ def rename_host(params: Mapping[str, Any]) -> Response:
     """
     user.need_permission("wato.edit_hosts")
     user.need_permission("wato.rename_hosts")
-    if has_pending_changes():
+    if _has_pending_changes(list(active_config.sites)):
         return problem(
             status=409,
             title="Pending changes are present",
@@ -773,6 +790,10 @@ def rename_host(params: Mapping[str, Any]) -> Response:
         )["href"]
     ).path
     return response
+
+
+def _has_pending_changes(sites: Sequence[SiteId]) -> bool:
+    return ActivateChanges.get_pending_changes_info(sites).has_changes()
 
 
 @Endpoint(
@@ -850,7 +871,10 @@ def move(params: Mapping[str, Any]) -> Response:
         if target_folder.as_choice_for_moving() not in current_folder.choices_for_moving_host():
             raise MKAuthException
         current_folder.move_hosts(
-            [host_name], target_folder, pprint_value=active_config.wato_pprint_config
+            [host_name],
+            target_folder,
+            pprint_value=active_config.wato_pprint_config,
+            use_git=active_config.wato_use_git,
         )
     except MKAuthException:
         return problem(
@@ -882,6 +906,7 @@ def delete(params: Mapping[str, Any]) -> Response:
         automation=delete_hosts,
         pprint_value=active_config.wato_pprint_config,
         debug=active_config.debug,
+        use_git=active_config.wato_use_git,
     )
     return Response(status=204)
 
@@ -920,6 +945,7 @@ def bulk_delete(params: Mapping[str, Any]) -> Response:
             automation=delete_hosts,
             pprint_value=active_config.wato_pprint_config,
             debug=active_config.debug,
+            use_git=active_config.wato_use_git,
         )
 
     return Response(status=204)

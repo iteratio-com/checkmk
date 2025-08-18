@@ -3,30 +3,31 @@
 # This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 # conditions defined in the file COPYING, which is part of this source code package.
 
-import cmk.utils.paths
-
 import cmk.ec.export as ec
+import cmk.utils.paths
 from cmk.ec.settings import create_paths
 
 
 def test_save_active_config(patch_omd_site: None) -> None:
-    cmk.utils.paths.ec_main_config_file.touch()
-    (cmk.utils.paths.ec_config_dir / "my-config.mk").touch()
-    (cmk.utils.paths.ec_config_dir / "wato").mkdir(parents=True, exist_ok=True)
-    (cmk.utils.paths.ec_config_dir / "wato/global.mk").touch()
-    (cmk.utils.paths.ec_config_dir / "wato/rules.mk").touch()
+    paths = ec.create_paths(cmk.utils.paths.omd_root)
+    ec_config_dir = paths.config_dir.value
+    paths.main_config_file.value.touch()
+    (ec_config_dir / "my-config.mk").touch()
+    (ec_config_dir / "wato").mkdir(parents=True, exist_ok=True)
+    (ec_config_dir / "wato/global.mk").touch()
+    (ec_config_dir / "wato/rules.mk").touch()
 
     active_config_dir = create_paths(cmk.utils.paths.omd_root).active_config_dir.value
     active_config_dir.mkdir(parents=True, exist_ok=True)
     (active_config_dir / "old-rules.mk").touch()
 
-    ec.save_active_config([])
+    ec.save_active_config([], cmk.utils.paths.omd_root)
 
-    assert sorted(cmk.utils.paths.ec_config_dir.glob("**/*.mk")) == sorted(
+    assert sorted(ec_config_dir.glob("**/*.mk")) == sorted(
         [
-            cmk.utils.paths.ec_config_dir / "my-config.mk",
-            cmk.utils.paths.ec_config_dir / "wato/global.mk",
-            cmk.utils.paths.ec_config_dir / "wato/rules.mk",
+            ec_config_dir / "my-config.mk",
+            ec_config_dir / "wato/global.mk",
+            ec_config_dir / "wato/rules.mk",
         ]
     )
     assert sorted(active_config_dir.glob("**/*.mk")) == sorted(
@@ -40,19 +41,21 @@ def test_save_active_config(patch_omd_site: None) -> None:
 
 
 def test_save_active_config_no_active_config_dir(patch_omd_site: None) -> None:
-    cmk.utils.paths.ec_main_config_file.touch()
-    (cmk.utils.paths.ec_config_dir / "my-config.mk").touch()
-    (cmk.utils.paths.ec_config_dir / "wato").mkdir(parents=True, exist_ok=True)
-    (cmk.utils.paths.ec_config_dir / "wato/global.mk").touch()
-    (cmk.utils.paths.ec_config_dir / "wato/rules.mk").touch()
+    paths = ec.create_paths(cmk.utils.paths.omd_root)
+    ec_config_dir = paths.config_dir.value
+    paths.main_config_file.value.touch()
+    (ec_config_dir / "my-config.mk").touch()
+    (ec_config_dir / "wato").mkdir(parents=True, exist_ok=True)
+    (ec_config_dir / "wato/global.mk").touch()
+    (ec_config_dir / "wato/rules.mk").touch()
 
-    ec.save_active_config([])
+    ec.save_active_config([], cmk.utils.paths.omd_root)
 
-    assert sorted(cmk.utils.paths.ec_config_dir.glob("**/*.mk")) == sorted(
+    assert sorted(ec_config_dir.glob("**/*.mk")) == sorted(
         [
-            cmk.utils.paths.ec_config_dir / "my-config.mk",
-            cmk.utils.paths.ec_config_dir / "wato/global.mk",
-            cmk.utils.paths.ec_config_dir / "wato/rules.mk",
+            ec_config_dir / "my-config.mk",
+            ec_config_dir / "wato/global.mk",
+            ec_config_dir / "wato/rules.mk",
         ]
     )
     active_config_dir = create_paths(cmk.utils.paths.omd_root).active_config_dir.value

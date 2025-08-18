@@ -11,9 +11,7 @@ from typing import Literal
 from pydantic import BaseModel
 
 import cmk.ccc.version as cmk_version
-
-from cmk.utils import paths
-
+from cmk.gui.config import Config
 from cmk.gui.ctx_stack import g
 from cmk.gui.exceptions import MKUserError
 from cmk.gui.htmllib.html import html
@@ -35,9 +33,10 @@ from cmk.gui.utils.output_funnel import output_funnel
 from cmk.gui.utils.regex import validate_regex
 from cmk.gui.valuespec import AjaxDropdownChoice
 from cmk.gui.visuals.type import visual_type_registry
+from cmk.utils import paths
 
 
-def ajax_popup_add() -> None:
+def ajax_popup_add(config: Config) -> None:
     # name is unused at the moment in this, hand over as empty name
     page_menu_dropdown = page_menu_dropdown_add_to_visual(
         add_type=request.get_ascii_input_mandatory("add_type"), name=""
@@ -149,7 +148,7 @@ class CreateInfoModel(BaseModel):
     context: VisualContext | None
 
 
-def ajax_add_visual() -> None:
+def ajax_add_visual(config: Config) -> None:
     check_csrf_token()
     visual_type_name = request.get_str_input_mandatory("visual_type")  # dashboards / views / ...
     try:
@@ -212,7 +211,7 @@ def page_menu_topic_add_to(visual_type: str, name: str, source_type: str) -> lis
     ]
 
 
-def add_to_dashboard_choices_autocompleter(value: str, params: dict) -> Choices:
+def add_to_dashboard_choices_autocompleter(config: Config, value: str, params: dict) -> Choices:
     return get_visual_choices(
         visual_type="dashboards",
         value=value,

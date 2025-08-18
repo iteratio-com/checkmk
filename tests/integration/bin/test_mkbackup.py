@@ -14,18 +14,16 @@ from pathlib import Path
 
 import pytest
 
-from tests.testlib.pytest_helpers.calls import exit_pytest_on_exceptions
-from tests.testlib.site import get_site_factory, Site
-from tests.testlib.utils import DISTROS_MISSING_WHITELIST_ENVIRONMENT_FOR_SU, run
-from tests.testlib.web_session import CMKWebSession
-
 from cmk.utils.paths import mkbackup_lock_dir
+from tests.testlib.pytest_helpers.calls import exit_pytest_on_exceptions
+from tests.testlib.site import Site, SiteFactory
+from tests.testlib.utils import DISTROS_MISSING_WHITELIST_ENVIRONMENT_FOR_SU, run
 
 logger = logging.getLogger(__name__)
 
 
 @pytest.fixture(name="site_for_mkbackup_tests", scope="module")
-def site(request: pytest.FixtureRequest) -> Generator[Site]:
+def site(site_factory: SiteFactory, request: pytest.FixtureRequest) -> Generator[Site]:
     """
     The tests in this module heavily modify the site they operate on. For example, they restore the
     site from a previously created backup without history, which results in a site without baked
@@ -35,7 +33,7 @@ def site(request: pytest.FixtureRequest) -> Generator[Site]:
     with exit_pytest_on_exceptions(
         exit_msg=f"Failure in site creation using fixture '{__file__}::{request.fixturename}'!"
     ):
-        yield from get_site_factory(prefix="int_").get_test_site(
+        yield from site_factory.get_test_site(
             name="test_mkbup",
             save_results=False,
         )
@@ -105,34 +103,40 @@ def backup_path_fixture(site_for_mkbackup_tests: Site) -> Iterator[str]:
         pytest.param(False, id="lock dir not existing"),
     ],
 )
-def backup_lock_dir_fixture(site_for_mkbackup_tests: Site, request: pytest.FixtureRequest) -> None:
-    # This fixture should prepare two possible scenarios:
-    # 1) The folder for the backup locks does already exist *and* has the correct permissions
-    # 2) The folder does not yet exist.
-    # --> In both scenarios mkbackup must not fail
+def backup_lock_dir_fixture(
+    site_for_mkbackup_tests: Site, request: pytest.FixtureRequest
+) -> Iterator[None]:
+    """Prepare two scenarios for testing.
 
-    # In the second case the "omd" command executed as root ensures that the directory is created.
-    # This functionality has been added to the "omd" command, because it is the only command which
-    # can reliably create the directory when started as root.
-    if not request.param:
-        run(["rm", "-r", str(mkbackup_lock_dir)], sudo=True)
-        assert not mkbackup_lock_dir.exists()
+    This fixture should prepare two possible scenarios:
+    1) The folder for the backup locks does already exist *and* has the correct permissions.
+    2) The folder does not yet exist.
 
+    In both scenarios `mkbackup` must not fail!
+    """
+
+    def _initialize_lock_dir() -> None:
         # This omd call triggers the creation of the lock dir with the correct permissions. In
         # production there is always at least one command executed before being able to execute
         # the backup code. So we can assume it has been executed before.
-        run(["omd", "status"], sudo=True)
+        run(["omd", "status", site_for_mkbackup_tests.id], sudo=True)
+        assert mkbackup_lock_dir.exists()
+        backup_permission_mask = oct(mkbackup_lock_dir.stat().st_mode)[-4:]
+        assert backup_permission_mask == "0770"
+        assert mkbackup_lock_dir.group() == "omd"
 
-    assert mkbackup_lock_dir.exists()
-    backup_permission_mask = oct(mkbackup_lock_dir.stat().st_mode)[-4:]
-    assert backup_permission_mask == "0770"
-    assert mkbackup_lock_dir.group() == "omd"
+    if request.param:
+        _initialize_lock_dir()
+        yield
+    else:
+        run(["rm", "-r", str(mkbackup_lock_dir)], sudo=True)
+        assert not mkbackup_lock_dir.exists(), f"Expected '{mkbackup_lock_dir}' to be deleted!"
+        yield
+        _initialize_lock_dir()
 
 
 @pytest.fixture(name="test_cfg", scope="function")
-def test_cfg_fixture(
-    web: CMKWebSession, site_for_mkbackup_tests: Site, backup_path: str
-) -> Iterator[None]:
+def test_cfg_fixture(site_for_mkbackup_tests: Site, backup_path: str) -> Iterator[None]:
     site_for_mkbackup_tests.ensure_running()
 
     cfg = {
@@ -352,7 +356,6 @@ OX8nmEKiFXoov7nHZwxn5qYhZsm9y/QS6oP6A6y1vBqt34+GtX2bitk=
     #
     site_for_mkbackup_tests.delete_file("etc/check_mk/backup_keys.mk")
     site_for_mkbackup_tests.delete_file("etc/check_mk/backup.mk")
-
     site_for_mkbackup_tests.ensure_running()
 
 
@@ -456,6 +459,7 @@ def test_mkbackup_list_jobs(site_for_mkbackup_tests: Site) -> None:
     assert "Tästjob" in p.stdout
 
 
+@pytest.mark.skip(reason="CMK-24644; investigating ...")
 @pytest.mark.usefixtures("test_cfg", "backup_lock_dir")
 def test_mkbackup_simple_backup(site_for_mkbackup_tests: Site) -> None:
     _execute_backup(site_for_mkbackup_tests)

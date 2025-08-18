@@ -1,19 +1,26 @@
-# https://docs.bazel.build/versions/main/best-practices.html#using-the-bazelrc-file
-try-import %workspace%/user.bazelrc
-
-# The remote.bazelrc file contains the secrets for accessing the remote cache and must be added by the corresponding
-# Jenkins job (or a user) in the form of:
-# common --remote_cache=grpcs://${USER}:${PASSWORD}@{URL}
-try-import %workspace%/remote.bazelrc
-
 # Use local registry to add local download mirrors
-common:linux --registry="file://%workspace%/bazel/registry"
-common:windows --registry="file:///%workspace%/bazel/registry"
+common --registry="file:///%workspace%/bazel/thirdparty"
+common --registry="file:///%workspace%/bazel/registry"
 common --registry=https://bcr.bazel.build
+
+# enable a local disk cache: this is especially relevant for local builds without an enabled bazel-remote
+common:linux --disk_cache=~/.cache/bazel_disk_cache/
+
+# reading WORKSPACE is disabled by default for Bazel 8
+common --enable_workspace
+
+# enable visibility checking for config_settings
+common --incompatible_enforce_config_setting_visibility
+common --incompatible_config_setting_private_default_visibility
+
+# with rules_proto_grpc (5.0.1) we run into
+# >>> Error in resolve_tools: Pass an executable or tools argument to ctx.actions.run
+# without
+common --noincompatible_disallow_ctx_resolve_tools
 
 # default/common bazel args for all commands supporting it
 common --experimental_ui_max_stdouterr_bytes=10000000
-common --experimental_remote_cache_async
+common --remote_cache_async
 common --remote_cache_compression
 # send pings after this time of no read operations on the connection, but only if there is at least one pending gRPC call
 # only with this flag "grpc_keepalive_timeout" is enabled, defaults to 20s
@@ -100,18 +107,7 @@ common:debug --verbose_failures
 # test:debug ...
 
 ################################################################################
-# Example: bazel build --config clang-tidy //packages/cmc:all
-################################################################################
-
-build:clang-tidy --aspects @bazel_clang_tidy//clang_tidy:clang_tidy.bzl%clang_tidy_aspect
-build:clang-tidy --output_groups=report
-build:clang-tidy --@bazel_clang_tidy//:clang_tidy_executable=//bazel/tools:clangtidy_bin
-build:clang-tidy --@bazel_clang_tidy//:clang_tidy_config=//bazel/tools:clang_tidy_config
-build:clang-tidy --@bazel_clang_tidy//:clang_tidy_gcc_install_dir=@gcc-linux-x86_64//:x86_64-buildroot-linux-gnu
-build:clang-tidy --@bazel_clang_tidy//:clang_tidy_additional_deps=@gcc-linux-x86_64//:toolchain_root
-
-################################################################################
-# Example: bazel build --config=iwyu //packages/cmc:all
+# Example: bazel build --config=iwyu //non-free/packages/cmc:all
 ################################################################################
 
 build:iwyu --aspects @bazel_iwyu//bazel/iwyu:iwyu.bzl%iwyu_aspect
@@ -149,5 +145,19 @@ build:linux --host_action_env=PATH="/usr/bin:/bin"
 build:windows --action_env=PATH="c:\\Windows;c:\\Windows\\system32;C:\\Program Files (x86)\\Windows Kits\\10\\App Certification Kit"
 build:windows --host_action_env=PATH="c:\\Windows;c:\\Windows\\system32;C:\\Program Files (x86)\\Windows Kits\\10\\App Certification Kit"
 
-# Must be last
+# The remote.bazelrc file contains the secrets for accessing the remote cache and must be added by the corresponding
+# Jenkins job (or a user) in the form of:
+# common --remote_cache=grpcs://${USER}:${PASSWORD}@{URL}
+try-import %workspace%/remote.bazelrc
+
+# ci.bazelrc can override all of the above (except explicit user-defined stuff)
 try-import /etc/ci.bazelrc
+
+# Import a (non-tracked) `user.bazelrc` if available - put worktree specific
+# options here you don't want to accidentally submit
+try-import %workspace%/user.bazelrc
+
+# Note: unfortunately there is no way to `try-import %home%/user.bazelrc`,
+# in order to set user specific options in a worktree-independent way, but
+# you can create ~/.bazelrc and put your global stuff there.
+

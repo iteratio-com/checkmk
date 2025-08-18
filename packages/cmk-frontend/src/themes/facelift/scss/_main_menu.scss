@@ -83,6 +83,7 @@
     height: 100%;
     border-left: 4px solid $navigation-bg-color;
     box-sizing: border-box;
+    margin: 0;
 
     &:not(.delayed):hover,
     &.active {
@@ -180,7 +181,7 @@
 
     div.fullscreen-popup {
       z-index: 1001;
-      width: 100%;
+      width: auto;
       height: 100%;
     }
 
@@ -191,7 +192,7 @@
       left: 64px;
       min-width: $single-column-main-menu-width;
       padding-bottom: $mainmenu-spacing-bottom;
-      background-color: $base-color;
+      background-color: $popup-trigger-active-bg-color;
       border-right: $popup-border;
 
       &.min {
@@ -551,6 +552,15 @@
         padding: 2px 5px 1px;
         color: $font-color-white;
         background-color: $color-state-2-background;
+        border-radius: 8px;
+      }
+      span#changes_label {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        padding: 2px 5px 1px;
+        color: $font-color-black;
+        background-color: $color-state-1-background;
         border-radius: 8px;
       }
     }

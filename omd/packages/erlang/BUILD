@@ -6,8 +6,8 @@ load("//omd/packages/erlang:vars.bzl", "PLACE_HOLDER")
 OMD_ROOT_AWARE = [
     "lib/erlang/bin/erl",
     "lib/erlang/bin/start",
-    "lib/erlang/erts-14.2.5.2/bin/erl",
-    "lib/erlang/erts-14.2.5.2/bin/start",
+    "lib/erlang/erts-14.2.5.10/bin/erl",
+    "lib/erlang/erts-14.2.5.10/bin/start",
 ]
 
 BIN_SYMLINKS = [
@@ -28,25 +28,25 @@ LIB_OSMON_PRIV_BIN = [
 ]
 
 LIB_ERTS_BIN = [
-    "lib/erlang/erts-14.2.5.2/bin/beam.smp",
-    "lib/erlang/erts-14.2.5.2/bin/ct_run",
-    "lib/erlang/erts-14.2.5.2/bin/dialyzer",
-    "lib/erlang/erts-14.2.5.2/bin/dyn_erl",
-    "lib/erlang/erts-14.2.5.2/bin/epmd",
-    "lib/erlang/erts-14.2.5.2/bin/erl.src",
-    "lib/erlang/erts-14.2.5.2/bin/erl_call",
-    "lib/erlang/erts-14.2.5.2/bin/erl_child_setup",
-    "lib/erlang/erts-14.2.5.2/bin/erlc",
-    "lib/erlang/erts-14.2.5.2/bin/erlexec",
-    "lib/erlang/erts-14.2.5.2/bin/escript",
-    "lib/erlang/erts-14.2.5.2/bin/heart",
-    "lib/erlang/erts-14.2.5.2/bin/inet_gethost",
-    "lib/erlang/erts-14.2.5.2/bin/run_erl",
-    "lib/erlang/erts-14.2.5.2/bin/start.src",
-    "lib/erlang/erts-14.2.5.2/bin/start_erl.src",
-    "lib/erlang/erts-14.2.5.2/bin/to_erl",
-    "lib/erlang/erts-14.2.5.2/bin/typer",
-    "lib/erlang/erts-14.2.5.2/bin/yielding_c_fun",
+    "lib/erlang/erts-14.2.5.10/bin/beam.smp",
+    "lib/erlang/erts-14.2.5.10/bin/ct_run",
+    "lib/erlang/erts-14.2.5.10/bin/dialyzer",
+    "lib/erlang/erts-14.2.5.10/bin/dyn_erl",
+    "lib/erlang/erts-14.2.5.10/bin/epmd",
+    "lib/erlang/erts-14.2.5.10/bin/erl.src",
+    "lib/erlang/erts-14.2.5.10/bin/erl_call",
+    "lib/erlang/erts-14.2.5.10/bin/erl_child_setup",
+    "lib/erlang/erts-14.2.5.10/bin/erlc",
+    "lib/erlang/erts-14.2.5.10/bin/erlexec",
+    "lib/erlang/erts-14.2.5.10/bin/escript",
+    "lib/erlang/erts-14.2.5.10/bin/heart",
+    "lib/erlang/erts-14.2.5.10/bin/inet_gethost",
+    "lib/erlang/erts-14.2.5.10/bin/run_erl",
+    "lib/erlang/erts-14.2.5.10/bin/start.src",
+    "lib/erlang/erts-14.2.5.10/bin/start_erl.src",
+    "lib/erlang/erts-14.2.5.10/bin/to_erl",
+    "lib/erlang/erts-14.2.5.10/bin/typer",
+    "lib/erlang/erts-14.2.5.10/bin/yielding_c_fun",
 ]
 
 LIB_BIN = [
@@ -76,6 +76,7 @@ exclude_from_filegroup(
         "include",
         "src",
     ] + OMD_ROOT_AWARE + LIB_OSMON_PRIV_BIN + LIB_ERTS_BIN + BIN_SYMLINKS,
+    tags = ["manual"],
 )
 
 genrule(
@@ -91,6 +92,7 @@ genrule(
             sed -i "s|{place_holder}|\\$${{OMD_ROOT}}|g" $$F
         done
     """.format(place_holder = PLACE_HOLDER),
+    tags = ["manual"],
 )
 
 genrule(
@@ -106,6 +108,7 @@ genrule(
             chmod 750 $$F
         done
     """ % PLACE_HOLDER,
+    tags = ["manual"],
 )
 
 genrule(
@@ -121,6 +124,7 @@ genrule(
             chmod 750 $$F
         done
     """ % PLACE_HOLDER,
+    tags = ["manual"],
 )
 
 genrule(
@@ -136,6 +140,7 @@ genrule(
             chmod 750 $$F
         done
     """ % PLACE_HOLDER,
+    tags = ["manual"],
 )
 
 pkg_files(
@@ -147,12 +152,14 @@ pkg_files(
         mode = "0755",
     ),
     strip_prefix = strip_prefix.from_pkg(""),
+    tags = ["manual"],
 )
 
 [
     pkg_mklink(
         name = bin + "_link",
         link_name = bin,
+        tags = ["manual"],
         target = "../lib/erlang/" + bin,
     )
     for bin in BIN_SYMLINKS
@@ -161,7 +168,8 @@ pkg_files(
 pkg_mklink(
     name = "epmd_lib_link",
     link_name = "lib/erlang/bin/epmd",
-    target = "../erts-14.2.5.2/bin/epmd",
+    tags = ["manual"],
+    target = "../erts-14.2.5.10/bin/epmd",
 )
 
 pkg_files(
@@ -171,6 +179,7 @@ pkg_files(
         mode = "0755",
     ),
     prefix = "lib/erlang/lib/os_mon-2.9.1/priv/bin",
+    tags = ["manual"],
 )
 
 pkg_files(
@@ -179,7 +188,8 @@ pkg_files(
     attributes = pkg_attributes(
         mode = "0755",
     ),
-    prefix = "lib/erlang/erts-14.2.5.2/bin",
+    prefix = "lib/erlang/erts-14.2.5.10/bin",
+    tags = ["manual"],
 )
 
 pkg_files(
@@ -189,12 +199,14 @@ pkg_files(
         mode = "0755",
     ),
     prefix = "lib/erlang/bin",
+    tags = ["manual"],
 )
 
 filter_directory(
     name = "rest_stripped",
     src = ":erlang_purged",
     strip_prefix = strip_prefix.from_pkg(PLACE_HOLDER),
+    tags = ["manual"],
 )
 
 pkg_files(
@@ -203,6 +215,7 @@ pkg_files(
         ":rest_stripped",
     ],
     strip_prefix = strip_prefix.from_pkg("rest_stripped"),
+    tags = ["manual"],
 )
 
 pkg_tar(
@@ -215,5 +228,6 @@ pkg_tar(
         ":omd_root_aware_pkg",
         ":rest",
     ] + [bin + "_link" for bin in BIN_SYMLINKS],
+    tags = ["manual"],
     visibility = ["//visibility:public"],
 )

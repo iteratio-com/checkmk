@@ -3,17 +3,17 @@
  * This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
  * conditions defined in the file COPYING, which is part of this source code package.
  */
-import { fileURLToPath, URL } from 'node:url'
-
-import { defineConfig } from 'vite'
+import path from 'node:path'
+import { defineConfig, type PluginOption } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import VueDevTools from 'vite-plugin-vue-devtools'
 
 // https://vitejs.dev/config/
 export default defineConfig(() => {
   return {
-    plugins: [vue()],
+    plugins: [vue(), VueDevTools()],
     clearScreen: false,
-    root: './src/components/_demo/',
+    root: './demo/',
     build: {
       minify: false
     },
@@ -33,8 +33,10 @@ export default defineConfig(() => {
     },
     resolve: {
       alias: {
-        '@': fileURLToPath(new URL('./src', import.meta.url)),
-        '~cmk-frontend': fileURLToPath(new URL('../cmk-frontend/', import.meta.url))
+        '@': path.resolve('./src'),
+        '@demo': path.resolve('./demo'),
+        // This is only a temporary hack to allow resolving icons and the demo css. Do not use this in new code!
+        '~cmk-frontend': path.resolve('../cmk-frontend/dist')
       }
     }
   }

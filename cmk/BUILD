@@ -148,6 +148,7 @@ CMK_PACKAGES = [
     "//packages/cmk-shared-typing:cmk_shared_typing_py",
     "//packages/cmk-agent-receiver",
     "//packages/cmk-ccc:cleanup",
+    "//packages/cmk-ccc:cpu-tracking",
     "//packages/cmk-ccc:crash-reporting",
     "//packages/cmk-ccc:daemon",
     "//packages/cmk-ccc:debug",
@@ -172,6 +173,7 @@ CMK_PACKAGES = [
     "//packages/cmk-plugin-apis:graphing",
     "//packages/cmk-plugin-apis:rulesets",
     "//packages/cmk-plugin-apis:server_side_calls",
+    "//packages/cmk-plugin-apis:inventory_ui",
     "//packages/cmk-trace",
     "//packages/cmk-werks",
 ] + select({

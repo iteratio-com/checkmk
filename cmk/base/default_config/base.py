@@ -7,7 +7,11 @@ from collections.abc import Container, Iterable, Mapping, Sequence
 from typing import Any, Final, Literal, SupportsInt, TypeAlias, TypedDict
 
 from cmk.ccc.hostaddress import HostAddress, HostName
-
+from cmk.checkengine.discovery import RediscoveryParameters
+from cmk.checkengine.exitspec import ExitSpec
+from cmk.fetchers import IPMICredentials
+from cmk.server_side_calls_backend import ConfigSet as SSCConfigSet
+from cmk.snmplib import SNMPCredentials, SNMPTiming
 from cmk.utils.host_storage import FolderAttributesForBase
 from cmk.utils.labels import Labels
 from cmk.utils.notify_types import Contact, ContactName
@@ -17,16 +21,6 @@ from cmk.utils.servicename import ServiceName
 from cmk.utils.structured_data import RawIntervalFromConfig
 from cmk.utils.tags import TagConfigSpec
 from cmk.utils.timeperiod import TimeperiodSpecs
-from cmk.utils.translations import TranslationOptions, TranslationOptionsSpec
-
-from cmk.snmplib import RangeLimit, SNMPCredentials, SNMPTiming
-
-from cmk.fetchers import IPMICredentials
-
-from cmk.checkengine.discovery import RediscoveryParameters
-from cmk.checkengine.exitspec import ExitSpec
-
-from cmk.server_side_calls_backend import ConfigSet as SSCConfigSet
 
 # This file contains the defaults settings for almost all configuration
 # variables that can be overridden in main.mk. Some configuration
@@ -63,9 +57,9 @@ check_max_cachefile_age = 0  # per default do not use cache files when checking
 cluster_max_cachefile_age = 90  # secs.
 piggyback_max_cachefile_age = 3600  # secs
 # Ruleset for translating piggyback host names
-piggyback_translation: list[RuleSpec[TranslationOptions]] = []
+piggyback_translation: Sequence[RuleSpec[Mapping[str, object]]] = []
 # Ruleset for translating service names
-service_description_translation: list[RuleSpec[TranslationOptionsSpec]] = []
+service_description_translation: Sequence[RuleSpec[Mapping[str, object]]] = []
 simulation_mode = False
 fake_dns: str | None = None
 perfdata_format: Literal["pnp", "standard"] = "pnp"
@@ -94,7 +88,7 @@ snmp_backend_hosts: list[RuleSpec[object]] = []
 non_inline_snmp_hosts: list[RuleSpec[object]] = []
 
 # Ruleset to recduce fetched OIDs of a check, only inline SNMP
-snmp_limit_oid_range: list[RuleSpec[tuple[str, Sequence[RangeLimit]]]] = []
+snmp_limit_oid_range: Sequence[RuleSpec[object]] = []
 # Ruleset to customize bulk size
 snmp_bulk_size: list[RuleSpec[int]] = []
 snmp_default_community = "public"
@@ -349,6 +343,5 @@ aggr_summary_hostname = "%s-s"
 
 status_data_inventory: list[RuleSpec[object]] = []
 logwatch_rules: list[RuleSpec[object]] = []
-config_storage_format: Literal["standard", "raw", "pickle"] = "pickle"
 
 automatic_host_removal: list[RuleSpec[object]] = []

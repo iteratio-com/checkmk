@@ -6,13 +6,13 @@
 cleanup is implemented here: the bulk removal of explicit attribute
 values."""
 
-from collections.abc import Collection, Sequence
+from collections.abc import Collection, Mapping, Sequence
 from hashlib import sha256
 from typing import override
 
 from cmk.gui import forms
 from cmk.gui.breadcrumb import Breadcrumb
-from cmk.gui.config import active_config
+from cmk.gui.config import Config
 from cmk.gui.htmllib.html import html
 from cmk.gui.http import request
 from cmk.gui.i18n import _
@@ -73,13 +73,13 @@ class ModeBulkEdit(WatoMode):
         return _("Bulk edit hosts")
 
     @override
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         return make_simple_form_page_menu(
             _("Hosts"), breadcrumb, form_name="edit_host", button_name="_save"
         )
 
     @override
-    def action(self) -> ActionResult:
+    def action(self, config: Config) -> ActionResult:
         check_csrf_token()
 
         if not transactions.check_transaction():
@@ -87,12 +87,21 @@ class ModeBulkEdit(WatoMode):
 
         user.need_permission("wato.edit_hosts")
 
-        changed_attributes = collect_attributes("bulk", new=False)
+        changed_attributes = collect_attributes(
+            all_host_attributes(
+                config.wato_host_attrs,
+                config.tags.get_tag_groups_by_topic(),
+            ),
+            "bulk",
+            new=False,
+        )
         host_names = get_hostnames_from_checkboxes(self._folder)
         for host_name in host_names:
             host = self._folder.load_host(host_name)
             host.update_attributes(
-                changed_attributes, pprint_value=active_config.wato_pprint_config
+                changed_attributes,
+                pprint_value=config.wato_pprint_config,
+                use_git=config.wato_use_git,
             )
             # call_hook_hosts_changed() is called too often.
             # Either offer API in class Host for bulk change or
@@ -102,7 +111,7 @@ class ModeBulkEdit(WatoMode):
         return redirect(self._folder.url())
 
     @override
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         host_names = get_hostnames_from_checkboxes(self._folder)
         hosts = {host_name: self._folder.load_host(host_name) for host_name in host_names}
         current_host_hash = sha256(repr(hosts).encode()).hexdigest()
@@ -140,7 +149,12 @@ class ModeBulkEdit(WatoMode):
             html.prevent_password_auto_completion()
             html.hidden_field("host_hash", current_host_hash)
             configure_attributes(
-                False, {str(k): v for k, v in hosts.items()}, "bulk", parent=self._folder
+                all_host_attributes(config.wato_host_attrs, config.tags.get_tag_groups_by_topic()),
+                new=False,
+                hosts={str(k): v for k, v in hosts.items()},
+                for_what="bulk",
+                parent=self._folder,
+                aux_tags_by_tag=config.tags.get_aux_tags_by_tag(),
             )
             forms.end()
             html.hidden_fields()
@@ -173,7 +187,7 @@ class ModeBulkCleanup(WatoMode):
         return _("Bulk removal of explicit attributes")
 
     @override
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         hosts = get_hosts_from_checkboxes(self._folder)
 
         return make_simple_form_page_menu(
@@ -181,18 +195,28 @@ class ModeBulkCleanup(WatoMode):
             breadcrumb,
             form_name="bulkcleanup",
             button_name="_save",
-            save_is_enabled=bool(self._get_attributes_for_bulk_cleanup(hosts)),
+            save_is_enabled=bool(
+                self._get_attributes_for_bulk_cleanup(
+                    all_host_attributes(
+                        config.wato_host_attrs,
+                        config.tags.get_tag_groups_by_topic(),
+                    ),
+                    hosts,
+                ),
+            ),
         )
 
     @override
-    def action(self) -> ActionResult:
+    def action(self, config: Config) -> ActionResult:
         check_csrf_token()
 
         if not transactions.check_transaction():
             return None
 
         user.need_permission("wato.edit_hosts")
-        to_clean = self._bulk_collect_cleaned_attributes()
+        to_clean = self._bulk_collect_cleaned_attributes(
+            all_host_attributes(config.wato_host_attrs, config.tags.get_tag_groups_by_topic())
+        )
         if "contactgroups" in to_clean:
             self._folder.permissions.need_permission("write")
 
@@ -203,19 +227,23 @@ class ModeBulkCleanup(WatoMode):
             host.permissions.need_permission("write")
 
         for host in hosts:
-            host.clean_attributes(to_clean, pprint_value=active_config.wato_pprint_config)
+            host.clean_attributes(
+                to_clean, pprint_value=config.wato_pprint_config, use_git=config.wato_use_git
+            )
 
         return redirect(self._folder.url())
 
-    def _bulk_collect_cleaned_attributes(self) -> list[str]:
+    def _bulk_collect_cleaned_attributes(
+        self, host_attributes: Mapping[str, ABCHostAttribute]
+    ) -> list[str]:
         to_clean = []
-        for attrname in all_host_attributes(active_config).keys():
+        for attrname in host_attributes.keys():
             if html.get_checkbox("_clean_" + attrname) is True:
                 to_clean.append(attrname)
         return to_clean
 
     @override
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         hosts = get_hosts_from_checkboxes(self._folder)
 
         html.p(
@@ -230,11 +258,16 @@ class ModeBulkCleanup(WatoMode):
 
         with html.form_context("bulkcleanup", method="POST"):
             forms.header(_("Attributes to remove from hosts"))
-            self._select_attributes_for_bulk_cleanup(hosts)
+            self._select_attributes_for_bulk_cleanup(
+                all_host_attributes(config.wato_host_attrs, config.tags.get_tag_groups_by_topic()),
+                hosts,
+            )
             html.hidden_fields()
 
-    def _select_attributes_for_bulk_cleanup(self, hosts: Sequence[Host]) -> None:
-        attributes = self._get_attributes_for_bulk_cleanup(hosts)
+    def _select_attributes_for_bulk_cleanup(
+        self, host_attributes: Mapping[str, ABCHostAttribute], hosts: Sequence[Host]
+    ) -> None:
+        attributes = self._get_attributes_for_bulk_cleanup(host_attributes, hosts)
 
         for attr, is_inherited, num_haveit in attributes:
             # Legend and Help
@@ -260,10 +293,10 @@ class ModeBulkCleanup(WatoMode):
             html.write_text_permissive(_("The selected hosts have no explicit attributes"))
 
     def _get_attributes_for_bulk_cleanup(
-        self, hosts: Sequence[Host]
+        self, host_attributes: Mapping[str, ABCHostAttribute], hosts: Sequence[Host]
     ) -> list[tuple[ABCHostAttribute, bool, int]]:
         attributes = []
-        for attr in sorted_host_attributes():
+        for attr in sorted_host_attributes(list(host_attributes.values())):
             attrname = attr.name()
 
             if not attr.show_in_host_cleanup():

@@ -11,7 +11,9 @@ from functools import partial
 from jinja2 import Template
 
 from cmk.ccc.user import UserId
-
+from cmk.gui import config, userdb
+from cmk.gui.i18n import _
+from cmk.gui.message import create_message, MessageText, send_message
 from cmk.utils.mail import (
     Attachment,
     default_from_address,
@@ -21,10 +23,6 @@ from cmk.utils.mail import (
     send_mail_sendmail,
 )
 from cmk.utils.paths import web_dir
-
-from cmk.gui import config, userdb, utils
-from cmk.gui.i18n import _
-from cmk.gui.message import Message, message_gui, MessageText
 
 #   .--Templates-----------------------------------------------------------.
 #   |            _____                    _       _                        |
@@ -342,16 +340,14 @@ def _get_attachments() -> list[Attachment]:
 def _send_gui(user_id: UserId, event: SecurityNotificationEvent, event_time: datetime) -> None:
     timestamp = int(event_time.timestamp())
     duration = int(config.active_config.user_security_notification_duration["max_duration"])
-    message_gui(
-        user_id,
-        Message(
+    send_message(
+        create_message(
             text=MessageText(content_type="text", content=user_friendly_gui_message(event)),
             dest=("list", [user_id]),
             methods=["gui_hint"],
             valid_till=timestamp + duration,  # 1 week
-            id=utils.gen_id(),
             time=timestamp,
             security=True,
-            acknowledged=False,
         ),
+        config.active_config.multisite_users.keys(),
     )

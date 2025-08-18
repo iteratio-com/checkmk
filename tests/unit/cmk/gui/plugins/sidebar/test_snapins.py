@@ -4,14 +4,13 @@
 # conditions defined in the file COPYING, which is part of this source code package.
 
 import cmk.ccc.version as cmk_version
-
-from cmk.utils import paths
-
 from cmk.gui.sidebar import snapin_registry
+from cmk.utils import paths
 
 
 def test_registered_snapins() -> None:
     expected_snapins = [
+        "a_welcome",
         "admin_mini",
         "biaggr_groups",
         "biaggr_groups_tree",
@@ -49,6 +48,7 @@ def test_registered_snapins() -> None:
 
 def test_refresh_snapins() -> None:
     expected_refresh_snapins = [
+        "a_welcome",
         "admin_mini",
         "performance",
         "master_control",

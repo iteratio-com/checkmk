@@ -59,21 +59,16 @@ from dateutil.relativedelta import relativedelta
 from dateutil.tz import tzlocal
 
 import cmk.ccc.plugin_registry
+import cmk.utils.log
+import cmk.utils.paths
+import cmk.utils.regex
 from cmk.ccc.exceptions import MKGeneralException
 from cmk.ccc.hostaddress import HostAddress as HostAddressType
 from cmk.ccc.site import SiteId
 from cmk.ccc.user import UserId
 from cmk.ccc.version import Version
-
-import cmk.utils.log
-import cmk.utils.paths
-import cmk.utils.regex
-from cmk.utils import dateutils
-from cmk.utils.images import CMKImage, ImageType
-from cmk.utils.labels import AndOrNotLiteral, LabelSources
-from cmk.utils.render import SecondsRenderer
-from cmk.utils.urls import is_allowed_url
-
+from cmk.crypto import certificate, keys
+from cmk.crypto.hash import HashAlgorithm
 from cmk.gui import forms, site_config, user_sites, utils
 from cmk.gui.config import active_config
 from cmk.gui.exceptions import MKUserError
@@ -113,9 +108,11 @@ from cmk.gui.utils.popups import MethodAjax, MethodColorpicker
 from cmk.gui.utils.speaklater import LazyString
 from cmk.gui.utils.urls import makeuri, urlencode
 from cmk.gui.view_utils import render_labels
-
-from cmk.crypto import certificate, keys
-from cmk.crypto.hash import HashAlgorithm
+from cmk.utils import dateutils
+from cmk.utils.images import CMKImage, ImageType
+from cmk.utils.labels import AndOrNotLiteral, LabelSources
+from cmk.utils.render import SecondsRenderer
+from cmk.utils.urls import is_allowed_url
 
 seconds_per_day = 86400
 
@@ -3459,7 +3456,7 @@ class DropdownChoiceWithHostAndServiceHints(AjaxDropdownChoice):
         vs_service.render_input(varprefix + "_service_hint", "")
 
 
-MonitoringStateValue = Literal[0, 1, 2, 3]
+type MonitoringStateValue = Literal[0, 1, 2, 3]
 
 
 # TODO: Rename to ServiceState() or something like this
@@ -3514,7 +3511,7 @@ def MonitoringState(
     )
 
 
-HostStateValue = Literal[0, 1, 2]
+type HostStateValue = Literal[0, 1, 2]
 
 
 class HostState(DropdownChoice):
@@ -5117,7 +5114,19 @@ class TimeHelper:
         return lt.timestamp()
 
 
-TimerangeValue = None | int | str | tuple[str, Any]  # TODO: Be more specific
+type _TimerangeAge = tuple[Literal["age"], int]  # in seconds
+type _TimerangeDate = tuple[Literal["date"], tuple[float, float]]  # as unix timestamps, whole days
+type _TimerangeDateTime = tuple[Literal["time"], tuple[float, float]]  # as unix timestamps
+type _TimerangePnpView = tuple[  # old version compatibility, TODO: when can this be removed
+    Literal["pnp_view"], int
+]
+type _TimerangeNext = tuple[Literal["next"], int]  # in seconds
+type _TimerangeUntil = tuple[Literal["until"], float]  # as unix timestamp
+
+type TimerangeValue = (
+    None | int | str | _TimerangeAge | _TimerangeDate | _TimerangeDateTime | _TimerangePnpView
+)
+type TimerangeValueWithFuture = TimerangeValue | _TimerangeNext | _TimerangeUntil
 
 
 class ComputedTimerange(NamedTuple):
@@ -5276,7 +5285,7 @@ class Timerange(CascadingDropdown):
 
     @staticmethod
     def compute_range(
-        rangespec: TimerangeValue,
+        rangespec: TimerangeValueWithFuture,
     ) -> ComputedTimerange:
         def _date_span(from_time: float, until_time: float) -> str:
             start = AbsoluteDate().value_to_html(from_time)
@@ -5358,7 +5367,8 @@ class Timerange(CascadingDropdown):
                     (int(now), int(rangespec[1])),
                     str(AbsoluteDate().value_to_html(rangespec[1])),
                 )
-            if isinstance(rangespec, tuple) and rangespec[0] in ["date", "time"]:
+            # NOTE: can't use `in` here, because mypy doesn't understand it
+            if isinstance(rangespec, tuple) and (rangespec[0] == "date" or rangespec[0] == "time"):
                 return _fixed_dates(rangespec)
 
             raise NotImplementedError()
@@ -8589,7 +8599,7 @@ class SetupSiteChoice(DropdownChoice):
         )
 
     def _site_default_value(self):
-        if site_config.is_wato_slave_site():
+        if site_config.is_wato_slave_site(active_config.sites):
             # Placeholder for "central site". This is only relevant when using Setup on a remote site
             # and a host / folder has no site set.
             return ""

@@ -16,25 +16,23 @@ from unittest.mock import mock_open, patch
 import pytest
 import requests
 
-from tests.unit.cmk.base.emptyconfig import EMPTYCONFIG
-
 import livestatus
 
-from cmk.ccc.hostaddress import HostName
-
 import cmk.utils.paths
+from cmk.base import diagnostics
+from cmk.ccc.crash_reporting import crash_dir
+from cmk.ccc.hostaddress import HostName
 from cmk.utils.structured_data import (
     deserialize_tree,
     InventoryStore,
     make_meta,
     SDRawTree,
 )
-
-from cmk.base import diagnostics
+from tests.unit.cmk.base.empty_config import EMPTY_CONFIG
 
 
 def _make_diagnostics_dump() -> diagnostics.DiagnosticsDump:
-    return diagnostics.DiagnosticsDump(EMPTYCONFIG)
+    return diagnostics.DiagnosticsDump(EMPTY_CONFIG)
 
 
 @pytest.fixture(autouse=True)
@@ -154,7 +152,7 @@ def test_diagnostics_element_general_content(
 
 
 def test_diagnostics_element_perfdata() -> None:
-    diagnostics_element = diagnostics.PerfDataDiagnosticsElement(EMPTYCONFIG)
+    diagnostics_element = diagnostics.PerfDataDiagnosticsElement(EMPTY_CONFIG)
     assert diagnostics_element.ident == "perfdata"
     assert diagnostics_element.title == "Performance data"
     assert diagnostics_element.description == (
@@ -1031,7 +1029,7 @@ def test_diagnostics_element_crash_dumps():
 def test_diagnostics_element_crash_dumps_content(tmp_path):
     test_uuid = str(uuid.uuid4())
     category = "checks"
-    test_crash_dir = cmk.utils.paths.crash_dir.joinpath(category).joinpath(test_uuid)
+    test_crash_dir = crash_dir(cmk.utils.paths.omd_root).joinpath(category).joinpath(test_uuid)
     test_crash_dir.mkdir(parents=True, exist_ok=True)
     test_crash_filepath = test_crash_dir.joinpath("info.json")
     with test_crash_filepath.open("w", encoding="utf-8") as f:
@@ -1042,7 +1040,7 @@ def test_diagnostics_element_crash_dumps_content(tmp_path):
     tmppath.mkdir(parents=True, exist_ok=True)
     filepath = next(diagnostics_element.add_or_get_files(tmppath))
 
-    relative_path = cmk.utils.paths.crash_dir.relative_to(cmk.utils.paths.omd_root)
+    relative_path = crash_dir(cmk.utils.paths.omd_root).relative_to(cmk.utils.paths.omd_root)
     test_filename = f"{test_uuid}.tar.gz"
     assert filepath == tmppath.joinpath(relative_path).joinpath(f"{category}/{test_filename}")
 

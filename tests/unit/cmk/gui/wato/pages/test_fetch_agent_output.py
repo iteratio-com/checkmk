@@ -8,17 +8,11 @@ from collections.abc import Iterator
 import pytest
 from pytest_mock import MockerFixture
 
-from tests.testlib.common.repo import repo_path
-
+import cmk.utils.paths
+from cmk.automations.results import GetAgentOutputResult
 from cmk.ccc.hostaddress import HostName
 from cmk.ccc.site import SiteId
 from cmk.ccc.user import UserId
-
-import cmk.utils.paths
-from cmk.utils.agentdatatype import AgentRawData
-
-from cmk.automations.results import GetAgentOutputResult
-
 from cmk.gui.wato.pages.fetch_agent_output import (
     FetchAgentOutputRequest,
     get_fetch_agent_job_status,
@@ -27,6 +21,8 @@ from cmk.gui.wato.pages.fetch_agent_output import (
 )
 from cmk.gui.watolib.automations import LocalAutomationConfig
 from cmk.gui.watolib.hosts_and_folders import folder_tree, Host
+from cmk.utils.agentdatatype import AgentRawData
+from tests.testlib.common.repo import repo_path
 
 
 @pytest.fixture(name="icon_dir")
@@ -44,7 +40,9 @@ def fixture_host(with_admin_login: UserId, load_config: None) -> Iterator[Host]:
 
     hostname = HostName("host1")
     root = folder_tree().root_folder()
-    root.create_hosts([(hostname, {"site": SiteId("NO_SITE")}, None)], pprint_value=False)
+    root.create_hosts(
+        [(hostname, {"site": SiteId("NO_SITE")}, None)], pprint_value=False, use_git=False
+    )
     host = root.host(hostname)
     assert host, "Test setup failed, host not created"
     yield host
@@ -63,11 +61,11 @@ def test_fetch_agent_job(host: Host, mocker: MockerFixture) -> None:
     )
 
     # WHEN
-    start_fetch_agent_job(request := FetchAgentOutputRequest(host, "agent"))
+    start_fetch_agent_job(request := FetchAgentOutputRequest(host, "agent", timeout=10, debug=True))
 
     # THEN
     get_agent_output_mock.assert_called_once_with(
-        LocalAutomationConfig(), "host1", "agent", timeout=10, debug=False
+        LocalAutomationConfig(), "host1", "agent", timeout=10, debug=True
     )
     job_status = get_fetch_agent_job_status(request)
     assert job_status.state == "finished", job_status

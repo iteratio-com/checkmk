@@ -19,9 +19,7 @@ from pathlib import Path
 from typing import Any, cast
 
 from cmk.ccc import store
-
-import cmk.utils.log
-import cmk.utils.paths
+from cmk.utils.log import VERBOSE
 
 from .config import (
     ConfigFromWATO,
@@ -34,7 +32,7 @@ from .config import (
     ServiceLevel,
 )
 from .defaults import default_config, default_rule_pack
-from .settings import create_paths, Settings
+from .settings import create_paths, Paths, Settings
 
 
 class RulePackType(Enum):
@@ -148,7 +146,7 @@ def _load_config(
     # Convert old logging configurations
     levels: LogConfig = config["log_level"]
     if isinstance(levels, int):  # TODO: Move this to upgrade time
-        level = logging.INFO if levels == 0 else cmk.utils.log.VERBOSE  # type: ignore[unreachable]
+        level = logging.INFO if levels == 0 else VERBOSE  # type: ignore[unreachable]
         levels = {
             "cmk.mkeventd": level,
             "cmk.mkeventd.EventServer": level,
@@ -173,13 +171,12 @@ def _load_config(
 
 
 # TODO: GUI stuff, used only in cmk.gui.mkeventd.helpers.eventd_configuration()
-def load_config() -> ConfigFromWATO:
+def load_config(paths: Paths) -> ConfigFromWATO:
     """WATO needs all configured rule packs and other stuff - especially the central site in
     distributed setups.
     """
     return _load_config(
-        [cmk.utils.paths.ec_main_config_file]
-        + sorted(cmk.utils.paths.ec_config_dir.glob("**/*.mk"))
+        [paths.main_config_file.value] + sorted(paths.config_dir.value.glob("**/*.mk"))
     )
 
 
@@ -194,6 +191,7 @@ def load_active_config(settings: Settings) -> ConfigFromWATO:
 # TODO: GUI stuff, used only in cmk.gui.mkeventd.helpers.save_active_config()
 def save_active_config(
     rule_packs: Iterable[ECRulePackSpec],
+    omd_root: Path,
     pretty_print: bool = False,
 ) -> None:
     """
@@ -209,20 +207,22 @@ def save_active_config(
 
     The rules.mk is handled separately: save filtered rule_packs; see werk 16012.
     """
-    active_config_dir = create_paths(cmk.utils.paths.omd_root).active_config_dir.value
+    paths = create_paths(omd_root)
+    active_config_dir = paths.active_config_dir.value
     with contextlib.suppress(FileNotFoundError):
         shutil.rmtree(str(active_config_dir))
 
     active_config_dir.mkdir(parents=True, exist_ok=True)
     with contextlib.suppress(FileNotFoundError):
         shutil.copy(
-            cmk.utils.paths.ec_main_config_file,
+            paths.main_config_file.value,
             active_config_dir / "mkeventd.mk",
         )
 
     active_conf_d = active_config_dir / "conf.d"
-    for path in cmk.utils.paths.ec_config_dir.glob("**/*.mk"):
-        target = active_conf_d / path.relative_to(cmk.utils.paths.ec_config_dir)
+    config_dir = paths.config_dir.value
+    for path in config_dir.glob("**/*.mk"):
+        target = active_conf_d / path.relative_to(config_dir)
         target.parent.mkdir(parents=True, exist_ok=True)
         if path.name == "rules.mk":
             save_rule_packs(rule_packs, pretty_print=pretty_print, path=target.parent)
@@ -230,11 +230,11 @@ def save_active_config(
             shutil.copy(path, target)
 
 
-def load_rule_packs() -> Sequence[ECRulePack]:
+def load_rule_packs(paths: Paths) -> Sequence[ECRulePack]:
     """Returns all rule packs (including MKP rule packs) of a site. Proxy objects
     in the rule packs are already bound to the referenced object.
     """
-    return load_config()["rule_packs"]
+    return load_config(paths)["rule_packs"]
 
 
 def save_rule_packs(rule_packs: Iterable[ECRulePack], pretty_print: bool, path: Path) -> None:

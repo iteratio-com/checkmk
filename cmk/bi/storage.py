@@ -14,11 +14,10 @@ from typing import Final, NewType
 
 from redis import Redis
 
-from cmk.ccc import store
-
 from cmk.bi.aggregation import BIAggregation
 from cmk.bi.filesystem import BIFileSystem, BIFileSystemCache, BIFileSystemVar
 from cmk.bi.trees import BICompiledAggregation
+from cmk.ccc import store
 
 # The actual uuid value that is used here is arbitrary. The most important thing is that this
 # remains constant. The purpose of this namespace to enable us to generate consistent uuids based on
@@ -138,7 +137,7 @@ class LookupStore:
         return bool(self._redis_client.exists(lookup_key))
 
     @contextmanager
-    def get_aggregation_lookup_lock(self) -> Generator:
+    def get_aggregation_lookup_lock(self) -> Generator[None, None, None]:
         lock = self._redis_client.lock(self._lookup_key_lock)
         try:
             lock.acquire()

@@ -11,34 +11,30 @@ ensuring a controlled environment for testing.
 import uuid
 from collections.abc import Mapping, Sequence
 from dataclasses import asdict, replace
-from typing import Any
+from typing import Any, override
 
 from pytest import MonkeyPatch
 
-from tests.testlib.utils import get_standard_linux_agent_output
-
-from tests.unit.cmk.base.emptyconfig import EMPTYCONFIG
-
-from cmk.ccc.hostaddress import HostAddress, HostName
-from cmk.ccc.site import SiteId
-
 import cmk.utils.tags
-from cmk.utils.rulesets.ruleset_matcher import RuleSpec
-from cmk.utils.tags import TagGroupID, TagID
-
-from cmk.checkengine.discovery import AutochecksManager
-from cmk.checkengine.plugins import AutocheckEntry
-
 from cmk.base import config
 from cmk.base.config import ConfigCache
+from cmk.ccc.hostaddress import HostAddress, HostName
+from cmk.ccc.site import SiteId
+from cmk.checkengine.discovery import AutochecksMemoizer
+from cmk.checkengine.plugins import AutocheckEntry
+from cmk.utils.rulesets.ruleset_matcher import RuleSpec
+from cmk.utils.tags import TagGroupID, TagID
+from tests.testlib.utils import get_standard_linux_agent_output
+from tests.unit.cmk.base.empty_config import EMPTY_CONFIG
 
 
-class _AutochecksMocker(AutochecksManager):
+class _AutochecksMocker(AutochecksMemoizer):
     def __init__(self) -> None:
         super().__init__()
         self.raw_autochecks: dict[HostName, Sequence[AutocheckEntry]] = {}
 
-    def get_autochecks(self, hostname: HostName) -> Sequence[AutocheckEntry]:
+    @override
+    def read(self, hostname: HostName) -> Sequence[AutocheckEntry]:
         return self.raw_autochecks.get(hostname, [])
 
 
@@ -46,16 +42,13 @@ class Scenario:
     """Helper class to modify the Check_MK base configuration for unit tests"""
 
     def _get_config_cache(self) -> ConfigCache:
-        # NOTE: just `return ConfigCache()` here will break some tests.
-        # It seems that we are subjected to some dark edition magic here
-        # that will make this sometimes return a CMEConfigCache instance
-        return config._create_config_cache(
+        return ConfigCache(
             replace(
-                EMPTYCONFIG,
+                EMPTY_CONFIG,
                 # This only works as long as the attribute names of LoadedConfigFragment
                 # are the same as the variabele names in config.py
                 # But it's probably less confusing if we stick to that pattern anyway.
-                **{k: v for k, v in self.config.items() if k in asdict(EMPTYCONFIG)},
+                **{k: v for k, v in self.config.items() if k in asdict(EMPTY_CONFIG)},
             ),
         )
 
@@ -211,29 +204,9 @@ class Scenario:
         if self._autochecks_mocker.raw_autochecks:
             monkeypatch.setattr(
                 self.config_cache,
-                "autochecks_manager",
+                "autochecks_memoizer",
                 self._autochecks_mocker,
                 raising=False,
             )
 
         return self.config_cache
-
-
-class CEEScenario(Scenario):
-    """Helper class to modify the Check_MK base configuration for unit tests"""
-
-    def _get_config_cache(self) -> config.CEEConfigCache:
-        return config.CEEConfigCache(
-            replace(
-                EMPTYCONFIG,
-                # This only works as long as the attribute names of LoadedConfigFragment
-                # are the same as the variabele names in config.py
-                # But it's probably less confusing if we stick to that pattern anyway.
-                **{k: v for k, v in self.config.items() if k in asdict(EMPTYCONFIG)},
-            )
-        )
-
-    def apply(self, monkeypatch: MonkeyPatch) -> config.CEEConfigCache:
-        cc = super().apply(monkeypatch)
-        assert isinstance(cc, config.CEEConfigCache)
-        return cc

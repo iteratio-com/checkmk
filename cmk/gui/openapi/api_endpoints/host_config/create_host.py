@@ -2,36 +2,37 @@
 # Copyright (C) 2025 Checkmk GmbH - License: GNU General Public License v2
 # This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 # conditions defined in the file COPYING, which is part of this source code package.
-from dataclasses import dataclass
 from typing import Annotated
 
 from cmk.ccc.hostaddress import HostName
-
-from cmk.gui.config import active_config
 from cmk.gui.logged_in import user
-from cmk.gui.openapi.api_endpoints.host_config.models.response_models import HostConfigModel
-from cmk.gui.openapi.api_endpoints.host_config.utils import serialize_host
 from cmk.gui.openapi.api_endpoints.models.host_attribute_models import HostUpdateAttributeModel
-from cmk.gui.openapi.framework import EndpointBehavior, QueryParam
-from cmk.gui.openapi.framework.api_config import APIVersion
-from cmk.gui.openapi.framework.model import api_field
-from cmk.gui.openapi.framework.model.common_fields import AnnotatedFolder
-from cmk.gui.openapi.framework.model.converter import HostConverter, TypedPlainValidator
-from cmk.gui.openapi.framework.versioned_endpoint import (
+from cmk.gui.openapi.framework import (
+    ApiContext,
+    APIVersion,
+    EndpointBehavior,
     EndpointDoc,
     EndpointHandler,
     EndpointMetadata,
     EndpointPermissions,
+    QueryParam,
     VersionedEndpoint,
 )
+from cmk.gui.openapi.framework.model import api_field, api_model
+from cmk.gui.openapi.framework.model.common_fields import AnnotatedFolder
+from cmk.gui.openapi.framework.model.converter import HostConverter, TypedPlainValidator
+from cmk.gui.openapi.framework.model.response import ApiResponse
 from cmk.gui.openapi.restful_objects.constructors import collection_href
 from cmk.gui.openapi.shared_endpoint_families.host_config import HOST_CONFIG_FAMILY
 from cmk.gui.utils import permission_verification as permissions
 from cmk.gui.watolib import bakery
 from cmk.gui.watolib.hosts_and_folders import Host
 
+from ._utils import host_etag, serialize_host
+from .models.response_models import HostConfigModel
 
-@dataclass(kw_only=True, slots=True)
+
+@api_model
 class CreateHostModel:
     host_name: Annotated[HostName, TypedPlainValidator(str, HostConverter.not_exists)] = api_field(
         description="The hostname or IP address of the host to be created.",
@@ -48,6 +49,7 @@ class CreateHostModel:
 
 
 def create_host_v1(
+    api_context: ApiContext,
     body: CreateHostModel,
     bake_agent: Annotated[
         bool,
@@ -61,7 +63,7 @@ def create_host_v1(
             example="True",
         ),
     ] = False,
-) -> HostConfigModel:
+) -> ApiResponse[HostConfigModel]:
     """Create a hosts."""
     user.need_permission("wato.edit")
     host_name = body.host_name
@@ -69,13 +71,17 @@ def create_host_v1(
     # is_cluster is defined as "cluster_hosts is not None"
     body.folder.create_hosts(
         [(host_name, body.attributes.to_internal(), None)],
-        pprint_value=active_config.wato_pprint_config,
+        pprint_value=api_context.config.wato_pprint_config,
+        use_git=api_context.config.wato_use_git,
     )
     if bake_agent:
-        bakery.try_bake_agents_for_hosts([host_name], debug=active_config.debug)
+        bakery.try_bake_agents_for_hosts([host_name], debug=api_context.config.debug)
 
     host = Host.load_host(host_name)
-    return serialize_host(host, compute_effective_attributes=False, compute_links=True)
+    return ApiResponse(
+        body=serialize_host(host, compute_effective_attributes=False, compute_links=True),
+        etag=host_etag(host),
+    )
 
 
 ENDPOINT_CREATE_HOST = VersionedEndpoint(

@@ -10,26 +10,35 @@ from typing import Annotated, cast, override
 
 import pytest
 from pydantic import PlainSerializer
-from werkzeug.datastructures import Headers
+from werkzeug.datastructures import ETags, Headers
 
-from tests.unit.cmk.gui.openapi.framework.factories import (
-    RawRequestDataFactory,
-    RequestEndpointFactory,
-)
-
+from cmk.gui.config import Config
 from cmk.gui.logged_in import user
-from cmk.gui.openapi.framework import ApiContext, APIVersion, HeaderParam, PathParam, QueryParam
+from cmk.gui.openapi.framework import (
+    ApiContext,
+    APIVersion,
+    ETag,
+    HeaderParam,
+    PathParam,
+    QueryParam,
+)
 from cmk.gui.openapi.framework.handler import _dump_response, handle_endpoint_request
 from cmk.gui.openapi.framework.model import ApiOmitted
 from cmk.gui.openapi.framework.model.common_fields import FieldsFilterType
+from cmk.gui.openapi.framework.model.response import ApiResponse
 from cmk.gui.openapi.restful_objects.validators import PermissionValidator
 from cmk.gui.openapi.utils import (
     RestAPIHeaderValidationException,
     RestAPIPermissionException,
-    RestAPIRequestDataValidationException,
+    RestAPIRequestGeneralException,
+    RestAPIResponseException,
     RestAPIWatoDisabledException,
 )
 from cmk.gui.utils.permission_verification import AllPerm, Perm
+from tests.unit.cmk.gui.openapi.framework.factories import (
+    RawRequestDataFactory,
+    RequestEndpointFactory,
+)
 
 
 @dataclass
@@ -167,6 +176,14 @@ def _handler_header(
     assert isinstance(aliased_header_param, int)
 
 
+def _api_context() -> ApiContext:
+    return ApiContext.new(
+        config=Config(),
+        version=APIVersion.UNSTABLE,
+        etag_if_match=ETags(),
+    )
+
+
 def test_handle_endpoint_request_wato_disabled(permission_validator: PermissionValidator) -> None:
     request_endpoint = RequestEndpointFactory.build(doc_group="Setup")
     request_data = RawRequestDataFactory.build()
@@ -174,7 +191,7 @@ def test_handle_endpoint_request_wato_disabled(permission_validator: PermissionV
         handle_endpoint_request(
             request_endpoint,
             request_data,
-            ApiContext(version=APIVersion.UNSTABLE),
+            _api_context(),
             permission_validator,
             wato_enabled=False,
         )
@@ -187,7 +204,7 @@ def test_handle_endpoint_request_accept_required(permission_validator: Permissio
         handle_endpoint_request(
             request_endpoint,
             request_data,
-            ApiContext(version=APIVersion.UNSTABLE),
+            _api_context(),
             permission_validator,
         )
 
@@ -205,7 +222,7 @@ def test_handle_endpoint_request_empty_handler(permission_validator: PermissionV
     response = handle_endpoint_request(
         request_endpoint,
         request_data,
-        ApiContext(version=APIVersion.UNSTABLE),
+        _api_context(),
         permission_validator,
         wato_enabled=True,
         wato_use_git=False,
@@ -226,11 +243,11 @@ def test_handle_endpoint_request_missing_parameters_header(
     request_data = RawRequestDataFactory.build(
         headers=Headers({"Accept": request_endpoint.content_type}),
     )
-    with pytest.raises(RestAPIRequestDataValidationException) as exc_info:
+    with pytest.raises(RestAPIRequestGeneralException) as exc_info:
         handle_endpoint_request(
             request_endpoint,
             request_data,
-            ApiContext(version=APIVersion.UNSTABLE),
+            _api_context(),
             permission_validator,
             wato_enabled=True,
             wato_use_git=False,
@@ -255,11 +272,11 @@ def test_handle_endpoint_request_missing_parameters_query(
     request_data = RawRequestDataFactory.build(
         headers=Headers({"Accept": request_endpoint.content_type}), query={}
     )
-    with pytest.raises(RestAPIRequestDataValidationException) as exc_info:
+    with pytest.raises(RestAPIRequestGeneralException) as exc_info:
         handle_endpoint_request(
             request_endpoint,
             request_data,
-            ApiContext(version=APIVersion.UNSTABLE),
+            _api_context(),
             permission_validator,
             wato_enabled=True,
             wato_use_git=False,
@@ -284,11 +301,11 @@ def test_handle_endpoint_request_missing_parameters_path(
     request_data = RawRequestDataFactory.build(
         headers=Headers({"Accept": request_endpoint.content_type}), path={}
     )
-    with pytest.raises(RestAPIRequestDataValidationException) as exc_info:
+    with pytest.raises(RestAPIRequestGeneralException) as exc_info:
         handle_endpoint_request(
             request_endpoint,
             request_data,
-            ApiContext(version=APIVersion.UNSTABLE),
+            _api_context(),
             permission_validator,
             wato_enabled=True,
             wato_use_git=False,
@@ -296,7 +313,7 @@ def test_handle_endpoint_request_missing_parameters_path(
         )
 
     response = exc_info.value.to_problem()
-    assert response.status_code == 400, response.get_data(as_text=True)
+    assert response.status_code == 404, response.get_data(as_text=True)
     response_json = response.get_json()
     assert "path.path_param" in response_json["detail"]
     assert response_json["fields"]["path.path_param"]["type"] == "missing"
@@ -306,7 +323,7 @@ def test_handle_endpoint_request_missing_parameters_body(
     permission_validator: PermissionValidator,
 ) -> None:
     request_endpoint = RequestEndpointFactory.build(
-        handler=_handler, content_type="application/json", accept="application/json"
+        handler=_handler_body, content_type="application/json", accept="application/json"
     )
     request_data = RawRequestDataFactory.build(
         body=b"{}",
@@ -317,11 +334,11 @@ def test_handle_endpoint_request_missing_parameters_body(
             }
         ),
     )
-    with pytest.raises(RestAPIRequestDataValidationException) as exc_info:
+    with pytest.raises(RestAPIRequestGeneralException) as exc_info:
         handle_endpoint_request(
             request_endpoint,
             request_data,
-            ApiContext(version=APIVersion.UNSTABLE),
+            _api_context(),
             permission_validator,
             wato_enabled=True,
             wato_use_git=False,
@@ -362,7 +379,7 @@ def test_handle_endpoint_request_complex_handler(
     response = handle_endpoint_request(
         request_endpoint,
         request_data,
-        ApiContext(version=APIVersion.UNSTABLE),
+        _api_context(),
         permission_validator,
         wato_enabled=True,
         wato_use_git=False,
@@ -370,10 +387,10 @@ def test_handle_endpoint_request_complex_handler(
     )
 
     assert response.status_code == 200, response.get_data(as_text=True)
-    assert response.get_data() == b'{"body_field": 123}'
+    assert response.get_data() == b'{"body_field":123}'
     assert dict(response.headers) == {
         "Content-Type": "application/json",
-        "Content-Length": "19",
+        "Content-Length": "18",
     }
 
 
@@ -395,7 +412,7 @@ def test_handle_endpoint_request_permissions() -> None:
     response = handle_endpoint_request(
         request_endpoint,
         request_data,
-        ApiContext(version=APIVersion.UNSTABLE),
+        _api_context(),
         permission_validator,
         wato_enabled=True,
         wato_use_git=False,
@@ -421,7 +438,7 @@ def test_handle_endpoint_request_permissions_not_declared() -> None:
         handle_endpoint_request(
             request_endpoint,
             request_data,
-            ApiContext(version=APIVersion.UNSTABLE),
+            _api_context(),
             permission_validator,
             wato_enabled=True,
             wato_use_git=False,
@@ -445,7 +462,7 @@ def test_handle_endpoint_request_permissions_not_checked() -> None:
         handle_endpoint_request(
             request_endpoint,
             request_data,
-            ApiContext(version=APIVersion.UNSTABLE),
+            _api_context(),
             permission_validator,
             wato_enabled=True,
             wato_use_git=False,
@@ -478,7 +495,7 @@ def test_handle_endpoint_with_fields_filter(permission_validator: PermissionVali
     response = handle_endpoint_request(
         request_endpoint,
         request_data,
-        ApiContext(version=APIVersion.UNSTABLE),
+        _api_context(),
         permission_validator,
         wato_enabled=True,
         wato_use_git=False,
@@ -498,9 +515,51 @@ def test_handle_endpoint_with_context(permission_validator: PermissionValidator)
     handle_endpoint_request(
         request_endpoint,
         request_data,
-        ApiContext(version=APIVersion.UNSTABLE),
+        _api_context(),
         permission_validator,
         wato_enabled=True,
         wato_use_git=False,
         is_testing=False,
     )
+
+
+def test_handle_endpoint_output_etag(permission_validator: PermissionValidator) -> None:
+    etag = ETag({"key": "value"})
+
+    def handler() -> ApiResponse[None]:
+        return ApiResponse(body=None, etag=etag)
+
+    request_endpoint = RequestEndpointFactory.build(handler=handler, etag="output")
+    request_data = RawRequestDataFactory.build(
+        headers=Headers({"Accept": request_endpoint.content_type}),
+    )
+    response = handle_endpoint_request(
+        request_endpoint,
+        request_data,
+        _api_context(),
+        permission_validator,
+        wato_enabled=True,
+        wato_use_git=False,
+        is_testing=False,
+    )
+    assert response.headers["ETag"] == f'"{etag.hash()}"'
+
+
+def test_handle_endpoint_missing_etag(permission_validator: PermissionValidator) -> None:
+    def handler() -> None:
+        return None
+
+    request_endpoint = RequestEndpointFactory.build(handler=handler, etag="output")
+    request_data = RawRequestDataFactory.build(
+        headers=Headers({"Accept": request_endpoint.content_type}),
+    )
+    with pytest.raises(RestAPIResponseException, match="ETag header expected"):
+        handle_endpoint_request(
+            request_endpoint,
+            request_data,
+            _api_context(),
+            permission_validator,
+            wato_enabled=True,
+            wato_use_git=False,
+            is_testing=False,
+        )

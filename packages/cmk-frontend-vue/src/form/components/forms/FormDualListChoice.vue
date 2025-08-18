@@ -8,14 +8,14 @@ import { type Ref } from 'vue'
 import { useValidation, type ValidationMessages } from '../utils/validation'
 import { computed, onMounted, ref, useTemplateRef } from 'vue'
 import CmkIcon from '@/components/CmkIcon.vue'
-import FormValidation from '@/form/components/FormValidation.vue'
+import FormValidation from '@/components/user-input/CmkInlineValidation.vue'
 import type {
   DualListChoice,
   MultipleChoiceElement
 } from 'cmk-shared-typing/typescript/vue_formspec_components'
 
 import { useId } from '@/form/utils'
-import { fetchData } from '../utils/autocompleter'
+import { fetchData } from '../utils/autocompleters/ajax'
 
 const props = defineProps<{
   spec: DualListChoice
@@ -42,15 +42,15 @@ onMounted(async () => {
     return
   }
   loading.value = true
-  await fetchData<{ choices: [string, string][] }>('', props.spec.autocompleter.data).then(
-    (result) => {
-      localElements.value = result['choices'].map(([id, title]) => ({
+  await fetchData('', props.spec.autocompleter.data).then((result) => {
+    localElements.value = result['choices']
+      .filter(([id, _]) => id !== null)
+      .map(([id, title]) => ({
         name: id,
         title: title.length > 60 ? `${title.substring(0, 57)}...` : title
-      }))
-      loading.value = false
-    }
-  )
+      })) as DualListChoiceElement[]
+    loading.value = false
+  })
 })
 
 const searchInactive = ref('')

@@ -15,7 +15,7 @@ description:
  the check is {OK} if the server indicates the status {UP} and {CRIT} otherwise.
 
 item:
- The name of backend and server, separated by a "/".
+ The name of backend.
 
 discovery:
- One service is created for each server.
+ One service is created for each backend.

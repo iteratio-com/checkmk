@@ -28,15 +28,17 @@ from fido2.webauthn import (
     UserVerificationRequirement,
 )
 
+from livestatus import SiteConfigurations
+
 from cmk.ccc.exceptions import MKGeneralException
 from cmk.ccc.site import omd_site
 from cmk.ccc.user import UserId
-
-from cmk.utils.jsontype import JsonSerializable
-from cmk.utils.log.security_event import log_security_event
-
+from cmk.crypto.password import Password
+from cmk.crypto.password_hashing import PasswordHash
+from cmk.crypto.totp import TOTP
 from cmk.gui import forms
 from cmk.gui.breadcrumb import Breadcrumb, BreadcrumbItem, make_simple_page_breadcrumb
+from cmk.gui.config import Config
 from cmk.gui.crash_handler import handle_exception_as_gui_crash_report
 from cmk.gui.ctx_stack import g
 from cmk.gui.exceptions import MKUserError
@@ -76,7 +78,7 @@ from cmk.gui.userdb import (
     user_locked,
 )
 from cmk.gui.userdb.store import save_custom_attr, save_two_factor_credentials
-from cmk.gui.utils.flashed_messages import flash
+from cmk.gui.utils.flashed_messages import flash, get_flashed_messages
 from cmk.gui.utils.html import HTML
 from cmk.gui.utils.security_log_events import TwoFactorEvent, TwoFactorEventType, TwoFAFailureEvent
 from cmk.gui.utils.transaction_manager import transactions
@@ -91,13 +93,11 @@ from cmk.gui.utils.user_errors import user_errors
 from cmk.gui.utils.user_security_message import SecurityNotificationEvent, send_security_message
 from cmk.gui.valuespec import Dictionary, FixedValue, TextInput
 from cmk.gui.watolib.mode import redirect
+from cmk.utils.jsontype import JsonSerializable
+from cmk.utils.log.security_event import log_security_event
 
-from cmk.crypto.password import Password
-from cmk.crypto.password_hashing import PasswordHash
-from cmk.crypto.totp import TOTP
-
-from .abstract_page import ABCUserProfilePage
 from .page_menu import page_menu_dropdown_user_related
+from .verify_requirements import verify_requirements
 
 # NOTE: In fido2 >= 2.0.0, this feature has been removed and is enabled per default, see
 # https://github.com/Yubico/python-fido2/blob/main/doc/Migration_1-2.adoc#removal-of-featureswebauthn_json_mapping
@@ -175,7 +175,9 @@ def _sec_notification_event_from_2fa_event(
             assert_never()
 
 
-def _handle_revoke_all_backup_codes(user: LoggedInUser, credentials: TwoFactorCredentials) -> None:
+def _handle_revoke_all_backup_codes(
+    user: LoggedInUser, credentials: TwoFactorCredentials, site_configs: SiteConfigurations
+) -> None:
     credentials["backup_codes"] = []
     flash(_("All backup codes have been deleted"))
     _save_credentials_all_sites(
@@ -183,6 +185,7 @@ def _handle_revoke_all_backup_codes(user: LoggedInUser, credentials: TwoFactorCr
         "user_two_factor_overview.py",
         credentials,
         TwoFactorEventType.backup_remove,
+        site_configs,
     )
 
 
@@ -191,6 +194,7 @@ def _save_credentials_all_sites(
     origtarget: str,
     credentials: TwoFactorCredentials,
     log_event: TwoFactorEventType | Literal["alias_changed"],
+    site_configs: SiteConfigurations,
 ) -> None:
     if (user_id := user.id) is None:
         return
@@ -199,7 +203,7 @@ def _save_credentials_all_sites(
     if log_event != "alias_changed":
         _log_event_usermanagement(log_event)
         send_security_message(user_id, _sec_notification_event_from_2fa_event(log_event))
-    if has_wato_slave_sites():
+    if has_wato_slave_sites(site_configs):
         raise redirect(
             makeuri_contextless(
                 request, [("back", origtarget)], filename="user_profile_replicate.py"
@@ -224,14 +228,11 @@ def register(page_registry: PageRegistry) -> None:
     page_registry.register(PageEndpoint("user_totp_register", RegisterTotpSecret))
 
 
-class UserTwoFactorOverview(ABCUserProfilePage):
+class UserTwoFactorOverview(Page):
     def _page_title(self) -> str:
         return _("Two-factor authentication")
 
-    def __init__(self) -> None:
-        super().__init__("general.manage_2fa")
-
-    def _action(self) -> None:
+    def _action(self, config: Config) -> None:
         assert user.id is not None
         credentials = load_two_factor_credentials(user.id)
 
@@ -244,6 +245,7 @@ class UserTwoFactorOverview(ABCUserProfilePage):
                     "user_two_factor_overview.py",
                     credentials,
                     TwoFactorEventType.webauthn_remove,
+                    config.sites,
                 )
             elif credential_id in credentials["totp_credentials"]:
                 del credentials["totp_credentials"][credential_id]
@@ -253,16 +255,17 @@ class UserTwoFactorOverview(ABCUserProfilePage):
                     "user_two_factor_overview.py",
                     credentials,
                     TwoFactorEventType.totp_remove,
+                    config.sites,
                 )
             else:
                 return
             if not is_two_factor_login_enabled(user.id):
                 session.session_info.two_factor_completed = False
                 if credentials["backup_codes"]:
-                    _handle_revoke_all_backup_codes(user, credentials)
+                    _handle_revoke_all_backup_codes(user, credentials, config.sites)
 
         if request.has_var("_delete_codes"):
-            _handle_revoke_all_backup_codes(user, credentials)
+            _handle_revoke_all_backup_codes(user, credentials, config.sites)
 
         if request.has_var("_backup_codes"):
             codes = make_two_factor_backup_codes()
@@ -273,6 +276,7 @@ class UserTwoFactorOverview(ABCUserProfilePage):
                 "user_two_factor_overview.py",
                 credentials,
                 TwoFactorEventType.backup_add,
+                config.sites,
             )
 
     def flash_new_backup_codes(self, codes: list[tuple[Password, PasswordHash]]) -> HTML:
@@ -467,10 +471,10 @@ class UserTwoFactorOverview(ABCUserProfilePage):
             + (invalidate_codes_button if backup_codes else ""),
         )
 
-    def _show_form(self) -> None:
+    def _show_form(self, config: Config) -> None:
         assert user.id is not None
 
-        if is_wato_slave_site():
+        if is_wato_slave_site(config.sites):
             html.user_error(
                 MKUserError(
                     None,
@@ -506,6 +510,25 @@ class UserTwoFactorOverview(ABCUserProfilePage):
 
         html.close_div()
         html.footer()
+
+    def page(self, config: Config) -> None:
+        verify_requirements("general.manage_2fa", config.wato_enabled)
+        title = self._page_title()
+        breadcrumb = make_simple_page_breadcrumb(main_menu_registry.menu_user(), self._page_title())
+        make_header(html, title, breadcrumb, self._page_menu(breadcrumb))
+
+        if transactions.check_transaction():
+            try:
+                self._action(config)
+            except MKUserError as e:
+                user_errors.add(e)
+
+        for message in get_flashed_messages():
+            html.show_message(message.msg)
+
+        html.show_user_errors()
+
+        self._show_form(config)
 
     @classmethod
     def _show_registered_credentials(
@@ -553,12 +576,9 @@ class UserTwoFactorOverview(ABCUserProfilePage):
             )
 
 
-class UserTwoFactorEnforce(ABCUserProfilePage):
+class UserTwoFactorEnforce(Page):
     def _page_title(self) -> str:
         return _("Two-factor authentication")
-
-    def __init__(self) -> None:
-        super().__init__("general.manage_2fa")
 
     def _action(self) -> None:
         assert user.id is not None
@@ -628,10 +648,10 @@ class UserTwoFactorEnforce(ABCUserProfilePage):
             colspan=2,
         )
 
-    def _show_form(self) -> None:
+    def _show_form(self, config: Config) -> None:
         assert user.id is not None
 
-        if is_wato_slave_site():
+        if is_wato_slave_site(config.sites):
             html.user_error(
                 MKUserError(
                     None,
@@ -662,14 +682,33 @@ class UserTwoFactorEnforce(ABCUserProfilePage):
         html.close_div()
         html.footer()
 
+    def page(self, config: Config) -> None:
+        verify_requirements("general.manage_2fa", config.wato_enabled)
+        title = self._page_title()
+        breadcrumb = make_simple_page_breadcrumb(main_menu_registry.menu_user(), self._page_title())
+        make_header(html, title, breadcrumb, self._page_menu(breadcrumb))
 
-class RegisterTotpSecret(ABCUserProfilePage):
+        if transactions.check_transaction():
+            try:
+                self._action()
+            except MKUserError as e:
+                user_errors.add(e)
+
+        for message in get_flashed_messages():
+            html.show_message(message.msg)
+
+        html.show_user_errors()
+
+        self._show_form(config)
+
+
+class RegisterTotpSecret(Page):
     def _page_title(self) -> str:
         return _("Register authenticator app")
 
-    def __init__(self, secret: bytes | None = None) -> None:
-        super().__init__("general.manage_2fa")
-        self.secret = secret
+    def __init__(self) -> None:
+        super().__init__()
+        self.secret: bytes | None = None
 
     def _breadcrumb(self) -> Breadcrumb:
         breadcrumb = make_simple_page_breadcrumb(main_menu_registry.menu_user(), self._page_title())
@@ -692,7 +731,7 @@ class RegisterTotpSecret(ABCUserProfilePage):
         )
         return menu
 
-    def _action(self) -> None:
+    def _action(self, config: Config) -> None:
         auth_code_vs = TextInput(allow_empty=False)
         auth_code = auth_code_vs.from_html_vars("auth_code")
         auth_code_vs.validate_value(auth_code, "auth_code")
@@ -731,6 +770,7 @@ class RegisterTotpSecret(ABCUserProfilePage):
                 origtarget,
                 credentials,
                 TwoFactorEventType.totp_add,
+                config.sites,
             )
 
             raise redirect(origtarget)
@@ -802,13 +842,29 @@ class RegisterTotpSecret(ABCUserProfilePage):
             html.hidden_fields()
         html.footer()
 
+    def page(self, config: Config) -> None:
+        verify_requirements("general.manage_2fa", config.wato_enabled)
+        title = self._page_title()
+        breadcrumb = self._breadcrumb()
+        make_header(html, title, breadcrumb, self._page_menu(breadcrumb))
 
-class EditCredentialAlias(ABCUserProfilePage):
+        if transactions.check_transaction():
+            try:
+                self._action(config)
+            except MKUserError as e:
+                user_errors.add(e)
+
+        for message in get_flashed_messages():
+            html.show_message(message.msg)
+
+        html.show_user_errors()
+
+        self._show_form()
+
+
+class EditCredentialAlias(Page):
     def _page_title(self) -> str:
         return _("Edit credential")
-
-    def __init__(self) -> None:
-        super().__init__("general.manage_2fa")
 
     def _breadcrumb(self) -> Breadcrumb:
         breadcrumb = make_simple_page_breadcrumb(main_menu_registry.menu_user(), self._page_title())
@@ -831,7 +887,7 @@ class EditCredentialAlias(ABCUserProfilePage):
         )
         return menu
 
-    def _action(self) -> None:
+    def _action(self, config: Config) -> None:
         assert user.id is not None
         credentials = load_two_factor_credentials(user.id, lock=True)
 
@@ -853,7 +909,11 @@ class EditCredentialAlias(ABCUserProfilePage):
 
         flash(_("Successfully changed the credential."))
         _save_credentials_all_sites(
-            user, "user_two_factor_overview.py", credentials, "alias_changed"
+            user,
+            "user_two_factor_overview.py",
+            credentials,
+            "alias_changed",
+            config.sites,
         )
 
         raise redirect("user_two_factor_overview.py")
@@ -890,6 +950,25 @@ class EditCredentialAlias(ABCUserProfilePage):
             html.hidden_fields()
         html.footer()
 
+    def page(self, config: Config) -> None:
+        verify_requirements("general.manage_2fa", config.wato_enabled)
+        title = self._page_title()
+        breadcrumb = self._breadcrumb()
+        make_header(html, title, breadcrumb, self._page_menu(breadcrumb))
+
+        if transactions.check_transaction():
+            try:
+                self._action(config)
+            except MKUserError as e:
+                user_errors.add(e)
+
+        for message in get_flashed_messages():
+            html.show_message(message.msg)
+
+        html.show_user_errors()
+
+        self._show_form()
+
     def _display_time(self, epoch_time: int) -> str:
         return time.strftime(
             "%Y-%m-%d %H:%M:%S", time.localtime(epoch_time)
@@ -917,10 +996,10 @@ class EditCredentialAlias(ABCUserProfilePage):
 
 
 class JsonPage(Page, abc.ABC):
-    def handle_page(self) -> None:
+    def handle_page(self, config: Config) -> None:
         try:
             response.set_content_type("application/json")
-            response.set_data(json.dumps(self.page()))
+            response.set_data(json.dumps(self.page(config)))
         except MKGeneralException as e:
             response.status_code = http_client.BAD_REQUEST
             response.set_data(str(e))
@@ -933,7 +1012,7 @@ class JsonPage(Page, abc.ABC):
             response.set_data(str(e))
 
     @abc.abstractmethod
-    def page(self) -> JsonSerializable:
+    def page(self, config: Config) -> JsonSerializable:
         """Override this to implement the page functionality"""
         raise NotImplementedError()
 
@@ -952,7 +1031,7 @@ def _serialize_webauthn_state(state: dict) -> WebAuthnActionState:
 
 
 class UserWebAuthnRegisterBegin(JsonPage):
-    def page(self) -> JsonSerializable:
+    def page(self, config: Config) -> JsonSerializable:
         assert user.id is not None
 
         if not session.two_factor_enforced():
@@ -978,7 +1057,7 @@ class UserWebAuthnRegisterBegin(JsonPage):
 
 
 class UserWebAuthnRegisterComplete(JsonPage):
-    def page(self) -> JsonSerializable:
+    def page(self, config: Config) -> JsonSerializable:
         assert user.id is not None
 
         if not session.two_factor_enforced():
@@ -1028,7 +1107,7 @@ class UserWebAuthnRegisterComplete(JsonPage):
         session.session_info.two_factor_completed = True
         flash(_("Registration successful"))
         navigation_json = {"status": "OK", "redirect": False, "replicate": False}
-        if has_wato_slave_sites():
+        if has_wato_slave_sites(config.sites):
             navigation_json["replicate"] = True
         if session.session_info.two_factor_required:
             session.session_info.two_factor_required = False
@@ -1172,7 +1251,10 @@ class UserLoginTwoFactor(Page):
 
     @classmethod
     def _check_totp_and_backup(
-        cls, available_methods: set[str], credentials: TwoFactorCredentials
+        cls,
+        available_methods: set[str],
+        credentials: TwoFactorCredentials,
+        site_configs: SiteConfigurations,
     ) -> None:
         assert user.id is not None
         if "totp_credentials" in available_methods:
@@ -1196,7 +1278,7 @@ class UserLoginTwoFactor(Page):
                     _log_event_usermanagement(TwoFactorEventType.backup_used)
                     send_security_message(user.id, SecurityNotificationEvent.backup_used)
                     _handle_success_auth(user.id)
-                    if has_wato_slave_sites():
+                    if has_wato_slave_sites(site_configs):
                         raise redirect(
                             makeuri_contextless(
                                 request,
@@ -1209,7 +1291,7 @@ class UserLoginTwoFactor(Page):
                 _handle_failed_auth(user.id)
                 raise MKUserError(None, _("Invalid code provided"), HTTPStatus.UNAUTHORIZED)
 
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         assert user.id is not None
 
         html.render_headfoot = False
@@ -1254,7 +1336,7 @@ class UserLoginTwoFactor(Page):
         elif "backup_codes" in available_methods and (mode == "backup" or not mode):
             self._render_backup(available_methods)
 
-        self._check_totp_and_backup(available_methods, credentials)
+        self._check_totp_and_backup(available_methods, credentials, config.sites)
 
         if user_errors:
             html.open_div(id_="login_error")
@@ -1267,7 +1349,7 @@ class UserLoginTwoFactor(Page):
 
 
 class UserWebAuthnLoginBegin(JsonPage):
-    def page(self) -> JsonSerializable:
+    def page(self, config: Config) -> JsonSerializable:
         assert user.id is not None
 
         if not is_two_factor_login_enabled(user.id):
@@ -1286,7 +1368,7 @@ class UserWebAuthnLoginBegin(JsonPage):
 
 
 class UserWebAuthnLoginComplete(JsonPage):
-    def page(self) -> JsonSerializable:
+    def page(self, config: Config) -> JsonSerializable:
         assert user.id is not None
 
         if not is_two_factor_login_enabled(user.id):

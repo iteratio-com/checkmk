@@ -8,6 +8,7 @@ from collections.abc import Collection
 
 from cmk.gui import forms
 from cmk.gui.breadcrumb import Breadcrumb
+from cmk.gui.config import Config
 from cmk.gui.htmllib.html import html
 from cmk.gui.http import request
 from cmk.gui.i18n import _
@@ -17,6 +18,7 @@ from cmk.gui.utils.csrf_token import check_csrf_token
 from cmk.gui.utils.urls import makeuri_contextless
 from cmk.gui.valuespec import TextInput
 from cmk.gui.wato.pages.folders import ModeFolder
+from cmk.gui.watolib.host_attributes import all_host_attributes
 from cmk.gui.watolib.hosts_and_folders import folder_from_request
 from cmk.gui.watolib.mode import ModeRegistry, redirect, WatoMode
 
@@ -44,7 +46,7 @@ class ModeSearch(WatoMode):
         super().__init__()
         self._folder = folder_from_request(request.var("folder"), request.get_ascii_input("host"))
 
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         return make_simple_form_page_menu(
             _("Search"),
             breadcrumb,
@@ -58,7 +60,7 @@ class ModeSearch(WatoMode):
     def title(self) -> str:
         return _("Search for hosts below %s") % self._folder.title()
 
-    def action(self) -> ActionResult:
+    def action(self, config: Config) -> ActionResult:
         check_csrf_token()
 
         return redirect(
@@ -98,7 +100,7 @@ class ModeSearch(WatoMode):
 
         return list(search_vars.items())
 
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         html.help(
             _(
                 "For the host name field, a partial word search (infix search) is used "
@@ -125,12 +127,14 @@ class ModeSearch(WatoMode):
 
             # Attributes
             configure_attributes(
+                all_host_attributes(config.wato_host_attrs, config.tags.get_tag_groups_by_topic()),
                 new=False,
                 hosts={},
                 for_what="host_search",
                 parent=None,
                 varprefix="host_search_",
                 basic_attributes=basic_attributes,
+                aux_tags_by_tag=config.tags.get_aux_tags_by_tag(),
             )
 
             forms.end()

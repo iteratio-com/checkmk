@@ -10,11 +10,6 @@ from collections.abc import Callable, Iterable, Mapping, Sequence
 from typing import Protocol
 
 from cmk.ccc.hostaddress import HostAddress, HostName
-
-from cmk.utils.parameters import merge_parameters
-from cmk.utils.rulesets import RuleSetName
-from cmk.utils.servicename import Item, ServiceName
-
 from cmk.checkengine.parameters import TimespecificParameters, TimespecificParameterSet
 from cmk.checkengine.plugin_backend import get_check_plugin
 from cmk.checkengine.plugins import (
@@ -23,6 +18,9 @@ from cmk.checkengine.plugins import (
     ConfiguredService,
     ServiceID,
 )
+from cmk.utils.parameters import merge_parameters
+from cmk.utils.rulesets import RuleSetName
+from cmk.utils.servicename import Item, ServiceName
 
 from ._checking import ABCCheckingConfig
 
@@ -50,13 +48,15 @@ class AutocheckEntryProtocol(Protocol):
     @property
     def service_labels(self) -> _DiscoveredLabels: ...
 
+    def id(self) -> ServiceID: ...
+
 
 class ServiceConfigurer:
     def __init__(
         self,
         checking_config: ABCCheckingConfig,
         plugins: Mapping[CheckPluginName, CheckPlugin],
-        get_service_description: Callable[[HostName, CheckPluginName, Item], ServiceName],
+        get_service_description: Callable[[HostName, ServiceID], ServiceName],
         get_effective_host: Callable[[HostName, ServiceName, _Labels], HostName],
         get_service_labels: Callable[[HostName, ServiceName, _DiscoveredLabels], _Labels],
     ) -> None:
@@ -72,9 +72,7 @@ class ServiceConfigurer:
         autocheck_entry: AutocheckEntryProtocol,
     ) -> ConfiguredService:
         # TODO: only call this function when we know "effective host" == hostname and simplify accordingly
-        service_name = self._get_service_description(
-            hostname, autocheck_entry.check_plugin_name, autocheck_entry.item
-        )
+        service_name = self._get_service_description(hostname, autocheck_entry.id())
         labels = self._get_service_labels(hostname, service_name, autocheck_entry.service_labels)
 
         return ConfiguredService(

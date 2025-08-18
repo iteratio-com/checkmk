@@ -7,8 +7,6 @@ from collections.abc import Mapping, Sequence
 from logging import Logger
 from typing import override
 
-from cmk.utils.log import VERBOSE
-
 from cmk.gui.config import active_config
 from cmk.gui.site_config import is_wato_slave_site
 from cmk.gui.type_defs import GlobalSettings
@@ -24,13 +22,16 @@ from cmk.gui.watolib.global_settings import (
     save_site_global_settings,
 )
 from cmk.gui.watolib.sites import site_globals_editable, site_management_registry
-
-from cmk.update_config.plugins.actions.tag_conditions import get_tag_config, transform_host_tags
+from cmk.update_config.lib import ExpiryVersion
 from cmk.update_config.registry import update_action_registry, UpdateAction
+from cmk.utils.log import VERBOSE
 
 # List[(old_config_name, new_config_name, replacement_dict{old: new})]
 _RENAMED_GLOBALS: Sequence[tuple[str, str, Mapping[object, object]]] = []
-_REMOVED_OPTIONS: Sequence[str] = []
+_REMOVED_OPTIONS: Sequence[str] = [
+    "hide_languages",
+    "enable_community_translations",
+]
 
 
 class UpdateGlobalSettings(UpdateAction):
@@ -46,6 +47,7 @@ update_action_registry.register(
         name="global_settings",
         title="Global settings",
         sort_index=20,
+        expiry_version=ExpiryVersion.NEVER,
     )
 )
 
@@ -63,7 +65,7 @@ def _update_installation_wide_global_settings(logger: Logger) -> None:
 
 def _update_site_specific_global_settings(logger: Logger) -> None:
     """Update the sitespecific.mk of the local site (which is a remote site)"""
-    if not is_wato_slave_site():
+    if not is_wato_slave_site(active_config.sites):
         return
     save_site_global_settings(
         update_global_config(
@@ -77,8 +79,8 @@ def _update_remote_site_specific_global_settings(logger: Logger) -> None:
     """Update the site specific global settings in the central site configuration"""
     site_mgmt = site_management_registry["site_management"]
     configured_sites = site_mgmt.load_sites()
-    for site_id, site_spec in configured_sites.items():
-        if site_globals_editable(site_id, site_spec):
+    for site_spec in configured_sites.values():
+        if site_globals_editable(configured_sites, site_spec):
             site_spec["globals"] = dict(
                 update_global_config(
                     logger,
@@ -120,42 +122,7 @@ def _update_renamed_global_config_vars(
 
             del global_config_updated[old_config_name]
 
-    return filter_unknown_settings(
-        {
-            **global_config_updated,
-            **_convert_agent_deployment_match_hosttags(logger, global_config_updated),
-        }
-    )
-
-
-def _convert_agent_deployment_match_hosttags(
-    logger: Logger,
-    global_config: GlobalSettings,
-) -> dict:
-    """
-    Tag conditions changed from list to dict in 2.4.
-    Can be removed in 2.5
-    """
-    # Factory setting if not explicitly set
-    if (
-        agent_deployment_host_selection := global_config.get("agent_deployment_host_selection")
-    ) is None:
-        return {}
-
-    if (
-        hosttags := agent_deployment_host_selection.get("match_hosttags")
-    ) is not None and isinstance(hosttags, list):
-        logger.log(
-            VERBOSE, "Converting global setting 'agent_deployment_host_selection' to new format"
-        )
-        tag_groups, aux_tag_list = get_tag_config()
-        agent_deployment_host_selection["match_hosttags"] = transform_host_tags(
-            hosttags,
-            tag_groups,
-            aux_tag_list,
-        )
-
-    return {"agent_deployment_host_selection": agent_deployment_host_selection}
+    return filter_unknown_settings(global_config_updated)
 
 
 def _remove_options(

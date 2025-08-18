@@ -10,23 +10,17 @@ import os
 import tarfile
 from collections.abc import Mapping
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
-from werkzeug import datastructures as werkzeug_datastructures
-
-from tests.testlib.common.repo import is_enterprise_repo, is_managed_repo
-from tests.testlib.unit.rabbitmq import get_expected_definition
-from tests.testlib.unit.utils import reset_registries
+from werkzeug.test import create_environ
 
 from livestatus import SiteConfiguration
 
 import cmk.ccc.version as cmk_version
-from cmk.ccc.site import SiteId
-
-import cmk.utils.paths
-
 import cmk.gui.watolib.utils
+import cmk.utils.paths
+from cmk.ccc.site import SiteId
+from cmk.gui.config import Config
 from cmk.gui.http import Request
 from cmk.gui.watolib import activate_changes
 from cmk.gui.watolib.activate_changes import (
@@ -39,7 +33,6 @@ from cmk.gui.watolib.config_sync import (
     ReplicationPath,
     ReplicationPathType,
 )
-
 from cmk.livestatus_client import (
     BrokerConnection,
     BrokerConnections,
@@ -48,6 +41,9 @@ from cmk.livestatus_client import (
     NetworkSocketDetails,
 )
 from cmk.messaging import rabbitmq
+from tests.testlib.common.repo import is_enterprise_repo, is_managed_repo
+from tests.testlib.unit.rabbitmq import get_expected_definition
+from tests.testlib.unit.utils import reset_registries
 
 logger = logging.getLogger(__name__)
 
@@ -857,7 +853,7 @@ class TestAutomationReceiveConfigSync:
         monkeypatch.setattr(
             cmk.gui.watolib.activate_changes,
             "_execute_post_config_sync_actions",
-            lambda site_id, local_files_changed: None,
+            lambda site_id, local_files_changed, use_git: None,
         )
 
         remote_path.mkdir(parents=True, exist_ok=True)
@@ -895,6 +891,7 @@ class TestAutomationReceiveConfigSync:
                     "file-to-dir",
                 ],
                 config_generation=0,
+                use_git=False,
             )
         )
 
@@ -911,37 +908,30 @@ class TestAutomationReceiveConfigSync:
         assert file_to_dir.is_dir()
         assert file_to_dir.joinpath("aaa").exists()
 
-    def test_get_request(
-        self,
-        monkeypatch: pytest.MonkeyPatch,
-        request_context: None,
-    ) -> None:
-        request = Request({})
-        request.set_var("site_id", "NO_SITE")
-        request.set_var("to_delete", "['x/y/z.txt', 'abc.ending', '/ä/☃/☕']")
-        request.set_var("config_generation", "123")
-        request.files = werkzeug_datastructures.ImmutableMultiDict(
-            {
-                "sync_archive": werkzeug_datastructures.FileStorage(
-                    stream=io.BytesIO(b"some data"),
-                    filename="sync_archive",
-                    name="sync_archive",
-                )
-            }
-        )
-        monkeypatch.setattr(
-            activate_changes,
-            "_request",
-            request,
-        )
-        assert (
-            activate_changes.AutomationReceiveConfigSync().get_request()
-            == activate_changes.ReceiveConfigSyncRequest(
-                site_id=SiteId("NO_SITE"),
-                sync_archive=b"some data",
-                to_delete=["x/y/z.txt", "abc.ending", "/ä/☃/☕"],
-                config_generation=123,
+    def test_get_request(self) -> None:
+        request = Request(
+            create_environ(
+                method="POST",
+                data={
+                    "site_id": "NO_SITE",
+                    "to_delete": "['x/y/z.txt', 'abc.ending', '/ä/☃/☕']",
+                    "config_generation": "123",
+                    "sync_archive": (
+                        io.BytesIO(b"some data"),
+                        "sync_archive",
+                        "sync_archive",
+                    ),
+                },
             )
+        )
+        assert activate_changes.AutomationReceiveConfigSync().get_request(
+            Config(), request
+        ) == activate_changes.ReceiveConfigSyncRequest(
+            site_id=SiteId("NO_SITE"),
+            sync_archive=b"some data",
+            to_delete=["x/y/z.txt", "abc.ending", "/ä/☃/☕"],
+            config_generation=123,
+            use_git=False,
         )
 
 
@@ -1018,7 +1008,7 @@ def test_activation_cleanup_background_job(caplog: pytest.LogCaptureFixture) -> 
         ),
         pytest.param(
             {
-                "remote_1": SiteConfiguration(
+                SiteId("remote_1"): SiteConfiguration(
                     id=SiteId("remote_1"),
                     alias="remote site",
                     disable_wato=True,
@@ -1086,7 +1076,7 @@ def test_activation_cleanup_background_job(caplog: pytest.LogCaptureFixture) -> 
         ),
         pytest.param(
             {
-                "remote_1": SiteConfiguration(
+                SiteId("remote_1"): SiteConfiguration(
                     id=SiteId("remote_1"),
                     alias="remote site",
                     disable_wato=True,
@@ -1227,13 +1217,9 @@ def test_activation_cleanup_background_job(caplog: pytest.LogCaptureFixture) -> 
     ],
 )
 def test_default_rabbitmq_definitions(
-    site_configs: Mapping[str, SiteConfiguration],
+    site_configs: Mapping[SiteId, SiteConfiguration],
     peer_to_peer_connections: BrokerConnections,
     expected_definitions: Mapping[str, rabbitmq.Definitions],
 ) -> None:
-    with patch(
-        "cmk.gui.watolib.activate_changes.get_all_replicated_sites",
-        return_value=site_configs,
-    ):
-        actual_definitions = default_rabbitmq_definitions(peer_to_peer_connections)
-        assert dict(actual_definitions) == expected_definitions
+    actual_definitions = default_rabbitmq_definitions(site_configs, peer_to_peer_connections)
+    assert dict(actual_definitions) == expected_definitions

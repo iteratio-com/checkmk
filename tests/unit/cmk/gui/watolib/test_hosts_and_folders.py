@@ -26,20 +26,18 @@ from cmk.ccc.exceptions import MKGeneralException
 from cmk.ccc.hostaddress import HostAddress, HostName
 from cmk.ccc.site import SiteId
 from cmk.ccc.user import UserId
-
-from cmk.utils.redis import disable_redis
-
 from cmk.gui import userdb
 from cmk.gui.config import active_config
 from cmk.gui.ctx_stack import g
 from cmk.gui.exceptions import MKUserError
 from cmk.gui.logged_in import user as logged_in_user
+from cmk.gui.search import MatchItem
 from cmk.gui.watolib import hosts_and_folders
 from cmk.gui.watolib.audit_log import AuditLogStore
 from cmk.gui.watolib.host_attributes import HostAttributes
 from cmk.gui.watolib.host_match_item_generator import MatchItemGeneratorHosts
 from cmk.gui.watolib.hosts_and_folders import EffectiveAttributes, Folder, folder_tree
-from cmk.gui.watolib.search import MatchItem
+from cmk.utils.redis import disable_redis
 
 
 def test_effective_attributes() -> None:
@@ -200,7 +198,9 @@ def test_write_and_read_host_attributes(attributes: HostAttributes) -> None:
     )
 
     # Write data
-    write_data_folder.create_hosts([(HostName("testhost"), attributes, [])], pprint_value=False)
+    write_data_folder.create_hosts(
+        [(HostName("testhost"), attributes, [])], pprint_value=False, use_git=False
+    )
     write_folder_hosts = write_data_folder.hosts()
     assert len(write_folder_hosts) == 1
 
@@ -216,10 +216,12 @@ def test_write_and_read_host_attributes(attributes: HostAttributes) -> None:
 
 def test_create_multiple_hosts() -> None:
     root = folder_tree().root_folder()
-    subfolder = root.create_subfolder("subfolder", "subfolder", {}, pprint_value=False)
+    subfolder = root.create_subfolder(
+        "subfolder", "subfolder", {}, pprint_value=False, use_git=False
+    )
 
-    root.create_hosts([(HostName("host-1"), {}, [])], pprint_value=False)
-    subfolder.create_hosts([(HostName("host-2"), {}, [])], pprint_value=False)
+    root.create_hosts([(HostName("host-1"), {}, [])], pprint_value=False, use_git=False)
+    subfolder.create_hosts([(HostName("host-2"), {}, [])], pprint_value=False, use_git=False)
 
     all_hosts = root.all_hosts_recursively()
     # to ensure that new folder instances contain the new hosts
@@ -298,6 +300,7 @@ def test_mgmt_inherit_credentials_explicit_host_snmp() -> None:
             )
         ],
         pprint_value=False,
+        use_git=False,
     )
 
     data = folder._load_hosts_file()
@@ -333,6 +336,7 @@ def test_mgmt_inherit_credentials_explicit_host_ipmi() -> None:
             )
         ],
         pprint_value=False,
+        use_git=False,
     )
 
     data = folder._load_hosts_file()
@@ -362,6 +366,7 @@ def test_mgmt_inherit_credentials_snmp() -> None:
             )
         ],
         pprint_value=False,
+        use_git=False,
     )
 
     data = folder._load_hosts_file()
@@ -391,6 +396,7 @@ def test_mgmt_inherit_credentials_ipmi() -> None:
             )
         ],
         pprint_value=False,
+        use_git=False,
     )
 
     data = folder._load_hosts_file()
@@ -422,6 +428,7 @@ def test_mgmt_inherit_protocol_explicit_host_snmp() -> None:
             )
         ],
         pprint_value=False,
+        use_git=False,
     )
 
     data = folder._load_hosts_file()
@@ -456,6 +463,7 @@ def test_mgmt_inherit_protocol_explicit_host_ipmi() -> None:
             )
         ],
         pprint_value=False,
+        use_git=False,
     )
 
     data = folder._load_hosts_file()
@@ -491,13 +499,13 @@ def only_root() -> hosts_and_folders.Folder:
 def three_levels() -> hosts_and_folders.Folder:
     main = folder_tree().root_folder()
 
-    a = main.create_subfolder("a", title="A", attributes={}, pprint_value=False)
-    a.create_subfolder("c", title="C", attributes={}, pprint_value=False)
-    a.create_subfolder("d", title="D", attributes={}, pprint_value=False)
+    a = main.create_subfolder("a", title="A", attributes={}, pprint_value=False, use_git=False)
+    a.create_subfolder("c", title="C", attributes={}, pprint_value=False, use_git=False)
+    a.create_subfolder("d", title="D", attributes={}, pprint_value=False, use_git=False)
 
-    b = main.create_subfolder("b", title="B", attributes={}, pprint_value=False)
-    e = b.create_subfolder("e", title="E", attributes={}, pprint_value=False)
-    e.create_subfolder("f", title="F", attributes={}, pprint_value=False)
+    b = main.create_subfolder("b", title="B", attributes={}, pprint_value=False, use_git=False)
+    e = b.create_subfolder("e", title="E", attributes={}, pprint_value=False, use_git=False)
+    e.create_subfolder("f", title="F", attributes={}, pprint_value=False, use_git=False)
 
     return main
 
@@ -508,17 +516,17 @@ def three_levels_leaf_permissions() -> hosts_and_folders.Folder:
     # Attribute only used for testing
     main.permissions._may_see = False  # type: ignore[attr-defined]
 
-    a = main.create_subfolder("a", title="A", attributes={}, pprint_value=False)
+    a = main.create_subfolder("a", title="A", attributes={}, pprint_value=False, use_git=False)
     a.permissions._may_see = False  # type: ignore[attr-defined]
-    c = a.create_subfolder("c", title="C", attributes={}, pprint_value=False)
+    c = a.create_subfolder("c", title="C", attributes={}, pprint_value=False, use_git=False)
     c.permissions._may_see = False  # type: ignore[attr-defined]
-    a.create_subfolder("d", title="D", attributes={}, pprint_value=False)
+    a.create_subfolder("d", title="D", attributes={}, pprint_value=False, use_git=False)
 
-    b = main.create_subfolder("b", title="B", attributes={}, pprint_value=False)
+    b = main.create_subfolder("b", title="B", attributes={}, pprint_value=False, use_git=False)
     b.permissions._may_see = False  # type: ignore[attr-defined]
-    e = b.create_subfolder("e", title="E", attributes={}, pprint_value=False)
+    e = b.create_subfolder("e", title="E", attributes={}, pprint_value=False, use_git=False)
     e.permissions._may_see = False  # type: ignore[attr-defined]
-    e.create_subfolder("f", title="F", attributes={}, pprint_value=False)
+    e.create_subfolder("f", title="F", attributes={}, pprint_value=False, use_git=False)
 
     return main
 
@@ -560,7 +568,7 @@ def test_recursive_subfolder_choices(
 ) -> None:
     with monkeypatch.context() as m:
         m.setattr(active_config, "wato_hide_folders_without_read_permissions", True)
-        assert actual_builder().recursive_subfolder_choices() == expected
+        assert actual_builder().recursive_subfolder_choices(pretty=True) == expected
 
 
 @pytest.mark.usefixtures("patch_may")
@@ -572,13 +580,13 @@ def test_recursive_subfolder_choices_function_calls(
         m.setattr(active_config, "wato_hide_folders_without_read_permissions", True)
         spy = mocker.spy(hosts_and_folders.Folder, "_walk_tree")
         tree = three_levels_leaf_permissions()
-        tree.recursive_subfolder_choices()
+        tree.recursive_subfolder_choices(pretty=True)
         assert spy.call_count == 7
 
 
 def test_subfolder_creation() -> None:
     folder = folder_tree().root_folder()
-    folder.create_subfolder("foo", "Foo Folder", {}, pprint_value=False)
+    folder.create_subfolder("foo", "Foo Folder", {}, pprint_value=False, use_git=False)
 
     # Upon instantiation, all the subfolders should be already known.
     folder = folder_tree().root_folder()
@@ -1041,9 +1049,9 @@ def test_load_redis_folders_on_demand(monkeypatch: MonkeyPatch) -> None:
 
 def test_folder_exists() -> None:
     tree = folder_tree()
-    tree.root_folder().create_subfolder("foo", "foo", {}, pprint_value=False).create_subfolder(
-        "bar", "bar", {}, pprint_value=False
-    )
+    tree.root_folder().create_subfolder(
+        "foo", "foo", {}, pprint_value=False, use_git=False
+    ).create_subfolder("bar", "bar", {}, pprint_value=False, use_git=False)
     assert tree.folder_exists("foo")
     assert tree.folder_exists("foo/bar")
     assert not tree.folder_exists("bar")
@@ -1054,9 +1062,9 @@ def test_folder_exists() -> None:
 
 def test_folder_access() -> None:
     tree = folder_tree()
-    tree.root_folder().create_subfolder("foo", "foo", {}, pprint_value=False).create_subfolder(
-        "bar", "bar", {}, pprint_value=False
-    )
+    tree.root_folder().create_subfolder(
+        "foo", "foo", {}, pprint_value=False, use_git=False
+    ).create_subfolder("bar", "bar", {}, pprint_value=False, use_git=False)
     assert isinstance(tree.folder("foo/bar"), hosts_and_folders.Folder)
     assert isinstance(tree.folder(""), hosts_and_folders.Folder)
     with pytest.raises(MKGeneralException):
@@ -1182,7 +1190,9 @@ def test_folder_times() -> None:
 def test_subfolder_attributes_are_cached() -> None:
     # GIVEN folder with cached attributes
     root = folder_tree().root_folder()
-    subfolder = root.create_subfolder("sub1", "sub1", {"alias": "sub1"}, pprint_value=False)
+    subfolder = root.create_subfolder(
+        "sub1", "sub1", {"alias": "sub1"}, pprint_value=False, use_git=False
+    )
     subfolder.effective_attributes()
 
     # WHEN
@@ -1197,7 +1207,7 @@ def test_subfolder_cache_invalidated() -> None:
     subfolder = (
         folder_tree()
         .root_folder()
-        .create_subfolder("sub1", "sub1", {"alias": "sub1"}, pprint_value=False)
+        .create_subfolder("sub1", "sub1", {"alias": "sub1"}, pprint_value=False, use_git=False)
     )
     subfolder.effective_attributes()
 

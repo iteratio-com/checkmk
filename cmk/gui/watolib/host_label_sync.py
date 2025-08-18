@@ -18,21 +18,18 @@ from typing import Any
 
 from livestatus import SiteConfiguration
 
+import cmk.utils.paths
 from cmk.ccc import store
 from cmk.ccc.exceptions import MKGeneralException
 from cmk.ccc.hostaddress import HostName
 from cmk.ccc.site import SiteId
-
-import cmk.utils.paths
-from cmk.utils.labels import DiscoveredHostLabelsStore
-
-from cmk.gui.config import active_config
+from cmk.gui.config import Config
 from cmk.gui.cron import CronJob, CronJobRegistry
 from cmk.gui.exceptions import MKUserError
-from cmk.gui.http import request
+from cmk.gui.http import Request
 from cmk.gui.i18n import _
 from cmk.gui.log import logger
-from cmk.gui.site_config import has_wato_slave_sites, wato_slave_sites
+from cmk.gui.site_config import wato_slave_sites
 from cmk.gui.utils.request_context import copy_request_context
 from cmk.gui.watolib.automation_commands import AutomationCommand
 from cmk.gui.watolib.automations import (
@@ -42,6 +39,7 @@ from cmk.gui.watolib.automations import (
 )
 from cmk.gui.watolib.hosts_and_folders import folder_tree, Host
 from cmk.gui.watolib.paths import wato_var_dir
+from cmk.utils.labels import DiscoveredHostLabelsStore
 
 UpdatedHostLabelsEntry = tuple[str, float, str]
 
@@ -139,13 +137,13 @@ def execute_host_label_sync(
     save_updated_host_label_files(result.updated_host_labels)
 
 
-def execute_host_label_sync_job() -> None:
+def execute_host_label_sync_job(config: Config) -> None:
     """This function is called by the GUI cron job once a minute.
     Errors are logged to var/log/web.log."""
-    if not has_wato_slave_sites():
+    if not (remote_sites := wato_slave_sites(config.sites)):
         return
 
-    DiscoveredHostLabelSyncJob().do_sync(remote_sites=wato_slave_sites(), debug=active_config.debug)
+    DiscoveredHostLabelSyncJob().do_sync(remote_sites=remote_sites, debug=config.debug)
 
     now = time.time()
     if (
@@ -314,7 +312,7 @@ class AutomationDiscoveredHostLabelSync(AutomationCommand[SiteRequest]):
     def command_name(self) -> str:
         return "discovered-host-label-sync"
 
-    def get_request(self) -> SiteRequest:
+    def get_request(self, config: Config, request: Request) -> SiteRequest:
         ascii_input = request.get_ascii_input("request")
         if ascii_input is None:
             raise MKUserError("request", _('The parameter "%s" is missing.') % "request")

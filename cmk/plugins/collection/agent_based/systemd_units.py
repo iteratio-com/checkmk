@@ -127,7 +127,7 @@ _SYSTEMD_UNIT_FILE_STATES = [
 # https://github.com/systemd/systemd/blob/7d4054464318d15ecd35c93fb477011aec63391e/src/basic/glyph-util.c#L38
 _STATUS_SYMBOLS = {"●", "○", "↻", "×", "x", "*"}
 
-MEMORY_PATTERN = re.compile(r"(\d+(\.\d+)?)([BKMG]?)")
+MEMORY_PATTERN = re.compile(r"(\d+(\.\d+)?)([BKMGT]?)")
 
 
 @dataclass(frozen=True)
@@ -150,11 +150,15 @@ class Memory:
         5242880
         >>> Memory.from_raw("14G").bytes
         15032385536
+        >>> Memory.from_raw("1T").bytes
+        1099511627776
         """
         if not (match := MEMORY_PATTERN.match(raw)):
             raise ValueError(f"Cannot create {cls.__name__} from: {raw}")
         value, _, unit = match.groups()
-        return cls(int(float(value) * {"B": 1, "K": 1024, "M": 1024**2, "G": 1024**3}[unit]))
+        return cls(
+            int(float(value) * {"B": 1, "K": 1024, "M": 1024**2, "G": 1024**3, "T": 1024**4}[unit])
+        )
 
     def render(self):
         return render.bytes(self.bytes)
@@ -811,15 +815,18 @@ def check_systemd_units_summary(
     services_organised = _services_split(units, blacklist)
     yield Result(state=State.OK, summary=f"Disabled: {len(services_organised['disabled']):d}")
 
+    sum_failed = sum(
+        s.active_status == "failed"
+        for s in units
+        if s not in services_organised["excluded"]
+        and (params["disabled_critical"] is True or s not in services_organised["disabled"])
+    )
+
     yield Result(
         state=State(params["states"].get("failed", params["states_default"]))
-        if sum(
-            s.active_status == "failed"
-            for s in units
-            if s not in services_organised["excluded"] and s not in services_organised["disabled"]
-        )
+        if sum_failed
         else State.OK,
-        summary=f"Failed: {sum(s.active_status == 'failed' for s in units)}",
+        summary=f"Failed: {sum_failed}",
     )
 
     included_template = "{count:d} {unit_type} {status} ({service_text})"
@@ -841,6 +848,7 @@ def check_systemd_units_summary(
 
 
 CHECK_DEFAULT_PARAMETERS_SUMMARY = {
+    "disabled_critical": False,
     "states": {
         "active": 0,
         "inactive": 0,

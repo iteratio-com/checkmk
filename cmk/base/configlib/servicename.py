@@ -8,18 +8,18 @@ from collections.abc import Callable, Container, Mapping, Sequence
 from typing import Final
 
 from cmk.ccc.hostaddress import HostName
-
+from cmk.checkengine.plugins import CheckPluginName, ServiceID
 from cmk.utils.caching import cache_manager
-from cmk.utils.labels import Labels
+from cmk.utils.labels import LabelManager, Labels
 from cmk.utils.rulesets.ruleset_matcher import RulesetMatcher, RuleSpec
 from cmk.utils.servicename import Item, ServiceName
 from cmk.utils.translations import (
+    parse_translation_options,
     translate_service_description,
     TranslationOptions,
-    TranslationOptionsSpec,
 )
 
-from cmk.checkengine.plugins import CheckPluginName
+from .loaded_config import LoadedConfigFragment
 
 
 class FinalServiceNameConfig:
@@ -27,16 +27,16 @@ class FinalServiceNameConfig:
         self,
         matcher: RulesetMatcher,
         illegal_chars: str,
-        translations: Sequence[RuleSpec[TranslationOptionsSpec]],
+        translations: Sequence[RuleSpec[Mapping[str, object]]],
     ) -> None:
-        self.matcher: Final = matcher
-        self.illegal_chars: Final = illegal_chars
-        self.translations: Final = translations
+        self._matcher: Final = matcher
+        self._illegal_chars: Final = illegal_chars
+        self._translations: Final = translations
 
-    def finalize(
+    def __call__(
         self,
-        description: ServiceName,
         host_name: HostName,
+        description: ServiceName,
         labels_of_host: Callable[[HostName], Labels],
     ) -> ServiceName:
         translations = self._get_service_translations(labels_of_host, host_name)
@@ -55,7 +55,8 @@ class FinalServiceNameConfig:
             return cache[description]
 
         return cache.setdefault(
-            description, "".join(c for c in description if c not in self.illegal_chars).rstrip("\\")
+            description,
+            "".join(c for c in description if c not in self._illegal_chars).rstrip("\\"),
         )
 
     def _get_service_translations(
@@ -67,60 +68,69 @@ class FinalServiceNameConfig:
         with contextlib.suppress(KeyError):
             return translations_cache[hostname]
 
-        rules = self.matcher.get_host_values(hostname, self.translations, labels_of_host)
-        translations: TranslationOptions = {}
+        rules = self._matcher.get_host_values_all(hostname, self._translations, labels_of_host)
+        merged = TranslationOptions(case=None, drop_domain=False, regex=[], mapping=[])
         for rule in rules[::-1]:
-            if "case" in rule:
-                translations["case"] = rule["case"]
-            if "drop_domain" in rule:
-                translations["drop_domain"] = rule["drop_domain"]
-            if "regex" in rule:
-                translations["regex"] = list(
-                    set(translations.get("regex", [])) | set(rule["regex"])
-                )
-            if "mapping" in rule:
-                translations["mapping"] = list(
-                    set(translations.get("mapping", [])) | set(rule["mapping"])
-                )
+            parsed_rule = parse_translation_options(rule)
+            if "case" in rule:  # inheritence! Don't check for "case" in parsed_rule!
+                merged["case"] = parsed_rule["case"]
+            merged["regex"] = list(set(merged["regex"]) | set(parsed_rule["regex"]))
+            merged["mapping"] = list(set(merged["mapping"]) | set(parsed_rule["mapping"]))
 
-        return translations_cache.setdefault(hostname, translations)
+        return translations_cache.setdefault(hostname, parse_translation_options(merged))
+
+
+def make_final_service_name_config(
+    loaded_config: LoadedConfigFragment,
+    matcher: RulesetMatcher,
+) -> FinalServiceNameConfig:
+    return FinalServiceNameConfig(
+        matcher=matcher,
+        illegal_chars=(
+            loaded_config.cmc_illegal_chars
+            if loaded_config.monitoring_core == "cmc"
+            else loaded_config.nagios_illegal_chars
+        ),
+        translations=loaded_config.service_description_translation,
+    )
 
 
 class PassiveServiceNameConfig:
     def __init__(
         self,
-        final_service_name_config: FinalServiceNameConfig,
+        final_service_name_config: Callable[
+            [HostName, ServiceName, Callable[[HostName], Labels]], ServiceName
+        ],
         user_defined_service_names: Mapping[str, str],
         use_new_names_for: Container[str],
-    ):
-        self.final_service_name_config: Final = final_service_name_config
-        self.user_defined_service_names: Final = user_defined_service_names
-        self.use_new_names_for: Final = use_new_names_for
-
-    def make_name(
-        self,
         labels_of_host: Callable[[HostName], Labels],
+    ):
+        self._final_service_name_config: Final = final_service_name_config
+        self._user_defined_service_names: Final = user_defined_service_names
+        self._use_new_names_for: Final = use_new_names_for
+        self._labels_of_host: Final = labels_of_host
+
+    def __call__(
+        self,
         host_name: HostName,
-        check_plugin_name: CheckPluginName,
-        *,
+        service_id: ServiceID,
         service_name_template: str | None,
-        item: Item,
     ) -> ServiceName:
         if service_name_template is None:
             return (
-                f"Unimplemented check {check_plugin_name} / {item}"
-                if item
-                else f"Unimplemented check {check_plugin_name}"
+                f"Unimplemented check {service_id.name} / {service_id.item}"
+                if service_id.item
+                else f"Unimplemented check {service_id.name}"
             )
 
-        return self.final_service_name_config.finalize(
+        return self._final_service_name_config(
+            host_name,
             _format_item_with_template(
                 *self._get_service_description_template_and_item(
-                    check_plugin_name, service_name_template, item
+                    service_id.name, service_name_template, service_id.item
                 )
             ),
-            host_name,
-            labels_of_host,
+            self._labels_of_host,
         )
 
     def _get_service_description_template_and_item(
@@ -129,13 +139,34 @@ class PassiveServiceNameConfig:
         plugin_name_str = str(plugin_name)
 
         # use user-supplied service name, if available
-        if descr_format := self.user_defined_service_names.get(plugin_name_str):
+        if descr_format := self._user_defined_service_names.get(plugin_name_str):
             return descr_format, item
 
         old_descr = _OLD_SERVICE_DESCRIPTIONS.get(plugin_name_str)
-        if old_descr is None or plugin_name_str in self.use_new_names_for:
+        if old_descr is None or plugin_name_str in self._use_new_names_for:
             return service_name_template, item
         return old_descr(item)
+
+
+def make_passive_service_name_config(
+    loaded_config: LoadedConfigFragment,
+    matcher: RulesetMatcher,
+    label_manager: LabelManager,
+) -> PassiveServiceNameConfig:
+    return PassiveServiceNameConfig(
+        final_service_name_config=FinalServiceNameConfig(
+            matcher=matcher,
+            illegal_chars=(
+                loaded_config.cmc_illegal_chars
+                if loaded_config.monitoring_core == "cmc"
+                else loaded_config.nagios_illegal_chars
+            ),
+            translations=loaded_config.service_description_translation,
+        ),
+        user_defined_service_names=loaded_config.service_descriptions,
+        use_new_names_for=loaded_config.use_new_descriptions_for,
+        labels_of_host=label_manager.labels_of_host,
+    )
 
 
 def _format_item_with_template(template: str, item: Item) -> str:

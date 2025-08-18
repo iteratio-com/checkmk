@@ -113,9 +113,6 @@ form {
   }
 }
 
-input:hover,
-select:hover,
-textarea:hover,
 input[type="checkbox"]:hover + label::before {
   background-color: $input-hover-bg-color;
 }
@@ -356,6 +353,11 @@ div.foldable_wrapper {
   }
 
   div.foldable_header {
+    position: sticky;
+    top: 0;
+    z-index: 15;
+    background-color: $headline-color;
+
     &[onclick] {
       cursor: pointer;
     }
@@ -1390,4 +1392,22 @@ div.swal2-popup {
 
 svg text {
   fill: $font-color;
+}
+
+/* Hide native scrollbar when Vue components handle scrolling */
+body.main div#main_page_content.vue-scrolling {
+  overflow: hidden;
+  height: 100%;
+  padding-right: 0;
+  padding-bottom: 0;
+
+  > * {
+    height: 100%;
+    display: block;
+
+    > .cmk-vue-app {
+      height: 100%;
+      display: block;
+    }
+  }
 }

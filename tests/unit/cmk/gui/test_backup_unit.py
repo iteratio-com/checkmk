@@ -5,14 +5,11 @@
 
 import pytest
 
-from cmk.ccc.user import UserId
-
 import cmk.utils.paths
-
+from cmk.ccc.user import UserId
+from cmk.crypto.password import Password
 from cmk.gui.backup.pages import ModeBackupEditKey
 from cmk.gui.logged_in import user
-
-from cmk.crypto.password import Password
 
 
 @pytest.mark.usefixtures("request_context")
@@ -25,7 +22,9 @@ def test_backup_key_create_web(monkeypatch: pytest.MonkeyPatch) -> None:
         mode = ModeBackupEditKey()
 
         # First create a backup key
-        mode._create_key(alias="älias", passphrase=Password("passphra$e"), default_key_size=1024)
+        mode._create_key(
+            alias="älias", passphrase=Password("passphra$e"), use_git=False, default_key_size=1024
+        )
 
         assert store_path.exists()
 

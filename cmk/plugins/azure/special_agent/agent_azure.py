@@ -11,8 +11,6 @@ https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/freque
 
 from __future__ import annotations
 
-import abc
-import argparse
 import asyncio
 import datetime
 import enum
@@ -21,29 +19,38 @@ import logging
 import re
 import string
 import sys
-import time
 from collections import defaultdict
-from collections.abc import AsyncIterator, Callable, Iterable, Mapping, Sequence
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from enum import Enum
 from multiprocessing import Lock
 from pathlib import Path
-from typing import Any, Literal, NamedTuple, Required, TypedDict, TypeVar
+from typing import Any, Literal, Required, TypedDict, TypeVar
 
-import aiohttp  # type: ignore[import-not-found]
-import msal
 import requests
 
+from cmk.plugins.azure.special_agent.azure_api_client import (
+    ApiError,
+    ApiErrorAuthorizationRequestDenied,
+    ApiErrorMissingData,
+    ApiLoginFailed,
+    BaseAsyncApiClient,
+    get_graph_authority_urls,
+    get_mgmt_authority_urls,
+    NoConsumptionAPIError,
+    RateLimitException,
+    SharedSessionApiClient,
+)
+from cmk.special_agents.v0_unstable.agent_common import special_agent_main
+from cmk.special_agents.v0_unstable.argument_parsing import Args, create_default_argument_parser
+from cmk.special_agents.v0_unstable.misc import DataCache
 from cmk.utils import password_store
-from cmk.utils.http_proxy_config import deserialize_http_proxy_config, HTTPProxyConfig
+from cmk.utils.http_proxy_config import deserialize_http_proxy_config
 from cmk.utils.paths import tmp_dir
 
-from cmk.special_agents.v0_unstable.misc import DataCache, vcrtrace
-
 T = TypeVar("T")
-Args = argparse.Namespace
 GroupLabels = Mapping[str, Mapping[str, str]]
 
-LOGGER = logging.getLogger()  # root logger for now
+LOGGER = logging.getLogger("agent_azure")
 
 AZURE_CACHE_FILE_PATH = tmp_dir / "agents" / "agent_azure"
 
@@ -232,6 +239,13 @@ class FetchedResource(Enum):
     """Available Azure resources, with section name, for API fetching"""
 
     virtual_machines = ("Microsoft.Compute/virtualMachines", "virtualmachines")
+    vaults = ("Microsoft.RecoveryServices/vaults", "vaults")
+    app_gateways = ("Microsoft.Network/applicationGateways", "applicationgateways")
+    load_balancers = ("Microsoft.Network/loadBalancers", "loadbalancers")
+    virtual_network_gateways = (
+        "Microsoft.Network/virtualNetworkGateways",
+        "virtualnetworkgateways",
+    )
 
     def __init__(self, resource_type, section_name):
         self.resource_type = resource_type
@@ -246,10 +260,10 @@ class FetchedResource(Enum):
         return self.resource_type
 
 
-# list of metrics type handles within the new async functions
-# not to be gathered with the old methods
-METRICS_GATHERED_ASYNC = {
+BULK_QUERIED_RESOURCES = {
     FetchedResource.virtual_machines.type,
+    FetchedResource.app_gateways.type,
+    FetchedResource.load_balancers.type,
 }
 
 
@@ -265,22 +279,8 @@ def _chunks(list_: Sequence[T], length: int = 50) -> Sequence[Sequence[T]]:
     return [list_[i : i + length] for i in range(0, len(list_), length)]
 
 
-def parse_arguments(argv: Sequence[str]) -> Args:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--debug", action="store_true", help="""Debug mode: raise Python exceptions"""
-    )
-    parser.add_argument(
-        "-v",
-        "--verbose",
-        action="count",
-        default=0,
-        help="""Verbose mode (for even more output use -vvv)""",
-    )
-    parser.add_argument(
-        "--vcrtrace",
-        action=vcrtrace(filter_post_data_parameters=[("client_secret", "****")]),
-    )
+def parse_arguments(argv: Sequence[str] | None) -> Args:
+    parser = create_default_argument_parser(description=__doc__)
     parser.add_argument(
         "--dump-config",
         action="store_true",
@@ -403,648 +403,13 @@ def parse_arguments(argv: Sequence[str]) -> Args:
         "executed.",
     )
 
+    # I'm not sure this is still needed
+    if argv is None:
+        password_store.replace_passwords()
+        argv = sys.argv[1:]
+
     args = parser.parse_args(argv)
-
-    # LOGGING
-    if args.verbose and args.verbose >= 3:
-        # this will show third party log messages as well
-        fmt = "%(levelname)s: %(name)s: %(filename)s: %(lineno)s: %(message)s"
-        lvl = logging.DEBUG
-    elif args.verbose and args.verbose == 2:
-        # be verbose, but silence msrest, urllib3 and requests_oauthlib
-        fmt = "%(levelname)s: %(funcName)s: %(lineno)s: %(message)s"
-        lvl = logging.DEBUG
-        logging.getLogger("msrest").setLevel(logging.WARNING)
-        logging.getLogger("urllib3").setLevel(logging.WARNING)
-        logging.getLogger("requests_oauthlib").setLevel(logging.WARNING)
-    elif args.verbose:
-        fmt = "%(levelname)s: %(funcName)s: %(message)s"
-        lvl = logging.INFO
-    else:
-        fmt = "%(levelname)s: %(message)s"
-        lvl = logging.WARNING
-    logging.basicConfig(level=lvl, format=fmt)
-
-    # V-VERBOSE INFO
-    for key, value in vars(args).items():
-        if key == "secret":
-            value = "****"
-        LOGGER.debug("argparse: %s = %r", key, value)
-
     return args
-
-
-class ApiError(RuntimeError):
-    pass
-
-
-class ApiLoginFailed(ApiError):
-    pass
-
-
-class ApiErrorMissingData(ApiError):
-    pass
-
-
-class NoConsumptionAPIError(ApiError):
-    pass
-
-
-class ApiErrorAuthorizationRequestDenied(ApiError):
-    pass
-
-
-def _make_exception(error_data: object) -> ApiError:
-    match error_data:
-        case {"code": "Authorization_RequestDenied", **rest}:
-            message = rest.get("message", error_data)
-            assert isinstance(message, Mapping)
-            return ApiErrorAuthorizationRequestDenied(**message)
-        case {"code": _, "message": message}:
-            return ApiError(message)
-        case other:
-            return ApiError(other)
-
-
-class _AuthorityURLs(NamedTuple):
-    login: str
-    resource: str
-    base: str
-    regional: Callable[[str], str] | None = None
-
-
-def _get_graph_authority_urls(authority: Literal["global", "china"]) -> _AuthorityURLs:
-    if authority == "global":
-        return _AuthorityURLs(
-            "https://login.microsoftonline.com",
-            "https://graph.microsoft.com",
-            "https://graph.microsoft.com/v1.0/",
-        )
-    if authority == "china":
-        return _AuthorityURLs(
-            "https://login.partner.microsoftonline.cn",
-            "https://microsoftgraph.chinacloudapi.cn",
-            "https://microsoftgraph.chinacloudapi.cn/v1.0/",
-        )
-    raise ValueError("Unknown authority %r" % authority)
-
-
-def _get_regional_url_func(subscription: str) -> Callable[[str], str]:
-    def get_regional_url(region: str) -> str:
-        return f"https://{region}.metrics.monitor.azure.com/subscriptions/{subscription}"
-
-    return get_regional_url
-
-
-def _get_mgmt_authority_urls(
-    authority: Literal["global", "china"], subscription: str
-) -> _AuthorityURLs:
-    if authority == "global":
-        return _AuthorityURLs(
-            "https://login.microsoftonline.com",
-            "https://management.azure.com",
-            f"https://management.azure.com/subscriptions/{subscription}/",
-            _get_regional_url_func(subscription),
-        )
-    if authority == "china":
-        return _AuthorityURLs(
-            "https://login.partner.microsoftonline.cn",
-            "https://management.chinacloudapi.cn",
-            f"https://management.chinacloudapi.cn/subscriptions/{subscription}/",
-            lambda r: f"https://metrics.monitor.azure.cn/subscriptions/{subscription}/",
-        )
-    raise ValueError("Unknown authority %r" % authority)
-
-
-class BaseApiClient(abc.ABC):
-    def __init__(
-        self,
-        authority_urls: _AuthorityURLs,
-        http_proxy_config: HTTPProxyConfig,
-    ) -> None:
-        self._ratelimit = float("Inf")
-        self._headers: dict = {}
-        self._login_url = authority_urls.login
-        self._resource_url = authority_urls.resource
-        self._base_url = authority_urls.base
-        self._regional_url = authority_urls.regional
-        self._http_proxy_config = http_proxy_config
-
-    def login(self, tenant: str, client: str, secret: str) -> None:
-        client_app = msal.ConfidentialClientApplication(
-            client,
-            secret,
-            f"{self._login_url}/{tenant}",
-            proxies=self._http_proxy_config.to_requests_proxies(),
-        )
-        token = client_app.acquire_token_for_client([self._resource_url + "/.default"])
-
-        if error := token.get("error"):
-            if error_description := token.get("error_description"):
-                error = f"{error}. {error_description}"
-            raise ApiLoginFailed(error)
-
-        self._headers.update(
-            {
-                "Authorization": "Bearer %s" % token["access_token"],
-                "Content-Type": "application/json",
-                "ClientType": "monitoring-custom-client-type",
-            }
-        )
-
-    @property
-    def ratelimit(self):
-        if isinstance(self._ratelimit, int):
-            return self._ratelimit
-        return None
-
-    def _update_ratelimit(self, response: requests.Response) -> None:
-        try:
-            new_value = int(response.headers["x-ms-ratelimit-remaining-subscription-reads"])
-        except (KeyError, ValueError, TypeError):
-            return
-        self._ratelimit = min(self._ratelimit, new_value)
-
-    def _handle_ratelimit(self, get_response: Callable[[], requests.Response]) -> requests.Response:
-        response = get_response()
-        self._update_ratelimit(response)
-
-        for cool_off_interval in (5, 10):
-            if response.status_code != 429:
-                break
-
-            LOGGER.debug("Rate limit exceeded, waiting %s seconds", cool_off_interval)
-            time.sleep(cool_off_interval)
-            response = get_response()
-            self._update_ratelimit(response)
-
-        return response
-
-    def _get(
-        self,
-        uri_end,
-        key=None,
-        params=None,
-        next_page_key="nextLink",
-    ):
-        return self._request(
-            method="GET",
-            uri_end=uri_end,
-            key=key,
-            params=params,
-            next_page_key=next_page_key,
-        )
-
-    # TODO: delete this in the future, substitute with _query_async
-    def _query(self, uri_end, body, params=None):
-        json_data = self._request_json_from_url(
-            "POST", self._base_url + uri_end, body=body, params=params
-        )
-
-        data = self._lookup(json_data, "properties")
-        columns = self._lookup(data, "columns")
-        rows = self._lookup(data, "rows")
-
-        next_link = data.get("nextLink")
-        while next_link:
-            new_json_data = self._request_json_from_url("POST", next_link, body=body)
-            data = self._lookup(new_json_data, "properties")
-            rows += self._lookup(data, "rows")
-            next_link = data.get("nextLink")
-
-        common_metadata = {k: v for k, v in json_data.items() if k != "properties"}
-        processed_query = self._process_query(columns, rows, common_metadata)
-        return processed_query
-
-    def _process_query(self, columns, rows, common_metadata):
-        processed_query = []
-        column_names = [c["name"] for c in columns]
-        for index, row in enumerate(rows):
-            processed_row = common_metadata.copy()
-            # each entry should have a different name because the agent expects this value to be
-            # different for each resource but in case of a query the "name" is the id of the
-            # query so we replace it with a different name for each query result
-            processed_row["name"] = f"{processed_row['name']}-{index}"
-            processed_row["properties"] = dict(zip(column_names, row))
-            processed_query.append(processed_row)
-        return processed_query
-
-    def _get_paginated_data(
-        self,
-        next_link,
-        next_page_key,
-        method,
-        body,
-        key,
-    ):
-        data = []
-        while next_link:
-            new_json_data = self._request_json_from_url(method, next_link, body=body)
-            data += self._lookup(new_json_data, key)
-            next_link = new_json_data.get(next_page_key)
-
-        return data
-
-    def request(
-        self,
-        method,
-        uri_end=None,
-        full_uri=None,
-        body=None,
-        key=None,
-        params=None,
-        next_page_key="nextLink",
-    ):
-        return self._request(
-            method=method,
-            uri_end=uri_end,
-            full_uri=full_uri,
-            body=body,
-            key=key,
-            params=params,
-            next_page_key=next_page_key,
-        )
-
-    def _request(
-        self,
-        method,
-        uri_end=None,
-        full_uri=None,
-        body=None,
-        key=None,
-        params=None,
-        next_page_key="nextLink",
-    ):
-        uri = full_uri or self._base_url + uri_end
-        if not uri:
-            raise ValueError("No URI provided")
-
-        json_data = self._request_json_from_url(method, uri, body=body, params=params)
-
-        if (error := json_data.get("error")) is not None:
-            raise _make_exception(error)
-
-        if key is None:
-            return json_data
-
-        data = self._lookup(json_data, key)
-
-        # The API will not send more than 1000 recources at once.
-        # See if we must fetch another page:
-        if next_link := json_data.get(next_page_key):
-            return data + self._get_paginated_data(
-                next_link=next_link,
-                next_page_key=next_page_key,
-                method=method,
-                body=body,
-                key=key,
-            )
-
-        return data
-
-    def _request_json_from_url(self, method, url, *, body=None, params=None):
-        def get_response():
-            return requests.request(
-                method,
-                url,
-                json=body,
-                params=params,
-                headers=self._headers,
-                proxies=self._http_proxy_config.to_requests_proxies(),
-            )
-
-        response = self._handle_ratelimit(get_response)
-        json_data = response.json()
-        LOGGER.debug("response: %r", json_data)
-        return json_data
-
-    @staticmethod
-    def _lookup(json_data, key):
-        try:
-            return json_data[key]
-        except KeyError:
-            raise _make_exception(json_data)
-
-
-class BaseAsyncApiClient(BaseApiClient):
-    async def _query_async(self, uri_end, body, params=None):
-        async with aiohttp.ClientSession(headers=self._headers) as session:
-            async with session.request(
-                "POST",
-                self._base_url + uri_end,
-                json=body,
-                params=params,
-                timeout=aiohttp.ClientTimeout(total=30),
-                proxy=self._http_proxy_config.to_requests_proxies(),
-            ) as response:
-                json_data = await response.json()
-                data = self._lookup(json_data, "properties")
-                columns = self._lookup(data, "columns")
-                rows = self._lookup(data, "rows")
-
-                next_link = data.get("nextLink")
-                while next_link:
-                    async with session.post(next_link, json=body) as new_response:
-                        new_json_data = await new_response.json()
-                        data = self._lookup(new_json_data, "properties")
-                        rows += self._lookup(data, "rows")
-                        next_link = data.get("nextLink")
-
-                common_metadata = {k: v for k, v in json_data.items() if k != "properties"}
-                processed_query = self._process_query(columns, rows, common_metadata)
-                return processed_query
-
-    async def _handle_ratelimit_async(self, session, method, url, **kwargs):
-        async def get_response():
-            async with session.request(method, url, **kwargs) as response:
-                await response.json()
-                return response
-
-        response = await get_response()
-        self._update_ratelimit(response)
-
-        for cool_off_interval in (5, 10):
-            if response.status != 429:
-                break
-
-            LOGGER.debug("Rate limit exceeded, waiting %s seconds", cool_off_interval)
-            await asyncio.sleep(cool_off_interval)
-            response = await get_response()
-            self._update_ratelimit(response)
-
-        return response
-
-    async def _request_async(
-        self,
-        method,
-        uri_end=None,
-        full_uri=None,
-        body=None,
-        key=None,
-        params=None,
-        next_page_key="nextLink",
-    ):
-        uri = full_uri or self._base_url + uri_end
-        if not uri:
-            raise ValueError("No URI provided")
-
-        async with aiohttp.ClientSession(headers=self._headers) as session:
-            response = await self._handle_ratelimit_async(
-                session,
-                method,
-                uri,
-                json=body,
-                params=params,
-                timeout=30,
-                proxy=self._http_proxy_config.to_requests_proxies(),
-            )
-            json_data = await response.json()
-            LOGGER.debug("response: %r", json_data)
-
-            if (error := json_data.get("error")) is not None:
-                raise _make_exception(error)
-
-            if key is None:
-                return json_data
-
-            data = self._lookup(json_data, key)
-
-            if next_link := json_data.get(next_page_key):
-                return data + await self._get_paginated_data_async(
-                    next_link=next_link,
-                    next_page_key=next_page_key,
-                    method=method,
-                    body=body,
-                    key=key,
-                )
-
-            return data
-
-    async def _get_paginated_data_async(
-        self,
-        next_link: str,
-        next_page_key: str,
-        method: str,
-        body: dict,
-        key: str,
-    ) -> list:
-        data = []
-        while next_link:
-            new_json_data = await self._request_async(method, full_uri=next_link, body=body)
-            data += self._lookup(new_json_data, key)
-            next_link = new_json_data.get(next_page_key)
-
-        return data
-
-    async def get_async(
-        self,
-        uri_end,
-        key=None,
-        params=None,
-        next_page_key="nextLink",
-    ):
-        return await self._request_async(
-            method="GET",
-            uri_end=uri_end,
-            key=key,
-            params=params,
-            next_page_key=next_page_key,
-        )
-
-
-class GraphApiClient(BaseApiClient):
-    def users(self, data=None, uri=None):
-        if data is None:
-            data = []
-
-        # the uri is the link to the next page for pagination of results
-        if uri:
-            response = self._get(uri)
-        else:
-            response = self._get("users?$top=%s" % 500)
-        data += response.get("value", [])
-
-        # check if there is a next page, otherwise return result
-        next_page = response.get("@odata.nextLink")
-        if next_page is None:
-            return data
-
-        # if there is another page, remove the base url to get uri
-        uri = next_page.replace(self._base_url, "")
-        return self.users(data=data, uri=uri)
-
-    def organization(self):
-        return self._get("organization", key="value")
-
-    def applications(self):
-        applications = self._get("applications", key="value", next_page_key="@odata.nextLink")
-        return self._filter_out_applications(applications)
-
-    @staticmethod
-    def _filter_out_applications(
-        applications: list[dict[str, Any]],
-    ) -> list[dict[str, Any]]:
-        key_subset = {"id", "appId", "displayName", "passwordCredentials"}
-        return [
-            {k: app[k] for k in key_subset} for app in applications if app["passwordCredentials"]
-        ]
-
-
-class MgmtApiClient(BaseAsyncApiClient):
-    def __init__(
-        self,
-        authority_urls: _AuthorityURLs,
-        http_proxy_config: HTTPProxyConfig,
-        subscription: str,
-    ):
-        self.subscription = subscription
-        super().__init__(authority_urls, http_proxy_config)
-
-    @staticmethod
-    def _get_available_metrics_from_exception(
-        desired_names: str, api_error: ApiError, resource_type: str
-    ) -> str | None:
-        error_message = api_error.args[0]
-        match = re.match(
-            r"Failed to find metric configuration for provider.*Valid metrics: ([\w,]*)",
-            error_message,
-        )
-        if not match:
-            raise api_error
-
-        available_names = match.groups()[0]
-        retry_names = set(desired_names.split(",")) & set(available_names.split(","))
-        if not retry_names:
-            LOGGER.debug("None of the expected metrics are available for %s", resource_type)
-            return None
-
-        return ",".join(sorted(retry_names))
-
-    async def resourcegroups(self):
-        return await self.get_async(
-            "resourcegroups", key="value", params={"api-version": "2019-05-01"}
-        )
-
-    async def resources(self):
-        return await self.get_async("resources", key="value", params={"api-version": "2019-05-01"})
-
-    async def app_gateway_view(self, group, name):
-        url = "resourceGroups/{}/providers/Microsoft.Network/applicationGateways/{}"
-        return await self.get_async(url.format(group, name), params={"api-version": "2022-01-01"})
-
-    async def load_balancer_view(self, group, name):
-        url = "resourceGroups/{}/providers/Microsoft.Network/loadBalancers/{}"
-        return self.get_async(url.format(group, name), params={"api-version": "2022-01-01"})
-
-    def nic_ip_conf_view(self, group, nic_name, ip_conf_name):
-        url = (
-            "resourceGroups/{}/providers/Microsoft.Network/networkInterfaces/{}/ipConfigurations/{}"
-        )
-        return self._get(
-            url.format(group, nic_name, ip_conf_name),
-            params={"api-version": "2022-01-01"},
-        )
-
-    def nic_vmss_ip_conf_view(self, group, vmss, virtual_machine_index, nic_name, ip_conf_name):
-        return self._get(
-            f"resourceGroups/{group}/providers/microsoft.Compute/virtualMachineScaleSets/"
-            f"{vmss}/virtualMachines/{virtual_machine_index}/networkInterfaces/{nic_name}/ipConfigurations/{ip_conf_name}",
-            params={"api-version": "2024-07-01"},
-        )
-
-    async def public_ip_view(self, group, name):
-        url = "resourceGroups/{}/providers/Microsoft.Network/publicIPAddresses/{}"
-        return await self.get_async(url.format(group, name), params={"api-version": "2022-01-01"})
-
-    async def vnet_gateway_view(self, group, name):
-        url = "resourceGroups/{}/providers/Microsoft.Network/virtualNetworkGateways/{}"
-        return await self.get_async(url.format(group, name), params={"api-version": "2022-01-01"})
-
-    async def backup_containers_view(self, group, name):
-        url = (
-            "resourceGroups/{}/providers/Microsoft.RecoveryServices/vaults/{}/backupProtectedItems"
-        )
-        return await self.get_async(url.format(group, name), params={"api-version": "2022-05-01"})
-
-    async def vnet_peering_view(self, group, providers, vnet_id, vnet_peering_id):
-        url = "resourceGroups/{}/providers/{}/virtualNetworks/{}/virtualNetworkPeerings/{}"
-        return await self.get_async(
-            url.format(group, providers, vnet_id, vnet_peering_id),
-            params={"api-version": "2022-01-01"},
-        )
-
-    async def vnet_gateway_health(self, group, providers, vnet_gw):
-        url = (
-            "resourceGroups/{}/providers/{}/virtualNetworkGateways/{}/providers/"
-            "Microsoft.ResourceHealth/availabilityStatuses/current"
-        )
-        return await self.get_async(
-            url.format(group, providers, vnet_gw), params={"api-version": "2015-01-01"}
-        )
-
-    async def resource_health_view(self):
-        path = "providers/Microsoft.ResourceHealth/availabilityStatuses"
-        return await self.get_async(path, key="value", params={"api-version": "2022-05-01"})
-
-    async def usagedetails(self):
-        yesterday = (NOW - datetime.timedelta(days=1)).strftime("%Y-%m-%d")
-        body = {
-            "type": "ActualCost",
-            "dataSet": {
-                "granularity": "None",
-                "aggregation": {
-                    "totalCost": {"name": "Cost", "function": "Sum"},
-                    "totalCostUSD": {"name": "CostUSD", "function": "Sum"},
-                },
-                "grouping": [
-                    {"type": "Dimension", "name": "ResourceType"},
-                    {"type": "Dimension", "name": "ResourceGroupName"},
-                ],
-                "include": ["Tags"],
-            },
-            "timeframe": "Custom",
-            "timePeriod": {
-                "from": f"{yesterday}T00:00:00+00:00",
-                "to": f"{yesterday}T23:59:59+00:00",
-            },
-        }
-        return await self._query_async(
-            "/providers/Microsoft.CostManagement/query",
-            body=body,
-            # here 10000 might be too high,
-            # but I haven't found any useful documentation.
-            # No "$top" means 1000
-            params={"api-version": "2021-10-01", "$top": "10000"},
-        )
-
-    async def metrics(self, region, resource_ids, params):
-        if self._regional_url is None:
-            raise ValueError("Regional url not configured")
-
-        params["api-version"] = "2023-10-01"
-        try:
-            return await self._request_async(
-                "POST",
-                full_uri=self._regional_url(region) + "/metrics:getBatch",
-                body={"resourceids": resource_ids},
-                params=params,
-                key="values",
-            )
-
-        except ApiError as exc:
-            retry_names = self._get_available_metrics_from_exception(
-                params["metricnames"], exc, params["metricnamespace"]
-            )
-            if retry_names:
-                params["metricnames"] = retry_names
-                return await self._request_async(
-                    "POST",
-                    full_uri=self._regional_url(region) + "/metrics:getBatch",
-                    body={"resourceids": resource_ids},
-                    params=params,
-                    key="values",
-                )
-            return []
 
 
 # The following *Config objects provide a Configuration instance as described in
@@ -1177,7 +542,7 @@ class Section:
         section_options = ":".join(["sep(%d)" % separator, *options])
         self._title = f"<<<{name.replace('-', '_')}:{section_options}>>>\n"
 
-    def formatline(self, tokens):
+    def _formatline(self, tokens):
         return self._sep.join(map(str, tokens)) + "\n"
 
     def add(self, info):
@@ -1185,9 +550,9 @@ class Section:
             return
         if isinstance(info[0], list | tuple):  # we got a list of lines
             for row in info:
-                self._cont.append(self.formatline(row))
+                self._cont.append(self._formatline(row))
         else:  # assume one single line
-            self._cont.append(self.formatline(info))
+            self._cont.append(self._formatline(info))
 
     def write(self, write_empty: bool = False) -> None:
         if not (write_empty or self._cont):
@@ -1199,6 +564,26 @@ class Section:
                 sys.stdout.writelines(self._cont)
             sys.stdout.write("<<<<>>>>\n")
             sys.stdout.flush()
+
+    def __repr__(self) -> str:
+        return (
+            f"Section(\n"
+            f"    title={self._title},\n"
+            f"    piggytargets={self._piggytargets},\n"
+            f"    separator={self._sep},\n"
+            f"    content={self._cont}"
+            f")"
+        )
+
+    def __eq__(self, value):
+        if not isinstance(value, Section):
+            return False
+        return (
+            self._title == value._title
+            and self._piggytargets == value._piggytargets
+            and self._sep == value._sep
+            and self._cont == value._cont
+        )
 
 
 class AzureSection(Section):
@@ -1330,8 +715,16 @@ def get_params_from_azure_id(
 
 
 async def get_frontend_ip_configs(
-    mgmt_client: MgmtApiClient, resource: Mapping
+    mgmt_client: BaseAsyncApiClient, resource: Mapping
 ) -> dict[str, dict[str, object]]:
+    async def _get_public_ip_addresses(
+        mgmt_client: BaseAsyncApiClient, group: str, name: str
+    ) -> Mapping[str, Any]:
+        return await mgmt_client.get_async(
+            f"resourceGroups/{group}/providers/Microsoft.Network/publicIPAddresses/{name}",
+            params={"api-version": "2024-05-01"},
+        )
+
     frontend_ip_configs: dict[str, dict[str, object]] = {}
 
     for ip_config in resource["properties"]["frontendIPConfigurations"]:
@@ -1348,7 +741,7 @@ async def get_frontend_ip_configs(
             _, group, ip_name = get_params_from_azure_id(
                 public_ip_id, resource_types=["publicIPAddresses"]
             )
-            public_ip: Mapping = await mgmt_client.public_ip_view(group, ip_name)
+            public_ip = await _get_public_ip_addresses(mgmt_client, group, ip_name)
             dns_settings = public_ip["properties"].get("dnsSettings")
 
             public_ip_keys = ("ipAddress", "publicIPAllocationMethod")
@@ -1363,18 +756,18 @@ async def get_frontend_ip_configs(
     return frontend_ip_configs
 
 
-def get_routing_rules(app_gateway: Mapping) -> list[Mapping]:
+def _get_routing_rules(request_routing_rules: Mapping) -> Sequence[Mapping]:
     routing_rule_keys = ("httpListener", "backendAddressPool", "backendHttpSettings")
     return [
         {
             "name": r["name"],
             **filter_keys(r["properties"], routing_rule_keys),
         }
-        for r in app_gateway["properties"]["requestRoutingRules"]
+        for r in request_routing_rules
     ]
 
 
-def get_http_listeners(app_gateway: Mapping) -> Mapping[str, Mapping]:
+def _get_http_listeners(http_listeners: Mapping) -> Mapping[str, Mapping]:
     listener_keys = (
         "port",
         "protocol",
@@ -1388,56 +781,179 @@ def get_http_listeners(app_gateway: Mapping) -> Mapping[str, Mapping]:
             "name": l["name"],
             **filter_keys(l["properties"], listener_keys),
         }
-        for l in app_gateway["properties"]["httpListeners"]
+        for l in http_listeners
     }
 
 
-async def process_app_gateway(mgmt_client: MgmtApiClient, resource: AzureResource) -> None:
-    app_gateway = await mgmt_client.app_gateway_view(resource.info["group"], resource.info["name"])
-    frontend_ip_configs = await get_frontend_ip_configs(mgmt_client, app_gateway)
+async def _collect_app_gateways_resources(
+    mgmt_client: BaseAsyncApiClient,
+    monitored_resources_by_id: Mapping[str, AzureResource],
+) -> Sequence[AzureResource]:
+    app_gateways = await mgmt_client.get_async(
+        "providers/Microsoft.Network/applicationGateways",
+        key="value",
+        params={"api-version": "2024-05-01"},
+    )
 
-    resource.info["properties"] = {}
-    resource.info["properties"]["operational_state"] = app_gateway["properties"]["operationalState"]
-    resource.info["properties"]["frontend_api_configs"] = frontend_ip_configs
-    resource.info["properties"]["routing_rules"] = get_routing_rules(app_gateway)
-    resource.info["properties"]["http_listeners"] = get_http_listeners(app_gateway)
+    applications_gateways: list[AzureResource] = []
+    for app_gateway in app_gateways:
+        try:
+            resource = monitored_resources_by_id[app_gateway["id"].lower()]
+        except KeyError:
+            # this can happen because the resource has been filtered out
+            # (for example because it is not in the monitored group configured via --explicit-config)
+            LOGGER.info(
+                "Application gateway not found in monitored resources: %s",
+                app_gateway["id"],
+            )
+            continue
 
-    if (
-        waf_config := app_gateway["properties"].get("webApplicationFirewallConfiguration")
-    ) is not None:
-        resource.info["properties"]["waf_enabled"] = waf_config["enabled"]
+        resource.info["properties"] = {}
+        resource.info["properties"]["operational_state"] = app_gateway["properties"][
+            "operationalState"
+        ]
+        resource.info["properties"]["routing_rules"] = _get_routing_rules(
+            app_gateway["properties"]["requestRoutingRules"]
+        )
+        resource.info["properties"]["http_listeners"] = _get_http_listeners(
+            app_gateway["properties"]["httpListeners"]
+        )
 
-    frontend_ports = {
-        p["id"]: {"port": p["properties"]["port"]}
-        for p in app_gateway["properties"]["frontendPorts"]
-    }
-    resource.info["properties"]["frontend_ports"] = frontend_ports
+        if (
+            waf_config := app_gateway["properties"].get("webApplicationFirewallConfiguration")
+        ) is not None:
+            resource.info["properties"]["waf_enabled"] = waf_config["enabled"]
 
-    backend_settings = {
-        c["id"]: {
-            "name": c["name"],
-            **filter_keys(c["properties"], ("port", "protocol")),
+        frontend_ports = {
+            p["id"]: {"port": p["properties"]["port"]}
+            for p in app_gateway["properties"]["frontendPorts"]
         }
-        for c in app_gateway["properties"]["backendHttpSettingsCollection"]
-    }
-    resource.info["properties"]["backend_settings"] = backend_settings
+        resource.info["properties"]["frontend_ports"] = frontend_ports
 
-    backend_pools = {p["id"]: p for p in app_gateway["properties"]["backendAddressPools"]}
-    resource.info["properties"]["backend_address_pools"] = backend_pools
+        backend_settings = {
+            c["id"]: {
+                "name": c["name"],
+                **filter_keys(c["properties"], ("port", "protocol")),
+            }
+            for c in app_gateway["properties"]["backendHttpSettingsCollection"]
+        }
+        resource.info["properties"]["backend_settings"] = backend_settings
+
+        backend_pools = {p["id"]: p for p in app_gateway["properties"]["backendAddressPools"]}
+        resource.info["properties"]["backend_address_pools"] = backend_pools
+
+        frontend_ip_configs = await get_frontend_ip_configs(mgmt_client, app_gateway)
+        resource.info["properties"]["frontend_api_configs"] = frontend_ip_configs
+
+        applications_gateways.append(resource)
+
+    return applications_gateways
 
 
-def _get_standard_network_interface_config(
-    mgmt_client: MgmtApiClient, nic_id: str
+# TODO: test
+async def process_app_gateways(
+    mgmt_client: BaseAsyncApiClient,
+    monitored_resources_by_id: Mapping[str, AzureResource],
+) -> Sequence[AzureSection]:
+    applications_gateways = await _collect_app_gateways_resources(
+        mgmt_client, monitored_resources_by_id
+    )
+
+    sections = []
+    for resource in applications_gateways:
+        section = AzureSection(resource.section, resource.piggytargets)
+        section.add(resource.dumpinfo())
+        sections.append(section)
+
+    return sections
+
+
+async def _collect_load_balancers_resources(
+    mgmt_client: BaseAsyncApiClient,
+    monitored_resources_by_id: Mapping[str, AzureResource],
+) -> Sequence[AzureResource]:
+    load_balancers_response = await mgmt_client.get_async(
+        "providers/Microsoft.Network/loadBalancers",
+        key="value",
+        params={"api-version": "2024-05-01"},
+    )
+
+    load_balancers_resources: list[AzureResource] = []
+    for load_balancer in load_balancers_response:
+        try:
+            resource = monitored_resources_by_id[load_balancer["id"].lower()]
+        except KeyError:
+            # this can happen because the resource has been filtered out
+            # (for example because it is not in the monitored group configured via --explicit-config)
+            LOGGER.info("Load balancer not found in monitored resources: %s", load_balancer["id"])
+            continue
+
+        try:
+            frontend_ip_configs, inbound_nat_rules, backend_pools = await asyncio.gather(
+                get_frontend_ip_configs(mgmt_client, load_balancer),
+                get_inbound_nat_rules(mgmt_client, load_balancer),
+                get_backend_address_pools(mgmt_client, load_balancer),
+            )
+        except Exception:
+            raise ApiErrorMissingData(
+                f"Failed to collect data for load balancer: {load_balancer['id']}"
+            )
+
+        resource.info["properties"] = {}
+        resource.info["properties"]["frontend_ip_configs"] = frontend_ip_configs
+        resource.info["properties"]["inbound_nat_rules"] = inbound_nat_rules
+        resource.info["properties"]["backend_pools"] = {p["id"]: p for p in backend_pools}
+
+        outbound_rule_keys = ("protocol", "idleTimeoutInMinutes", "backendAddressPool")
+        outbound_rules = [
+            {"name": r["name"], **filter_keys(r["properties"], outbound_rule_keys)}
+            for r in load_balancer["properties"].get("outboundRules", [])
+        ]
+        resource.info["properties"]["outbound_rules"] = outbound_rules
+
+        load_balancers_resources.append(resource)
+
+    return load_balancers_resources
+
+
+# TODO: test
+async def process_load_balancers(
+    mgmt_client: BaseAsyncApiClient,
+    monitored_resources_by_id: Mapping[str, AzureResource],
+) -> Sequence[AzureSection]:
+    load_balancers = await _collect_load_balancers_resources(mgmt_client, monitored_resources_by_id)
+
+    sections = []
+    for resource in load_balancers:
+        section = AzureSection(resource.section, resource.piggytargets)
+        section.add(resource.dumpinfo())
+        sections.append(section)
+
+    return sections
+
+
+async def _get_standard_network_interface_config(
+    mgmt_client: BaseAsyncApiClient, nic_id: str
 ) -> Mapping[str, Mapping]:
     _, group, nic_name, ip_conf_name = get_params_from_azure_id(
         nic_id, resource_types=["networkInterfaces", "ipConfigurations"]
     )
-    return mgmt_client.nic_ip_conf_view(group, nic_name, ip_conf_name)
+    return await mgmt_client.get_async(
+        f"resourceGroups/{group}/providers/Microsoft.Network/networkInterfaces/{nic_name}/ipConfigurations/{ip_conf_name}",
+        params={"api-version": "2022-01-01"},
+    )
 
 
-def _get_vmss_network_interface_config(
-    mgmt_client: MgmtApiClient, nic_id: str
+async def _get_vmss_network_interface_config(
+    mgmt_client: BaseAsyncApiClient, nic_id: str
 ) -> Mapping[str, Mapping]:
+    async def _nic_vmss_ip_conf_view(group, vmss, virtual_machine_index, nic_name, ip_conf_name):
+        return await mgmt_client.get_async(
+            f"resourceGroups/{group}/providers/microsoft.Compute/virtualMachineScaleSets/"
+            f"{vmss}/virtualMachines/{virtual_machine_index}/networkInterfaces/{nic_name}/ipConfigurations/{ip_conf_name}",
+            params={"api-version": "2024-07-01"},
+        )
+
     _, group, vmss, vm_index, nic_name, ip_conf_name = get_params_from_azure_id(
         nic_id,
         resource_types=[
@@ -1447,21 +963,22 @@ def _get_vmss_network_interface_config(
             "ipConfigurations",
         ],
     )
-    return mgmt_client.nic_vmss_ip_conf_view(group, vmss, vm_index, nic_name, ip_conf_name)
+    return await _nic_vmss_ip_conf_view(group, vmss, vm_index, nic_name, ip_conf_name)
 
 
-def get_network_interface_config(mgmt_client: MgmtApiClient, nic_id: str) -> Mapping[str, Mapping]:
+async def get_network_interface_config(
+    mgmt_client: BaseAsyncApiClient, nic_id: str
+) -> Mapping[str, Mapping]:
     if "virtualMachineScaleSets" in nic_id:
-        return _get_vmss_network_interface_config(mgmt_client, nic_id)
+        return await _get_vmss_network_interface_config(mgmt_client, nic_id)
 
-    return _get_standard_network_interface_config(mgmt_client, nic_id)
+    return await _get_standard_network_interface_config(mgmt_client, nic_id)
 
 
 async def get_inbound_nat_rules(
-    mgmt_client: MgmtApiClient, load_balancer: Mapping
+    mgmt_client: BaseAsyncApiClient, load_balancer: Mapping
 ) -> list[dict[str, object]]:
     nat_rule_keys = ("frontendPort", "backendPort", "frontendIPConfiguration")
-    nic_config_keys = ("privateIPAddress", "privateIPAllocationMethod")
 
     inbound_nat_rules: list[dict[str, object]] = []
     for inbound_nat_rule in load_balancer["properties"]["inboundNatRules"]:
@@ -1472,23 +989,35 @@ async def get_inbound_nat_rules(
 
         if "backendIPConfiguration" in inbound_nat_rule.get("properties"):
             ip_config_id = inbound_nat_rule["properties"]["backendIPConfiguration"]["id"]
-            nic_config = get_network_interface_config(mgmt_client, ip_config_id)
 
-            if "name" in nic_config and "properties" in nic_config:
-                nat_rule_data["backend_ip_config"] = {
-                    "name": nic_config["name"],
-                    **filter_keys(nic_config["properties"], nic_config_keys),
-                }
+            if (
+                backend_address_data := await get_backend_address_data(mgmt_client, ip_config_id)
+            ) is not None:
+                nat_rule_data["backend_ip_config"] = backend_address_data
 
         inbound_nat_rules.append(nat_rule_data)
 
     return inbound_nat_rules
 
 
-async def get_backend_address_pools(
-    mgmt_client: MgmtApiClient, load_balancer: Mapping
-) -> list[dict[str, object]]:
+async def get_backend_address_data(
+    mgmt_client: BaseAsyncApiClient, ip_config_id: str
+) -> Mapping[str, object] | None:
     backend_address_keys = ("privateIPAddress", "privateIPAllocationMethod", "primary")
+    nic_config = await get_network_interface_config(mgmt_client, ip_config_id)
+
+    if "name" in nic_config and "properties" in nic_config:
+        backend_address_data = {
+            "name": nic_config["name"],
+            **filter_keys(nic_config["properties"], backend_address_keys),
+        }
+        return backend_address_data
+    return None
+
+
+async def get_backend_address_pools(
+    mgmt_client: BaseAsyncApiClient, load_balancer: Mapping
+) -> list[dict[str, object]]:
     backend_pools: list[dict[str, object]] = []
 
     for backend_pool in load_balancer["properties"]["backendAddressPools"]:
@@ -1498,14 +1027,14 @@ async def get_backend_address_pools(
                 ip_config_id = backend_address["properties"]["networkInterfaceIPConfiguration"][
                     "id"
                 ]
-                nic_config = get_network_interface_config(mgmt_client, ip_config_id)
 
-                if "name" in nic_config and "properties" in nic_config:
-                    backend_address_data = {
-                        "name": nic_config["name"],
-                        **filter_keys(nic_config["properties"], backend_address_keys),
-                    }
-                    backend_addresses.append(backend_address_data)
+                if (
+                    backend_address_data := await get_backend_address_data(
+                        mgmt_client, ip_config_id
+                    )
+                ) is None:
+                    continue
+                backend_addresses.append(backend_address_data)
 
         backend_pools.append(
             {
@@ -1518,36 +1047,17 @@ async def get_backend_address_pools(
     return backend_pools
 
 
-async def process_load_balancer(mgmt_client: MgmtApiClient, resource: AzureResource) -> None:
-    load_balancer = await mgmt_client.load_balancer_view(
-        resource.info["group"], resource.info["name"]
-    )
-    frontend_ip_configs = await get_frontend_ip_configs(mgmt_client, load_balancer)
-    inbound_nat_rules = await get_inbound_nat_rules(mgmt_client, load_balancer)
-    backend_pools = await get_backend_address_pools(mgmt_client, load_balancer)
-
-    resource.info["properties"] = {}
-    resource.info["properties"]["frontend_ip_configs"] = frontend_ip_configs
-    resource.info["properties"]["inbound_nat_rules"] = inbound_nat_rules
-    resource.info["properties"]["backend_pools"] = {p["id"]: p for p in backend_pools}
-
-    outbound_rule_keys = ("protocol", "idleTimeoutInMinutes", "backendAddressPool")
-    outbound_rules = [
-        {"name": r["name"], **filter_keys(r["properties"], outbound_rule_keys)}
-        for r in load_balancer["properties"].get("outboundRules", [])
-    ]
-    resource.info["properties"]["outbound_rules"] = outbound_rules
-
-
 async def get_remote_peerings(
-    mgmt_client: MgmtApiClient, resource: dict
+    mgmt_client: BaseAsyncApiClient, resource: dict
 ) -> Sequence[Mapping[str, object]]:
-    peering_keys = ("name", "peeringState", "peeringSyncLevel")
+    # retrieve the current subscription ID from the virtual network gateway ID
+    vnet_gateway_subscription, *_ = get_params_from_azure_id(resource["id"])
 
+    peering_keys = ("name", "peeringState", "peeringSyncLevel")
     vnet_peerings = []
     for vnet_peering in resource["properties"].get("remoteVirtualNetworkPeerings", []):
         vnet_peering_id = vnet_peering["id"]
-        subscription, group, providers, vnet_id, vnet_peering_id = get_params_from_azure_id(
+        peering_subscription, group, providers, vnet_id, vnet_peering_id = get_params_from_azure_id(
             vnet_peering_id,
             resource_types=[
                 "providers",
@@ -1556,12 +1066,16 @@ async def get_remote_peerings(
             ],
         )
         # skip vNet peerings that belong to another Azure subscription
-        if subscription != mgmt_client.subscription:
+        if peering_subscription != vnet_gateway_subscription:
             continue
 
-        peering_view = await mgmt_client.vnet_peering_view(
-            group, providers, vnet_id, vnet_peering_id
+        peering_view = await mgmt_client.get_async(
+            f"resourceGroups/{group}/providers/{providers}/virtualNetworks/{vnet_id}/virtualNetworkPeerings/{vnet_peering_id}",
+            params={
+                "api-version": "2024-10-01",
+            },
         )
+
         vnet_peering = {
             **filter_keys(peering_view, peering_keys),
             **filter_keys(peering_view["properties"], peering_keys),
@@ -1571,17 +1085,28 @@ async def get_remote_peerings(
     return vnet_peerings
 
 
-async def get_vnet_gw_health(mgmt_client: MgmtApiClient, resource: Mapping) -> Mapping[str, object]:
+async def get_vnet_gw_health(
+    mgmt_client: BaseAsyncApiClient, resource: Mapping
+) -> Mapping[str, object]:
     health_keys = ("availabilityState", "summary", "reasonType", "occuredTime")
 
     _, group, providers, vnet_gw = get_params_from_azure_id(
         resource["id"], resource_types=["providers", "virtualNetworkGateways"]
     )
-    health_view = await mgmt_client.vnet_gateway_health(group, providers, vnet_gw)
+
+    health_view = await mgmt_client.get_async(
+        f"resourceGroups/{group}/providers/{providers}/virtualNetworkGateways/{vnet_gw}/providers/Microsoft.ResourceHealth/availabilityStatuses/current",
+        params={
+            "api-version": "2025-04-01",
+        },
+    )
+
     return filter_keys(health_view["properties"], health_keys)
 
 
-async def process_virtual_net_gw(mgmt_client: MgmtApiClient, resource: AzureResource) -> None:
+async def process_virtual_net_gw(
+    api_client: BaseAsyncApiClient, resource: AzureResource
+) -> AzureSection:
     gw_keys = (
         "bgpSettings",
         "disableIPSecReplayProtection",
@@ -1591,54 +1116,214 @@ async def process_virtual_net_gw(mgmt_client: MgmtApiClient, resource: AzureReso
         "enableBgp",
     )
 
-    gw_view = await mgmt_client.vnet_gateway_view(resource.info["group"], resource.info["name"])
+    gw_view = await api_client.get_async(
+        f"resourceGroups/{resource.info['group']}/providers/Microsoft.Network/virtualNetworkGateways/{resource.info['name']}",
+        params={
+            "api-version": "2024-05-01",
+        },
+    )
+
     resource.info["specific_info"] = filter_keys(gw_view["properties"], gw_keys)
 
-    resource.info["properties"] = {}
-    resource.info["properties"]["remote_vnet_peerings"] = await get_remote_peerings(
-        mgmt_client, gw_view
+    vnet_peerings, vnet_health = await asyncio.gather(
+        get_remote_peerings(api_client, gw_view),
+        get_vnet_gw_health(api_client, gw_view),
     )
-    resource.info["properties"]["health"] = await get_vnet_gw_health(mgmt_client, gw_view)
+    resource.info["properties"] = {
+        "remote_vnet_peerings": vnet_peerings,
+        "health": vnet_health,
+    }
 
-
-async def process_recovery_services_vaults(
-    mgmt_client: MgmtApiClient, resource: AzureResource
-) -> None:
-    backup_keys = (
-        "friendlyName",
-        "backupManagementType",
-        "protectedItemType",
-        "lastBackupTime",
-        "lastBackupStatus",
-        "protectionState",
-        "protectionStatus",
-        "policyName",
-        "isArchiveEnabled",
+    section = AzureSection(
+        FetchedResource.virtual_network_gateways.section,
+        resource.piggytargets,
     )
-    backup_view = await mgmt_client.backup_containers_view(
-        resource.info["group"], resource.info["name"]
-    )
+    section.add(resource.dumpinfo())
 
-    backup_containers = [filter_keys(b["properties"], backup_keys) for b in backup_view["value"]]
-    resource.info["properties"] = {}
-    resource.info["properties"]["backup_containers"] = backup_containers
+    return section
 
 
-class MetricCache(DataCache):
+class AzureAsyncCache(DataCache):
+    # Semaphore introduced to not reach the maximum number of open files error.
+    # A sempahore should be enough, no need for locks here
+    # since the files are saved per subscription/region/resource type
+    # and the queries are also done per region and resource type
+    _open_cache_semaphore = asyncio.Semaphore(10)
+
+    async def get_cached_data(self):
+        async with AzureAsyncCache._open_cache_semaphore:
+            cached_data = super().get_cached_data()
+        return cached_data
+
+    async def _write_to_cache(self, data):
+        async with AzureAsyncCache._open_cache_semaphore:
+            super()._write_to_cache(data)
+
+    def get_validity_from_args(self, *args: Any) -> bool:
+        return True
+
+    async def get_data(self, *args, **kwargs):
+        use_cache = kwargs.pop("use_cache", True)
+        if use_cache and self.get_validity_from_args(*args) and self._cache_is_valid():
+            try:
+                LOGGER.debug("Reading data from cache: %s", self._cache_file)
+                return await self.get_cached_data()
+            except (OSError, ValueError) as exc:
+                LOGGER.error("Getting live data (failed to read from cache: %s).", exc)
+                if self.debug:
+                    raise
+
+        live_data = await self.get_live_data(*args)
+        try:
+            await self._write_to_cache(live_data)
+        except (OSError, TypeError) as exc:
+            LOGGER.error("Failed to write data to cache file: %s", exc)
+            if self.debug:
+                raise
+        return live_data
+
+
+class UsageDetailsCache(AzureAsyncCache):
+    # Microsoft.CostManagement API has a very strict (not well documented) rate limit
+    # this is an attempt to handle it
+    # with this lock we actually sequentialize the requests to the API "between subscriptions"
+    # the lock gives the time to recover from a reached-rate-limit, retry the query,
+    # and move to the next subscription
+    _cost_query_lock = asyncio.Lock()
+
+    def __init__(
+        self,
+        *,
+        subscription: str,
+        cache_id: str,
+        debug: bool = False,
+    ) -> None:
+        self._subscription = subscription
+        metric_names = "usage_details"
+        self._cache_path = AZURE_CACHE_FILE_PATH / cache_id / subscription / metric_names
+        super().__init__(
+            self._cache_path,
+            metric_names,
+            debug=debug,
+        )
+
+    @property
+    def cache_interval(self) -> int:
+        return 60 * 60 * 4
+
+    async def _get_live_data(self, *args: Any) -> Any:
+        mgmt_client: BaseAsyncApiClient = args[0]
+
+        yesterday = (NOW - datetime.timedelta(days=1)).strftime("%Y-%m-%d")
+        body = {
+            "type": "ActualCost",
+            "dataSet": {
+                "granularity": "None",
+                "aggregation": {
+                    "totalCost": {"name": "Cost", "function": "Sum"},
+                    "totalCostUSD": {"name": "CostUSD", "function": "Sum"},
+                },
+                "grouping": [
+                    {"type": "Dimension", "name": "ResourceType"},
+                    {"type": "Dimension", "name": "ResourceGroupName"},
+                ],
+                "include": ["Tags"],
+            },
+            "timeframe": "Custom",
+            "timePeriod": {
+                "from": f"{yesterday}T00:00:00+00:00",
+                "to": f"{yesterday}T23:59:59+00:00",
+            },
+        }
+
+        LOGGER.debug("Getting live data for usage details. - sub: %s", self._subscription)
+        json_data = await mgmt_client.request_async(
+            "POST",
+            "/providers/Microsoft.CostManagement/query",
+            body=body,
+            params={"api-version": "2025-03-01"},
+            custom_headers={"ClientType": "monitoring-client-type"},
+            raise_for_rate_limit=True,
+        )
+
+        # since data is nested in "properties" and "columns" we need to
+        # paginate here in a specific way
+
+        data = mgmt_client.lookup_json_data(json_data, "properties")
+        columns = mgmt_client.lookup_json_data(data, "columns")
+        rows = mgmt_client.lookup_json_data(data, "rows")
+
+        while next_link := data.get("nextLink"):
+            new_json_data = await mgmt_client.request_async(
+                "POST", full_uri=next_link, body=body, raise_for_rate_limit=True
+            )
+            data = mgmt_client.lookup_json_data(new_json_data, "properties")
+            rows += mgmt_client.lookup_json_data(data, "rows")
+
+        common_metadata = {k: v for k, v in json_data.items() if k != "properties"}
+        processed_query = _process_query_id(columns, rows, common_metadata)
+        return processed_query
+
+    async def get_live_data(self, *args: Any) -> Any:
+        async with UsageDetailsCache._cost_query_lock:
+            while True:
+                try:
+                    return await self._get_live_data(*args)
+                except RateLimitException as exc:
+                    retry_after_str = exc.context.get(
+                        "x-ms-ratelimit-microsoft.costmanagement-entity-retry-after", None
+                    )
+                    remaining_tenant_requests_str = exc.context.get(
+                        "x-ms-ratelimit-remaining-microsoft.costmanagement-tenant-requests", None
+                    )
+                    if retry_after_str is None or remaining_tenant_requests_str is None:
+                        raise ApiError(
+                            "Rate limit information not available in the response headers."
+                        ) from exc
+
+                    retry_after = int(retry_after_str)
+                    if isinstance(remaining_tenant_requests_str, str):  # make mypy happy
+                        remaining_tenant_requests = int(
+                            remaining_tenant_requests_str.strip("DefaultQuota:")
+                        )
+
+                    if remaining_tenant_requests <= 0 or retry_after > 10:
+                        LOGGER.warning(
+                            "Rate limit exceeded for Microsoft.CostManagement API. "
+                            "Received a 'retry after' of %d seconds. Remaining requests: %s - Sub: %s",
+                            retry_after,
+                            remaining_tenant_requests,
+                            self._subscription,
+                        )
+                        raise ApiError("Rate limit exceeded for Microsoft.CostManagement API.")
+                    else:
+                        LOGGER.warning(
+                            "Rate limit exceeded for Microsoft.CostManagement API. "
+                            "Received a 'retry after' of %d seconds. Remaining requests: %s - Sub: %s",
+                            retry_after,
+                            remaining_tenant_requests,
+                            self._subscription,
+                        )
+                        await asyncio.sleep(retry_after + 1)
+
+
+class MetricCache(AzureAsyncCache):
     def __init__(
         self,
         *,
         metric_definition: tuple[str, str, str],
         resource_type: str,
         region: str,
+        subscription: str,
         cache_id: str,
         ref_time: datetime.datetime,
         debug: bool = False,
     ) -> None:
         self.metric_definition = metric_definition
         metric_names = metric_definition[0]
+        self._cache_path = self.get_cache_path(cache_id, resource_type, region, subscription)
         super().__init__(
-            self.get_cache_path(cache_id, resource_type, region),
+            self._cache_path,
             metric_names,
             debug=debug,
         )
@@ -1657,20 +1342,59 @@ class MetricCache(DataCache):
         self.end_time = ref_time.strftime("%Y-%m-%dT%H:%M:%SZ")
 
     @staticmethod
-    def get_cache_path(cache_id: str, resource_type: str, region: str) -> Path:
+    def get_cache_path(cache_id: str, resource_type: str, region: str, subscription: str) -> Path:
         valid_chars = f"-_.() {string.ascii_letters}{string.digits}"
         subdir = "".join(c if c in valid_chars else "_" for c in f"{region}_{resource_type}")
-        return AZURE_CACHE_FILE_PATH / cache_id / subdir
+        return AZURE_CACHE_FILE_PATH / cache_id / subscription / subdir
 
     @property
     def cache_interval(self) -> int:
         return self.timedelta.seconds
 
-    def get_validity_from_args(self, *args: Any) -> bool:
-        return True
+    @staticmethod
+    def _get_available_metrics_from_exception(
+        desired_names: str, api_error: ApiError, resource_type: str
+    ) -> str | None:
+        match = re.match(
+            r"Failed to find metric configuration for provider.*Valid metrics: ([\w,]*)",
+            api_error.args[0],
+        )
+        if not match:
+            raise api_error
+
+        available_names = match.groups()[0]
+        retry_names = set(desired_names.split(",")) & set(available_names.split(","))
+        if not retry_names:
+            LOGGER.debug("None of the expected metrics are available for %s", resource_type)
+            return None
+
+        return ",".join(sorted(retry_names))
+
+    async def _get_metrics(self, api_client, region, resource_ids, params):
+        regional_url = api_client.build_regional_url(region, "/metrics:getBatch")
+
+        async def _query_metrics(specific_params):
+            return await api_client.request_async(
+                "POST",
+                full_uri=regional_url,
+                body={"resourceids": resource_ids},
+                params=specific_params,
+                key="values",
+            )
+
+        params["api-version"] = "2023-10-01"
+        try:
+            return await _query_metrics(params)
+        except ApiError as exc:
+            if retry_names := self._get_available_metrics_from_exception(
+                params["metricnames"], exc, params["metricnamespace"]
+            ):
+                params["metricnames"] = retry_names
+                return await _query_metrics(params)
+            return []
 
     async def get_live_data(self, *args: Any) -> Any:
-        mgmt_client: MgmtApiClient = args[0]
+        mgmt_client: BaseAsyncApiClient = args[0]
         region: str = args[1]
         resource_ids: Sequence[str] = args[2]
         resource_type: str = args[3]
@@ -1689,7 +1413,7 @@ class MetricCache(DataCache):
 
         raw_metrics = []
         for chunk in _chunks(resource_ids):
-            raw_metrics += await mgmt_client.metrics(region, chunk, params)
+            raw_metrics += await self._get_metrics(mgmt_client, region, chunk, params)
 
         metrics = defaultdict(list)
 
@@ -1711,71 +1435,51 @@ class MetricCache(DataCache):
 
         return metrics
 
-    async def get_data_async(self, *args, **kwargs):
-        use_cache = kwargs.pop("use_cache", True)
-        if use_cache and self.get_validity_from_args(*args) and self._cache_is_valid():
-            try:
-                return self.get_cached_data()
-            except (OSError, ValueError) as exc:
-                logging.info("Getting live data (failed to read from cache: %s).", exc)
-                if self.debug:
-                    raise
 
-        live_data = await self.get_live_data(*args)
-        try:
-            self._write_to_cache(live_data)
-        except (OSError, TypeError) as exc:
-            logging.info("Failed to write data to cache file: %s", exc)
-            if self.debug:
-                raise
-        return live_data
+async def process_users(graph_api_client: BaseAsyncApiClient) -> AzureSection:
+    users_count = await graph_api_client.request_async(
+        "GET",
+        uri_end="users",
+        params={"$top": 1, "$count": "true"},
+        key="@odata.count",
+        custom_headers={"ConsistencyLevel": "eventual"},
+    )
+    section = AzureSection("ad")
+    section.add(["users_count", users_count])
+
+    return section
 
 
-def write_section_ad(
-    graph_client: GraphApiClient, section: AzureSection, args: argparse.Namespace
-) -> None:
-    enabled_services = set(args.services)
-    # users
-    if "users_count" in enabled_services:
-        users = graph_client.users()
-        section.add(["users_count", len(users)])
+async def process_organization(graph_api_client: BaseAsyncApiClient) -> AzureSection:
+    orgs = await graph_api_client.get_async("organization", key="value")
+    section = AzureSection("ad")
+    section.add(["ad_connect", json.dumps(orgs, sort_keys=True)])
 
-    # organization
-    if "ad_connect" in enabled_services:
-        orgas = graph_client.organization()
-        section.add(["ad_connect", json.dumps(orgas)])
-
-    section.write()
+    return section
 
 
-def write_section_app_registrations(graph_client: GraphApiClient, args: argparse.Namespace) -> None:
-    if "app_registrations" not in args.services:
-        return
+async def process_app_registrations(graph_api_client: BaseAsyncApiClient) -> AzureSection:
+    apps = await graph_api_client.get_async(
+        "applications", key="value", next_page_key="@odata.nextLink"
+    )
+
+    key_subset = {"id", "appId", "displayName", "passwordCredentials"}
+    apps = [{k: app[k] for k in key_subset} for app in apps if app["passwordCredentials"]]
 
     section = AzureSection("app_registration", separator=0)
-
-    # app registration with client secrets
-    apps = graph_client.applications()
     for app_reg in apps:
-        section.add([json.dumps(app_reg)])
+        section.add([json.dumps(app_reg, sort_keys=True)])
 
-    section.write()
-
-
-async def process_old_metrics(
-    mgmt_client: MgmtApiClient, resources: Sequence[AzureResource], args: Args
-) -> None:
-    resources = [
-        resource for resource in resources if resource.info["type"] not in METRICS_GATHERED_ASYNC
-    ]
-
-    await process_metrics(mgmt_client, resources, args)
+    return section
 
 
 async def process_metrics(
-    mgmt_client: MgmtApiClient, resources: Sequence[AzureResource], args: Args
+    mgmt_client: BaseAsyncApiClient,
+    subscription: str,
+    resources: Sequence[AzureResource],
+    args: Args,
 ) -> None:
-    errors = await _gather_metrics(mgmt_client, resources, args)
+    errors = await _gather_metrics(mgmt_client, subscription, resources, args)
 
     if not errors:
         return
@@ -1785,8 +1489,12 @@ async def process_metrics(
     agent_info_section.write()
 
 
+# TODO: to test
 async def _gather_metrics(
-    mgmt_client: MgmtApiClient, all_resources: Sequence[AzureResource], args: Args
+    mgmt_client: BaseAsyncApiClient,
+    subscription: str,
+    all_resources: Sequence[AzureResource],
+    args: Args,
 ) -> IssueCollector:
     """
     Gather metrics for all resources. Metrics are collected per resource type, region, metric
@@ -1801,8 +1509,11 @@ async def _gather_metrics(
             resource.info["id"]
         )
 
-    for group, resource_ids in grouped_resource_ids.items():
-        resource_type, resource_region = group
+    tasks = set()
+    for (resource_type, resource_region), resource_ids in grouped_resource_ids.items():
+        if resource_type == FetchedResource.virtual_machines.type:
+            if args.piggyback_vms != "self":
+                continue
 
         metric_definitions = ALL_METRICS.get(resource_type, [])
         for metric_definition in metric_definitions:
@@ -1810,12 +1521,14 @@ async def _gather_metrics(
                 metric_definition=metric_definition,
                 resource_type=resource_type,
                 region=resource_region,
+                subscription=subscription,
                 cache_id=args.cache_id,
                 ref_time=NOW,
                 debug=args.debug,
             )
-            try:
-                metrics = await cache.get_data_async(
+
+            tasks.add(
+                cache.get_data(
                     mgmt_client,
                     resource_region,
                     resource_ids,
@@ -1823,21 +1536,25 @@ async def _gather_metrics(
                     err,
                     use_cache=cache.cache_interval > 60,
                 )
+            )
 
-                for resource_id, resource_metrics in metrics.items():
-                    if (metric_resource := resource_dict.get(resource_id)) is not None:
-                        metric_resource.metrics += resource_metrics
-                    else:
-                        LOGGER.info(
-                            "Resource %s found in metrics cache no longer monitored",
-                            resource_id,
-                        )
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    for result in results:
+        if isinstance(result, BaseException):
+            if args.debug:
+                raise result
+            err.add("exception", "metric collection", str(result))
+            LOGGER.exception(result)
+            continue
 
-            except ApiError as exc:
-                if args.debug:
-                    raise
-                err.add("exception", "metric collection", str(exc))
-                LOGGER.exception(exc)
+        for resource_id, metrics in result.items():
+            if (resource_metric := resource_dict.get(resource_id)) is not None:
+                resource_metric.metrics += metrics
+            else:
+                LOGGER.info(
+                    "Resource %s found in metrics cache no longer monitored",
+                    resource_id,
+                )
 
     return err
 
@@ -1856,60 +1573,18 @@ def get_vm_labels_section(vm: AzureResource, group_labels: GroupLabels) -> Label
     return labels_section
 
 
-async def process_resource(
-    mgmt_client: MgmtApiClient,
-    resource: AzureResource,
-    args: Args,
-) -> Sequence[Section]:
-    sections: list[Section] = []
-    enabled_services = set(args.services)
-    resource_type = resource.info.get("type")
-    if resource_type not in enabled_services:
-        return sections
-
-    if resource_type in METRICS_GATHERED_ASYNC:
-        return sections
-
-    if resource_type == "Microsoft.Network/applicationGateways":
-        await process_app_gateway(mgmt_client, resource)
-    elif resource_type == "Microsoft.RecoveryServices/vaults":
-        await process_recovery_services_vaults(mgmt_client, resource)
-    elif resource_type == "Microsoft.Network/virtualNetworkGateways":
-        await process_virtual_net_gw(mgmt_client, resource)
-    elif resource_type == "Microsoft.Network/loadBalancers":
-        await process_load_balancer(mgmt_client, resource)
-    elif resource_type in SUPPORTED_FLEXIBLE_DATABASE_SERVER_RESOURCE_TYPES:
-        resource.section = "servers"  # use the same section as for single servers
-
-    section = AzureSection(resource.section, resource.piggytargets)
-    section.add(resource.dumpinfo())
-    sections.append(section)
-
-    return sections
-
-
-async def process_resources(
-    mgmt_client: MgmtApiClient,
-    resources: Sequence[AzureResource],
-    args: Args,
-) -> AsyncIterator[Sequence[Section]]:
-    for resource in resources:
-        try:
-            yield await process_resource(mgmt_client, resource, args)
-        except Exception as exc:
-            if args.debug:
-                raise
-            write_exception_to_agent_info_section(exc, "Management client")
-
-
 async def get_group_labels(
-    mgmt_client: MgmtApiClient,
+    mgmt_client: BaseAsyncApiClient,
     monitored_groups: Sequence[str],
     tag_key_pattern: TagsOption,
 ) -> GroupLabels:
     group_labels: dict[str, dict[str, str]] = {}
 
-    for group in await mgmt_client.resourcegroups():
+    resource_groups = await mgmt_client.get_async(
+        "resourcegroups", key="value", params={"api-version": "2019-05-01"}
+    )
+
+    for group in resource_groups:
         name = group["name"].lower()
 
         if tag_key_pattern == TagsImportPatternOption.ignore_all:
@@ -1966,6 +1641,8 @@ def write_to_agent_info_section(message: str, component: str, status: int) -> No
 
 
 def write_exception_to_agent_info_section(exception, component):
+    LOGGER.warning("Writing exception for component %s:\n %s", component, exception)
+
     # those exceptions are quite noisy. try to make them more concise:
     msg = str(exception).split("Trace ID", 1)[0]
     msg = msg.split(":", 2)[-1].strip(" ,")
@@ -1976,26 +1653,67 @@ def write_exception_to_agent_info_section(exception, component):
     write_to_agent_info_section(msg, component, 2)
 
 
-def main_graph_client(args: Args) -> None:
-    graph_client = GraphApiClient(
-        _get_graph_authority_urls(args.authority),
-        deserialize_http_proxy_config(args.proxy),
-    )
+async def main_graph_client(args: Args, monitored_services: set[str]) -> None:
+    tasks_map = {
+        "users_count": process_users,
+        "ad_connect": process_organization,
+        "app_registrations": process_app_registrations,
+    }
+    if not any(service in monitored_services for service in tasks_map):
+        return
+
+    def _handle_graph_client_exception(exc: Exception, debug: bool) -> None:
+        if isinstance(exc, ApiLoginFailed | ApiErrorAuthorizationRequestDenied):
+            # We are not raising the exception in debug mode.
+            # Having no permissions for the graph API is a legit configuration
+            write_exception_to_agent_info_section(exc, "Graph client (async)")
+        elif debug:
+            raise exc
+        else:
+            write_exception_to_agent_info_section(exc, "Graph client (async)")
+
     try:
-        graph_client.login(args.tenant, args.client, args.secret)
-        write_section_ad(graph_client, AzureSection("ad"), args)
-        write_section_app_registrations(graph_client, args)
-    except (ApiLoginFailed, ApiErrorAuthorizationRequestDenied) as exc:
-        # We are not raising the exception in debug mode.
-        # Having no permissions for the graph API is a legit configuration
-        write_exception_to_agent_info_section(exc, "Graph client")
+        async with BaseAsyncApiClient(
+            get_graph_authority_urls(args.authority),
+            deserialize_http_proxy_config(args.proxy),
+            tenant=args.tenant,
+            client=args.client,
+            secret=args.secret,
+        ) as graph_client:
+            tasks = {
+                task_call(graph_client)
+                for service, task_call in tasks_map.items()
+                if service in monitored_services
+            }
+
+            for coroutine in asyncio.as_completed(tasks):
+                try:
+                    section = await coroutine
+                    section.write()
+                except Exception as exc:
+                    _handle_graph_client_exception(exc, args.debug)
+
     except Exception as exc:
-        if args.debug:
-            raise
-        write_exception_to_agent_info_section(exc, "Graph client")
+        _handle_graph_client_exception(exc, args.debug)
 
 
-async def get_usage_data(client: MgmtApiClient, args: Args) -> Sequence[Mapping[str, Any]]:
+def _process_query_id(columns, rows, common_metadata):
+    processed_query = []
+    column_names = [c["name"] for c in columns]
+    for index, row in enumerate(rows):
+        processed_row = common_metadata.copy()
+        # each entry should have a different name because the agent expects this value to be
+        # different for each resource but in case of a query the "name" is the id of the
+        # query so we replace it with a different name for each query result
+        processed_row["name"] = f"{processed_row['name']}-{index}"
+        processed_row["properties"] = dict(zip(column_names, row))
+        processed_query.append(processed_row)
+    return processed_query
+
+
+async def get_usage_data(
+    client: BaseAsyncApiClient, subscription: str, args: Args
+) -> Sequence[dict[str, Any]]:
     NO_CONSUMPTION_API = (
         "offer MS-AZR-0145P",
         "offer MS-AZR-0146P",
@@ -2010,23 +1728,22 @@ async def get_usage_data(client: MgmtApiClient, args: Args) -> Sequence[Mapping[
     LOGGER.debug("get usage details")
 
     try:
-        usage_data = await client.usagedetails()
+        usage_data = await UsageDetailsCache(
+            subscription=subscription,
+            cache_id=args.cache_id,
+            debug=args.debug,
+        ).get_data(client, use_cache=True)
     except ApiError as exc:
         if any(s in exc.args[0] for s in NO_CONSUMPTION_API):
             raise NoConsumptionAPIError
         raise
 
     LOGGER.debug("yesterdays usage details: %d", len(usage_data))
-
-    for usage in usage_data:
-        usage["type"] = "Microsoft.Consumption/usageDetails"
-        usage["group"] = usage["properties"]["ResourceGroupName"]
-
     return usage_data
 
 
 def write_usage_section(
-    usage_data: Sequence[Mapping[str, Any]],
+    usage_data: Sequence[dict[str, Any]],
     monitored_groups: list[str],
     tag_key_pattern: TagsOption,
 ) -> None:
@@ -2034,6 +1751,10 @@ def write_usage_section(
         AzureSection("usagedetails", monitored_groups + [""]).write(write_empty=True)
 
     for usage in usage_data:
+        # fill "resource" mandatory information
+        usage["type"] = "Microsoft.Consumption/usageDetails"
+        usage["group"] = usage["properties"]["ResourceGroupName"]
+
         usage_resource = AzureResource(usage, tag_key_pattern)
         piggytargets = [g for g in usage_resource.piggytargets if g in monitored_groups] + [""]
 
@@ -2042,14 +1763,11 @@ def write_usage_section(
         section.write()
 
 
-async def usage_details(
-    mgmt_client: MgmtApiClient, monitored_groups: list[str], args: Args
+async def process_usage_details(
+    mgmt_client: BaseAsyncApiClient, subscription: str, monitored_groups: list[str], args: Args
 ) -> None:
-    if "usage_details" not in args.services:
-        return
-
     try:
-        usage_section = await get_usage_data(mgmt_client, args)
+        usage_section = await get_usage_data(mgmt_client, subscription, args)
         if not usage_section:
             write_to_agent_info_section(
                 "Azure API did not return any usage details", "Usage client", 0
@@ -2065,44 +1783,50 @@ async def usage_details(
     except Exception as exc:
         if args.debug:
             raise
-        LOGGER.warning("%s", exc)
         write_exception_to_agent_info_section(exc, "Usage client")
         write_usage_section([], monitored_groups, args.tag_key_pattern)
 
 
-def _get_monitored_resource(
-    resource_id: str,
-    monitored_resources: Sequence[AzureResource],
-    args: Args,
-) -> AzureResource | None:
-    for resource in monitored_resources:
-        # different endpoints deliver ids in different case
-        if resource_id.lower() == resource.info["id"].lower():
-            return resource if resource.info["type"] in args.services else None
-
-    return None
-
-
 async def process_resource_health(
-    mgmt_client: MgmtApiClient, monitored_resources: Sequence[AzureResource], args: Args
+    mgmt_client: BaseAsyncApiClient,
+    monitored_resources_by_id: Mapping[str, AzureResource],
+    monitored_groups: Sequence[str],
+    debug: bool,
 ) -> Sequence[AzureSection]:
-    try:
-        resource_health_view = await mgmt_client.resource_health_view()
-    except Exception as exc:
-        if args.debug:
-            raise
-        write_exception_to_agent_info_section(exc, "Management client")
-        return []
+    multi_response = await asyncio.gather(
+        *(
+            mgmt_client.get_async(
+                f"/resourceGroups/{resource_group}/providers/Microsoft.ResourceHealth/availabilityStatuses",
+                params={
+                    "api-version": "2025-05-01",
+                    "$top": "1000",  # retrieves up to 1000 (still not clear what) per request
+                },
+                key="value",
+            )
+            for resource_group in monitored_groups
+        ),
+        return_exceptions=True,
+    )
 
-    return _write_resource_health_section(resource_health_view, monitored_resources, args)
+    health_values: list[ResourceHealth] = []
+    for response in multi_response:
+        if isinstance(response, BaseException):
+            if debug:
+                raise response
+            write_exception_to_agent_info_section(response, "Resource Health client")
+            continue
+        health_values.extend(response)
+
+    return _get_resource_health_sections(health_values, monitored_resources_by_id)
 
 
+# TODO: test
 async def process_virtual_machines(
-    api_client: MgmtApiClient,
+    api_client: BaseAsyncApiClient,
     args: Args,
     group_labels: GroupLabels,
-    resources: Mapping[str, AzureResource],
-) -> None:
+    monitored_resources_by_id: Mapping[str, AzureResource],
+) -> Sequence[AzureSection]:
     response = await api_client.get_async(
         "providers/Microsoft.Compute/virtualMachines",
         params={
@@ -2115,11 +1839,12 @@ async def process_virtual_machines(
     virtual_machines: list[AzureResource] = []
     for vm in response:
         try:
-            resource = resources[vm["id"].lower()]
+            resource = monitored_resources_by_id[vm["id"].lower()]
         except KeyError:
-            raise ApiErrorMissingData(
-                f"Virtual machine not found in monitored resources: {vm['id']}"
-            )
+            # this can happen because the resource has been filtered out
+            # (for example because it is not in the monitored group configured via --explicit-config)
+            LOGGER.info("Virtual machine not found in monitored resources: %s", vm["id"])
+            continue
 
         try:
             statuses = vm.pop("properties")["instanceView"]["statuses"]
@@ -2129,9 +1854,7 @@ async def process_virtual_machines(
         resource.info["specific_info"] = {"statuses": statuses}
         virtual_machines.append(resource)
 
-    if args.piggyback_vms == "self":
-        await process_metrics(api_client, virtual_machines, args)
-
+    sections = []
     for resource in virtual_machines:
         if args.piggyback_vms == "self":
             labels_section = get_vm_labels_section(resource, group_labels)
@@ -2142,7 +1865,54 @@ async def process_virtual_machines(
             [resource.info["name"] if args.piggyback_vms == "self" else resource.info["group"]],
         )
         section.add(resource.dumpinfo())
-        section.write()
+        sections.append(section)
+
+    return sections
+
+
+# TODO: test
+async def process_vault(
+    api_client: BaseAsyncApiClient,
+    resource: AzureResource,
+) -> AzureSection:
+    vault_properties = (
+        "friendlyName",
+        "backupManagementType",
+        "protectedItemType",
+        "lastBackupTime",
+        "lastBackupStatus",
+        "protectionState",
+        "protectionStatus",
+        "policyName",
+        "isArchiveEnabled",
+    )
+
+    response = await api_client.get_async(
+        f"resourceGroups/{resource.info['group']}/providers/Microsoft.RecoveryServices/vaults/{resource.info['name']}/backupProtectedItems",
+        params={
+            "api-version": "2025-02-01",
+        },
+        key="value",
+    )
+
+    try:
+        properties = filter_keys(response[0]["properties"], vault_properties)
+    except KeyError:
+        write_exception_to_agent_info_section(
+            ApiErrorMissingData("Vault properties must be present"), "Vaults"
+        )
+        raise ApiErrorMissingData("Vault properties must be present")
+
+    resource.info["properties"] = {}
+    resource.info["properties"]["backup_containers"] = [properties]
+
+    section = AzureSection(
+        FetchedResource.vaults.section,
+        resource.piggytargets,
+    )
+    section.add(resource.dumpinfo())
+
+    return section
 
 
 class ResourceHealth(TypedDict, total=False):
@@ -2150,10 +1920,9 @@ class ResourceHealth(TypedDict, total=False):
     properties: Required[Mapping[str, str]]
 
 
-def _write_resource_health_section(
-    resource_health_view: list[ResourceHealth],
-    monitored_resources: Sequence[AzureResource],
-    args: Args,
+def _get_resource_health_sections(
+    resource_health_view: Sequence[ResourceHealth],
+    resources_by_id: Mapping[str, AzureResource],
 ) -> Sequence[AzureSection]:
     health_section: defaultdict[str, list[str]] = defaultdict(list)
 
@@ -2162,7 +1931,9 @@ def _write_resource_health_section(
         _, group = get_params_from_azure_id(health_id)
         resource_id = "/".join(health_id.split("/")[:-4])
 
-        if (resource := _get_monitored_resource(resource_id, monitored_resources, args)) is None:
+        try:
+            resource = resources_by_id[resource_id.lower()]
+        except KeyError:
             continue
 
         health_data = {
@@ -2187,158 +1958,277 @@ def _write_resource_health_section(
     return sections
 
 
-def _test_connection(args: Args, subscription: str) -> int | tuple[int, str]:
+async def _test_connection(args: Args) -> int:
     """We test the connection only via the Management API client, not via the Graph API client.
     The Graph API client is used for three specific services, which are disabled in the default
     setup when configured via the UI.
     The Management API client is used for all other services, so we assume here that this is the
     connection that's essential for the vast majority of setups."""
-    mgmt_client = MgmtApiClient(
-        _get_mgmt_authority_urls(args.authority, subscription),
-        deserialize_http_proxy_config(args.proxy),
-        subscription,
-    )
+
     try:
-        mgmt_client.login(args.tenant, args.client, args.secret)
+        async with BaseAsyncApiClient(
+            get_mgmt_authority_urls(args.authority, ""),
+            deserialize_http_proxy_config(args.proxy),
+            tenant=args.tenant,
+            client=args.client,
+            secret=args.secret,
+        ):
+            # we just need to authenticate
+            ...
     except (ApiLoginFailed, ValueError) as exc:
         error_msg = f"Connection failed with: {exc}\n"
         sys.stdout.write(error_msg)
-        return 2, error_msg
+        return 2
     except requests.exceptions.ProxyError as exc:
         error_msg = f"Connection failed due to a proxy error: {exc}\n"
         sys.stdout.write(error_msg)
-        return 2, error_msg
+        return 2
     return 0
 
 
-async def process_resources_async(
-    mgmt_client: MgmtApiClient,
+def get_bulk_tasks(
+    mgmt_client: BaseAsyncApiClient,
     args: Args,
     group_labels: GroupLabels,
-    monitored_resources: Sequence[AzureResource],
-) -> None:
+    monitored_services: set[str],
+    monitored_resources_by_id: Mapping[str, AzureResource],
+) -> Iterator[asyncio.Task]:
+    if FetchedResource.virtual_machines.type in monitored_services:
+        yield asyncio.create_task(
+            process_virtual_machines(mgmt_client, args, group_labels, monitored_resources_by_id)
+        )
+    if FetchedResource.app_gateways.type in monitored_services:
+        yield asyncio.create_task(process_app_gateways(mgmt_client, monitored_resources_by_id))
+    if FetchedResource.load_balancers.type in monitored_services:
+        yield asyncio.create_task(process_load_balancers(mgmt_client, monitored_resources_by_id))
+
+
+# TODO: test
+async def process_single_resources(
+    mgmt_client: BaseAsyncApiClient,
+    args: Args,
+    monitored_resources_by_id: Mapping[str, AzureResource],
+) -> Sequence[Section]:
+    sections = []
     tasks = set()
+    for _resource_id, resource in monitored_resources_by_id.items():
+        resource_type = resource.info["type"]
+        if resource_type in BULK_QUERIED_RESOURCES:
+            continue
 
-    monitored_types = {
-        type_ for r in monitored_resources if (type_ := r.info["type"]) in args.services
-    }
-    resources_by_id = {
-        r.info["id"].lower(): r for r in monitored_resources if r.info["type"] in monitored_types
+        if resource_type == FetchedResource.vaults.type:
+            tasks.add(process_vault(mgmt_client, resource))
+        elif resource_type == FetchedResource.virtual_network_gateways.type:
+            tasks.add(process_virtual_net_gw(mgmt_client, resource))
+        else:
+            # simple sections without further processing
+            if resource_type in SUPPORTED_FLEXIBLE_DATABASE_SERVER_RESOURCE_TYPES:
+                resource.section = "servers"  # use the same section as for single servers
+
+            section = AzureSection(resource.section, resource.piggytargets)
+            section.add(resource.dumpinfo())
+            sections.append(section)
+
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    for section_async in results:
+        if isinstance(section_async, BaseException):
+            if args.debug:
+                raise section_async
+            write_exception_to_agent_info_section(section_async, "Process single resources (async)")
+            continue
+
+        sections.append(section_async)
+
+    return sections
+
+
+async def process_resources(
+    mgmt_client: BaseAsyncApiClient,
+    args: Args,
+    group_labels: GroupLabels,
+    selected_resources: Sequence[AzureResource],
+    monitored_services: set[str],
+    monitored_groups: Sequence[str],
+) -> None:
+    monitored_resources_by_id = {
+        r.info["id"].lower(): r for r in selected_resources if r.info["type"] in monitored_services
     }
 
-    if FetchedResource.virtual_machines.type in monitored_types:
-        tasks.add(process_virtual_machines(mgmt_client, args, group_labels, resources_by_id))
+    tasks = {
+        process_resource_health(
+            mgmt_client, monitored_resources_by_id, monitored_groups, args.debug
+        ),
+        *get_bulk_tasks(
+            mgmt_client,
+            args,
+            group_labels,
+            monitored_services,
+            monitored_resources_by_id,
+        ),
+        process_single_resources(mgmt_client, args, monitored_resources_by_id),
+    }
 
     for coroutine in asyncio.as_completed(tasks):
         try:
-            await coroutine
+            for section in await coroutine:
+                section.write()
         except Exception as e:
             if args.debug:
                 raise
             write_exception_to_agent_info_section(e, "Management client (async)")
 
 
-async def main_subscription(args: Args, selector: Selector, subscription: str) -> None:
-    mgmt_client = MgmtApiClient(
-        _get_mgmt_authority_urls(args.authority, subscription),
-        deserialize_http_proxy_config(args.proxy),
-        subscription,
+async def _collect_resources(
+    mgmt_client: BaseAsyncApiClient, args: Args, selector: Selector
+) -> tuple[Sequence[AzureResource], list[str]]:
+    resources = await mgmt_client.get_async(
+        "resources", key="value", params={"api-version": "2019-05-01"}
     )
 
+    all_resources = (AzureResource(r, args.tag_key_pattern) for r in resources)
+
+    # Selected resources are all the resources that match the selector.
+    # They are NOT the "monitored resources", which also depend on the *services* selected via command line call.
+    # Here, we need all these resources to be able to create the `monitored_groups` sections.
+    # -> I don't know if this is actually intended (we are populating the agent information `monitored-resources`
+    #    with resources not really monitored), but the agent behaved like this before.
+    selected_resources = [r for r in all_resources if selector.do_monitor(r)]
+    monitored_groups = sorted({r.info["group"] for r in selected_resources})
+
+    return selected_resources, monitored_groups
+
+
+async def main_subscription(
+    args: Args, selector: Selector, subscription: str, monitored_services: set[str]
+) -> None:
     try:
-        mgmt_client.login(args.tenant, args.client, args.secret)
-        all_resources = (
-            AzureResource(r, args.tag_key_pattern) for r in await mgmt_client.resources()
-        )
+        async with SharedSessionApiClient(
+            get_mgmt_authority_urls(args.authority, subscription),
+            deserialize_http_proxy_config(args.proxy),
+            tenant=args.tenant,
+            client=args.client,
+            secret=args.secret,
+        ) as mgmt_client:
+            selected_resources, monitored_groups = await _collect_resources(
+                mgmt_client, args, selector
+            )
 
-        monitored_resources = [r for r in all_resources if selector.do_monitor(r)]
+            group_labels = await get_group_labels(
+                mgmt_client, monitored_groups, args.tag_key_pattern
+            )
+            write_group_info(monitored_groups, selected_resources, group_labels)
 
-        monitored_groups = sorted({r.info["group"] for r in monitored_resources})
+            await process_metrics(mgmt_client, subscription, selected_resources, args)
+
+            tasks = {
+                process_usage_details(mgmt_client, subscription, monitored_groups, args)
+                if "usage_details" in monitored_services
+                else None,
+                process_resources(
+                    mgmt_client,
+                    args,
+                    group_labels,
+                    selected_resources,
+                    monitored_services,
+                    monitored_groups,
+                ),
+            }
+            tasks.discard(None)
+            await asyncio.gather(*tasks)  # type: ignore[arg-type]
+
+            write_remaining_reads(mgmt_client.ratelimit)
+
     except Exception as exc:
         if args.debug:
             raise
         write_exception_to_agent_info_section(exc, "Management client")
-        return
-
-    group_labels = await get_group_labels(mgmt_client, monitored_groups, args.tag_key_pattern)
-    write_group_info(monitored_groups, monitored_resources, group_labels)
-
-    await usage_details(mgmt_client, monitored_groups, args)
-
-    await process_resources_async(mgmt_client, args, group_labels, monitored_resources)
-
-    await process_old_metrics(mgmt_client, monitored_resources, args)
-
-    all_sections = process_resources(mgmt_client, monitored_resources, args)
-    async for resource_sections in all_sections:
-        for section in resource_sections:
-            section.write()
-
-    for section in await process_resource_health(mgmt_client, monitored_resources, args):
-        section.write()
-
-    write_remaining_reads(mgmt_client.ratelimit)
 
 
-def _get_subscriptions(args: Args) -> set[str]:
+async def _get_subscriptions(args: Args) -> set[str]:
     if args.subscriptions:
+        LOGGER.info("Using subscriptions from command line: %s", args.subscriptions)
         return set(args.subscriptions)
 
     if args.all_subscriptions:
-        api_client = BaseApiClient(
-            _get_mgmt_authority_urls(args.authority, ""),
+        async with BaseAsyncApiClient(
+            get_mgmt_authority_urls(args.authority, ""),
             deserialize_http_proxy_config(args.proxy),
-        )
-        api_client.login(args.tenant, args.client, args.secret)
-        response = api_client.request(
-            method="GET",
-            full_uri="https://management.azure.com/subscriptions",
-            params={"api-version": "2022-12-01"},
-        )
-        return {item["subscriptionId"] for item in response.get("value", [])}
+            args.tenant,
+            args.client,
+            args.secret,
+        ) as api_client:
+            response = await api_client.request_async(
+                method="GET",
+                full_uri="https://management.azure.com/subscriptions",
+                params={"api-version": "2022-12-01"},
+            )
+            subscriptions = {item["subscriptionId"] for item in response.get("value", [])}
+            LOGGER.info("Using subscriptions from API: %s", subscriptions)
+            return subscriptions
 
     return set()  # no subscriptions
 
 
-def test_connections(args: Args, subscriptions: set[str]) -> int:
-    for subscription in subscriptions:
-        if (test_result := _test_connection(args, subscription)) != 0:
-            if isinstance(test_result, tuple):
-                sys.stderr.write(test_result[1])
-                return test_result[0]
-            return test_result
-    return 0
-
-
 async def collect_info(args: Args, selector: Selector, subscriptions: set[str]) -> None:
+    monitored_services = set(args.services)
     await asyncio.gather(
-        *{main_subscription(args, selector, subscription) for subscription in subscriptions},
+        main_graph_client(args, monitored_services),
+        *{
+            main_subscription(args, selector, subscription, monitored_services)
+            for subscription in subscriptions
+        },
     )
 
 
-def main(argv=None):
-    if argv is None:
-        password_store.replace_passwords()
-        argv = sys.argv[1:]
+async def main_async(args: Args, selector: Selector) -> int:
+    if args.connection_test:
+        return await _test_connection(args)
 
-    args = parse_arguments(argv)
+    subscriptions = await _get_subscriptions(args)
+    await collect_info(args, selector, subscriptions)
+    LOGGER.debug("%s", selector)
+    return 0
+
+
+def _setup_logging(verbose: int) -> None:
+    logging.basicConfig(
+        level={0: logging.WARN, 1: logging.INFO, 2: logging.DEBUG}.get(verbose, logging.DEBUG),
+        format="%(levelname)s %(asctime)s %(name)s - %(funcName)s: %(message)s",
+        force=True,
+    )
+
+    if verbose == 2:
+        # if verbose >= 3, be verbose (show all messages from other modules)
+        # if verbose == 2, be verbose, but silence msrest, urllib3 and requests_oauthlib
+        # for the others, keep the logging level as set
+        logging.getLogger("msrest").setLevel(logging.WARNING)
+        logging.getLogger("urllib3").setLevel(logging.WARNING)
+        logging.getLogger("requests_oauthlib").setLevel(logging.WARNING)
+
+
+def _debug_args(args: Args) -> None:
+    # debug args
+    # secret is required, so no risks in adding it here if not present
+    args_dict = vars(args) | {"secret": "****"}
+    for key, value in args_dict.items():
+        LOGGER.debug("argparse: %s = %r", key, value)
+
+
+def agent_azure_main(args: Args) -> int:
     selector = Selector(args)
     if args.dump_config:
         sys.stdout.write("Configuration:\n%s\n" % selector)
         return 0
 
-    subscriptions = _get_subscriptions(args)
-    # TODO:
-    # * fix connection test in case of no subscriptions
-    # * make connection test async?
-    if args.connection_test:
-        return test_connections(args, subscriptions)
+    _setup_logging(args.verbose)
+    _debug_args(args)
 
-    asyncio.run(collect_info(args, selector, subscriptions))
-    LOGGER.debug("%s", selector)
-    main_graph_client(args)
-    return 0
+    return asyncio.run(main_async(args, selector))
+
+
+def main() -> int:
+    return special_agent_main(parse_arguments, agent_azure_main)
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()

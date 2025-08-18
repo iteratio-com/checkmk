@@ -20,22 +20,15 @@ from contextlib import contextmanager
 from itertools import chain
 from typing import Literal
 
-from cmk.ccc import debug, tty
-from cmk.ccc.version import Edition, edition
-
-from cmk.utils import log, paths
-from cmk.utils.log import VERBOSE
-from cmk.utils.paths import check_mk_config_dir
-from cmk.utils.plugin_loader import load_plugins_with_exceptions
-from cmk.utils.redis import disable_redis
-
 # This special script needs persistence and conversion code from different
 # places of Checkmk. We may centralize the conversion and move the persistance
 # to a specific layer in the future, but for the the moment we need to deal
 # with it.
 from cmk.base import config as base_config
-
+from cmk.ccc import debug, tty
+from cmk.ccc.version import Edition, edition
 from cmk.gui import main_modules
+from cmk.gui.config import active_config
 from cmk.gui.exceptions import MKUserError
 from cmk.gui.log import logger as gui_logger
 from cmk.gui.session import SuperUserContext
@@ -45,8 +38,12 @@ from cmk.gui.utils.script_helpers import gui_context
 from cmk.gui.watolib.automations import ENV_VARIABLE_FORCE_CLI_INTERFACE
 from cmk.gui.watolib.changes import ActivateChangesWriter, add_change
 from cmk.gui.wsgi.blueprints.global_vars import set_global_vars
-
 from cmk.update_config.plugins.pre_actions.utils import ConflictMode
+from cmk.utils import log, paths
+from cmk.utils.log import VERBOSE
+from cmk.utils.paths import check_mk_config_dir
+from cmk.utils.plugin_loader import load_plugins_with_exceptions
+from cmk.utils.redis import disable_redis
 
 from .registry import pre_update_action_registry, update_action_registry
 
@@ -194,6 +191,11 @@ def _load_plugins(logger: logging.Logger) -> None:
             else load_plugins_with_exceptions("cmk.update_config.cee.plugins.actions")
         ),
         (
+            load_plugins_with_exceptions("cmk.update_config.cce.plugins.actions")
+            if edition(paths.omd_root) in (Edition.CCE, Edition.CME, Edition.CSE)
+            else []
+        ),
+        (
             load_plugins_with_exceptions("cmk.update_config.cme.plugins.actions")
             if edition(paths.omd_root) is Edition.CME
             else []
@@ -268,7 +270,7 @@ def update_config(logger: logging.Logger) -> Literal[0, 1]:
                 if not action.continue_on_failure or debug.enabled():
                     raise
 
-        if not has_errors and not is_wato_slave_site():
+        if not has_errors and not is_wato_slave_site(active_config.sites):
             # Force synchronization of the config after a successful configuration update
             add_change(
                 action_name="cmk-update-config",

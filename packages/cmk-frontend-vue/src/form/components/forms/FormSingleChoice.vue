@@ -6,7 +6,7 @@ conditions defined in the file COPYING, which is part of this source code packag
 <script setup lang="ts">
 import type { SingleChoice } from 'cmk-shared-typing/typescript/vue_formspec_components'
 import { useValidation, type ValidationMessages } from '@/form/components/utils/validation'
-import FormValidation from '@/form/components/FormValidation.vue'
+import FormValidation from '@/components/user-input/CmkInlineValidation.vue'
 import { useId } from '@/form/utils'
 import CmkDropdown from '@/components/CmkDropdown.vue'
 import CmkSpace from '@/components/CmkSpace.vue'
@@ -42,8 +42,8 @@ const componentId = useId()
       :disabled="spec.frozen"
       :component-id="componentId"
       :no-elements-text="props.spec.no_elements_text || ''"
-      :required-text="props.spec.i18n_base.required"
       :label="props.spec.label || props.spec.title"
+      required
     />
   </div>
   <FormValidation :validation="validation"></FormValidation>

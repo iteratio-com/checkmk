@@ -22,7 +22,6 @@ const spec: FormSpec.String = {
   title: 'fooTitle',
   help: 'fooHelp',
   label: 'fooLabel',
-  i18n_base: { required: 'required' },
   validators: validators,
   input_hint: 'fooInputHint',
   autocompleter: null,
@@ -69,6 +68,31 @@ test('FormString checks validators', async () => {
   await fireEvent.update(element, '')
 
   screen.getByText('String length must be between 1 and 20')
+})
+
+test('FormString with autocompleter renders backend validation messages', async () => {
+  const specWithAutocompleter: FormSpec.String = {
+    ...spec,
+    autocompleter: {
+      data: { ident: '', params: {} },
+      fetch_method: 'ajax_vs_autocomplete'
+    }
+  }
+  render(FormString, {
+    props: {
+      spec: specWithAutocompleter,
+      data: 'fooData',
+      backendValidation: [
+        {
+          location: [],
+          message: 'Backend error message',
+          replacement_value: 'some_replacement_value'
+        }
+      ]
+    }
+  })
+
+  await screen.findByText('Backend error message')
 })
 
 test('FormString renders backend validation messages', async () => {
@@ -126,9 +150,6 @@ test('FormString with autocompleter loads value', async () => {
             }
           },
           fetch_method: 'ajax_vs_autocomplete'
-        },
-        i18n_base: {
-          required: 'required'
         }
       },
       data: 'some value',

@@ -8,20 +8,11 @@ from collections.abc import Iterable
 
 import pytest
 
-from tests.unit.cmk.gui.watolib.test_watolib_password_store import (  # noqa: F401
-    mock_update_passwords_merged_file,
-)
-
+import cmk.gui.watolib.check_mk_automations
+from cmk.automations.results import DeleteHostsResult
 from cmk.ccc.exceptions import MKGeneralException
 from cmk.ccc.hostaddress import HostName
 from cmk.ccc.user import UserId
-
-from cmk.utils.password_store import Password
-from cmk.utils.rulesets.ruleset_matcher import RuleSpec
-
-from cmk.automations.results import DeleteHostsResult
-
-import cmk.gui.watolib.check_mk_automations
 from cmk.gui.watolib.configuration_bundle_store import BundleId, ConfigBundle
 from cmk.gui.watolib.configuration_bundles import (
     create_config_bundle,
@@ -35,6 +26,11 @@ from cmk.gui.watolib.configuration_bundles import (
 from cmk.gui.watolib.hosts_and_folders import folder_tree, Host
 from cmk.gui.watolib.passwords import load_passwords
 from cmk.gui.watolib.rulesets import SingleRulesetRecursively
+from cmk.utils.password_store import Password
+from cmk.utils.rulesets.ruleset_matcher import RuleSpec
+from tests.unit.cmk.gui.watolib.test_watolib_password_store import (  # noqa: F401
+    mock_update_passwords_merged_file,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -131,7 +127,7 @@ def test_delete_config_bundle_unknown_id() -> None:
 )
 def fixture_other_folder(request_context: None, with_admin_login: UserId) -> str:
     path = "subfolder"
-    folder_tree().create_missing_folders(path, pprint_value=False)
+    folder_tree().create_missing_folders(path, pprint_value=False, use_git=False)
     return path
 
 
@@ -157,7 +153,11 @@ def test_create_and_delete_config_bundle_hosts(other_folder: str, with_admin_log
         ),
         CreateHost(
             folder=tree.root_folder().create_subfolder(
-                name=other_folder, title=other_folder, attributes={}, pprint_value=False
+                name=other_folder,
+                title=other_folder,
+                attributes={},
+                pprint_value=False,
+                use_git=False,
             ),
             name=HostName("test-host-2"),
             attributes={},

@@ -19,35 +19,40 @@ from collections.abc import (
 )
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Any, assert_never, Final, Generic, Literal, TypeVar
+from typing import Any, assert_never, Final, Generic, Literal, Protocol, TypeVar
 
 import cmk.ccc.debug
+import cmk.utils.paths
 from cmk.ccc import store
 from cmk.ccc.exceptions import MKIPAddressLookupError, MKTerminate, MKTimeout
 from cmk.ccc.hostaddress import HostAddress, HostName
-
-import cmk.utils.paths
 from cmk.utils.caching import cache_manager
 from cmk.utils.log import console
 
 IPLookupCacheId = tuple[HostName | HostAddress, socket.AddressFamily]
 
 
-_fake_dns: HostAddress | None = None
-_enforce_localhost = False
-
 _FALLBACK_V4 = HostAddress("0.0.0.0")
 _FALLBACK_V6 = HostAddress("::")
 
-# TODO: return type actually is non optional in most cases
-type IPLookup = Callable[
-    [HostName, Literal[socket.AddressFamily.AF_INET, socket.AddressFamily.AF_INET6]],
-    HostAddress | None,
-]
-type StrictIPLookup = Callable[
-    [HostName, Literal[socket.AddressFamily.AF_INET, socket.AddressFamily.AF_INET6]],
-    HostAddress,
-]
+
+# keep the protocols here for now,
+# they could be duplcated to achieve better separation.
+class IPLookup(Protocol):
+    def __call__(
+        self,
+        host_name: HostName,
+        family: Literal[socket.AddressFamily.AF_INET, socket.AddressFamily.AF_INET6],
+    ) -> HostAddress: ...
+
+
+class IPLookupOptional(Protocol):
+    def __call__(
+        self,
+        host_name: HostName,
+        family: Literal[socket.AddressFamily.AF_INET, socket.AddressFamily.AF_INET6],
+    ) -> HostAddress | None: ...
+
 
 _TErrHandler = TypeVar("_TErrHandler", bound=Callable[[HostName, Exception], None])
 
@@ -69,7 +74,10 @@ class IPLookupConfig:
     default_address_family: Callable[
         [HostName], Literal[socket.AddressFamily.AF_INET, socket.AddressFamily.AF_INET6]
     ]
-    management_address: Callable[[HostName], HostAddress | None]
+    management_address: Callable[
+        [HostName, Literal[socket.AddressFamily.AF_INET, socket.AddressFamily.AF_INET6]],
+        HostAddress | None,
+    ]
     is_dyndns_host: Callable[[HostName], bool]
     ipv4_addresses: Mapping[HostName, HostAddress]
     ipv6_addresses: Mapping[HostName, HostAddress]
@@ -80,18 +88,17 @@ class IPLookupConfig:
 
 def make_lookup_mgmt_board_ip_address(
     ip_config: IPLookupConfig,
-) -> Callable[
-    [
-        HostName,
-        Literal[socket.AddressFamily.AF_INET, socket.AddressFamily.AF_INET6],
-    ],
-    HostAddress | None,
-]:
+) -> IPLookupOptional:
+    if ip_config.fake_dns:
+        return lambda host_name, family: ip_config.fake_dns
+    if ip_config.simulation_mode:
+        return local_ip_for
+
     def lookup_mgmt_board_ip_address(
         host_name: HostName,
         family: Literal[socket.AddressFamily.AF_INET, socket.AddressFamily.AF_INET6],
     ) -> HostAddress | None:
-        mgmt_address: Final = ip_config.management_address(host_name)
+        mgmt_address: Final = ip_config.management_address(host_name, family)
         try:
             mgmt_ipa = (
                 None
@@ -107,12 +114,10 @@ def make_lookup_mgmt_board_ip_address(
                 host_name=mgmt_address or host_name,
                 family=family,
                 configured_ip_address=mgmt_ipa,
-                simulation_mode=ip_config.simulation_mode,
                 is_snmp_usewalk_host=(
                     ip_config.is_use_walk_host(host_name)
                     and ip_config.is_snmp_management(host_name)
                 ),
-                override_dns=ip_config.fake_dns,
                 is_dyndns_host=ip_config.is_dyndns_host(host_name),
                 force_file_cache_renewal=not ip_config.use_dns_cache,
             )
@@ -122,74 +127,34 @@ def make_lookup_mgmt_board_ip_address(
     return lookup_mgmt_board_ip_address
 
 
-def lookup_mgmt_board_ip_address(
-    ip_config: IPLookupConfig, host_name: HostName
-) -> HostAddress | None:
-    mgmt_address: Final = ip_config.management_address(host_name)
-    try:
-        mgmt_ipa = (
-            None if mgmt_address is None else HostAddress(str(ipaddress.ip_address(mgmt_address)))
-        )
-    except (ValueError, TypeError):
-        mgmt_ipa = None
+def make_lookup_ip_address(
+    ip_config: IPLookupConfig,
+) -> IPLookup:
+    if ip_config.fake_dns:
+        return lambda host_name, family: ip_config.fake_dns
+    if ip_config.simulation_mode:
+        return local_ip_for
 
-    try:
+    def _wrapped_lookup(
+        host_name: HostName,
+        family: Literal[socket.AddressFamily.AF_INET, socket.AddressFamily.AF_INET6],
+    ) -> HostAddress:
         return _lookup_ip_address(
-            # host name is ignored, if mgmt_ipa is trueish.
-            host_name=mgmt_address or host_name,
-            family=ip_config.default_address_family(host_name),
-            configured_ip_address=mgmt_ipa,
-            simulation_mode=ip_config.simulation_mode,
+            host_name=host_name,
+            family=family,
+            configured_ip_address=(
+                ip_config.ipv4_addresses
+                if family is socket.AddressFamily.AF_INET
+                else ip_config.ipv6_addresses
+            ).get(host_name),
             is_snmp_usewalk_host=(
-                ip_config.is_use_walk_host(host_name) and ip_config.is_snmp_management(host_name)
+                ip_config.is_use_walk_host(host_name) and ip_config.is_snmp_host(host_name)
             ),
-            override_dns=ip_config.fake_dns,
             is_dyndns_host=ip_config.is_dyndns_host(host_name),
             force_file_cache_renewal=not ip_config.use_dns_cache,
         )
-    except MKIPAddressLookupError:
-        return None
-
-
-def make_lookup_ip_address(
-    ip_config: IPLookupConfig,
-) -> Callable[
-    [HostName, Literal[socket.AddressFamily.AF_INET, socket.AddressFamily.AF_INET6] | None],
-    HostAddress,
-]:
-    def _wrapped_lookup(
-        host_name: HostName,
-        family: Literal[socket.AddressFamily.AF_INET, socket.AddressFamily.AF_INET6] | None = None,
-    ) -> HostAddress:
-        return lookup_ip_address(ip_config, host_name, family=family)
 
     return _wrapped_lookup
-
-
-def lookup_ip_address(
-    ip_config: IPLookupConfig,
-    host_name: HostName | HostAddress,
-    *,
-    family: Literal[socket.AddressFamily.AF_INET, socket.AddressFamily.AF_INET6] | None = None,
-) -> HostAddress:
-    if family is None:
-        family = ip_config.default_address_family(host_name)
-    return _lookup_ip_address(
-        host_name=host_name,
-        family=family,
-        configured_ip_address=(
-            ip_config.ipv4_addresses
-            if family is socket.AddressFamily.AF_INET
-            else ip_config.ipv6_addresses
-        ).get(host_name),
-        simulation_mode=ip_config.simulation_mode,
-        is_snmp_usewalk_host=(
-            ip_config.is_use_walk_host(host_name) and ip_config.is_snmp_host(host_name)
-        ),
-        override_dns=ip_config.fake_dns,
-        is_dyndns_host=ip_config.is_dyndns_host(host_name),
-        force_file_cache_renewal=not ip_config.use_dns_cache,
-    )
 
 
 class ConfiguredIPLookup(Generic[_TErrHandler]):
@@ -238,7 +203,8 @@ def is_fallback_ip(ip: HostAddress | str) -> bool:
     return HostAddress(ip) in (_FALLBACK_V4, _FALLBACK_V6)
 
 
-def _local_ip_for(
+def local_ip_for(
+    host_name: HostName,
     family: Literal[socket.AddressFamily.AF_INET, socket.AddressFamily.AF_INET6],
 ) -> HostAddress:
     match family:
@@ -250,16 +216,6 @@ def _local_ip_for(
             assert_never(other)
 
 
-def enforce_fake_dns(address: HostAddress) -> None:
-    global _fake_dns
-    _fake_dns = address
-
-
-def enforce_localhost() -> None:
-    global _enforce_localhost
-    _enforce_localhost = True
-
-
 # Determine the IP address of a host. It returns either an IP address or, when
 # a hostname is configured as IP address, the hostname.
 # Or raise an exception when a hostname can not be resolved.
@@ -268,23 +224,14 @@ def _lookup_ip_address(
     host_name: HostName | HostAddress,
     family: Literal[socket.AddressFamily.AF_INET, socket.AddressFamily.AF_INET6],
     configured_ip_address: HostAddress | None,
-    simulation_mode: bool,
     is_snmp_usewalk_host: bool,
-    override_dns: HostAddress | None,
     is_dyndns_host: bool,
     force_file_cache_renewal: bool,
 ) -> HostAddress:
     """This function *may* look up an IP address, or return a host name"""
-    # Quick hack, where all IP addresses are faked (--fake-dns)
-    if _fake_dns:
-        return _fake_dns
-
-    if override_dns:
-        return override_dns
-
-    # Honor simulation mode und usewalk hosts. Never contact the network.
-    if simulation_mode or _enforce_localhost or is_snmp_usewalk_host:
-        return _local_ip_for(family)
+    # Honor usewalk hosts. Never contact the network.
+    if is_snmp_usewalk_host:
+        return local_ip_for(host_name, family)
 
     # check if IP address is hard coded by the user
     if configured_ip_address:
@@ -527,7 +474,8 @@ def _get_ip_lookup_cache() -> IPLookupCache:
 def update_dns_cache(
     *,
     hosts: Iterable[HostName],
-    ip_lookup_config: IPLookupConfig,
+    get_ip_stack_config: Callable[[HostName], IPStackConfig],
+    lookup_ip_address: IPLookup,
 ) -> tuple[int, Sequence[HostName]]:
     failed = []
 
@@ -539,26 +487,10 @@ def update_dns_cache(
 
         console.verbose("Updating DNS cache...")
         # `_annotate_family()` handles DUAL_STACK and NO_IP
-        for host_name, family in _annotate_family(hosts, ip_lookup_config):
+        for host_name, family in _annotate_family(hosts, get_ip_stack_config):
             console.verbose_no_lf(f"{host_name} ({family})...")
             try:
-                ip = _lookup_ip_address(
-                    host_name=host_name,
-                    family=family,
-                    configured_ip_address=(
-                        ip_lookup_config.ipv4_addresses
-                        if family is socket.AF_INET
-                        else ip_lookup_config.ipv6_addresses
-                    ).get(host_name),
-                    simulation_mode=ip_lookup_config.simulation_mode,
-                    is_snmp_usewalk_host=(
-                        ip_lookup_config.is_use_walk_host(host_name)
-                        and ip_lookup_config.is_snmp_host(host_name)
-                    ),
-                    override_dns=ip_lookup_config.fake_dns,
-                    is_dyndns_host=ip_lookup_config.is_dyndns_host(host_name),
-                    force_file_cache_renewal=True,  # it's cleared anyway
-                )
+                ip = lookup_ip_address(host_name, family)
                 console.verbose(f"{ip}")
 
             except (MKTerminate, MKTimeout):
@@ -583,7 +515,7 @@ def update_dns_cache(
 
 def _annotate_family(
     hosts: Iterable[HostName],
-    ip_lookup_config: IPLookupConfig,
+    get_ip_stack_config: Callable[[HostName], IPStackConfig],
 ) -> Iterable[
     tuple[
         HostName,
@@ -591,7 +523,7 @@ def _annotate_family(
     ]
 ]:
     for host_name in hosts:
-        ip_stack_config = ip_lookup_config.ip_stack_config(host_name)
+        ip_stack_config = get_ip_stack_config(host_name)
         if IPStackConfig.IPv4 in ip_stack_config:
             yield host_name, socket.AddressFamily.AF_INET
         if IPStackConfig.IPv6 in ip_stack_config:

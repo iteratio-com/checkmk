@@ -16,7 +16,6 @@ from ._check_credentials import (
 )
 from ._connections import (
     active_connections,
-    active_connections_by_type,
     ACTIVE_DIR,
     ActivePlugins,
     builtin_connections,
@@ -54,6 +53,7 @@ from ._connections import (
     PublicKeyPath,
     register_config_file,
     RoleSpec,
+    SAML_IDP_METADATA,
     SAMLUserConnectionConfig,
     save_connection_config,
     save_snapshot_user_connection_config,
@@ -125,10 +125,10 @@ from .store import (
     write_contacts_and_users_file,
 )
 from .user_attributes import show_mode_choices, validate_start_url
+from .userdata import UserData
 
 __all__ = [
     "active_connections",
-    "active_connections_by_type",
     "add_internal_attributes",
     "ActivePlugins",
     "ACTIVE_DIR",
@@ -215,6 +215,7 @@ __all__ = [
     "SyncAttribute",
     "SHOW_MODE",
     "START_URL",
+    "SAML_IDP_METADATA",
     "SAMLUserConnectionConfig",
     "HtpasswdUserConnectionConfig",
     "TEMP_UNIT",
@@ -228,6 +229,7 @@ __all__ = [
     "UserAttribute",
     "UserAttributeRegistry",
     "UserConnectionConfig",
+    "UserData",
     "ConfigurableUserConnectionSpec",
     "UserRole",
     "UserRolesConfigFile",

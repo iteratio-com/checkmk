@@ -8,16 +8,14 @@ from collections.abc import Iterable
 
 import pytest
 
+import cmk.update_config.plugins.actions.remove_invalid_host
+from cmk.automations.results import DeleteHostsResult
 from cmk.ccc.hostaddress import HostName
 from cmk.ccc.site import SiteId
 from cmk.ccc.user import UserId
-
-from cmk.automations.results import DeleteHostsResult
-
 from cmk.gui.watolib.host_attributes import HostAttributes
 from cmk.gui.watolib.hosts_and_folders import folder_tree
-
-import cmk.update_config.plugins.actions.remove_invalid_host
+from cmk.update_config.lib import ExpiryVersion
 from cmk.update_config.plugins.actions.remove_invalid_host import RemoveInvalidHost
 
 
@@ -36,7 +34,9 @@ def test_remove_invalid_host(with_admin_login: UserId, load_config: None) -> Non
     hostname = HostName("")
     root = folder_tree().root_folder()
     root.create_hosts(
-        [(hostname, HostAttributes(site=SiteId("NO_SITE")), None)], pprint_value=False
+        [(hostname, HostAttributes(site=SiteId("NO_SITE")), None)],
+        pprint_value=False,
+        use_git=False,
     )
     host = root.host(hostname)
     assert host, "Test setup failed, host not created"
@@ -45,6 +45,7 @@ def test_remove_invalid_host(with_admin_login: UserId, load_config: None) -> Non
         name="remove_invalid_host",
         title="Remove invalid host",
         sort_index=155,
+        expiry_version=ExpiryVersion.CMK_260,
     )(logging.getLogger())
 
     root = folder_tree().root_folder()

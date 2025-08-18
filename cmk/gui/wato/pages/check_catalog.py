@@ -15,11 +15,9 @@ import re
 from collections.abc import Collection, Mapping, Sequence
 from typing import overload, TypedDict, Union
 
-from cmk.utils import man_pages
-from cmk.utils.rulesets.definition import RuleGroup
-
+from cmk.discover_plugins import discover_families, PluginGroup
 from cmk.gui.breadcrumb import Breadcrumb, BreadcrumbItem
-from cmk.gui.config import active_config
+from cmk.gui.config import active_config, Config
 from cmk.gui.exceptions import MKUserError
 from cmk.gui.htmllib.generator import HTMLWriter
 from cmk.gui.htmllib.html import html
@@ -44,8 +42,8 @@ from cmk.gui.watolib.check_mk_automations import get_check_information
 from cmk.gui.watolib.main_menu import MenuItem
 from cmk.gui.watolib.mode import ModeRegistry, WatoMode
 from cmk.gui.watolib.rulespecs import rulespec_registry
-
-from cmk.discover_plugins import discover_families, PluginGroup
+from cmk.utils import man_pages
+from cmk.utils.rulesets.definition import RuleGroup
 
 from ._tile_menu import TileMenuRenderer
 
@@ -83,12 +81,12 @@ class ModeCheckPlugins(WatoMode):
     def title(self) -> str:
         return _("Catalog of check plug-ins")
 
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
-        menu = super().page_menu(breadcrumb)
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
+        menu = super().page_menu(config, breadcrumb)
         menu.inpage_search = PageMenuSearch(target_mode="check_plugin_search")
         return menu
 
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         html.help(
             _(
                 "This catalog of check plug-ins gives you a complete listing of all plug-ins "
@@ -137,7 +135,7 @@ class ModeCheckPluginSearch(WatoMode):
     def title(self) -> str:
         return "{}: {}".format(_("Check plug-ins matching"), self._search)
 
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         search_form(title="%s: " % _("Search for check plug-ins"), mode="check_plugin_search")
 
         for path, manpages in self._get_manpages_after_search():
@@ -259,7 +257,7 @@ class ModeCheckPluginTopic(WatoMode):
             return "unsorted"
         return self._topic_title
 
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         if isinstance(self._manpages, list):
             _render_manpage_list(self._titles, self._manpages, self._path[-1], self._topic_title)
             return
@@ -545,7 +543,7 @@ class ModeCheckManPage(WatoMode):
     # is currently in use (Livestatus query) and display this information
     # together with a link for searching. Then we can remove the dumb context
     # button, that will always be shown - even if the plug-in is not in use.
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         if self._check_plugin_name.startswith("check_"):
             command = "check_mk_active-" + self._check_plugin_name[6:]
         else:
@@ -578,7 +576,7 @@ class ModeCheckManPage(WatoMode):
             breadcrumb=breadcrumb,
         )
 
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         html.open_table(class_=["data", "headerleft"])
 
         html.open_tr()

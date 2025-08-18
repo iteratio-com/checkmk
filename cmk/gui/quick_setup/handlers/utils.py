@@ -10,11 +10,14 @@ from typing import Any, cast
 from pydantic import BaseModel
 
 from cmk.gui.background_job import BackgroundProcessInterface
-from cmk.gui.form_specs.vue.form_spec_visitor import (
+from cmk.gui.form_specs.vue import (
+    DEFAULT_VALUE,
+    get_visitor,
+    RawDiskData,
+    RawFrontendData,
     serialize_data_for_frontend,
-    transform_to_disk_model,
+    VisitorOptions,
 )
-from cmk.gui.form_specs.vue.visitors import DataOrigin, DEFAULT_VALUE
 from cmk.gui.i18n import _, translate_to_current_language
 from cmk.gui.log import logger
 from cmk.gui.quick_setup.private.widgets import ConditionalNotificationStageWidget
@@ -39,7 +42,6 @@ from cmk.gui.quick_setup.v0_unstable.widgets import (
     ListOfWidgets,
     Widget,
 )
-
 from cmk.rulesets.v1.form_specs import FormSpec
 
 LOAD_WAIT_LABEL = _("Please wait...")
@@ -167,7 +169,10 @@ def form_spec_parse(
     expected_formspecs_map: Mapping[FormSpecId, FormSpec],
 ) -> ParsedFormData:
     return {
-        form_spec_id: transform_to_disk_model(expected_formspecs_map[form_spec_id], form_data)
+        form_spec_id: get_visitor(
+            expected_formspecs_map[form_spec_id],
+            VisitorOptions(migrate_values=True, mask_values=False),
+        ).to_disk(RawFrontendData(form_data))
         for current_stage_form_data in all_stages_form_data
         for form_spec_id, form_data in current_stage_form_data.items()
     }
@@ -193,8 +198,9 @@ def get_stage_components_from_widget(widget: Widget, prefill_data: ParsedFormDat
                 serialize_data_for_frontend(
                     form_spec=form_spec,
                     field_id=str(widget.id),
-                    origin=DataOrigin.DISK,
-                    value=prefill_data.get(widget.id) if prefill_data else DEFAULT_VALUE,
+                    value=(
+                        RawDiskData(prefill_data.get(widget.id)) if prefill_data else DEFAULT_VALUE
+                    ),
                     do_validate=False,
                 )
             ),

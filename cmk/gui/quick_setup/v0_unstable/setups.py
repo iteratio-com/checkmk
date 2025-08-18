@@ -14,7 +14,6 @@ from typing import Protocol
 from livestatus import SiteConfiguration
 
 from cmk.ccc.site import SiteId
-
 from cmk.gui.quick_setup.v0_unstable.type_defs import (
     ActionId,
     GeneralStageErrors,
@@ -24,7 +23,6 @@ from cmk.gui.quick_setup.v0_unstable.type_defs import (
     StageIndex,
 )
 from cmk.gui.quick_setup.v0_unstable.widgets import FormSpecId, Widget
-
 from cmk.rulesets.v1.form_specs import FormSpec
 
 
@@ -62,7 +60,17 @@ CallableRecap = Callable[
     ],
     Sequence[Widget],
 ]
-CallableAction = Callable[[ParsedFormData, QuickSetupActionMode, ProgressLogger, str | None], str]
+CallableAction = Callable[
+    [
+        ParsedFormData,
+        QuickSetupActionMode,
+        ProgressLogger,
+        str | None,
+        bool,
+        bool,
+    ],
+    str,
+]
 WidgetConfigurator = Callable[[], Sequence[Widget]]
 
 

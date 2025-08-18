@@ -12,7 +12,6 @@ from cmk.gui.form_specs.private.cascading_single_choice_extended import (
 )
 from cmk.gui.form_specs.private.single_choice_extended import SingleChoiceElementExtended
 from cmk.gui.form_specs.private.validators import ModelT
-
 from cmk.rulesets.v1 import Label, Message, Title
 from cmk.rulesets.v1.form_specs import (
     CascadingSingleChoice,
@@ -77,7 +76,7 @@ class ListUniqueSelection(FormSpec[Sequence[ModelT]]):
     """Label used in the rule summary if the list is empty."""
     prefill: DefaultValue[Sequence[ModelT]] = DefaultValue([])
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.single_choice_type is SingleChoice:
             if not all(isinstance(element, UniqueSingleChoiceElement) for element in self.elements):
                 raise ValueError(

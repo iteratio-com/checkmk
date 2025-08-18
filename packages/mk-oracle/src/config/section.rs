@@ -2,83 +2,114 @@
 // This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 // conditions defined in the file COPYING, which is part of this source code package.
 
-use std::collections::HashSet;
-
 use super::defines::{defaults, keys};
 use super::yaml::{Get, Yaml};
+use crate::types::{SectionAffinity, SectionFilter, SectionName};
 use anyhow::Result;
+use log;
+use std::collections::HashMap;
+use std::sync::LazyLock;
 
+// "tablespaces", "rman", "jobs", "ts_quotas", "resumable", "locks"
 pub mod names {
     pub const INSTANCE: &str = "instance";
-    pub const COUNTERS: &str = "counters";
-    pub const BLOCKED_SESSIONS: &str = "blocked_sessions";
-    pub const BACKUP: &str = "backup";
-    pub const TRANSACTION_LOG: &str = "transactionlogs";
-    pub const DATAFILES: &str = "datafiles";
-    pub const DATABASES: &str = "databases";
-    pub const CLUSTERS: &str = "clusters";
-
-    pub const TABLE_SPACES: &str = "tablespaces";
-    pub const CONNECTIONS: &str = "connections";
-
-    // query based section
+    pub const ASM_INSTANCE: &str = "asm_instance"; // virtual section
+    pub const SESSIONS: &str = "sessions";
+    pub const LOG_SWITCHES: &str = "logswitches";
+    pub const UNDO_STAT: &str = "undostat";
+    pub const RECOVERY_AREA: &str = "recovery_area";
+    pub const PROCESSES: &str = "processes";
+    pub const RECOVERY_STATUS: &str = "recovery_status";
+    pub const LONG_ACTIVE_SESSIONS: &str = "longactivesessions";
+    pub const DATAGUARD_STATS: &str = "dataguard_stats";
+    pub const PERFORMANCE: &str = "performance";
+    pub const SYSTEM_PARAMETER: &str = "systemparameter";
+    pub const LOCKS: &str = "locks";
+    pub const TABLESPACES: &str = "tablespaces";
+    pub const RMAN: &str = "rman";
     pub const JOBS: &str = "jobs";
-    pub const MIRRORING: &str = "mirroring";
-    pub const AVAILABILITY_GROUPS: &str = "availability_groups";
+    pub const RESUMABLE: &str = "resumable";
+    pub const IO_STATS: &str = "iostats";
+    pub const ASM_DISK_GROUP: &str = "asm_diskgroup";
+    pub const TS_QUOTAS: &str = "ts_quotas";
 }
 
-/// TODO(sk): convert into HashSet
-const PIPE_SEP_SECTIONS: [&str; 8] = [
-    names::INSTANCE,
-    names::COUNTERS,
-    names::BLOCKED_SESSIONS,
-    names::BACKUP,
-    names::TRANSACTION_LOG,
-    names::DATAFILES,
-    names::DATABASES,
-    names::CLUSTERS,
-];
+static DEFAULT_AFFINITY_MAP: LazyLock<HashMap<&str, SectionAffinity>> = LazyLock::new(|| {
+    HashMap::from([
+        ("instance", SectionAffinity::Db),
+        ("asm_instance", SectionAffinity::Asm),
+        ("sessions", SectionAffinity::Db),
+        ("logswitches", SectionAffinity::Db),
+        ("undostat", SectionAffinity::Db),
+        ("recovery_area", SectionAffinity::Db),
+        ("processes", SectionAffinity::All),
+        ("recovery_status", SectionAffinity::Db),
+        ("longactivesessions", SectionAffinity::Db),
+        ("dataguard_stats", SectionAffinity::Db),
+        ("performance", SectionAffinity::Db),
+        ("systemparameter", SectionAffinity::Db),
+        ("locks", SectionAffinity::Db),
+        ("tablespaces", SectionAffinity::Db),
+        ("rman", SectionAffinity::Db),
+        ("jobs", SectionAffinity::Db),
+        ("resumable", SectionAffinity::Db),
+        ("iostats", SectionAffinity::Db),
+        ("asm_diskgroup", SectionAffinity::Asm),
+        ("ts_quotas", SectionAffinity::Db),
+    ])
+});
 
-const SPACE_SEP_SECTIONS: [&str; 2] = [names::TABLE_SPACES, names::CONNECTIONS];
-
-const QUERY_BASED_SECTIONS: [&str; 3] = [names::JOBS, names::MIRRORING, names::AVAILABILITY_GROUPS];
-const PREDEFINED_SECTIONS: [&str; 13] = [
-    names::INSTANCE,
-    names::DATABASES,
-    names::COUNTERS,
-    names::BLOCKED_SESSIONS,
-    names::TRANSACTION_LOG,
-    names::CLUSTERS,
-    names::MIRRORING,
-    names::AVAILABILITY_GROUPS,
-    names::CONNECTIONS,
-    names::TABLE_SPACES,
-    names::DATAFILES,
-    names::BACKUP,
-    names::JOBS,
-];
-
-const ASYNC_SECTIONS: [&str; 4] = [
-    names::TABLE_SPACES,
-    names::DATAFILES,
-    names::BACKUP,
-    names::JOBS,
-];
-
-const PER_DATABASE_SECTIONS: [&str; 5] = [
-    names::DATABASES,
-    names::TRANSACTION_LOG,
-    names::TABLE_SPACES,
-    names::DATAFILES,
-    names::CLUSTERS,
-];
-
-const FIRST_LINE_SECTIONS: [&str; 2] = [names::MIRRORING, names::JOBS];
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum SectionKind {
     Sync,
     Async,
     Disabled,
+}
+
+const PREDEFINED_SECTIONS: [&str; 20] = [
+    names::INSTANCE,
+    names::ASM_INSTANCE,
+    names::SESSIONS,
+    names::LOG_SWITCHES,
+    names::UNDO_STAT,
+    names::RECOVERY_AREA,
+    names::PROCESSES,
+    names::RECOVERY_STATUS,
+    names::LONG_ACTIVE_SESSIONS,
+    names::DATAGUARD_STATS,
+    names::PERFORMANCE,
+    names::SYSTEM_PARAMETER,
+    names::LOCKS,
+    names::TABLESPACES,
+    names::RMAN,
+    names::JOBS,
+    names::RESUMABLE,
+    names::IO_STATS,
+    names::ASM_DISK_GROUP,
+    names::TS_QUOTAS,
+];
+
+const PREDEFINED_ASYNC_SECTIONS: [&str; 6] = [
+    names::TABLESPACES,
+    names::RMAN,
+    names::JOBS,
+    names::RESUMABLE,
+    names::IO_STATS,
+    names::ASM_DISK_GROUP,
+];
+
+impl SectionAffinity {
+    pub fn from_text<T: AsRef<str>>(s: T) -> Self {
+        match s.as_ref().to_lowercase().as_str() {
+            "all" => SectionAffinity::All,
+            "asm" => SectionAffinity::Asm,
+            "db" => SectionAffinity::Db,
+            _ => {
+                log::error!("Invalid section type: {}", s.as_ref());
+                SectionAffinity::Db
+            }
+        }
+    }
 }
 
 pub struct SectionBuilder {
@@ -87,19 +118,23 @@ pub struct SectionBuilder {
     is_async: bool,
     is_disabled: bool,
     sql: Option<String>,
+    affinity: SectionAffinity,
 }
 
 impl SectionBuilder {
     pub fn new<S: Into<String>>(name: S) -> Self {
         let name = name.into();
-        let sep = get_default_separator(&name);
-        let is_async = ASYNC_SECTIONS.contains(&name.as_str());
+        let is_async = PREDEFINED_ASYNC_SECTIONS.contains(&name.as_str());
         Self {
-            name,
-            sep,
+            name: name.clone(),
+            sep: defaults::DEFAULT_SEP,
             is_async,
             is_disabled: false,
             sql: None,
+            affinity: DEFAULT_AFFINITY_MAP
+                .get(name.as_str())
+                .cloned()
+                .unwrap_or(SectionAffinity::Db),
         }
     }
     pub fn sep(mut self, sep: Option<char>) -> Self {
@@ -110,6 +145,11 @@ impl SectionBuilder {
     }
     pub fn set_async(mut self, value: bool) -> Self {
         self.is_async = value;
+        self
+    }
+
+    pub fn set_affinity(mut self, value: SectionAffinity) -> Self {
+        self.affinity = value;
         self
     }
 
@@ -125,7 +165,7 @@ impl SectionBuilder {
 
     pub fn build(self) -> Section {
         Section {
-            name: self.name,
+            name: SectionName::from(self.name),
             sep: self.sep,
             kind: if self.is_disabled {
                 SectionKind::Disabled
@@ -135,16 +175,18 @@ impl SectionBuilder {
                 SectionKind::Sync
             },
             sql: self.sql,
+            affinity: self.affinity,
         }
     }
 }
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct Section {
-    name: String,
+    name: SectionName,
     sep: char,
     kind: SectionKind,
     sql: Option<String>,
+    affinity: SectionAffinity,
 }
 
 impl Section {
@@ -152,7 +194,7 @@ impl Section {
         SectionBuilder::new(name.into()).build()
     }
 
-    pub fn name(&self) -> &str {
+    pub fn name(&self) -> &SectionName {
         &self.name
     }
 
@@ -166,6 +208,22 @@ impl Section {
 
     pub fn sql(&self) -> Option<&str> {
         self.sql.as_deref()
+    }
+
+    pub fn affinity(&self) -> &SectionAffinity {
+        &self.affinity
+    }
+
+    pub fn is_allowed(&self, execution: SectionFilter) -> bool {
+        match self.kind {
+            SectionKind::Sync => {
+                execution == SectionFilter::All || execution == SectionFilter::Sync
+            }
+            SectionKind::Async => {
+                execution == SectionFilter::All || execution == SectionFilter::Async
+            }
+            SectionKind::Disabled => false,
+        }
     }
 }
 
@@ -189,30 +247,6 @@ fn get_predefined_sections() -> Vec<Section> {
         .iter()
         .map(|&s| Section::new(s))
         .collect()
-}
-
-pub fn get_per_database_sections() -> Vec<String> {
-    PER_DATABASE_SECTIONS
-        .iter()
-        .map(|&s| s.to_string())
-        .collect()
-}
-
-fn get_predefined_section_names() -> Vec<String> {
-    get_predefined_sections()
-        .iter()
-        .map(|s| s.name().to_owned())
-        .collect()
-}
-
-fn get_decorated_section_names() -> Vec<String> {
-    FIRST_LINE_SECTIONS.iter().map(|&s| s.to_owned()).collect()
-}
-
-pub fn get_plain_section_names() -> HashSet<String> {
-    let all = hash_set(&get_predefined_section_names());
-    let decorated = hash_set(&get_decorated_section_names());
-    (&all - &decorated).into_iter().collect()
 }
 
 impl Section {
@@ -246,6 +280,16 @@ impl Section {
         let c = yaml.get_string(keys::SEP).and_then(|s| s.chars().next());
         let builder = SectionBuilder::new(name).sep(c);
 
+        let affinity = yaml
+            .get_string(keys::AFFINITY)
+            .map(SectionAffinity::from_text)
+            .unwrap_or_else(|| {
+                DEFAULT_AFFINITY_MAP
+                    .get(name)
+                    .unwrap_or(&SectionAffinity::Db)
+                    .clone()
+            });
+
         if yaml.get_optional_bool(keys::DISABLED) == Some(true) {
             builder.set_disabled()
         } else if let Some(v) = yaml.get_optional_bool(keys::IS_ASYNC) {
@@ -253,6 +297,7 @@ impl Section {
         } else {
             builder
         }
+        .set_affinity(affinity)
         .build()
     }
 }
@@ -297,32 +342,45 @@ impl Sections {
     }
 }
 
-fn get_default_separator(name: &str) -> char {
-    if PIPE_SEP_SECTIONS.contains(&name) {
-        '|'
-    } else if SPACE_SEP_SECTIONS.contains(&name) {
-        ' '
-    } else if QUERY_BASED_SECTIONS.contains(&name) {
-        '\t'
-    } else {
-        log::warn!("Unknown section: {}", name);
-        ' '
-    }
-}
-
-fn hash_set<T: AsRef<str>>(v: &[T]) -> HashSet<String> {
-    HashSet::from_iter(v.iter().map(|s| s.as_ref().to_string()))
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::config::yaml::test_tools::create_yaml;
+    use std::collections::HashSet;
+
+    #[test]
+    fn test_section_allowed() {
+        let async_section = SectionBuilder::new("async").set_async(true).build();
+        assert!(async_section.is_allowed(SectionFilter::All));
+        assert!(!async_section.is_allowed(SectionFilter::Sync));
+        assert!(async_section.is_allowed(SectionFilter::Async));
+
+        let sync_section = SectionBuilder::new("sync").set_async(false).build();
+        assert!(sync_section.is_allowed(SectionFilter::All));
+        assert!(sync_section.is_allowed(SectionFilter::Sync));
+        assert!(!sync_section.is_allowed(SectionFilter::Async));
+
+        let disabled = SectionBuilder::new("disabled").set_disabled().build();
+        assert!(!disabled.is_allowed(SectionFilter::All));
+        assert!(!disabled.is_allowed(SectionFilter::Sync));
+        assert!(!disabled.is_allowed(SectionFilter::Async));
+    }
+
+    #[test]
+    fn test_section_affinity() {
+        assert_eq!(SectionAffinity::from_text("all"), SectionAffinity::All);
+        assert_eq!(SectionAffinity::from_text("ASM"), SectionAffinity::Asm);
+        assert_eq!(SectionAffinity::from_text(""), SectionAffinity::Db);
+    }
+
+    fn hash_set<T: AsRef<str>>(v: &[T]) -> HashSet<String> {
+        HashSet::from_iter(v.iter().map(|s| s.as_ref().to_string()))
+    }
 
     pub const SECTIONS_FULL: &str = r#"
 sections:
 - aaa:
-    sep: '|'
+    sep: '.'
 - bbb:
     sep: "|ss"
 - ccc:
@@ -330,63 +388,82 @@ sections:
     sep: |
 - ddd:
     is_async: yes
+    affinity: asm
 - "eee":
     sep: "|ss"
     disabled: yes
+    affinity: all
 "#;
 
     #[test]
     fn test_sections_from_yaml_full() {
+        fn make_section_vector<'a>(s: &'a Sections, kinds: &[SectionKind]) -> Vec<(&'a str, char)> {
+            s.select(kinds)
+                .iter()
+                .map(|s| (s.name().as_str(), s.sep()))
+                .collect::<Vec<(&str, char)>>()
+        }
         let s = Sections::from_yaml(&create_yaml(SECTIONS_FULL), &Sections::default()).unwrap();
         assert_eq!(
-            s.select(&[SectionKind::Sync])
-                .iter()
-                .map(|s| (s.name(), s.sep()))
-                .collect::<Vec<(&str, char)>>(),
-            [("aaa", '|'), ("bbb", '|')]
+            make_section_vector(&s, &[SectionKind::Sync]),
+            [("aaa", '.'), ("bbb", '|')]
         );
         assert_eq!(
-            s.select(&[SectionKind::Async])
-                .iter()
-                .map(|s| s.name())
-                .collect::<Vec<&str>>(),
-            ["ccc", "ddd"]
+            make_section_vector(&s, &[SectionKind::Async]),
+            [("ccc", '|'), ("ddd", '|')]
         );
         assert_eq!(
-            s.select(&[SectionKind::Disabled])
-                .iter()
-                .map(|s| (s.name(), s.sep()))
-                .collect::<Vec<(&str, char)>>(),
+            make_section_vector(&s, &[SectionKind::Disabled]),
             [("eee", '|')]
+        );
+        let mut all = s
+            .sections()
+            .iter()
+            .map(|s| format!("{}:{:?}", s.name(), s.affinity()))
+            .collect::<Vec<String>>();
+        all.sort();
+        assert_eq!(
+            all,
+            vec!["aaa:Db", "bbb:Db", "ccc:Db", "ddd:Asm", "eee:All"]
         );
     }
 
     #[test]
     fn test_sections_from_yaml_default() {
         let s = Sections::from_yaml(&create_sections_yaml_default(), &Sections::default()).unwrap();
-        assert_eq!(
-            HashSet::from_iter(
-                s.select(&[SectionKind::Sync])
-                    .iter()
-                    .map(|s| s.name().to_string())
-            ),
-            (&hash_set(&PREDEFINED_SECTIONS) - &hash_set(&ASYNC_SECTIONS))
-        );
-        assert_eq!(
-            s.select(&[SectionKind::Async])
+        let syncs = HashSet::from_iter(
+            s.select(&[SectionKind::Sync])
                 .iter()
-                .map(|s| s.name())
-                .collect::<Vec<&str>>(),
-            ASYNC_SECTIONS
+                .map(|s| s.name().to_string()),
         );
+        assert_eq!(
+            syncs,
+            (&hash_set(&PREDEFINED_SECTIONS) - &hash_set(&PREDEFINED_ASYNC_SECTIONS))
+        );
+
+        let asyncs = s
+            .select(&[SectionKind::Async])
+            .iter()
+            .map(|s| s.name().as_str())
+            .collect::<Vec<&str>>();
+        assert_eq!(asyncs, PREDEFINED_ASYNC_SECTIONS);
+
         assert_eq!(s.cache_age(), defaults::SECTIONS_CACHE_AGE);
+
         assert_eq!(
             Sections::from_yaml(&create_yaml("_sections:\n"), &Sections::default())
                 .unwrap()
                 .sections()
                 .len(),
-            13
+            20
         );
+        assert_eq!(s.sections.len(), PREDEFINED_SECTIONS.len());
+        s.sections.iter().for_each(|s| {
+            assert_eq!(
+                s.affinity(),
+                DEFAULT_AFFINITY_MAP.get(s.name().as_str()).unwrap()
+            )
+        });
     }
 
     fn create_sections_yaml_default() -> Yaml {
@@ -395,24 +472,5 @@ sections:
 _nothing: "nothing"
 "#;
         create_yaml(SOURCE)
-    }
-
-    #[test]
-    fn test_known_sections() {
-        assert_eq!(get_default_separator("zu"), ' ');
-        assert_eq!(get_default_separator("tablespaces"), ' ');
-        assert_eq!(get_default_separator("connections"), ' ');
-        assert_eq!(get_default_separator("jobs"), '\t');
-        assert_eq!(get_default_separator("mirroring"), '\t');
-        assert_eq!(get_default_separator("availability_groups"), '\t');
-        assert_eq!(get_default_separator("instance"), '|');
-    }
-    #[test]
-    fn test_get_no_first_line() {
-        assert_eq!(
-            get_plain_section_names(),
-            (&hash_set(&get_predefined_section_names())
-                - &hash_set(&get_decorated_section_names()))
-        );
     }
 }

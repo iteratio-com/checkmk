@@ -6,7 +6,6 @@
 from pathlib import Path
 
 from cmk.ccc.crash_reporting import crash_report_registry, VersionInfo
-
 from cmk.ec.crash_reporting import CrashReportStore, ECCrashReport
 
 
@@ -15,13 +14,12 @@ def test_ec_crash_report_registry() -> None:
 
 
 def test_ec_crash_report_from_exception(tmp_path: Path) -> None:
-    crashdir = tmp_path / "crash"
     try:
         raise ValueError("DING")
     except Exception:
         crash = ECCrashReport(
-            crashdir,
-            ECCrashReport.make_crash_info(
+            omd_root=tmp_path,
+            crash_info=ECCrashReport.make_crash_info(
                 VersionInfo(
                     core="test",
                     python_version="test",
@@ -30,7 +28,8 @@ def test_ec_crash_report_from_exception(tmp_path: Path) -> None:
                     version="3.99",
                     time=0.0,
                     os="Foobuntu",
-                )
+                ),
+                None,
             ),
         )
         CrashReportStore().save(crash)

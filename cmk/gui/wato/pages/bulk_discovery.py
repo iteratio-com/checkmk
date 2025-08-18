@@ -9,13 +9,13 @@ import copy
 from collections.abc import Collection
 from typing import cast, override
 
+from livestatus import SiteConfigurations
+
 from cmk.ccc.hostaddress import HostName
-
 from cmk.checkengine.discovery import DiscoverySettings
-
 from cmk.gui import forms, sites
 from cmk.gui.breadcrumb import Breadcrumb
-from cmk.gui.config import active_config
+from cmk.gui.config import active_config, Config
 from cmk.gui.exceptions import HTTPRedirect, MKUserError
 from cmk.gui.htmllib.html import html
 from cmk.gui.http import request
@@ -27,6 +27,7 @@ from cmk.gui.type_defs import ActionResult, PermissionName
 from cmk.gui.utils.csrf_token import check_csrf_token
 from cmk.gui.utils.transaction_manager import transactions
 from cmk.gui.wato.pages.folders import ModeFolder
+from cmk.gui.watolib.automations import make_automation_config
 from cmk.gui.watolib.bulk_discovery import (
     BulkDiscoveryBackgroundJob,
     BulkSize,
@@ -115,7 +116,7 @@ class ModeBulkDiscovery(WatoMode):
         return _("Bulk discovery")
 
     @override
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         return make_simple_form_page_menu(
             _("Discovery"),
             breadcrumb,
@@ -125,7 +126,7 @@ class ModeBulkDiscovery(WatoMode):
         )
 
     @override
-    def action(self) -> ActionResult:
+    def action(self, config: Config) -> ActionResult:
         check_csrf_token()
 
         user.need_permission("wato.services")
@@ -135,19 +136,20 @@ class ModeBulkDiscovery(WatoMode):
             if (
                 result := start_bulk_discovery(
                     self._job,
-                    self._get_hosts_to_discover(),
+                    self._get_hosts_to_discover(config.sites),
                     self._mode,
                     self._do_full_scan,
                     self._ignore_errors,
                     self._bulk_size,
-                    pprint_value=active_config.wato_pprint_config,
-                    debug=active_config.debug,
+                    pprint_value=config.wato_pprint_config,
+                    debug=config.debug,
+                    use_git=config.wato_use_git,
                 )
             ).is_error():
                 raise result.error
 
         except Exception as e:
-            if active_config.debug:
+            if config.debug:
                 raise
             logger.exception("Failed to start bulk discovery")
             raise MKUserError(
@@ -157,7 +159,7 @@ class ModeBulkDiscovery(WatoMode):
         raise HTTPRedirect(self._job.detail_url())
 
     @override
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         user.need_permission("wato.services")
 
         if self._job.is_active():
@@ -167,9 +169,9 @@ class ModeBulkDiscovery(WatoMode):
             )
             return
 
-        self._show_start_form()
+        self._show_start_form(config.sites)
 
-    def _show_start_form(self) -> None:
+    def _show_start_form(self, site_configs: SiteConfigurations) -> None:
         with html.form_context("bulkinventory", method="POST"):
             msgs = []
             if self._all:
@@ -183,7 +185,7 @@ class ModeBulkDiscovery(WatoMode):
                 vs = vs_bulk_discovery(render_form=True, include_subfolders=False)
                 msgs.append(
                     _("You have selected <b>%d</b> hosts for bulk discovery.")
-                    % len(self._get_hosts_to_discover())
+                    % len(self._get_hosts_to_discover(site_configs))
                 )
                 # The cast is needed for the moment, because mypy does not understand our data structure here
                 selection = cast(
@@ -204,7 +206,7 @@ class ModeBulkDiscovery(WatoMode):
 
             html.hidden_fields()
 
-    def _get_hosts_to_discover(self) -> list[DiscoveryHost]:
+    def _get_hosts_to_discover(self, site_configs: SiteConfigurations) -> list[DiscoveryHost]:
         if self._only_failed_invcheck:
             restrict_to_hosts = self._find_hosts_with_failed_discovery_check()
         else:
@@ -229,7 +231,12 @@ class ModeBulkDiscovery(WatoMode):
                 host = self._folder.load_host(host_name)
                 host.permissions.need_permission("write")
                 hosts_to_discover.append(
-                    DiscoveryHost(host.site_id(), host.folder().path(), host_name)
+                    DiscoveryHost(
+                        site_id := host.site_id(),
+                        make_automation_config(site_configs[site_id]),
+                        host.folder().path(),
+                        host_name,
+                    )
                 )
 
         else:
@@ -245,7 +252,12 @@ class ModeBulkDiscovery(WatoMode):
                 host = folder.load_host(host_name)
                 host.permissions.need_permission("write")
                 hosts_to_discover.append(
-                    DiscoveryHost(host.site_id(), host.folder().path(), host_name)
+                    DiscoveryHost(
+                        site_id := host.site_id(),
+                        make_automation_config(site_configs[site_id]),
+                        host.folder().path(),
+                        host_name,
+                    )
                 )
 
         return hosts_to_discover

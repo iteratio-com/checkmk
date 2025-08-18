@@ -8,7 +8,6 @@ import sys
 from collections.abc import Collection, Iterable, Sequence
 from enum import Enum
 
-import requests
 from netapp_ontap import resources as NetAppResource
 from netapp_ontap.error import NetAppRestError
 from netapp_ontap.host_connection import HostConnection
@@ -44,7 +43,7 @@ class FetchedResource(Enum):
     environment = "environment"
     qtree_quota = "qtree_quota"
     snapvault = "snapvault"
-    fc_interfaces = "fc_ports"
+    fc_interfaces = "fc_interfaces"
 
     def __str__(self):
         return self.value
@@ -309,11 +308,8 @@ def fetch_luns(connection: HostConnection) -> Iterable[models.LunModel]:
 def _aggregates_ids(connection: HostConnection, args: Args) -> Collection:
     # wee need to retrieve the uuid of the aggregates via the CLI passthrough
     # because the REST API does not return, per design, the uuid of the root aggregates
-    response = requests.get(
+    response = connection.session.get(
         url=f"{connection.origin}/api/private/cli/aggr?fields=uuid",
-        headers=connection.headers,
-        verify=False if args.no_cert_check else True,  # pylint: disable=simplifiable-if-expression
-        auth=(connection.username, connection.password),  # type: ignore[arg-type]
         timeout=args.timeout,
     )
 
@@ -491,14 +487,16 @@ def fetch_nodes(connection: HostConnection) -> Iterable[models.NodeModel]:
         )
 
 
-def fetch_fans(connection: HostConnection) -> Iterable[models.ShelfFanModel]:
-    field_query = (
+def fetch_fans(
+    connection: HostConnection, oldest_version: models.Version
+) -> Iterable[models.ShelfFanModel]:
+    field_query = [
         "id",
         "fans.id",
         "fans.state",
-        # "fans.rpm",        # Can be missing, currently unused
-        "fans.installed",
-    )
+    ]
+    if oldest_version >= models.Version(generation=9, major=13, minor=1):
+        field_query.append("fans.installed")
 
     for element in NetAppResource.Shelf.get_collection(
         connection=connection, fields=",".join(field_query)
@@ -542,19 +540,21 @@ def fetch_psu(connection: HostConnection) -> Iterable[models.ShelfPsuModel]:
 
 def fetch_temperatures(
     connection: HostConnection,
+    oldest_version: models.Version,
 ) -> Iterable[models.ShelfTemperatureModel]:
-    field_query = (
+    field_query = [
         "id",
         "temperature_sensors.id",
         "temperature_sensors.state",
-        "temperature_sensors.installed",
         "temperature_sensors.temperature",
         "temperature_sensors.ambient",
         "temperature_sensors.threshold.low.warning",
         "temperature_sensors.threshold.low.critical",
         "temperature_sensors.threshold.high.warning",
         "temperature_sensors.threshold.high.critical",
-    )
+    ]
+    if oldest_version >= models.Version(generation=9, major=13, minor=1):
+        field_query.append("temperature_sensors.installed")
 
     for element in NetAppResource.Shelf.get_collection(
         connection=connection, fields=",".join(field_query)
@@ -579,11 +579,8 @@ def fetch_temperatures(
 
 
 def fetch_alerts(connection: HostConnection, args: Args) -> Iterable[models.AlertModel]:
-    response = requests.get(
+    response = connection.session.get(
         url=f"{connection.origin}/api/private/support/alerts",
-        headers=connection.headers,
-        verify=False if args.no_cert_check else True,
-        auth=(connection.username, connection.password),  # type: ignore[arg-type]
         timeout=args.timeout,
     )
 
@@ -857,12 +854,30 @@ def fetch_fc_ports(connection: HostConnection) -> Iterable[models.FcPortModel]:
         )
 
 
+def _pick_oldest_node_version(nodes: Iterable[models.NodeModel]) -> models.Version:
+    """
+    NetApp supports mixed version ONTAP clusters for limited periods of time and in specific scenarios.
+    We need to support this.
+    (see: https://docs.netapp.com/us-en/ontap/upgrade/concept_mixed_version_requirements.html)
+
+    This function picks the oldest version from the list of nodes versions.
+    In this way, inside fetch functions, we can query the API with the "oldest" set of fields
+    to ensure a safe approach.
+    """
+    return min(node.version for node in nodes)
+
+
 def write_sections(connection: HostConnection, logger: logging.Logger, args: Args) -> None:
     """Write monitoring sections based on selected resources"""
     fetched_resources = {obj.value for obj in args.fetched_resources}
 
-    # Store interfaces and volumes for counter sections that depend on them
+    # Store volumes for counter sections that depend on them
     volumes = None
+    nodes = list(fetch_nodes(connection))
+    oldest_version = _pick_oldest_node_version(nodes)
+
+    if FetchedResource.node.value in fetched_resources:
+        write_section("node", nodes, logger)
 
     if (
         FetchedResource.volumes.value in fetched_resources
@@ -895,22 +910,16 @@ def write_sections(connection: HostConnection, logger: logging.Logger, args: Arg
     if FetchedResource.vs_status.value in fetched_resources:
         write_section("vs_status", fetch_vs_status(connection), logger)
 
-    if FetchedResource.ports.value in fetched_resources:
-        write_section("ports", fetch_ports(connection), logger)
-
     if FetchedResource.interfaces.value in fetched_resources:
         interfaces = list(fetch_interfaces(connection))
         write_section("if", interfaces, logger)
         write_section("if_counters", fetch_interfaces_counters(connection, interfaces), logger)
 
-    if FetchedResource.node.value in fetched_resources:
-        write_section("node", fetch_nodes(connection), logger)
-
     if FetchedResource.fan.value in fetched_resources:
-        write_section("fan", fetch_fans(connection), logger)
+        write_section("fan", fetch_fans(connection, oldest_version), logger)
 
     if FetchedResource.temp.value in fetched_resources:
-        write_section("temp", fetch_temperatures(connection), logger)
+        write_section("temp", fetch_temperatures(connection, oldest_version), logger)
 
     if FetchedResource.alerts.value in fetched_resources:
         write_section("alerts", fetch_alerts(connection, args), logger)
@@ -927,6 +936,12 @@ def write_sections(connection: HostConnection, logger: logging.Logger, args: Arg
     if FetchedResource.fc_interfaces.value in fetched_resources:
         write_section("fc_ports", fetch_fc_ports(connection), logger)
         write_section("fc_interfaces_counters", fetch_fc_interfaces_counters(connection), logger)
+
+    try:
+        if FetchedResource.ports.value in fetched_resources:
+            write_section("ports", fetch_ports(connection), logger)
+    except NetAppRestError:
+        raise CannotRecover("Fetch ports failed. Cluster could be in a degraded state.")
 
 
 def parse_arguments(argv: Sequence[str] | None) -> Args:
@@ -985,7 +1000,7 @@ def parse_arguments(argv: Sequence[str] | None) -> Args:
     return parser.parse_args(argv)
 
 
-def _setup_logging(verbose: bool) -> logging.Logger:
+def _setup_logging(verbose: int) -> logging.Logger:
     logging.basicConfig(
         level={0: logging.WARN, 1: logging.INFO, 2: logging.DEBUG}.get(verbose, logging.DEBUG),
     )

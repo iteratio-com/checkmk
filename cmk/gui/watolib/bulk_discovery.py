@@ -10,15 +10,13 @@ from typing import Literal, NamedTuple, NewType, override
 
 from pydantic import BaseModel
 
+from livestatus import SiteConfigurations
+
 import cmk.ccc.resulttype as result
+from cmk.automations.results import ServiceDiscoveryResult as AutomationDiscoveryResult
 from cmk.ccc import store
 from cmk.ccc.hostaddress import HostName
 from cmk.ccc.site import SiteId
-
-from cmk.utils.paths import configuration_lockfile, tmp_run_dir
-
-from cmk.automations.results import ServiceDiscoveryResult as AutomationDiscoveryResult
-
 from cmk.checkengine.discovery import (
     DiscoveryReport,
     DiscoverySettingFlags,
@@ -26,7 +24,6 @@ from cmk.checkengine.discovery import (
     DiscoveryValueSpecModel,
     TransitionCounter,
 )
-
 from cmk.gui.background_job import (
     AlreadyRunningError,
     BackgroundJob,
@@ -34,7 +31,6 @@ from cmk.gui.background_job import (
     InitialStatusArgs,
     JobTarget,
 )
-from cmk.gui.config import active_config
 from cmk.gui.exceptions import MKUserError
 from cmk.gui.http import request
 from cmk.gui.i18n import _
@@ -52,6 +48,11 @@ from cmk.gui.valuespec import (
     Tuple,
     ValueSpec,
 )
+from cmk.gui.watolib.automations import (
+    LocalAutomationConfig,
+    make_automation_config,
+    RemoteAutomationConfig,
+)
 from cmk.gui.watolib.changes import add_service_change
 from cmk.gui.watolib.check_mk_automations import discovery
 from cmk.gui.watolib.config_domain_name import (
@@ -62,6 +63,7 @@ from cmk.gui.watolib.config_domain_name import (
     CORE as CORE_DOMAIN,
 )
 from cmk.gui.watolib.hosts_and_folders import disk_or_search_folder_from_request, folder_tree, Host
+from cmk.utils.paths import configuration_lockfile, tmp_run_dir
 
 DoFullScan = NewType("DoFullScan", bool)
 
@@ -71,12 +73,14 @@ IgnoreErrors = NewType("IgnoreErrors", bool)
 
 class DiscoveryHost(NamedTuple):
     site_id: str
+    automation_config: LocalAutomationConfig | RemoteAutomationConfig
     folder_path: str
     host_name: str
 
 
 class DiscoveryTask(NamedTuple):
     site_id: SiteId
+    automation_config: LocalAutomationConfig | RemoteAutomationConfig
     folder_path: str
     host_names: list
 
@@ -262,6 +266,7 @@ class BulkDiscoveryBackgroundJob(BackgroundJob):
         *,
         pprint_value: bool,
         debug: bool,
+        use_git: bool,
     ) -> None:
         job_interface.send_progress_update(_("Waiting to acquire lock"))
         with job_interface.gui_context(), store.locked(self.lock_file):
@@ -274,6 +279,7 @@ class BulkDiscoveryBackgroundJob(BackgroundJob):
                 job_interface,
                 pprint_value=pprint_value,
                 debug=debug,
+                use_git=use_git,
             )
 
     def _do_execute(
@@ -286,6 +292,7 @@ class BulkDiscoveryBackgroundJob(BackgroundJob):
         *,
         pprint_value: bool,
         debug: bool,
+        use_git: bool,
     ) -> None:
         self._initialize_statistics(
             num_hosts_total=sum(len(task.host_names) for task in tasks),
@@ -299,7 +306,7 @@ class BulkDiscoveryBackgroundJob(BackgroundJob):
         result_queue: mp.Queue[_DiscoveryTaskResult | None] = mp.Queue()
         result_processing_thread = threading.Thread(
             target=copy_request_context(self._process_discovery_results),
-            args=(result_queue, len(tasks_by_site), job_interface, pprint_value),
+            args=(result_queue, len(tasks_by_site), job_interface, pprint_value, use_git),
         )
 
         def run(site_tasks: list[DiscoveryTask]) -> None:
@@ -366,7 +373,7 @@ class BulkDiscoveryBackgroundJob(BackgroundJob):
         for task in site_tasks:
             try:
                 result = discovery(
-                    task.site_id,
+                    task.automation_config,
                     mode,
                     task.host_names,
                     scan=do_scan,
@@ -425,6 +432,7 @@ class BulkDiscoveryBackgroundJob(BackgroundJob):
         n_task_threads: int,
         job_interface: BackgroundProcessInterface,
         pprint_value: bool,
+        use_git: bool,
     ) -> None:
         remaining_threads = n_task_threads
         while True:
@@ -445,6 +453,7 @@ class BulkDiscoveryBackgroundJob(BackgroundJob):
                         result.result,
                         job_interface,
                         pprint_value=pprint_value,
+                        use_git=use_git,
                     )
                 except Exception as exc:
                     self._process_discovery_error(
@@ -460,6 +469,7 @@ class BulkDiscoveryBackgroundJob(BackgroundJob):
         job_interface: BackgroundProcessInterface,
         *,
         pprint_value: bool,
+        use_git: bool,
     ) -> None:
         # The following code updates the host config. The progress from loading the Setup folder
         # until it has been saved needs to be locked.
@@ -471,7 +481,10 @@ class BulkDiscoveryBackgroundJob(BackgroundJob):
             for count, hostname in enumerate(task.host_names, self._num_hosts_processed + 1):
                 self._process_service_counts_for_host(response.hosts[hostname])
                 msg = self._process_discovery_result_for_host(
-                    hosts[hostname], response.hosts[hostname], pprint_value=pprint_value
+                    hosts[hostname],
+                    response.hosts[hostname],
+                    pprint_value=pprint_value,
+                    use_git=use_git,
                 )
                 job_interface.send_progress_update(
                     f"[{count}/{self._num_hosts_total}] {hostname}: {msg}"
@@ -482,7 +495,7 @@ class BulkDiscoveryBackgroundJob(BackgroundJob):
         self._num_host_labels += result.host_labels
 
     def _process_discovery_result_for_host(
-        self, host: Host, result: DiscoveryReport, *, pprint_value: bool
+        self, host: Host, result: DiscoveryReport, *, pprint_value: bool, use_git: bool
     ) -> str:
         if result.error_text == "":
             self._num_hosts_skipped += 1
@@ -521,7 +534,7 @@ class BulkDiscoveryBackgroundJob(BackgroundJob):
             domain_settings={CORE_DOMAIN: generate_hosts_to_update_settings([host.name()])},
             site_id=host.site_id(),
             diff_text=result.diff_text,
-            use_git=active_config.wato_use_git,
+            use_git=use_git,
         )
 
         if not host.locked():
@@ -530,14 +543,23 @@ class BulkDiscoveryBackgroundJob(BackgroundJob):
         return _("discovery successful")
 
 
-def prepare_hosts_for_discovery(hostnames: Sequence[str]) -> list[DiscoveryHost]:
+def prepare_hosts_for_discovery(
+    hostnames: Sequence[str], site_configs: SiteConfigurations
+) -> list[DiscoveryHost]:
     hosts_to_discover = []
     for host_name in hostnames:
         host = Host.host(HostName(host_name))
         if host is None:
             raise MKUserError(None, _("The host '%s' does not exist") % host_name)
         host.permissions.need_permission("write")
-        hosts_to_discover.append(DiscoveryHost(host.site_id(), host.folder().path(), host_name))
+        hosts_to_discover.append(
+            DiscoveryHost(
+                site_id := host.site_id(),
+                make_automation_config(site_configs[site_id]),
+                host.folder().path(),
+                host_name,
+            )
+        )
     return hosts_to_discover
 
 
@@ -551,6 +573,7 @@ def start_bulk_discovery(
     *,
     pprint_value: bool,
     debug: bool,
+    use_git: bool,
 ) -> result.Result[None, AlreadyRunningError | StartupError]:
     """Start a bulk discovery job with the given options
 
@@ -589,6 +612,7 @@ def start_bulk_discovery(
                 tasks=tasks,
                 pprint_value=pprint_value,
                 debug=debug,
+                use_git=use_git,
             ),
         ),
         InitialStatusArgs(
@@ -607,6 +631,7 @@ class BulkDiscoveryJobArgs(BaseModel, frozen=True):
     tasks: Sequence[DiscoveryTask]
     pprint_value: bool
     debug: bool
+    use_git: bool
 
 
 def bulk_discovery_job_entry_point(
@@ -620,6 +645,7 @@ def bulk_discovery_job_entry_point(
         job_interface,
         pprint_value=args.pprint_value,
         debug=args.debug,
+        use_git=args.use_git,
     )
 
 
@@ -634,13 +660,20 @@ def _create_tasks_from_hosts(
     current_site_and_folder = None
     tasks: list[DiscoveryTask] = []
 
-    for site_id, folder_path, host_name in sorted(hosts_to_discover):
+    for site_id, automation_config, folder_path, host_name in sorted(hosts_to_discover):
         if (
             not tasks
             or (site_id, folder_path) != current_site_and_folder
             or len(tasks[-1].host_names) >= bulk_size
         ):
-            tasks.append(DiscoveryTask(SiteId(site_id), folder_path, [host_name]))
+            tasks.append(
+                DiscoveryTask(
+                    SiteId(site_id),
+                    automation_config,
+                    folder_path,
+                    [host_name],
+                )
+            )
         else:
             tasks[-1].host_names.append(host_name)
         current_site_and_folder = site_id, folder_path

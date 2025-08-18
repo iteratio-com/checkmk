@@ -14,20 +14,16 @@ from pydantic import BaseModel
 
 from livestatus import SiteConfiguration
 
+import cmk.utils.paths
 from cmk.ccc import store
 from cmk.ccc.hostaddress import HostName
 from cmk.ccc.plugin_registry import Registry
 from cmk.ccc.site import SiteId
-
-import cmk.utils.paths
-from cmk.utils.agent_registration import get_uuid_link_manager
-from cmk.utils.notify_types import EventRule
-from cmk.utils.object_diff import make_diff_text
-
 from cmk.gui import userdb
 from cmk.gui.background_job import BackgroundJob, BackgroundProcessInterface
+from cmk.gui.config import Config
 from cmk.gui.exceptions import MKAuthException
-from cmk.gui.http import request
+from cmk.gui.http import Request, request
 from cmk.gui.i18n import _, _l
 from cmk.gui.logged_in import user
 from cmk.gui.utils.urls import makeuri
@@ -35,6 +31,9 @@ from cmk.gui.watolib.automations import (
     LocalAutomationConfig,
     make_automation_config,
 )
+from cmk.utils.agent_registration import get_uuid_link_manager
+from cmk.utils.notify_types import EventRule
+from cmk.utils.object_diff import make_diff_text
 
 from .audit_log import log_audit
 from .automation_commands import AutomationCommand
@@ -100,7 +99,7 @@ def perform_rename_hosts(
         try:
             update_interface(_("Renaming host(s) in folders..."))
             setup_actions[renaming] = _rename_host_in_folder(
-                folder, oldname, newname, pprint_value=pprint_value
+                folder, oldname, newname, pprint_value=pprint_value, use_git=use_git
             )
         except MKAuthException as e:
             auth_problems.append((oldname, e))
@@ -116,11 +115,17 @@ def perform_rename_hosts(
             update_interface(_("Renaming host(s) in cluster nodes..."))
             this_host_actions.extend(
                 _rename_host_as_cluster_node(
-                    cluster_hosts, oldname, newname, pprint_value=pprint_value
+                    cluster_hosts,
+                    oldname,
+                    newname,
+                    pprint_value=pprint_value,
+                    use_git=use_git,
                 )
             )
             update_interface(_("Renaming host(s) in parents..."))
-            this_host_actions.extend(_rename_parents(oldname, newname, pprint_value=pprint_value))
+            this_host_actions.extend(
+                _rename_parents(oldname, newname, pprint_value=pprint_value, use_git=use_git)
+            )
             update_interface(_("Renaming host(s) in rule sets..."))
             this_host_actions.extend(
                 _rename_host_in_rulesets(
@@ -172,13 +177,9 @@ def perform_rename_hosts(
 
 
 def _rename_host_in_folder(
-    folder: Folder,
-    oldname: HostName,
-    newname: HostName,
-    *,
-    pprint_value: bool,
+    folder: Folder, oldname: HostName, newname: HostName, *, pprint_value: bool, use_git: bool
 ) -> list[str]:
-    folder.rename_host(oldname, newname, pprint_value=pprint_value)
+    folder.rename_host(oldname, newname, pprint_value=pprint_value, use_git=use_git)
     folder_tree().invalidate_caches()
     return ["folder"]
 
@@ -189,10 +190,13 @@ def _rename_host_as_cluster_node(
     newname: HostName,
     *,
     pprint_value: bool,
+    use_git: bool,
 ) -> list[str]:
     renamed_cluster_nodes = 0
     for cluster_host in cluster_hosts:
-        if cluster_host.rename_cluster_node(oldname, newname, pprint_value=pprint_value):
+        if cluster_host.rename_cluster_node(
+            oldname, newname, pprint_value=pprint_value, use_git=use_git
+        ):
             renamed_cluster_nodes += 1
     return ["cluster_nodes"] * renamed_cluster_nodes
 
@@ -202,11 +206,12 @@ def _rename_parents(
     newname: HostName,
     *,
     pprint_value: bool,
+    use_git: bool,
 ) -> list[str]:
     parent_renamed: list[str]
     folder_parent_renamed: list[Folder]
     parent_renamed, folder_parent_renamed = _rename_host_in_parents(
-        oldname, newname, pprint_value=pprint_value
+        oldname, newname, pprint_value=pprint_value, use_git=use_git
     )
     # Needed because hosts.mk in folders with parent as effective attribute
     # would not be updated
@@ -221,6 +226,7 @@ def _rename_host_in_parents(
     newname: HostName,
     *,
     pprint_value: bool,
+    use_git: bool,
 ) -> tuple[list[str], list[Folder]]:
     folder_parent_renamed: list[Folder] = []
     parents, folder_parent_renamed = _rename_host_as_parent(
@@ -229,6 +235,7 @@ def _rename_host_in_parents(
         folder_parent_renamed,
         folder_tree().root_folder(),
         pprint_value=pprint_value,
+        use_git=use_git,
     )
     return ["parents"] * len(parents), folder_parent_renamed
 
@@ -402,22 +409,28 @@ def _rename_host_as_parent(
     in_folder: Folder,
     *,
     pprint_value: bool,
+    use_git: bool,
 ) -> tuple[list[HostName | str], list[Folder]]:
     parents: list[HostName | str] = []
     for somehost in in_folder.hosts().values():
         if "parents" in somehost.attributes:
-            if somehost.rename_parent(oldname, newname, pprint_value=pprint_value):
+            if somehost.rename_parent(oldname, newname, pprint_value=pprint_value, use_git=use_git):
                 parents.append(somehost.name())
 
     if "parents" in in_folder.attributes:
-        if in_folder.rename_parent(oldname, newname, pprint_value=pprint_value):
+        if in_folder.rename_parent(oldname, newname, pprint_value=pprint_value, use_git=use_git):
             if in_folder not in folder_parent_renamed:
                 folder_parent_renamed.append(in_folder)
             parents.append(in_folder.name())
 
     for subfolder in in_folder.subfolders():
         subfolder_parents, folder_parent_renamed = _rename_host_as_parent(
-            oldname, newname, folder_parent_renamed, subfolder, pprint_value=pprint_value
+            oldname,
+            newname,
+            folder_parent_renamed,
+            subfolder,
+            pprint_value=pprint_value,
+            use_git=use_git,
         )
         parents += subfolder_parents
 
@@ -483,7 +496,7 @@ class AutomationRenameHostsUUIDLink(AutomationCommand[_RenameHostsUUIDLinkReques
     def execute(self, api_request: _RenameHostsUUIDLinkRequest) -> int:
         return len(get_uuid_link_manager().rename(api_request.renamings))
 
-    def get_request(self) -> _RenameHostsUUIDLinkRequest:
+    def get_request(self, config: Config, request: Request) -> _RenameHostsUUIDLinkRequest:
         return _RenameHostsUUIDLinkRequest(renamings=json.loads(request.get_request()["renamings"]))
 
 

@@ -8,12 +8,11 @@ from collections.abc import Iterable, Mapping, Sequence
 from pathlib import Path
 from typing import Any, NewType
 
+from livestatus import SiteConfigurations
+
 import cmk.ccc.version as cmk_version
-from cmk.ccc.site import SiteId
-
-from cmk.utils import paths
-
 import cmk.gui.watolib.changes as _changes
+from cmk.ccc.site import SiteId
 from cmk.gui.breadcrumb import Breadcrumb
 from cmk.gui.config import active_config
 from cmk.gui.customer import customer_api, SCOPE_GLOBAL
@@ -30,7 +29,7 @@ from cmk.gui.page_menu import (
     PageMenuSearch,
     PageMenuTopic,
 )
-from cmk.gui.site_config import get_login_sites, sitenames
+from cmk.gui.site_config import get_login_sites
 from cmk.gui.table import table_element
 from cmk.gui.type_defs import ActionResult
 from cmk.gui.userdb import (
@@ -45,6 +44,7 @@ from cmk.gui.watolib.audit_log import LogMessage
 from cmk.gui.watolib.config_domains import ConfigDomainGUI
 from cmk.gui.watolib.hosts_and_folders import folder_preserving_link, make_action_link
 from cmk.gui.watolib.mode import redirect
+from cmk.utils import paths
 
 DisplayIndex = NewType("DisplayIndex", int)
 RealIndex = NewType("RealIndex", int)
@@ -205,31 +205,38 @@ def render_connections_page(
             html.write_text_permissive(connection["description"])
 
 
-def add_change(*, action_name: str, text: LogMessage, sites: list[SiteId]) -> None:
+def add_change(*, action_name: str, text: LogMessage, sites: list[SiteId], use_git: bool) -> None:
     _changes.add_change(
         action_name=action_name,
         text=text,
         user_id=user.id,
         domains=[ConfigDomainGUI()],
         sites=sites,
-        use_git=active_config.wato_use_git,
+        use_git=use_git,
     )
 
 
-def get_affected_sites(connection: ConfigurableUserConnectionSpec) -> list[SiteId]:
+def get_affected_sites(
+    site_configs: SiteConfigurations, connection: ConfigurableUserConnectionSpec
+) -> list[SiteId]:
     if cmk_version.edition(paths.omd_root) is cmk_version.Edition.CME:
         # TODO CMK-14203
         _customer_api = customer_api()
         customer: str | None = connection.get("customer", SCOPE_GLOBAL)
         if _customer_api.is_global(customer):
-            return sitenames()
+            return list(site_configs)
         assert customer is not None
         return list(_customer_api.get_sites_of_customer(customer).keys())
-    return get_login_sites()
+    return get_login_sites(site_configs)
 
 
 def _delete_connection(
-    index: int, connection_type: str, *, custom_config_dirs: Iterable[Path]
+    *,
+    index: int,
+    connection_type: str,
+    custom_config_dirs: Iterable[Path],
+    site_configs: SiteConfigurations,
+    use_git: bool,
 ) -> None:
     connections = UserConnectionConfigFile().load_for_modification()
     connection = connections[index]
@@ -237,7 +244,8 @@ def _delete_connection(
     add_change(
         action_name=f"delete-{connection_type}-connection",
         text=_("Deleted connection %s") % (connection_id),
-        sites=get_affected_sites(connection),
+        sites=get_affected_sites(site_configs, connection),
+        use_git=use_git,
     )
 
     for dir_ in custom_config_dirs:
@@ -254,13 +262,21 @@ def _remove_custom_files(cert_dir: Path) -> None:
     shutil.rmtree(cert_dir)
 
 
-def _move_connection(from_index: int, to_index: int, connection_type: str) -> None:
+def _move_connection(
+    from_index: int,
+    to_index: int,
+    connection_type: str,
+    site_configs: SiteConfigurations,
+    *,
+    use_git: bool,
+) -> None:
     connections = UserConnectionConfigFile().load_for_modification()
     connection = connections[from_index]
     add_change(
         action_name=f"move-{connection_type}-connection",
         text=_("Changed position of connection %s to %d") % (connection["id"], to_index),
-        sites=get_affected_sites(connection),
+        sites=get_affected_sites(site_configs, connection),
+        use_git=use_git,
     )
     del connections[from_index]  # make to_pos now match!
     connections[to_index:to_index] = [connection]
@@ -281,7 +297,12 @@ def _gui_index_to_real_index(
 
 
 def connection_actions(
-    config_mode_url: str, connection_type: str, custom_config_dirs: Iterable[Path]
+    config_mode_url: str,
+    connection_type: str,
+    custom_config_dirs: Iterable[Path],
+    site_configs: SiteConfigurations,
+    *,
+    use_git: bool,
 ) -> ActionResult:
     if not transactions.check_transaction():
         return redirect(config_mode_url)
@@ -291,6 +312,8 @@ def connection_actions(
             index=request.get_integer_input_mandatory("_delete"),
             connection_type=connection_type,
             custom_config_dirs=custom_config_dirs,
+            site_configs=site_configs,
+            use_git=use_git,
         )
 
     elif request.has_var("_move"):
@@ -302,6 +325,8 @@ def connection_actions(
                 load_connection_config(lock=False),
             ),
             connection_type=connection_type,
+            site_configs=site_configs,
+            use_git=use_git,
         )
 
     return redirect(config_mode_url)

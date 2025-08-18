@@ -9,10 +9,9 @@ import random
 from collections.abc import Collection
 
 from cmk.ccc.hostaddress import HostAddress, HostName
-
 from cmk.gui import forms
 from cmk.gui.breadcrumb import Breadcrumb
-from cmk.gui.config import active_config
+from cmk.gui.config import Config
 from cmk.gui.htmllib.html import html
 from cmk.gui.http import request
 from cmk.gui.i18n import _
@@ -46,12 +45,12 @@ class ModeRandomHosts(WatoMode):
     def parent_mode(cls) -> type[WatoMode] | None:
         return ModeFolder
 
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         return make_simple_form_page_menu(
             _("Hosts"), breadcrumb, form_name="random", button_name="_save", save_title=_("Start!")
         )
 
-    def action(self) -> ActionResult:
+    def action(self, config: Config) -> ActionResult:
         folder = folder_from_request(request.var("folder"), request.get_ascii_input("host"))
         if not transactions.check_transaction():
             return redirect(mode_url("folder", folder=folder.path()))
@@ -60,12 +59,17 @@ class ModeRandomHosts(WatoMode):
         folders = request.get_integer_input_mandatory("folders")
         levels = request.get_integer_input_mandatory("levels")
         created = self._create_random_hosts(
-            folder, count, folders, levels, pprint_value=active_config.wato_pprint_config
+            folder,
+            count,
+            folders,
+            levels,
+            pprint_value=config.wato_pprint_config,
+            use_git=config.wato_use_git,
         )
         flash(_("Added %d random hosts.") % created)
         return redirect(mode_url("folder", folder=folder.path()))
 
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         with html.form_context("random"):
             forms.header(_("Add random hosts"))
             forms.section(_("Number to create"))
@@ -83,7 +87,14 @@ class ModeRandomHosts(WatoMode):
             html.hidden_fields()
 
     def _create_random_hosts(
-        self, folder: Folder, count: int, folders: int, levels: int, *, pprint_value: bool
+        self,
+        folder: Folder,
+        count: int,
+        folders: int,
+        levels: int,
+        *,
+        pprint_value: bool,
+        use_git: bool,
     ) -> int:
         if levels == 0:
             hosts_to_create: list[tuple[HostName, HostAttributes, None]] = []
@@ -92,7 +103,7 @@ class ModeRandomHosts(WatoMode):
                 hosts_to_create.append(
                     (HostName(host_name), {"ipaddress": HostAddress("127.0.0.1")}, None)
                 )
-            folder.create_hosts(hosts_to_create, pprint_value=pprint_value)
+            folder.create_hosts(hosts_to_create, pprint_value=pprint_value, use_git=use_git)
             return count
 
         total_created = 0
@@ -107,9 +118,9 @@ class ModeRandomHosts(WatoMode):
                 i += 1
 
             subfolder = folder.create_subfolder(
-                folder_name, "Subfolder %02d" % i, {}, pprint_value=pprint_value
+                folder_name, "Subfolder %02d" % i, {}, pprint_value=pprint_value, use_git=use_git
             )
             total_created += self._create_random_hosts(
-                subfolder, count, folders, levels - 1, pprint_value=pprint_value
+                subfolder, count, folders, levels - 1, pprint_value=pprint_value, use_git=use_git
             )
         return total_created

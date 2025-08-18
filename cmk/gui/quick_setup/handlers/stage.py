@@ -19,7 +19,6 @@ from cmk.ccc import store
 from cmk.ccc.exceptions import MKGeneralException
 from cmk.ccc.i18n import _
 from cmk.ccc.site import SiteId
-
 from cmk.gui.background_job import (
     BackgroundJob,
     BackgroundJobDefines,
@@ -27,12 +26,10 @@ from cmk.gui.background_job import (
     InitialStatusArgs,
     JobTarget,
 )
-from cmk.gui.config import active_config
+from cmk.gui.config import active_config, Config
 from cmk.gui.exceptions import MKInternalError, MKUserError
-from cmk.gui.form_specs.vue.form_spec_visitor import (
-    validate_value_from_frontend,
-)
-from cmk.gui.http import request
+from cmk.gui.form_specs.vue import get_visitor, RawFrontendData, VisitorOptions
+from cmk.gui.http import Request
 from cmk.gui.i18n import localize
 from cmk.gui.logged_in import user
 from cmk.gui.quick_setup.config_setups import register as register_config_setups
@@ -83,7 +80,6 @@ from cmk.gui.watolib.automations import (
     MKAutomationException,
     RemoteAutomationConfig,
 )
-
 from cmk.rulesets.v1.form_specs import FormSpec
 
 
@@ -115,7 +111,12 @@ def _form_spec_validate(
     return {
         form_spec_id: [QuickSetupValidationError(**asdict(error)) for error in errors]
         for form_spec_id, form_data in current_stage_form_data.items()
-        if (errors := validate_value_from_frontend(expected_formspecs_map[form_spec_id], form_data))
+        if (
+            errors := get_visitor(
+                expected_formspecs_map[form_spec_id],
+                VisitorOptions(migrate_values=True, mask_values=False),
+            ).validate(RawFrontendData(form_data))
+        )
     }
 
 
@@ -538,7 +539,7 @@ class AutomationQuickSetupStageAction(AutomationCommand[QuickSetupStageActionJob
         return "start-quick-setup-stage-action"
 
     @override
-    def get_request(self) -> QuickSetupStageActionJobArgs:
+    def get_request(self, config: Config, request: Request) -> QuickSetupStageActionJobArgs:
         api_request = request.get_request()
         return QuickSetupStageActionJobArgs.model_validate_json(api_request["args"])
 
@@ -562,7 +563,7 @@ class AutomationQuickSetupStageActionResult(AutomationCommand[str]):
         return "fetch-quick-setup-stage-action-result"
 
     @override
-    def get_request(self) -> str:
+    def get_request(self, config: Config, request: Request) -> str:
         job_id = request.get_request()["job_id"]
         assert isinstance(job_id, str)
         return job_id

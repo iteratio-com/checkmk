@@ -6,6 +6,7 @@
 
 import dataclasses
 import logging
+import socket
 from collections.abc import Sequence
 from functools import partial
 from typing import NoReturn
@@ -13,15 +14,11 @@ from typing import NoReturn
 import pytest
 from pytest import MonkeyPatch
 
-from tests.testlib.unit.base_configuration_scenario import Scenario
-
+import cmk.snmplib._table as _snmp_table
+from cmk.base.config import ConfigCache
 from cmk.ccc.exceptions import MKSNMPError
 from cmk.ccc.hostaddress import HostAddress, HostName
-
-from cmk.utils.log import logger
-from cmk.utils.sectionname import SectionName
-
-import cmk.snmplib._table as _snmp_table
+from cmk.checkengine.fetcher import SourceType
 from cmk.snmplib import (
     BackendOIDSpec,
     BackendSNMPTree,
@@ -36,10 +33,9 @@ from cmk.snmplib import (
     SNMPVersion,
     SpecialColumn,
 )
-
-from cmk.checkengine.fetcher import SourceType
-
-from cmk.base.config import ConfigCache
+from cmk.utils.log import logger
+from cmk.utils.sectionname import SectionName
+from tests.testlib.unit.base_configuration_scenario import Scenario
 
 SNMPConfig = SNMPHostConfig(
     is_ipv6_primary=False,
@@ -146,6 +142,7 @@ def test_use_advanced_snmp_version(monkeypatch: MonkeyPatch) -> None:
     assert (
         config_cache.make_snmp_config(
             HostName("abc"),
+            socket.AddressFamily.AF_INET,
             HostAddress("1.2.3.4"),
             SourceType.HOST,
             backend_override=None,
@@ -155,6 +152,7 @@ def test_use_advanced_snmp_version(monkeypatch: MonkeyPatch) -> None:
     assert (
         config_cache.make_snmp_config(
             HostName("localhost"),
+            socket.AddressFamily.AF_INET,
             HostAddress("1.2.3.4"),
             SourceType.HOST,
             backend_override=None,

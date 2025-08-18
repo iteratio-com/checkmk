@@ -10,19 +10,18 @@ from typing import Any
 import pytest
 from pytest import MonkeyPatch
 
-from tests.testlib.unit.base_configuration_scenario import Scenario
-
 from cmk.ccc.hostaddress import HostName
-
 from cmk.utils.rulesets.ruleset_matcher import (
     matches_tag_condition,
     RuleConditionsSpec,
     RulesetMatcher,
     RuleSpec,
+    SingleHostRulesetMatcher,
     TagCondition,
 )
 from cmk.utils.servicename import ServiceName
 from cmk.utils.tags import TagConfig, TagGroupID, TagID
+from tests.testlib.unit.base_configuration_scenario import Scenario
 
 ruleset: Sequence[RuleSpec[str]] = [
     {
@@ -142,7 +141,7 @@ def test_ruleset_matcher_get_host_values_labels(
 
     assert (
         list(
-            matcher.get_host_values(
+            matcher.get_host_values_all(
                 hostname, ruleset=host_label_ruleset, labels_of_host=labels_of_host
             )
         )
@@ -172,19 +171,23 @@ def test_basic_get_host_values() -> None:
     )
 
     assert not list(
-        matcher.get_host_values(HostName("abc"), ruleset=ruleset, labels_of_host=lambda hn: {})
+        matcher.get_host_values_all(HostName("abc"), ruleset=ruleset, labels_of_host=lambda hn: {})
     )
     assert not list(
-        matcher.get_host_values(HostName("xyz"), ruleset=ruleset, labels_of_host=lambda hn: {})
+        matcher.get_host_values_all(HostName("xyz"), ruleset=ruleset, labels_of_host=lambda hn: {})
     )
     assert list(
-        matcher.get_host_values(HostName("host1"), ruleset=ruleset, labels_of_host=lambda hn: {})
+        matcher.get_host_values_all(
+            HostName("host1"), ruleset=ruleset, labels_of_host=lambda hn: {}
+        )
     ) == [
         "BLA",
         "BLUB",
     ]
     assert list(
-        matcher.get_host_values(HostName("host2"), ruleset=ruleset, labels_of_host=lambda hn: {})
+        matcher.get_host_values_all(
+            HostName("host2"), ruleset=ruleset, labels_of_host=lambda hn: {}
+        )
     ) == ["BLUB"]
 
 
@@ -216,19 +219,21 @@ def test_basic_get_host_values_subfolders() -> None:
     )
 
     assert not list(
-        matcher.get_host_values(HostName("xyz"), ruleset=ruleset, labels_of_host=lambda hn: {})
+        matcher.get_host_values_all(HostName("xyz"), ruleset=ruleset, labels_of_host=lambda hn: {})
     )
     assert list(
-        matcher.get_host_values(HostName("lvl1"), ruleset=ruleset, labels_of_host=lambda hn: {})
+        matcher.get_host_values_all(HostName("lvl1"), ruleset=ruleset, labels_of_host=lambda hn: {})
     ) == ["LEVEL1"]
     assert list(
-        matcher.get_host_values(HostName("lvl2"), ruleset=ruleset, labels_of_host=lambda hn: {})
+        matcher.get_host_values_all(HostName("lvl2"), ruleset=ruleset, labels_of_host=lambda hn: {})
     ) == [
         "LEVEL1",
         "LEVEL2",
     ]
     assert not list(
-        matcher.get_host_values(HostName("lvl1a"), ruleset=ruleset, labels_of_host=lambda hn: {})
+        matcher.get_host_values_all(
+            HostName("lvl1a"), ruleset=ruleset, labels_of_host=lambda hn: {}
+        )
     )
 
 
@@ -294,20 +299,20 @@ def test_basic_host_ruleset_get_merged_dict_values() -> None:
         nodes_of={},
     )
 
-    assert not matcher.get_host_merged_dict(
+    assert not matcher.get_host_values_merged(
         HostName("abc"), ruleset=dict_ruleset, labels_of_host=lambda hn: {}
     )
-    assert not matcher.get_host_merged_dict(
+    assert not matcher.get_host_values_merged(
         HostName("xyz"), ruleset=dict_ruleset, labels_of_host=lambda hn: {}
     )
-    assert matcher.get_host_merged_dict(
+    assert matcher.get_host_values_merged(
         HostName("host1"), ruleset=dict_ruleset, labels_of_host=lambda hn: {}
     ) == {
         "hu": "BLA",
         "ho": "BLA",
         "he": "BLUB",
     }
-    assert matcher.get_host_merged_dict(
+    assert matcher.get_host_values_merged(
         HostName("host2"), ruleset=dict_ruleset, labels_of_host=lambda hn: {}
     ) == {
         "hu": "BLUB",
@@ -511,7 +516,9 @@ def test_ruleset_matcher_get_host_values_tags(
         nodes_of={},
     )
     assert (
-        list(matcher.get_host_values(hostname, ruleset=tag_ruleset, labels_of_host=lambda hn: {}))
+        list(
+            matcher.get_host_values_all(hostname, ruleset=tag_ruleset, labels_of_host=lambda hn: {})
+        )
         == expected_result
     )
 
@@ -596,7 +603,7 @@ def test_ruleset_matcher_get_host_values_tags_duplicate_ids(
 
     assert (
         list(
-            matcher.get_host_values(
+            matcher.get_host_values_all(
                 HostName("host"),
                 ruleset=[rule_spec],  # type: ignore[arg-type]
                 labels_of_host=config_cache.label_manager.labels_of_host,
@@ -819,12 +826,12 @@ def test_ruleset_matcher_get_host_values_compute_labels_lazily() -> None:
         raise RuntimeError()
 
     # host labels don't matter for this host
-    assert not _make_new_matcher(HostName("host1")).get_host_values(
+    assert not _make_new_matcher(HostName("host1")).get_host_values_all(
         HostName("host1"), rules, labels_of_host
     )
     # but here they do
     with pytest.raises(RuntimeError):
-        _make_new_matcher(HostName("host2")).get_host_values(
+        _make_new_matcher(HostName("host2")).get_host_values_all(
             HostName("host2"), rules, labels_of_host
         )
 
@@ -863,11 +870,55 @@ def test_ruleset_matcher_get_host_values_changed_labels() -> None:
         return {"label": "that"}
 
     # so far, so good:
-    assert matcher.get_host_values(HostName("host1"), rules, these_labels) == ["value_this"]
+    assert matcher.get_host_values_all(HostName("host1"), rules, these_labels) == ["value_this"]
 
     # but now changing labels are not respected :-(
-    assert matcher.get_host_values(HostName("host1"), rules, those_labels) == ["value_this"]
+    assert matcher.get_host_values_all(HostName("host1"), rules, those_labels) == ["value_this"]
 
     # until we clear the caches
     matcher.clear_caches()
-    assert matcher.get_host_values(HostName("host1"), rules, those_labels) == ["value_that"]
+    assert matcher.get_host_values_all(HostName("host1"), rules, those_labels) == ["value_that"]
+
+
+class TestSingleRulesetMatcher:
+    @staticmethod
+    def _make_matcher() -> RulesetMatcher:
+        return RulesetMatcher(
+            host_tags={HostName("testhost1"): {}, HostName("testhost2"): {}},
+            host_paths={},
+            all_configured_hosts=frozenset((HostName("testhost1"), HostName("testhost2"))),
+            clusters_of={},
+            nodes_of={},
+        )
+
+    @staticmethod
+    def _ruleset() -> Sequence[RuleSpec[str]]:
+        return [
+            {
+                "id": "23",
+                "condition": {"host_name": [HostName("testhost2")]},
+                "value": "lala",
+            },
+            {
+                "id": "24",
+                "condition": {"host_name": [HostName("testhost2")]},
+                "value": "lulu",
+            },
+        ]
+
+    def test_miss(self) -> None:
+        assert (
+            SingleHostRulesetMatcher(
+                matcher=self._make_matcher(),
+                host_ruleset=self._ruleset(),
+                labels_of_host=lambda x: {},
+            )(HostName("testhost1"))
+            == []
+        )
+
+    def test_match(self) -> None:
+        assert SingleHostRulesetMatcher(
+            matcher=self._make_matcher(),
+            host_ruleset=self._ruleset(),
+            labels_of_host=lambda x: {},
+        )(HostName("testhost2")) == ["lala", "lulu"]

@@ -17,14 +17,12 @@ from typing import Any, Final, Literal, NewType, TypedDict
 
 from livestatus import SiteConfigurations
 
+import cmk.utils.paths
 from cmk.ccc import store
 from cmk.ccc.site import SiteId
 from cmk.ccc.user import UserId
 from cmk.ccc.version import __version__, Edition, edition, Version
-
-import cmk.utils.paths
-
-from cmk.gui import hooks, permissions, site_config
+from cmk.gui import hooks, permissions
 from cmk.gui.config import active_config
 from cmk.gui.ctx_stack import session_attr
 from cmk.gui.exceptions import MKAuthException
@@ -34,7 +32,6 @@ from cmk.gui.utils.permission_verification import BasePerm
 from cmk.gui.utils.roles import may_with_roles, roles_of_user
 from cmk.gui.utils.selection_id import SelectionId
 from cmk.gui.utils.transaction_manager import TransactionManager
-
 from cmk.shared_typing.user_frontend_config import UserFrontendConfig
 
 _logger = logging.getLogger(__name__)
@@ -428,12 +425,7 @@ class LoggedInUser:
         if self.id:
             self.save_file("transids", transids)
 
-    def authorized_sites(
-        self, unfiltered_sites: SiteConfigurations | None = None
-    ) -> SiteConfigurations:
-        if unfiltered_sites is None:
-            unfiltered_sites = site_config.enabled_sites()
-
+    def authorized_sites(self, unfiltered_sites: SiteConfigurations) -> SiteConfigurations:
         authorized_sites = self.get_attribute("authorized_sites")
         if authorized_sites is None:
             return SiteConfigurations(dict(unfiltered_sites))

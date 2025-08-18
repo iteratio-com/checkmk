@@ -7,14 +7,12 @@ from logging import Logger
 from typing import override
 
 from cmk.ccc.hostaddress import HostName
-
-from cmk.utils.log import VERBOSE
-
 from cmk.gui.config import active_config
 from cmk.gui.watolib.check_mk_automations import delete_hosts
 from cmk.gui.watolib.hosts_and_folders import FolderTree
-
+from cmk.update_config.lib import ExpiryVersion
 from cmk.update_config.registry import update_action_registry, UpdateAction
+from cmk.utils.log import VERBOSE
 
 
 class RemoveInvalidHost(UpdateAction):
@@ -27,6 +25,7 @@ class RemoveInvalidHost(UpdateAction):
                     automation=delete_hosts,
                     pprint_value=active_config.wato_pprint_config,
                     debug=active_config.debug,
+                    use_git=active_config.wato_use_git,
                 )
                 logger.log(
                     VERBOSE,
@@ -39,5 +38,6 @@ update_action_registry.register(
         name="remove_invalid_host",
         title="Remove invalid host",
         sort_index=155,
+        expiry_version=ExpiryVersion.NEVER,
     )
 )

@@ -10,8 +10,6 @@ from typing import Literal
 
 import cmk.utils
 import cmk.utils.render
-from cmk.utils.tags import TagID
-
 from cmk.gui.config import active_config
 from cmk.gui.display_options import display_options
 from cmk.gui.hooks import request_memoize
@@ -30,6 +28,7 @@ from cmk.gui.utils.mobile import is_mobile
 from cmk.gui.utils.popups import MethodAjax
 from cmk.gui.utils.urls import makeuri, makeuri_contextless
 from cmk.gui.visual_link import url_to_visual
+from cmk.utils.tags import TagID
 
 from ..graph import cmk_graph_url
 from .base import Icon
@@ -604,7 +603,7 @@ def _render_downtimes_icon(
             if fixed:
                 time_info = f"Start: {cmk.utils.render.date_and_time(start_time)}, End: {cmk.utils.render.date_and_time(end_time)}"
             else:
-                time_info = f"May start from {cmk.utils.render.date_and_time(start_time)} till {cmk.utils.render.date_and_time(end_time)} with duration of {cmk.utils.render.Age(duration)}"
+                time_info = f"May start from {cmk.utils.render.date_and_time(start_time)} till {cmk.utils.render.date_and_time(end_time)} with duration of {cmk.utils.render.approx_age(duration)}"
                 lines.append(f"{author} ({time_info}) - {comment}")
 
         return "\n%s" % "\n".join(lines)

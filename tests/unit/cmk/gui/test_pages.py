@@ -8,11 +8,10 @@ import sys
 import pytest
 
 import cmk.ccc.version as cmk_version
-
-from cmk.utils import paths
-
 import cmk.gui.pages
+from cmk.gui.config import Config
 from cmk.gui.pages import PageEndpoint
+from cmk.utils import paths
 
 
 def test_registered_pages() -> None:
@@ -64,6 +63,9 @@ def test_registered_pages() -> None:
         "ajax_load_bi_aggregation_layout",
         "ajax_delete_bi_aggregation_layout",
         "ajax_fetch_topology",
+        "ajax_sidebar_get_number_of_pending_changes",
+        "ajax_sidebar_get_sites_and_changes",
+        "ajax_unified_search",
         "automation_login",
         "bi_map",
         "bi_render_tree",
@@ -264,7 +266,7 @@ def test_page_registry_register_page_class(capsys: pytest.CaptureFixture[str]) -
     page_registry = cmk.gui.pages.PageRegistry()
 
     class PageClass(cmk.gui.pages.Page):
-        def page(self) -> None:
+        def page(self, config: Config) -> None:
             sys.stdout.write("234")
 
     page_registry.register(PageEndpoint("234handler", PageClass))
@@ -275,7 +277,7 @@ def test_page_registry_register_page_class(capsys: pytest.CaptureFixture[str]) -
     assert isinstance(handler, type)
     assert issubclass(handler, PageClass)
 
-    handler().handle_page()
+    handler().handle_page(Config())
     assert capsys.readouterr()[0] == "234"
 
 
@@ -285,7 +287,7 @@ def test_page_registry_register_page_handler(
 ) -> None:
     page_registry = cmk.gui.pages.PageRegistry()
 
-    def page() -> None:
+    def page(config: Config) -> None:
         sys.stdout.write("234")
 
     page_registry.register(PageEndpoint("234handler", page))
@@ -295,12 +297,12 @@ def test_page_registry_register_page_handler(
     handler = endpoint.handler
     assert not isinstance(handler, type)
 
-    handler()
+    handler(Config())
     assert capsys.readouterr()[0] == "234"
 
 
 def test_get_page_handler_default() -> None:
-    def dummy():
+    def dummy(config: Config) -> None:
         pass
 
     handler = cmk.gui.pages.get_page_handler("123handler", dummy)

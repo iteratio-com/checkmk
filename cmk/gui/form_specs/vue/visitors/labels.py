@@ -4,34 +4,38 @@
 # conditions defined in the file COPYING, which is part of this source code package.
 
 from collections.abc import Mapping
+from typing import override
 
 from cmk.gui.form_specs.private.labels import Labels
-from cmk.gui.form_specs.vue.validators import build_vue_validators
 from cmk.gui.i18n import _, translate_to_current_language
-
 from cmk.shared_typing import vue_formspec_components as shared_type_defs
 
-from ._base import FormSpecVisitor
-from ._type_defs import InvalidValue
-from ._utils import get_title_and_help
+from .._type_defs import DefaultValue, IncomingData, InvalidValue
+from .._utils import get_title_and_help
+from .._visitor_base import FormSpecVisitor
+from ..validators import build_vue_validators
 
 _ParsedValueModel = Mapping[str, str]
-_FrontendModel = Mapping[str, str]
+_FallbackModel = Mapping[str, str]
 
 
-class LabelsVisitor(FormSpecVisitor[Labels, _ParsedValueModel, _FrontendModel]):
-    def _parse_value(self, raw_value: object) -> _ParsedValueModel | InvalidValue[_FrontendModel]:
-        if not isinstance(raw_value, dict):
+class LabelsVisitor(FormSpecVisitor[Labels, _ParsedValueModel, _FallbackModel]):
+    @override
+    def _parse_value(
+        self, raw_value: IncomingData
+    ) -> _ParsedValueModel | InvalidValue[_FallbackModel]:
+        if isinstance(raw_value, DefaultValue) or not isinstance(raw_value.value, dict):
             return InvalidValue(reason=_("Invalid data"), fallback_value={})
 
-        for value in raw_value.values():
+        for value in raw_value.value.values():
             if not isinstance(value, str):
                 return InvalidValue(reason=_("Invalid data"), fallback_value={})
 
-        return raw_value
+        return raw_value.value
 
+    @override
     def _to_vue(
-        self, parsed_value: _ParsedValueModel | InvalidValue[_FrontendModel]
+        self, parsed_value: _ParsedValueModel | InvalidValue[_FallbackModel]
     ) -> tuple[shared_type_defs.Labels, Mapping[str, str]]:
         title, help_text = get_title_and_help(self.form_spec)
 
@@ -69,5 +73,6 @@ class LabelsVisitor(FormSpecVisitor[Labels, _ParsedValueModel, _FrontendModel]):
             ),
         )
 
+    @override
     def _to_disk(self, parsed_value: _ParsedValueModel) -> Mapping[str, str]:
         return parsed_value

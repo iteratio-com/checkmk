@@ -43,6 +43,7 @@ import { type ValidationMessages } from '@/form'
 import useDragging from '@/lib/useDragging'
 import { fetchMetricColor } from '@/graph-designer/fetch_metric_color'
 import { type GraphRenderer } from '@/graph-designer/graph'
+import CmkCheckbox from '@/components/user-input/CmkCheckbox.vue'
 
 const props = defineProps<{
   graph_id: string
@@ -318,6 +319,14 @@ const dataScalar = ref<Metric>({
 
 const graphLines: Ref<GraphLines> = ref(props.graph_lines)
 const selectedGraphLines: Ref<GraphLines> = ref([])
+
+function changeSelection(graphLine: GraphLine, newValue: boolean) {
+  if (newValue) {
+    selectedGraphLines.value = [...selectedGraphLines.value, graphLine]
+  } else {
+    selectedGraphLines.value = selectedGraphLines.value.filter((g) => g.id !== graphLine.id)
+  }
+}
 
 function nextIndex(): number {
   if (graphLines.value.length === 0) {
@@ -740,11 +749,10 @@ function applyTransformation() {
 // Graph lines table
 
 function computeOddEven(index: number) {
-  // TODO n-th children
   return index % 2 === 0 ? 'even0' : 'odd0'
 }
 
-const { tableRef, dragStart, dragEnd, dragging } = useDragging()
+const { trContainerRef, dragStart, dragEnd, dragging } = useDragging()
 
 function dragElement(event: DragEvent) {
   const dragReturn = dragging(event)
@@ -816,8 +824,8 @@ const graphDesignerContentAsJson = computed(() => {
 <template>
   <div ref="graphContainerRef"></div>
 
-  <table ref="tableRef" class="data oddeven graph_designer_metrics">
-    <tbody>
+  <table class="data oddeven graph_designer_metrics">
+    <thead>
       <tr>
         <th class="header_narrow nowrap">#</th>
         <th class="header_buttons"></th>
@@ -830,6 +838,8 @@ const graphDesignerContentAsJson = computed(() => {
         <th class="header_buttons">{{ props.i18n.mirrored }}</th>
         <th>{{ props.i18n.formula }}</th>
       </tr>
+    </thead>
+    <tbody ref="trContainerRef">
       <tr
         v-for="(graphLine, index) in graphLines"
         :key="graphLine.id"
@@ -838,15 +848,10 @@ const graphDesignerContentAsJson = computed(() => {
       >
         <td class="narrow nowrap">{{ graphLine.id }}</td>
         <td class="buttons">
-          <!-- TODO: use CmkCheckbox building block, see FormCheckboxListChoice how to utilize events!-->
-          <input
-            :id="graphLine.id.toString()"
-            v-model="selectedGraphLines"
-            :value="graphLine"
-            type="checkbox"
-            class="checkbox"
+          <CmkCheckbox
+            :model-value="selectedGraphLines.map((v) => v.id).includes(graphLine.id)"
+            @update:model-value="(newValue) => changeSelection(graphLine, newValue)"
           />
-          <label :for="graphLine.id.toString()"></label>
         </td>
         <td class="buttons">
           <img

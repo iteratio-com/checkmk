@@ -10,14 +10,7 @@ from typing import Any, Literal
 
 import cmk.ccc.version as cmk_version
 from cmk.ccc.plugin_registry import Registry
-
-from cmk.utils import paths
-from cmk.utils.notify_types import EventRule
-from cmk.utils.regex import GROUP_NAME_PATTERN
-from cmk.utils.timeperiod import timeperiod_spec_alias
-
 from cmk.gui import hooks
-from cmk.gui.config import active_config
 from cmk.gui.customer import customer_api
 from cmk.gui.exceptions import MKUserError
 from cmk.gui.groups import AllGroupSpecs, GroupName, GroupSpec, GroupSpecs, GroupType
@@ -48,6 +41,10 @@ from cmk.gui.watolib.host_attributes import (
 from cmk.gui.watolib.hosts_and_folders import folder_preserving_link
 from cmk.gui.watolib.rulesets import AllRulesets
 from cmk.gui.watolib.timeperiods import load_timeperiods
+from cmk.utils import paths
+from cmk.utils.notify_types import EventRule
+from cmk.utils.regex import GROUP_NAME_PATTERN
+from cmk.utils.timeperiod import timeperiod_spec_alias
 
 ContactGroupUsageFinder = Callable[[GroupName, GlobalSettings], list[tuple[str, str]]]
 
@@ -61,7 +58,12 @@ contact_group_usage_finder_registry = ContactGroupUsageFinderRegistry()
 
 
 def add_group(
-    name: GroupName, group_type: GroupType, extra_info: GroupSpec, pprint_value: bool
+    name: GroupName,
+    group_type: GroupType,
+    extra_info: GroupSpec,
+    *,
+    pprint_value: bool,
+    use_git: bool,
 ) -> None:
     check_modify_group_permissions(group_type)
     all_groups = load_group_information()
@@ -82,12 +84,20 @@ def add_group(
 
     _set_group(all_groups, group_type, name, extra_info, pprint_value)
     _add_group_change(
-        extra_info, "edit-%sgroups" % group_type, _l("Create new %s group %s") % (group_type, name)
+        extra_info,
+        "edit-%sgroups" % group_type,
+        _l("Create new %s group %s") % (group_type, name),
+        use_git=use_git,
     )
 
 
 def edit_group(
-    name: GroupName, group_type: GroupType, extra_info: GroupSpec, pprint_value: bool
+    name: GroupName,
+    group_type: GroupType,
+    extra_info: GroupSpec,
+    *,
+    pprint_value: bool,
+    use_git: bool,
 ) -> None:
     check_modify_group_permissions(group_type)
     all_groups = load_group_information()
@@ -113,6 +123,7 @@ def edit_group(
                     name,
                     customer.get_customer_name_by_id(old_customer),
                 ),
+                use_git=use_git,
             )
             _add_group_change(
                 extra_info,
@@ -123,18 +134,21 @@ def edit_group(
                     name,
                     customer.get_customer_name_by_id(new_customer),
                 ),
+                use_git=use_git,
             )
         else:
             _add_group_change(
                 old_group_backup,
                 "edit-%sgroups" % group_type,
                 _l("Updated properties of %sgroup %s") % (group_type, name),
+                use_git=use_git,
             )
     else:
         _add_group_change(
             extra_info,
             "edit-%sgroups" % group_type,
             _l("Updated properties of %s group %s") % (group_type, name),
+            use_git=use_git,
         )
 
 
@@ -144,7 +158,9 @@ class UnknownGroupException(Exception): ...
 class GroupInUseException(Exception): ...
 
 
-def delete_group(name: GroupName, group_type: GroupType, pprint_value: bool) -> None:
+def delete_group(
+    name: GroupName, group_type: GroupType, *, pprint_value: bool, use_git: bool
+) -> None:
     check_modify_group_permissions(group_type)
     # Check if group exists
     all_groups = load_group_information()
@@ -168,17 +184,22 @@ def delete_group(name: GroupName, group_type: GroupType, pprint_value: bool) -> 
     group = groups.pop(name)
     save_group_information(all_groups, pprint_value)
     _add_group_change(
-        group, "edit-%sgroups" % group_type, _l("Deleted %s group %s") % (group_type, name)
+        group,
+        "edit-%sgroups" % group_type,
+        _l("Deleted %s group %s") % (group_type, name),
+        use_git=use_git,
     )
 
 
-def _add_group_change(group: GroupSpec, action_name: str, text: LazyString) -> None:
+def _add_group_change(
+    group: GroupSpec, action_name: str, text: LazyString, *, use_git: bool
+) -> None:
     add_change(
         action_name=action_name,
         text=text,
         user_id=user.id,
         sites=customer_api().customer_group_sites(group),
-        use_git=active_config.wato_use_git,
+        use_git=use_git,
     )
 
 
@@ -498,9 +519,8 @@ class HostAttributeContactGroups(ABCHostAttribute):
 
     def openapi_field(self):
         # FIXME: due to cyclical imports which, when fixed, expose even more cyclical imports.
-        from cmk.gui import fields as gui_fields
-
         from cmk import fields
+        from cmk.gui import fields as gui_fields
 
         return fields.Nested(
             gui_fields.HostContactGroup,

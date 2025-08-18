@@ -9,14 +9,8 @@ from collections.abc import Generator, Iterable, Mapping, Sequence
 from typing import Any, Literal
 
 import cmk.ccc.version as cmk_version
-from cmk.ccc.version import Edition, edition
-
 import cmk.utils.paths
-from cmk.utils.rulesets.definition import RuleGroup
-from cmk.utils.tags import TagGroup, TagGroupID, TagID
-
-from cmk.snmplib import SNMPBackendEnum  # pylint: disable=cmk-module-layer-violation
-
+from cmk.ccc.version import Edition, edition
 from cmk.gui.config import active_config
 from cmk.gui.exceptions import MKConfigError, MKUserError
 from cmk.gui.groups import GroupName
@@ -91,7 +85,9 @@ from cmk.gui.watolib.groups import ContactGroupUsageFinderRegistry
 from cmk.gui.watolib.groups_io import load_contact_group_information
 from cmk.gui.watolib.hosts_and_folders import folder_preserving_link
 from cmk.gui.watolib.rulespec_groups import (
+    RulespecGroupAgent,
     RulespecGroupAgentSNMP,
+    RulespecGroupDiscoveryCheckParameters,
     RulespecGroupHostsMonitoringRulesHostChecks,
     RulespecGroupHostsMonitoringRulesNotifications,
     RulespecGroupHostsMonitoringRulesVarious,
@@ -114,11 +110,13 @@ from cmk.gui.watolib.timeperiods import TimeperiodSelection
 from cmk.gui.watolib.translation import HostnameTranslation, ServiceDescriptionTranslation
 from cmk.gui.watolib.users import vs_idle_timeout_duration
 from cmk.gui.watolib.utils import site_neutral_path
+from cmk.snmplib import SNMPBackendEnum  # pylint: disable=cmk-module-layer-violation
+from cmk.utils.rulesets.definition import RuleGroup
+from cmk.utils.tags import TagGroup, TagGroupID, TagID
 
 from ._check_plugin_selection import CheckPluginSelection
 from ._group_selection import ContactGroupSelection, HostGroupSelection, ServiceGroupSelection
 from ._http_proxy import HTTPProxyInput
-from ._rulespec_groups import RulespecGroupDiscoveryCheckParameters
 
 
 def register(
@@ -127,7 +125,6 @@ def register(
     contact_group_usage_finder_registry: ContactGroupUsageFinderRegistry,
 ) -> None:
     config_variable_registry.register(ConfigVariableUITheme)
-    config_variable_registry.register(ConfigVariableEnableCommunityTranslations)
     config_variable_registry.register(ConfigVariableDefaultLanguage)
     config_variable_registry.register(ConfigVariableShowMoreMode)
     config_variable_registry.register(ConfigVariableBulkDiscoveryDefaultSettings)
@@ -216,7 +213,6 @@ def register(
     config_variable_registry.register(ConfigVariableInventoryCheckAutotrigger)
     rulespec_group_registry.register(RulespecGroupAgentCMKAgent)
     rulespec_group_registry.register(RulespecGroupMonitoringConfigurationInventoryAndCMK)
-    rulespec_group_registry.register(RulespecGroupAgent)
     rulespec_group_registry.register(RulespecGroupAgentGeneralSettings)
     rulespec_registry.register(HostGroupsRulespec)
     rulespec_registry.register(ServiceGroupsRulespec)
@@ -321,24 +317,6 @@ ConfigVariableUITheme = ConfigVariable(
         help=_("Change the default user interface theme of your Checkmk installation"),
         choices=theme_choices(),
     ),
-)
-
-ConfigVariableEnableCommunityTranslations = ConfigVariable(
-    group=ConfigVariableGroupUserInterface,
-    domain=ConfigDomainGUI,
-    ident="enable_community_translations",
-    valuespec=lambda: Checkbox(
-        title=_("Community translated languages (not supported)"),
-        label=_("Community translated languages"),
-        help=_(
-            'Show/hide community translated languages in the "Language" dropdown (User > Edit '
-            "profile). Note that these translations are contributed by the Checkmk community "
-            "and thus no liability is assumed for their validity.<br>"
-            "If this setting is turned from 'on' to 'off' while a user has set a community "
-            "translated language, the user's language is changed to 'English'."
-        ),
-    ),
-    need_restart=True,
 )
 
 ConfigVariableDefaultLanguage = ConfigVariable(
@@ -1042,7 +1020,7 @@ ConfigVariableRescheduleTimeout = ConfigVariable(
     valuespec=lambda: Float(
         title=_("Timeout for rescheduling checks in Multisite"),
         help=_(
-            "When you reschedule a check by clicking on the &quot;arrow&quot;-icon "
+            'When you reschedule a check by clicking on the "arrow"-icon '
             "then Multisite will use this number of seconds as a timeout. If the "
             "monitoring core has not executed the check within this time, an error "
             "will be displayed and the page not reloaded."
@@ -3252,18 +3230,26 @@ def _host_check_commands_host_check_command_choices() -> list[CascadingDropdownC
             ),
         ),
     ]
+    if edition(cmk.utils.paths.omd_root) is Edition.CSE:
+        return choices
 
-    if (
-        user.may("wato.add_or_modify_executables")
-        and edition(cmk.utils.paths.omd_root) is not Edition.CSE
-    ):
-        choices.append(("custom", _("Use a custom check plug-in..."), PluginCommandLine()))
-
+    choices.append(
+        (
+            "custom",
+            _("Use a custom check plug-in..."),
+            PluginCommandLine(read_only=not user.may("wato.add_or_modify_executables")),
+        )
+    )
     return choices
 
 
-def PluginCommandLine() -> ValueSpec:
+def PluginCommandLine(read_only: bool = False) -> ValueSpec:
     def _validate_custom_check_command_line(value, varprefix):
+        if read_only:
+            raise MKUserError(
+                varprefix,
+                _("You are not allowed to change the command line of a custom check plug-in."),
+            )
         if "--pwstore=" in value:
             raise MKUserError(
                 varprefix, _("You are not allowed to use passwords from the password store here.")
@@ -3279,6 +3265,7 @@ def PluginCommandLine() -> ValueSpec:
         )
         + monitoring_macro_help(),
         size="max",
+        read_only=read_only,
         validate=_validate_custom_check_command_line,
     )
 
@@ -4425,7 +4412,7 @@ def _valuespec_clustered_services_mapping():
         label=_("Assign services to the following cluster:"),
         help=_(
             "It's possible to have clusters that share nodes. You could say that "
-            "such clusters &quot;overlap&quot;. In such a case using the ruleset "
+            'such clusters "overlap". In such a case using the ruleset '
             "<i>Clustered services</i> is not sufficient since it would not be clear "
             "to which of the several possible clusters a service found on such a shared "
             "node should be assigned to. With this ruleset you can assign services and "
@@ -4862,20 +4849,6 @@ ExtraServiceConfEscapePluginOutput = ServiceRulespec(
     name=RuleGroup.ExtraServiceConf("_ESCAPE_PLUGIN_OUTPUT"),
     valuespec=_valuespec_extra_service_conf__ESCAPE_PLUGIN_OUTPUT,
 )
-
-
-class RulespecGroupAgent(RulespecGroup):
-    @property
-    def name(self) -> str:
-        return "agent"
-
-    @property
-    def title(self) -> str:
-        return _("Access to agents")
-
-    @property
-    def help(self):
-        return _("Settings concerning the connection to the Checkmk and SNMP agents")
 
 
 class RulespecGroupAgentGeneralSettings(RulespecSubGroup):
@@ -5608,13 +5581,13 @@ AgentConfigOnlyFrom = HostRulespec(
 def _valuespec_piggyback_translation():
     return HostnameTranslation(
         title=_("Host name translation for piggybacked hosts"),
-        help=_(
+        help_txt=_(
             "Some agents or agent plug-ins send data not only for the queried host but also "
-            "for other hosts &quot;piggyback&quot; with their own data. This is the case "
+            'for other hosts "piggyback" with their own data. This is the case '
             "for the vSphere special agent and the SAP R/3 plugin, for example. The host names "
             "that these agents send must match your host names in your monitoring configuration. "
             "If that is not the case, then with this rule you can define a host name translation. "
-            "Note: This rule must be configured for the &quot;pig&quot; - i.e. the host that the "
+            'Note: This rule must be configured for the "pig" - i.e. the host that the '
             "agent is running on. It is not applied to the translated piggybacked hosts."
         ),
     )
@@ -5631,7 +5604,7 @@ PiggybackTranslation = HostRulespec(
 def _valuespec_service_description_translation():
     return ServiceDescriptionTranslation(
         title=_("Translation of service names"),
-        help=_(
+        help_txt=_(
             "Within this ruleset service names can be translated similar to the ruleset "
             "<tt>Host name translation for piggybacked hosts</tt>. Services such as "
             "<tt>Check_MK</tt>, <tt>Check_MK Agent</tt>, <tt>Check_MK Discovery</tt>, "
@@ -5654,6 +5627,11 @@ ServiceDescriptionTranslationRulespec = HostRulespec(
     group=RulespecGroupAgentGeneralSettings,
     name="service_description_translation",
     valuespec=_valuespec_service_description_translation,
+    # A NOTE on the match type:
+    # I'm adding "first" here now, because it makes the default explicit.
+    # However: the match type seems to be "first" for "case", and "accumulated" for "mapping" and "regex".
+    # We are accumulating in a way that forgets the order of the rules :-(
+    match_type="first",
 )
 
 

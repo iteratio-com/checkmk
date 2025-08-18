@@ -8,12 +8,10 @@ from typing import Any, Literal
 
 import pytest
 
-from tests.testlib.unit.rest_api_client import ClientRegistry
-
-from tests.unit.cmk.web_test_app import WebTestAppForCMK
-
 from cmk.utils.rulesets.definition import RuleGroup
 from cmk.utils.tags import BuiltinTagConfig
+from tests.testlib.unit.rest_api_client import ClientRegistry
+from tests.unit.cmk.web_test_app import WebTestAppForCMK
 
 
 @pytest.mark.usefixtures(
@@ -443,7 +441,7 @@ def test_openapi_delete_host_tag_mode(
     )
     rule_resp = clients.Rule.create(
         ruleset=RuleGroup.CheckgroupParameters("memory_percentage_used"),
-        value_raw="{'levels': (10.0, 5.0)}",
+        value_raw="{'levels': ('fixed', (10.0, 5.0))}",
         conditions={
             "host_tags": [
                 {

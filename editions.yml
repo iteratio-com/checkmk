@@ -1,13 +1,10 @@
 # The common set of distros which gets build during an official release
 common: &common
-    - "debian-11"
     - "debian-12"
     - "ubuntu-22.04"
     - "ubuntu-24.04"
     - "almalinux-8"
     - "almalinux-9"
-    - "sles-15sp3"
-    - "sles-15sp4"
     - "sles-15sp5"
     - "sles-15sp6"
 

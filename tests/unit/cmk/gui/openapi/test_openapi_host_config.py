@@ -14,20 +14,10 @@ import pytest
 import time_machine
 from pytest_mock import MockerFixture
 
-from tests.testlib.unit.rest_api_client import ClientRegistry
-
-from tests.unit.cmk.web_test_app import WebTestAppForCMK
-
+from cmk.automations.results import DeleteHostsResult
 from cmk.ccc import version
 from cmk.ccc.hostaddress import HostName
 from cmk.ccc.site import SiteId
-
-from cmk.utils import paths
-from cmk.utils.global_ident_type import PROGRAM_ID_QUICK_SETUP
-from cmk.utils.tags import BuiltinTagConfig
-
-from cmk.automations.results import DeleteHostsResult
-
 from cmk.gui.exceptions import MKUserError
 from cmk.gui.logged_in import user
 from cmk.gui.openapi.endpoints._common.host_attribute_schemas import (
@@ -44,6 +34,12 @@ from cmk.gui.watolib.host_attributes import (
     HostAttributes,
 )
 from cmk.gui.watolib.hosts_and_folders import Folder, folder_tree, Host
+from cmk.utils import paths
+from cmk.utils.global_ident_type import PROGRAM_ID_QUICK_SETUP
+from cmk.utils.tags import BuiltinTagConfig
+from tests.testlib.common.repo import is_cloud_repo
+from tests.testlib.unit.rest_api_client import ClientRegistry
+from tests.unit.cmk.web_test_app import WebTestAppForCMK
 
 managedtest = pytest.mark.skipif(
     version.edition(paths.omd_root) is not version.Edition.CME, reason="see #7213"
@@ -683,7 +679,9 @@ def test_openapi_host_rename(
     monkeypatch: pytest.MonkeyPatch,
     mocker: MockerFixture,
 ) -> None:
-    monkeypatch.setattr("cmk.gui.openapi.endpoints.host_config.has_pending_changes", lambda: False)
+    monkeypatch.setattr(
+        "cmk.gui.openapi.endpoints.host_config._has_pending_changes", lambda x: False
+    )
     automation = mocker.patch("cmk.gui.watolib.host_rename.rename_hosts")
 
     clients.HostConfig.create(
@@ -710,7 +708,9 @@ def test_openapi_host_rename_error_on_not_existing_host(
     clients: ClientRegistry,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr("cmk.gui.openapi.endpoints.host_config.has_pending_changes", lambda: False)
+    monkeypatch.setattr(
+        "cmk.gui.openapi.endpoints.host_config._has_pending_changes", lambda x: False
+    )
 
     clients.HostConfig.create(
         host_name="foobar",
@@ -730,7 +730,9 @@ def test_openapi_host_rename_on_invalid_hostname(
     clients: ClientRegistry,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr("cmk.gui.openapi.endpoints.host_config.has_pending_changes", lambda: False)
+    monkeypatch.setattr(
+        "cmk.gui.openapi.endpoints.host_config._has_pending_changes", lambda x: False
+    )
 
     clients.HostConfig.create(
         host_name="foobar",
@@ -750,7 +752,9 @@ def test_openapi_host_rename_locked_by_quick_setup(
     quick_setup_config_bundle: tuple[BundleId, str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr("cmk.gui.openapi.endpoints.host_config.has_pending_changes", lambda: False)
+    monkeypatch.setattr(
+        "cmk.gui.openapi.endpoints.host_config._has_pending_changes", lambda x: False
+    )
 
     bundle_id, program_id = quick_setup_config_bundle
     clients.HostConfig.create(
@@ -1529,111 +1533,59 @@ def test_openapi_host_config_effective_attributes_includes_all_host_attributes_r
         resp.json["extensions"]["effective_attributes"]
     )
 
-    assert (
-        resp.json["extensions"]["effective_attributes"]
-        == {
-            "additional_ipv4addresses": [],
-            "additional_ipv6addresses": [],
-            "alias": "",
-            "bake_agent_package": False,
-            "cmk_agent_connection": "pull-agent",
-            "contactgroups": {
-                "groups": [],
-                "recurse_perms": False,
-                "recurse_use": False,
-                "use": False,
-                "use_for_services": False,
-            },
-            "inventory_failed": False,
-            "ipaddress": "",
-            "ipv6address": "",
-            "labels": {},
-            "locked_attributes": [],
-            "locked_by": {"instance_id": "", "program_id": "", "site_id": "NO_SITE"},
-            "management_address": "",
-            "management_ipmi_credentials": None,
-            "management_protocol": "none",
-            "management_snmp_community": None,
-            "meta_data": {
-                "created_at": "2022-11-05T00:00:00+00:00",
-                "created_by": username,
-                "updated_at": "2022-11-05T00:00:00+00:00",
-            },
-            "network_scan": {
-                "addresses": [],
-                "exclude_addresses": [],
-                "run_as": username,
-                "scan_interval": 86400,
-                "set_ip_address": True,
-                "time_allowed": [{"end": "23:59:59", "start": "00:00:00"}],
-            },
-            "network_scan_result": {
-                "end": None,
-                "output": "",
-                "start": None,
-                "state": "running",
-            },
-            "parents": [],
-            "site": "NO_SITE",
-            "snmp_community": None,
-            "tag_address_family": "ip-v4-only",
-            "tag_agent": "cmk-agent",
-            "tag_piggyback": "auto-piggyback",
-            "tag_snmp_ds": "no-snmp",
-            "waiting_for_discovery": False,
-        }
-        != {
-            "additional_ipv4addresses": [],
-            "additional_ipv6addresses": [],
-            "alias": "",
-            "bake_agent_package": False,
-            "cmk_agent_connection": "pull-agent",
-            "contactgroups": {
-                "groups": [],
-                "recurse_perms": False,
-                "recurse_use": False,
-                "use": False,
-                "use_for_services": False,
-            },
-            "inventory_failed": False,
-            "ipaddress": "",
-            "ipv6address": "",
-            "labels": {},
-            "locked_attributes": [],
-            "locked_by": {"instance_id": "", "program_id": "", "site_id": "NO_SITE"},
-            "management_address": "",
-            "management_ipmi_credentials": None,
-            "management_protocol": "none",
-            "management_snmp_community": None,
-            "meta_data": {
-                "created_at": "2022-11-05T10:01:41.212124+00:00",
-                "created_by": username,
-                "updated_at": "2023-06-09T10:01:41.259554+00:00",
-            },
-            "network_scan": {
-                "addresses": [],
-                "exclude_addresses": [],
-                "run_as": username,
-                "scan_interval": 86400,
-                "set_ip_address": True,
-                "time_allowed": [{"end": "23:59:59", "start": "00:00:00"}],
-            },
-            "network_scan_result": {
-                "end": None,
-                "output": "",
-                "start": None,
-                "state": "running",
-            },
-            "parents": [],
-            "site": "NO_SITE",
-            "snmp_community": None,
-            "tag_address_family": "ip-v4-only",
-            "tag_agent": "cmk-agent",
-            "tag_piggyback": "auto-piggyback",
-            "tag_snmp_ds": "no-snmp",
-            "waiting_for_discovery": False,
-        }
-    )
+    expected: dict[str, object] = {
+        "additional_ipv4addresses": [],
+        "additional_ipv6addresses": [],
+        "alias": "",
+        "bake_agent_package": False,
+        "cmk_agent_connection": "pull-agent",
+        "contactgroups": {
+            "groups": [],
+            "recurse_perms": False,
+            "recurse_use": False,
+            "use": False,
+            "use_for_services": False,
+        },
+        "inventory_failed": False,
+        "ipaddress": "",
+        "ipv6address": "",
+        "labels": {},
+        "locked_attributes": [],
+        "locked_by": {"instance_id": "", "program_id": "", "site_id": "NO_SITE"},
+        "management_address": "",
+        "management_ipmi_credentials": None,
+        "management_protocol": "none",
+        "management_snmp_community": None,
+        "meta_data": {
+            "created_at": "2022-11-05T00:00:00+00:00",
+            "created_by": username,
+            "updated_at": "2022-11-05T00:00:00+00:00",
+        },
+        "network_scan": {
+            "addresses": [],
+            "exclude_addresses": [],
+            "run_as": username,
+            "scan_interval": 86400,
+            "set_ip_address": True,
+            "time_allowed": [{"end": "23:59:59", "start": "00:00:00"}],
+        },
+        "network_scan_result": {
+            "end": None,
+            "output": "",
+            "start": None,
+            "state": "running",
+        },
+        "parents": [],
+        "site": "NO_SITE",
+        **({"relay": ""} if is_cloud_repo() else {}),
+        "snmp_community": None,
+        "tag_address_family": "ip-v4-only",
+        "tag_agent": "cmk-agent",
+        "tag_piggyback": "auto-piggyback",
+        "tag_snmp_ds": "no-snmp",
+        "waiting_for_discovery": False,
+    }
+    assert resp.json["extensions"]["effective_attributes"] == expected, expected
 
 
 @managedtest

@@ -32,6 +32,7 @@ RANDOM_TZ = $(shell printf "UTC%+d\n" $$(( $$RANDOM / 1261 - 11 )) )
 SYSTEM_TESTS := \
     test-integration \
     test-integration-redfish \
+    test-integration-otel \
     test-composition \
     test-update-cre \
     test-update-cee \
@@ -256,6 +257,15 @@ test-format-bazel:
 test-lint-groovy:
 	cd ..; scripts/run-groovy-lint --loglevel warning --failon error $(GROOVYLINT_OUTPUT_ARGS)
 
+test-performance:
+	RELEASE="$$(make --no-print-directory --file=../defines.make print-BRANCH_VERSION)-$$(date '+%Y.%m.%d').cee" ; \
+	BENCHMARK_DIR=../results/performance/$$RELEASE ; \
+	mkdir -p "$$BENCHMARK_DIR" ; \
+	$(PYTEST) $(realpath performance) $(PYTEST_SYSTEM_TEST_ARGS) \
+	--benchmark-json=$$BENCHMARK_DIR/benchmark.json \
+	--benchmark-verbose --html=$$BENCHMARK_DIR/report.htm \
+	--self-contained-html --ignore-running-procs
+
 test-gui-crawl: prepare-playwright
 	$(PYTEST) $(PYTEST_SYSTEM_TEST_ARGS) $(realpath gui_crawl/test_gui_crawl.py)
 
@@ -279,13 +289,17 @@ test-gui-e2e-cme:
 test-gui-e2e-cse:
 	EDITION=cse $(MAKE) test-gui-e2e-non-free
 
-test-integration:
+test-integration: test-integration-otel
 	$(PYTEST) $(PYTEST_SYSTEM_TEST_ARGS) $(realpath integration) \
 	--session-timeout 5400
 
 test-integration-redfish:
 	$(PYTEST) $(PYTEST_SYSTEM_TEST_ARGS) \
 	$(realpath integration_redfish) --session-timeout 1800
+
+test-integration-otel:
+	$(PYTEST) $(PYTEST_SYSTEM_TEST_ARGS) \
+	$(realpath integration_otel) --session-timeout 1800
 
 test-composition:
 	OTEL_RESOURCE_ATTRIBUTES=service.name=pytest \
@@ -422,7 +436,7 @@ test-cycles:
 		    $$($(UVENV) scripts/find_cmk_namespace_package_paths.py) \
 		    $$(realpath -L ..)/omd/packages/omd/omdlib \
 		--strategy johnson \
-		--threshold 12 \
+		--threshold 0 \
 		--verbose
 
 test-unit-omdlib:
@@ -483,7 +497,7 @@ test-unit-neb:
 	cd ../packages/neb/test && ./.f12
 
 test-unit-cmc:
-	cd ../packages/cmc/test && ./.f12
+	cd ../non-free/packages/cmc/test && ./.f12
 
 test-find-modified-lock-files:
 	scripts/find_modified_lock_files

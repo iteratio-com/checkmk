@@ -3,7 +3,6 @@
 # This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 # conditions defined in the file COPYING, which is part of this source code package.
 
-
 from collections.abc import Mapping
 
 from cmk.rulesets.v1 import Label, Title
@@ -55,11 +54,13 @@ def _migrate_cert(params: object) -> Mapping[str, object]:
     match params:
         case {"cert": cert_value, **rest}:
             return {
-                "ignore_tls": cert_value,
+                "ignore_tls": not cert_value,
                 **{str(k): v for k, v in rest.items()},
             }
         case dict():
-            return {**params, "ignore_tls": False}
+            if "ignore_tls" not in params:
+                params["ignore_tls"] = False
+            return params
     raise ValueError(f"Invalid parameters: {params!r}")
 
 

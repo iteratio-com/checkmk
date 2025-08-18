@@ -30,6 +30,13 @@ py_library(
 )
 
 py_library(
+    name = "cpu-tracking",
+    srcs = ["cmk/ccc/cpu_tracking.py"],
+    imports = ["."],
+    visibility = ["//visibility:public"],
+)
+
+py_library(
     name = "crash-reporting",
     srcs = ["cmk/ccc/crash_reporting.py"],
     imports = ["."],
@@ -160,6 +167,7 @@ py_library(
 
 _ALL = [
     "cleanup",
+    "cpu-tracking",
     "crash-reporting",
     "daemon",
     "debug",
@@ -283,13 +291,35 @@ py_test(
     ],
 )
 
+py_test(
+    name = "cpu-tracking-tests",
+    size = "small",
+    srcs = [
+        "__test__.py",
+        "tests/test_cpu_tracking.py",
+    ],
+    main = "__test__.py",
+    deps = [
+        "__test__",
+        "cpu-tracking",
+        requirement("pytest"),
+    ],
+)
+
 py_wheel(
     name = "wheel",
     distribution = "cmk-ccc",
     strip_path_prefixes = ["packages/cmk-ccc"],
     # TODO: Duplicated from pyproject.toml
     version = "1.0.0",
-    deps = _ALL,
+    deps = _ALL + [
+        ":py_typed",
+    ],
+)
+
+filegroup(
+    name = "py_typed",
+    srcs = ["cmk/ccc/py.typed"],
 )
 
 package_wheel(

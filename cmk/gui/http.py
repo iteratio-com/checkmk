@@ -2,7 +2,6 @@
 # Copyright (C) 2019 Checkmk GmbH - License: GNU General Public License v2
 # This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 # conditions defined in the file COPYING, which is part of this source code package.
-# ruff: noqa: A005
 # mypy: disable-error-code="no-any-return"
 
 """Wrapper layer between WSGI and GUI application code"""
@@ -23,12 +22,10 @@ from werkzeug.utils import get_content_type
 
 from cmk.ccc.exceptions import MKGeneralException
 from cmk.ccc.site import url_prefix
-
-from cmk.utils.urls import is_allowed_url
-
 from cmk.gui.ctx_stack import request_local_attr
 from cmk.gui.exceptions import MKUserError
 from cmk.gui.i18n import _
+from cmk.utils.urls import is_allowed_url
 
 UploadedFile = tuple[str, str, bytes]
 T = TypeVar("T")

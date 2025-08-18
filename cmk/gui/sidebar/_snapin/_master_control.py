@@ -8,9 +8,8 @@ from contextlib import AbstractContextManager as ContextManager
 from contextlib import nullcontext
 
 from cmk.ccc.site import SiteId
-
 from cmk.gui import site_config, sites, user_sites
-from cmk.gui.config import active_config, Config
+from cmk.gui.config import Config
 from cmk.gui.htmllib.foldable_container import foldable_container
 from cmk.gui.htmllib.html import html
 from cmk.gui.http import request, response
@@ -52,7 +51,7 @@ class MasterControlSnapin(SidebarSnapin):
         finally:
             sites.live().set_prepend_site(False)
 
-        for site_id, site_alias in user_sites.sorted_sites():
+        for site_id, site_alias in user_sites.sorted_sites(config.sites):
             container: ContextManager[bool] = (
                 foldable_container(
                     treename="master_control",
@@ -60,7 +59,7 @@ class MasterControlSnapin(SidebarSnapin):
                     isopen=True,
                     title=site_alias,
                 )
-                if not site_config.is_single_local_site()
+                if not site_config.is_single_local_site(config.sites)
                 else nullcontext(False)
             )
             with container:
@@ -171,7 +170,7 @@ class MasterControlSnapin(SidebarSnapin):
             "switch_master_state": self._ajax_switch_masterstate,
         }
 
-    def _ajax_switch_masterstate(self) -> None:
+    def _ajax_switch_masterstate(self, config: Config) -> None:
         check_csrf_token()
         response.set_content_type("text/plain")
 
@@ -209,4 +208,4 @@ class MasterControlSnapin(SidebarSnapin):
         )
         sites.live().set_only_sites()
 
-        self.show(active_config)
+        self.show(config)

@@ -10,11 +10,9 @@ from collections.abc import Callable, Iterator
 from typing import override
 
 import cmk.ccc.version as cmk_version
-
-import cmk.utils.paths
-
 import cmk.gui.pages
 import cmk.gui.view_utils
+import cmk.utils.paths
 from cmk.gui import sites, visuals, weblib
 from cmk.gui.alarm import play_alarm_sounds
 from cmk.gui.breadcrumb import Breadcrumb
@@ -55,7 +53,6 @@ from cmk.gui.views.command import Command, do_actions, get_command_groups, shoul
 from cmk.gui.views.page_ajax_filters import AjaxInitialViewFilters
 from cmk.gui.visuals import view_title
 from cmk.gui.visuals.filter import Filter
-from cmk.gui.watolib.activate_changes import get_pending_changes_tooltip, has_pending_changes
 
 
 def _filter_selected_rows(view_spec: ViewSpec, rows: Rows, selected_ids: list[str]) -> Rows:
@@ -382,8 +379,6 @@ class GUIViewRenderer(ABCViewRenderer):
         menu = PageMenu(
             dropdowns=page_menu_dropdowns,
             breadcrumb=breadcrumb,
-            has_pending_changes=has_pending_changes(),
-            pending_changes_tooltip=get_pending_changes_tooltip(),
         )
 
         self._extend_display_dropdown(menu, show_filters)

@@ -25,6 +25,8 @@ class AddRuleFilesystems(CmkPage):
 
     rule_name = "Filesystems (used space and growth)"
     section_name = "Service monitoring rules"
+    url_specific = "%3Afilesystem"
+    url_pattern = "varname=checkgroup_parameters%s&mode=new_rule"
 
     @override
     def navigate(self) -> None:
@@ -32,7 +34,7 @@ class AddRuleFilesystems(CmkPage):
         logger.info("Navigate to 'Add rule: %s' page", self.rule_name)
         service_rules_page.add_rule_button.click()
         self.page.wait_for_url(
-            url=re.compile(quote_plus("varname=checkgroup_parameters%3Afilesystem&mode=new_rule")),
+            url=re.compile(quote_plus(self.url_pattern % self.url_specific)),
             wait_until="load",
         )
         self.validate_page()

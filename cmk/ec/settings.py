@@ -8,8 +8,8 @@
 # but excellent article "Parsing Command Line Arguments" in the FPComplete blog
 # at https://www.fpcomplete.com/blog/2017/12/parsing-command-line-arguments.
 
-import sys
 from argparse import ArgumentParser, ArgumentTypeError, RawDescriptionHelpFormatter
+from collections.abc import Sequence
 from pathlib import Path
 from typing import NamedTuple
 
@@ -38,14 +38,23 @@ class Paths(NamedTuple):
     status_file: AnnotatedPath
     status_server_profile: AnnotatedPath
     event_server_profile: AnnotatedPath
+    local_mibs_dir: AnnotatedPath
+    checkmk_mibs_dir: AnnotatedPath
+    system_mibs_dir: AnnotatedPath
     compiled_mibs_dir: AnnotatedPath
     mongodb_config_file: AnnotatedPath
+    main_config_file: AnnotatedPath
+    config_dir: AnnotatedPath
+    rule_pack_dir: AnnotatedPath
+    mkp_rule_pack_dir: AnnotatedPath
 
 
 def create_paths(omd_root: Path) -> Paths:
     """Returns all default filesystem paths related to the event console."""
     run_dir = omd_root / "tmp/run/mkeventd"
     state_dir = omd_root / "var/mkeventd"
+    default_config_dir = omd_root / "etc/check_mk"
+    config_dir = default_config_dir / "mkeventd.d"
     return Paths(
         active_config_dir=AnnotatedPath(
             "active configuration directory", state_dir / "active_config"
@@ -67,10 +76,21 @@ def create_paths(omd_root: Path) -> Paths:
         event_server_profile=AnnotatedPath(
             "event server profile", state_dir / "EventServer.profile"
         ),
+        local_mibs_dir=AnnotatedPath("custom MIB directory", omd_root / "local/share/snmp/mibs"),
+        checkmk_mibs_dir=AnnotatedPath("Checkmk MIB directory", omd_root / "share/snmp/mibs"),
+        system_mibs_dir=AnnotatedPath("system MIB directory", Path("/usr/share/snmp/mibs")),
         compiled_mibs_dir=AnnotatedPath(
             "compiled MIBs directory", omd_root / "local/share/check_mk/compiled_mibs"
         ),
         mongodb_config_file=AnnotatedPath("MongoDB configuration", omd_root / "etc/mongodb.conf"),
+        main_config_file=AnnotatedPath(
+            "main configuration file", default_config_dir / "mkeventd.mk"
+        ),
+        config_dir=AnnotatedPath("configuration directory", config_dir),
+        rule_pack_dir=AnnotatedPath("rule pack directory", config_dir / "wato"),
+        mkp_rule_pack_dir=AnnotatedPath(
+            "exported rule pack directory", config_dir / "mkp/rule_packs"
+        ),
     )
 
 
@@ -229,7 +249,7 @@ class Settings(NamedTuple):
     options: Options
 
 
-def create_settings(version: str, omd_root: Path, argv: list[str]) -> Settings:
+def create_settings(version: str, omd_root: Path, argv: Sequence[str]) -> Settings:
     """Returns all event console settings."""
     paths = create_paths(omd_root)
     port_numbers = _default_port_numbers()
@@ -246,20 +266,3 @@ def create_settings(version: str, omd_root: Path, argv: list[str]) -> Settings:
         profile_event=args.profile_event,
     )
     return Settings(paths=paths, options=options)
-
-
-if __name__ == "__main__":
-    import cmk.ccc.version as cmk_version
-
-    import cmk.utils.paths
-
-    sys.stdout.write(
-        repr(
-            create_settings(
-                str(cmk_version.__version__),
-                cmk.utils.paths.omd_root,
-                sys.argv,
-            )
-        )
-        + "\n"
-    )

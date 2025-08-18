@@ -3,28 +3,25 @@
 # This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 # conditions defined in the file COPYING, which is part of this source code package.
 import base64
-from typing import Literal
+from typing import Literal, override
 
-from cmk.utils.password_store import ad_hoc_password_id
-
-from cmk.gui.form_specs.vue.validators import build_vue_validators
 from cmk.gui.i18n import _
 from cmk.gui.utils.encrypter import Encrypter
 from cmk.gui.watolib.password_store import passwordstore_choices
-
 from cmk.rulesets.v1 import Title
 from cmk.rulesets.v1.form_specs import Password
 from cmk.shared_typing import vue_formspec_components as VueComponents
+from cmk.utils.password_store import ad_hoc_password_id
 
-from ._base import FormSpecVisitor
-from ._type_defs import DataOrigin, DefaultValue, InvalidValue
-from ._utils import (
-    base_i18n_form_spec,
+from .._type_defs import DefaultValue, IncomingData, InvalidValue, RawDiskData, RawFrontendData
+from .._utils import (
     compute_validators,
     create_validation_error,
     get_title_and_help,
     optional_validation,
 )
+from .._visitor_base import FormSpecVisitor
+from ..validators import build_vue_validators
 
 PasswordId = str
 ParsedPassword = tuple[
@@ -37,30 +34,31 @@ VuePassword = tuple[Literal["explicit_password", "stored_password"], PasswordId,
 
 
 class PasswordVisitor(FormSpecVisitor[Password, ParsedPassword, VuePassword]):
-    def _parse_value(self, raw_value: object) -> ParsedPassword | InvalidValue[VuePassword]:
+    @override
+    def _parse_value(self, raw_value: IncomingData) -> ParsedPassword | InvalidValue[VuePassword]:
         fallback_value: VuePassword = ("explicit_password", "", "", False)
         if isinstance(raw_value, DefaultValue):
             return InvalidValue(reason=_("No password provided"), fallback_value=fallback_value)
 
-        if not isinstance(raw_value, tuple | list):
+        if not isinstance(raw_value.value, tuple | list):
             return InvalidValue(reason=_("No password provided"), fallback_value=fallback_value)
 
-        match self.options.data_origin:
-            case DataOrigin.DISK:
-                if not raw_value[0] == "cmk_postprocessed":
+        match raw_value:
+            case RawDiskData():
+                if not raw_value.value[0] == "cmk_postprocessed":
                     return InvalidValue(
                         reason=_("No password provided"), fallback_value=fallback_value
                     )
                 try:
-                    password_type, (password_id, password) = raw_value[1:]
+                    password_type, (password_id, password) = raw_value.value[1:]
                 except (TypeError, ValueError):
                     return InvalidValue(
                         reason=_("No password provided"), fallback_value=fallback_value
                     )
                 encrypted = False
-            case DataOrigin.FRONTEND:
+            case RawFrontendData():
                 try:
-                    password_type, password_id, password, encrypted = raw_value
+                    password_type, password_id, password, encrypted = raw_value.value
                 except (TypeError, ValueError):
                     return InvalidValue(
                         reason=_("No password provided"), fallback_value=fallback_value
@@ -87,6 +85,7 @@ class PasswordVisitor(FormSpecVisitor[Password, ParsedPassword, VuePassword]):
 
         return "cmk_postprocessed", password_type, (password_id, password)
 
+    @override
     def _to_vue(
         self, parsed_value: ParsedPassword | InvalidValue[VuePassword]
     ) -> tuple[VueComponents.Password, VuePassword]:
@@ -121,11 +120,11 @@ class PasswordVisitor(FormSpecVisitor[Password, ParsedPassword, VuePassword]):
                     ),
                     password_choice_invalid=_("Password does not exist or using not permitted."),
                 ),
-                i18n_base=base_i18n_form_spec(),
             ),
             value,
         )
 
+    @override
     def _validate(self, parsed_value: ParsedPassword) -> list[VueComponents.ValidationMessage]:
         if parsed_value[1] == "explicit_password":
             return [
@@ -139,12 +138,11 @@ class PasswordVisitor(FormSpecVisitor[Password, ParsedPassword, VuePassword]):
 
         return []
 
+    @override
     def _to_disk(self, parsed_value: ParsedPassword) -> ParsedPassword:
         postprocessed, password_type, (password_id, password) = parsed_value
         if password_type == "explicit_password" and not password_id:
             password_id = ad_hoc_password_id()
+        if self.visitor_options.mask_values:
+            return (postprocessed, password_type, (password_id, "******"))
         return (postprocessed, password_type, (password_id, password))
-
-    def _mask(self, parsed_value: ParsedPassword) -> ParsedPassword:
-        postprocessed, password_type, (password_id, _) = self._to_disk(parsed_value)
-        return (postprocessed, password_type, (password_id, "******"))

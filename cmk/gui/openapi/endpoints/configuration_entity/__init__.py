@@ -12,8 +12,9 @@ from collections.abc import Mapping, Sequence
 from dataclasses import asdict
 from typing import Any
 
+from cmk import fields
 from cmk.gui.config import active_config
-from cmk.gui.form_specs.vue.form_spec_visitor import FormSpecValidationError
+from cmk.gui.form_specs.vue import FormSpecValidationError
 from cmk.gui.http import Response
 from cmk.gui.openapi.endpoints.configuration_entity import folder as folder_endpoints
 from cmk.gui.openapi.endpoints.configuration_entity import (
@@ -36,8 +37,6 @@ from cmk.gui.watolib.configuration_entity.configuration_entity import (
     get_configuration_entity_schema,
     save_configuration_entity,
 )
-
-from cmk import fields
 from cmk.shared_typing import vue_formspec_components as shared_type_defs
 from cmk.shared_typing.configuration_entity import ConfigEntityType
 
@@ -104,6 +103,7 @@ def _create_configuration_entity(params: Mapping[str, Any]) -> Response:
             data,
             object_id=None,
             pprint_value=active_config.wato_pprint_config,
+            use_git=active_config.wato_use_git,
         )
     except FormSpecValidationError as exc:
         return _serve_validations(exc.messages)
@@ -135,6 +135,7 @@ def _update_configuration_entity(params: Mapping[str, Any]) -> Response:
             data,
             object_id=entity_id,
             pprint_value=active_config.wato_pprint_config,
+            use_git=active_config.wato_use_git,
         )
     except FormSpecValidationError as exc:
         return _serve_validations(exc.messages)

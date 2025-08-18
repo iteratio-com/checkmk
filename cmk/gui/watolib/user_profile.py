@@ -12,14 +12,15 @@ from multiprocessing import TimeoutError as mp_TimeoutError
 from multiprocessing.pool import ThreadPool
 from typing import Any, cast, Literal, NamedTuple
 
+from livestatus import SiteConfigurations
+
 from cmk.ccc.exceptions import MKGeneralException
 from cmk.ccc.site import SiteId
 from cmk.ccc.user import UserId
-
 from cmk.gui import sites, userdb
-from cmk.gui.config import active_config
+from cmk.gui.config import Config
 from cmk.gui.exceptions import RequestTimeout
-from cmk.gui.http import request
+from cmk.gui.http import Request
 from cmk.gui.i18n import _, _l
 from cmk.gui.logged_in import save_user_file
 from cmk.gui.site_config import (
@@ -67,12 +68,16 @@ class SynchronizationResult:
 
 
 def _synchronize_profiles_to_sites(
-    logger: Logger, profiles_to_synchronize: dict[UserId, UserSpec], debug: bool
+    logger: Logger,
+    profiles_to_synchronize: dict[UserId, UserSpec],
+    remote_sites: Sequence[tuple[SiteId, RemoteAutomationConfig]],
+    *,
+    wato_enabled: bool,
+    use_git: bool,
+    debug: bool,
 ) -> None:
     if not profiles_to_synchronize:
         return
-
-    remote_sites = [(site_id, active_config.sites[site_id]) for site_id in get_login_slave_sites()]
 
     logger.info(
         "Credentials changed for %s. Trying to sync to %d sites"
@@ -87,12 +92,12 @@ def _synchronize_profiles_to_sites(
             copy_request_context(_sychronize_profile_worker),
             (
                 states.get(site_id, {}),
-                RemoteAutomationConfig.from_site_config(site_config),
+                automation_config,
                 profiles_to_synchronize,
                 debug,
             ),
         )
-        for site_id, site_config in remote_sites
+        for site_id, automation_config in remote_sites
     ]
 
     results = []
@@ -119,14 +124,14 @@ def _synchronize_profiles_to_sites(
     for result in results:
         if result.error_text:
             logger.info(f"  FAILED [{result.site_id}]: {result.error_text}")
-            if active_config.wato_enabled:
+            if wato_enabled:
                 add_change(
                     action_name="edit-users",
                     text=_l("Password changed (sync failed: %s)") % result.error_text,
                     user_id=None,
                     sites=[result.site_id],
                     need_restart=False,
-                    use_git=active_config.wato_use_git,
+                    use_git=use_git,
                 )
 
     pool.terminate()
@@ -176,16 +181,29 @@ def handle_ldap_sync_finished(
     logger: Logger,
     profiles_to_synchronize: dict[UserId, UserSpec],
     changes: Sequence[str],
+    site_configs: SiteConfigurations,
+    wato_enabled: bool,
+    use_git: bool,
     debug: bool,
 ) -> None:
-    _synchronize_profiles_to_sites(logger, profiles_to_synchronize, debug=debug)
+    _synchronize_profiles_to_sites(
+        logger,
+        profiles_to_synchronize,
+        remote_sites=[
+            (site_id, RemoteAutomationConfig.from_site_config(site_configs[site_id]))
+            for site_id in get_login_slave_sites(site_configs)
+        ],
+        wato_enabled=wato_enabled,
+        use_git=use_git,
+        debug=debug,
+    )
 
-    if changes and active_config.wato_enabled and not is_wato_slave_site():
+    if changes and wato_enabled and not is_wato_slave_site(site_configs):
         add_change(
             action_name="edit-users",
             text="<br>".join(changes),
             user_id=None,
-            use_git=active_config.wato_use_git,
+            use_git=use_git,
         )
 
 
@@ -231,7 +249,7 @@ class PushUserProfilesToSite(AutomationCommand[PushUserProfilesRequest]):
     def command_name(self) -> str:
         return "push-profiles"
 
-    def get_request(self) -> PushUserProfilesRequest:
+    def get_request(self, config: Config, request: Request) -> PushUserProfilesRequest:
         return PushUserProfilesRequest(
             ast.literal_eval(request.get_str_input_mandatory("profiles")),
             ast.literal_eval(request.get_str_input_mandatory("visuals", None)),

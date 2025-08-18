@@ -13,17 +13,12 @@ from cmk.ccc.plugin_registry import Registry
 from cmk.ccc.site import SiteId
 from cmk.ccc.user import UserId
 from cmk.ccc.version import Edition, edition
-
-from cmk.utils import paths
-from cmk.utils.log.security_event import log_security_event
-from cmk.utils.object_diff import make_diff_text
-
+from cmk.crypto.password import Password, PasswordPolicy
 from cmk.gui import hooks, site_config, userdb
-from cmk.gui.config import active_config
 from cmk.gui.exceptions import MKUserError
 from cmk.gui.i18n import _, _l
 from cmk.gui.logged_in import LoggedInUser, user
-from cmk.gui.type_defs import AnnotatedUserId, UserContactDetails, UserObject, Users, UserSpec
+from cmk.gui.type_defs import AnnotatedUserId, UserContactDetails, UserObjectValue, Users, UserSpec
 from cmk.gui.userdb import add_internal_attributes, get_user_attributes
 from cmk.gui.userdb._connections import get_connection
 from cmk.gui.utils.security_log_events import UserManagementEvent
@@ -38,8 +33,9 @@ from cmk.gui.watolib.user_scripts import (
     user_script_title,
 )
 from cmk.gui.watolib.utils import multisite_dir, wato_root_dir
-
-from cmk.crypto.password import Password, PasswordPolicy
+from cmk.utils import paths
+from cmk.utils.log.security_event import log_security_event
+from cmk.utils.object_diff import make_diff_text
 
 _UserAssociatedSitesFn: TypeAlias = Callable[[UserSpec], Sequence[SiteId] | None]
 
@@ -66,7 +62,9 @@ def _update_affected_sites(
     return affected_sites | set(user_sites)
 
 
-def delete_users(users_to_delete: Sequence[UserId], sites: _UserAssociatedSitesFn) -> None:
+def delete_users(
+    users_to_delete: Sequence[UserId], sites: _UserAssociatedSitesFn, *, use_git: bool
+) -> None:
     user.need_permission("wato.users")
     user.need_permission("wato.edit")
     if user.id in users_to_delete:
@@ -101,7 +99,7 @@ def delete_users(users_to_delete: Sequence[UserId], sites: _UserAssociatedSitesF
                 action="edit-user",
                 message="Deleted user: %s" % user_id,
                 user_id=user.id,
-                use_git=active_config.wato_use_git,
+                use_git=use_git,
                 object_ref=make_user_object_ref(user_id),
             )
         add_change(
@@ -109,12 +107,14 @@ def delete_users(users_to_delete: Sequence[UserId], sites: _UserAssociatedSitesF
             text=_l("Deleted user: %s") % ", ".join(deleted_users),
             user_id=user.id,
             sites=None if affected_sites == "all" else list(affected_sites),
-            use_git=active_config.wato_use_git,
+            use_git=use_git,
         )
         userdb.save_users(all_users, datetime.now())
 
 
-def edit_users(changed_users: UserObject, sites: _UserAssociatedSitesFn) -> None:
+def edit_users(
+    changed_users: dict[UserId, UserObjectValue], sites: _UserAssociatedSitesFn, *, use_git: bool
+) -> None:
     user.need_permission("wato.users")
     user.need_permission("wato.edit")
     all_users = userdb.load_users(lock=True)
@@ -142,7 +142,7 @@ def edit_users(changed_users: UserObject, sites: _UserAssociatedSitesFn) -> None
                 "Created new user: %s" % user_id if is_new_user else "Modified user: %s" % user_id
             ),
             user_id=user.id,
-            use_git=active_config.wato_use_git,
+            use_git=use_git,
             diff_text=make_diff_text(old_object, make_user_audit_log_object(user_attrs)),
             object_ref=make_user_object_ref(user_id),
         )
@@ -167,7 +167,7 @@ def edit_users(changed_users: UserObject, sites: _UserAssociatedSitesFn) -> None
             text=_l("Created new users: %s") % ", ".join(new_users_info),
             user_id=user.id,
             sites=None if affected_sites == "all" else list(affected_sites),
-            use_git=active_config.wato_use_git,
+            use_git=use_git,
         )
     if modified_users_info:
         add_change(
@@ -175,7 +175,7 @@ def edit_users(changed_users: UserObject, sites: _UserAssociatedSitesFn) -> None
             text=_l("Modified users: %s") % ", ".join(modified_users_info),
             user_id=user.id,
             sites=None if affected_sites == "all" else list(affected_sites),
-            use_git=active_config.wato_use_git,
+            use_git=use_git,
         )
         hooks.call("users-changed", modified_users_info)
 
@@ -183,7 +183,7 @@ def edit_users(changed_users: UserObject, sites: _UserAssociatedSitesFn) -> None
 
 
 def remove_custom_attribute_from_all_users(
-    custom_attribute_name: str, sites: _UserAssociatedSitesFn
+    custom_attribute_name: str, sites: _UserAssociatedSitesFn, *, use_git: bool
 ) -> None:
     edit_users(
         {
@@ -197,6 +197,7 @@ def remove_custom_attribute_from_all_users(
             for user_id, settings in userdb.load_users(lock=True).items()
         },
         sites,
+        use_git=use_git,
     )
 
 
@@ -344,15 +345,15 @@ def notification_script_choices() -> list[tuple[str, str]]:
     return choices
 
 
-def verify_password_policy(password: Password, varname: str = "password") -> None:
-    min_len = active_config.password_policy.get("min_length")
-    num_groups = active_config.password_policy.get("num_groups")
-
-    result = password.verify_policy(PasswordPolicy(min_len, num_groups))
+def verify_password_policy(
+    password: Password, varname: str, password_policy: PasswordPolicy
+) -> None:
+    result = password.verify_policy(password_policy)
     if result == PasswordPolicy.Result.TooShort:
         raise MKUserError(
             varname,
-            _("The given password is too short. It must have at least %d characters.") % min_len,
+            _("The given password is too short. It must have at least %d characters.")
+            % password_policy.min_length,
         )
     if result == PasswordPolicy.Result.TooSimple:
         raise MKUserError(
@@ -361,7 +362,7 @@ def verify_password_policy(password: Password, varname: str = "password") -> Non
                 "The password does not use enough character groups. You need to "
                 "set a password which uses at least %d of them."
             )
-            % num_groups,
+            % password_policy.min_groups,
         )
 
 
@@ -404,8 +405,10 @@ class UserFeaturesRegistry(Registry[UserFeatures]):
 user_features_registry = UserFeaturesRegistry()
 
 
-def get_enabled_remote_sites_for_logged_in_user(logged_in_user: LoggedInUser) -> SiteConfigurations:
-    all_enabled_slave_sites = site_config.wato_slave_sites()
+def get_enabled_remote_sites_for_logged_in_user(
+    logged_in_user: LoggedInUser, site_configs: SiteConfigurations
+) -> SiteConfigurations:
+    all_enabled_slave_sites = site_config.wato_slave_sites(site_configs)
     if (
         site_ids_for_user := user_features_registry.features().sites(logged_in_user.attributes)
     ) is None:

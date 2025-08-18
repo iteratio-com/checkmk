@@ -5,6 +5,7 @@
 
 import abc
 import ast
+from collections.abc import Mapping
 from pathlib import Path
 
 from pydantic import BaseModel
@@ -13,7 +14,6 @@ from cmk.ccc import store
 from cmk.ccc.exceptions import MKGeneralException, MKTimeout
 from cmk.ccc.hostaddress import HostName
 from cmk.ccc.site import omd_site, SiteId
-
 from cmk.gui.background_job import (
     BackgroundJob,
     BackgroundJobRegistry,
@@ -23,12 +23,12 @@ from cmk.gui.background_job import (
     JobTarget,
 )
 from cmk.gui.breadcrumb import Breadcrumb, BreadcrumbItem
-from cmk.gui.config import active_config
+from cmk.gui.config import active_config, Config
 from cmk.gui.exceptions import HTTPRedirect, MKUserError
 from cmk.gui.gui_background_job import ActionHandler, JobRenderer
 from cmk.gui.htmllib.header import make_header
 from cmk.gui.htmllib.html import html, HTMLGenerator
-from cmk.gui.http import ContentDispositionType, request, response
+from cmk.gui.http import ContentDispositionType, Request, request, response
 from cmk.gui.i18n import _
 from cmk.gui.logged_in import user
 from cmk.gui.pages import Page, PageEndpoint, PageRegistry
@@ -80,13 +80,16 @@ def register(
 
 
 class FetchAgentOutputRequest:
-    def __init__(self, host: Host, agent_type: str) -> None:
+    def __init__(self, host: Host, agent_type: str, *, debug: bool, timeout: int) -> None:
         self.host = host
         self.agent_type = agent_type
+        self.debug = debug
+        self.timeout = timeout
 
     @classmethod
-    def deserialize(cls, serialized: dict[str, str]) -> "FetchAgentOutputRequest":
+    def deserialize(cls, serialized: Mapping[str, object]) -> "FetchAgentOutputRequest":
         host_name = serialized["host_name"]
+        assert isinstance(host_name, str)
         host = Host.host(HostName(host_name))
         if host is None:
             raise MKGeneralException(
@@ -100,12 +103,31 @@ class FetchAgentOutputRequest:
             )
         host.permissions.need_permission("read")
 
-        return cls(host, serialized["agent_type"])
+        # For compatibility with 2.4 central sites default to the local sites config
+        if "debug" not in serialized:
+            debug = active_config.debug
+        else:
+            assert isinstance(serialized["debug"], bool)
+            debug = serialized["debug"]
+        if "timeout" not in serialized:
+            timeout = (
+                int(active_config.reschedule_timeout)
+                if serialized["agent_type"] == "agent"
+                else int(active_config.snmp_walk_download_timeout)
+            )
+        else:
+            assert isinstance(serialized["timeout"], int)
+            timeout = serialized["timeout"]
 
-    def serialize(self) -> dict[str, str]:
+        assert isinstance(serialized["agent_type"], str)
+        return cls(host, serialized["agent_type"], debug=debug, timeout=timeout)
+
+    def serialize(self) -> dict[str, object]:
         return {
             "host_name": self.host.name(),
             "agent_type": self.agent_type,
+            "debug": self.debug,
+            "timeout": self.timeout,
         }
 
 
@@ -137,7 +159,14 @@ class AgentOutputPage(Page, abc.ABC):
             )
         host.permissions.need_permission("read")
 
-        self._request = FetchAgentOutputRequest(host=host, agent_type=ty)
+        self._request = FetchAgentOutputRequest(
+            host=host,
+            agent_type=ty,
+            debug=active_config.debug,
+            timeout=int(active_config.reschedule_timeout)
+            if ty == "agent"
+            else int(active_config.snmp_walk_download_timeout),
+        )
 
     @staticmethod
     def file_name(site_id: SiteId, host_name: HostName, agent_type: str) -> str:
@@ -145,18 +174,16 @@ class AgentOutputPage(Page, abc.ABC):
 
 
 class PageFetchAgentOutput(AgentOutputPage):
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         title = self._title()
         make_header(html, title, self._breadcrumb(title))
 
         self._action()
 
-        automation_config = make_automation_config(
-            active_config.sites[self._request.host.site_id()]
-        )
+        automation_config = make_automation_config(config.sites[self._request.host.site_id()])
         if request.has_var("_start"):
-            self._start_fetch(automation_config)
-        self._show_status(automation_config)
+            self._start_fetch(automation_config, debug=config.debug)
+        self._show_status(automation_config, debug=config.debug)
 
         html.footer()
 
@@ -192,9 +219,9 @@ class PageFetchAgentOutput(AgentOutputPage):
             )
 
     def _show_status(
-        self, automation_config: LocalAutomationConfig | RemoteAutomationConfig
+        self, automation_config: LocalAutomationConfig | RemoteAutomationConfig, *, debug: bool
     ) -> None:
-        job_status = self._get_job_status(automation_config)
+        job_status = self._get_job_status(automation_config, debug=debug)
 
         html.h3(_("Job status"))
         if job_status.is_active:
@@ -204,7 +231,7 @@ class PageFetchAgentOutput(AgentOutputPage):
         JobRenderer.show_job_details(job.get_job_id(), job_status, job.may_stop(), job.may_delete())
 
     def _start_fetch(
-        self, automation_config: LocalAutomationConfig | RemoteAutomationConfig
+        self, automation_config: LocalAutomationConfig | RemoteAutomationConfig, *, debug: bool
     ) -> None:
         """Start the job on the site the host is monitored by"""
         if isinstance(automation_config, LocalAutomationConfig):
@@ -217,11 +244,11 @@ class PageFetchAgentOutput(AgentOutputPage):
             [
                 ("request", repr(self._request.serialize())),
             ],
-            debug=active_config.debug,
+            debug=debug,
         )
 
     def _get_job_status(
-        self, automation_config: LocalAutomationConfig | RemoteAutomationConfig
+        self, automation_config: LocalAutomationConfig | RemoteAutomationConfig, *, debug: bool
     ) -> JobStatusSpec:
         if isinstance(automation_config, LocalAutomationConfig):
             return get_fetch_agent_job_status(self._request)
@@ -233,13 +260,13 @@ class PageFetchAgentOutput(AgentOutputPage):
                 [
                     ("request", repr(self._request.serialize())),
                 ],
-                debug=active_config.debug,
+                debug=debug,
             )
         )
 
 
 class ABCAutomationFetchAgentOutput(AutomationCommand[FetchAgentOutputRequest]):
-    def get_request(self) -> FetchAgentOutputRequest:
+    def get_request(self, config: Config, request: Request) -> FetchAgentOutputRequest:
         user.need_permission("wato.download_agent_output")
 
         ascii_input = request.get_ascii_input("request")
@@ -268,6 +295,8 @@ def start_fetch_agent_job(api_request: FetchAgentOutputRequest) -> None:
                     site_id=api_request.host.site_id(),
                     host_name=api_request.host.name(),
                     agent_type=api_request.agent_type,
+                    debug=api_request.debug,
+                    timeout=api_request.timeout,
                 ),
             ),
             InitialStatusArgs(
@@ -303,13 +332,17 @@ class FetchAgentOutputJobArgs(BaseModel, frozen=True):
     site_id: SiteId
     host_name: AnnotatedHostName
     agent_type: str
+    debug: bool
+    timeout: int
 
 
 def fetch_agent_output_entry_point(
     job_interface: BackgroundProcessInterface, args: FetchAgentOutputJobArgs
 ) -> None:
     FetchAgentOutputBackgroundJob(args.site_id, args.host_name, args.agent_type).fetch_agent_output(
-        job_interface
+        job_interface,
+        debug=args.debug,
+        timeout=args.timeout,
     )
 
 
@@ -335,30 +368,20 @@ class FetchAgentOutputBackgroundJob(BackgroundJob):
         job_id = f"{self.job_prefix}{site_id}-{host_name}-{agent_type}"
         super().__init__(job_id)
 
-    def fetch_agent_output(self, job_interface: BackgroundProcessInterface) -> None:
-        with job_interface.gui_context():
-            self._fetch_agent_output(
-                job_interface,
-                automation_config=make_automation_config(active_config.sites[self._site_id]),
-                debug=active_config.debug,
-            )
-
-    def _fetch_agent_output(
+    def fetch_agent_output(
         self,
         job_interface: BackgroundProcessInterface,
         *,
-        automation_config: LocalAutomationConfig | RemoteAutomationConfig,
         debug: bool,
+        timeout: int,
     ) -> None:
         job_interface.send_progress_update(_("Fetching '%s'...") % self._agent_type)
 
         agent_output_result = get_agent_output(
-            automation_config,
+            LocalAutomationConfig(),
             self._host_name,
             self._agent_type,
-            timeout=int(active_config.reschedule_timeout)
-            if self._agent_type == "agent"
-            else int(active_config.snmp_walk_download_timeout),
+            timeout=timeout,
             debug=debug,
         )
 
@@ -418,14 +441,13 @@ class FetchAgentOutputBackgroundJob(BackgroundJob):
 
 
 class PageDownloadAgentOutput(AgentOutputPage):
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         file_name = self.file_name(
             self._request.host.site_id(), self._request.host.name(), self._request.agent_type
         )
         file_content = self._get_agent_output_file(
-            automation_config=make_automation_config(
-                active_config.sites[self._request.host.site_id()]
-            )
+            automation_config=make_automation_config(config.sites[self._request.host.site_id()]),
+            debug=config.debug,
         )
 
         response.set_content_type("text/plain")
@@ -433,7 +455,7 @@ class PageDownloadAgentOutput(AgentOutputPage):
         response.set_data(file_content)
 
     def _get_agent_output_file(
-        self, automation_config: LocalAutomationConfig | RemoteAutomationConfig
+        self, automation_config: LocalAutomationConfig | RemoteAutomationConfig, *, debug: bool
     ) -> bytes:
         if isinstance(automation_config, LocalAutomationConfig):
             return get_fetch_agent_output_file(self._request)
@@ -444,7 +466,7 @@ class PageDownloadAgentOutput(AgentOutputPage):
             [
                 ("request", repr(self._request.serialize())),
             ],
-            debug=active_config.debug,
+            debug=debug,
         )
         assert isinstance(raw_response, bytes)
         return raw_response

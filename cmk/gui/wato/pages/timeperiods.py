@@ -16,17 +16,9 @@ import recurring_ical_events
 from icalendar import Calendar, Event
 from icalendar.prop import vDDDTypes
 
-from cmk.utils import dateutils
-from cmk.utils.timeperiod import (
-    is_builtin_timeperiod,
-    timeperiod_spec_alias,
-    TimeperiodName,
-    TimeperiodSpec,
-)
-
 from cmk.gui import forms, watolib
 from cmk.gui.breadcrumb import Breadcrumb
-from cmk.gui.config import active_config
+from cmk.gui.config import Config
 from cmk.gui.default_name import unique_default_name_suggestion
 from cmk.gui.exceptions import MKUserError
 from cmk.gui.htmllib.html import html
@@ -67,6 +59,13 @@ from cmk.gui.watolib.config_domains import ConfigDomainOMD
 from cmk.gui.watolib.hosts_and_folders import folder_preserving_link, make_action_link
 from cmk.gui.watolib.mode import mode_url, ModeRegistry, redirect, WatoMode
 from cmk.gui.watolib.timeperiods import load_timeperiods
+from cmk.utils import dateutils
+from cmk.utils.timeperiod import (
+    is_builtin_timeperiod,
+    timeperiod_spec_alias,
+    TimeperiodName,
+    TimeperiodSpec,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -216,7 +215,7 @@ class ModeTimeperiods(WatoMode):
     def title(self) -> str:
         return _("Time periods")
 
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         menu = PageMenu(
             dropdowns=[
                 PageMenuDropdown(
@@ -255,7 +254,7 @@ class ModeTimeperiods(WatoMode):
         menu.add_doc_reference(_("Time periods"), DocReference.TIMEPERIODS)
         return menu
 
-    def action(self) -> ActionResult:
+    def action(self, config: Config) -> ActionResult:
         delname = request.var("_delete")
         if not delname:
             return redirect(mode_url("timeperiods"))
@@ -267,8 +266,8 @@ class ModeTimeperiods(WatoMode):
             watolib.timeperiods.delete_timeperiod(
                 TimeperiodName(delname),
                 user_id=user.id,
-                pprint_value=active_config.wato_pprint_config,
-                use_git=active_config.wato_use_git,
+                pprint_value=config.wato_pprint_config,
+                use_git=config.wato_use_git,
             )
             self._timeperiods = load_timeperiods()
 
@@ -287,7 +286,7 @@ class ModeTimeperiods(WatoMode):
 
         return redirect(mode_url("timeperiods"))
 
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         with table_element(
             "timeperiods", empty_text=_("There are no time periods defined yet.")
         ) as table:
@@ -356,7 +355,7 @@ class ModeTimeperiodImportICal(WatoMode):
             return _("Add time period")
         return _("Import iCalendar File to create a time period")
 
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         if not request.var("upload"):
             return make_simple_form_page_menu(
                 _("iCalendar"),
@@ -365,7 +364,7 @@ class ModeTimeperiodImportICal(WatoMode):
                 button_name="upload",
                 save_title=_("Import"),
             )
-        return ModeEditTimeperiod().page_menu(breadcrumb)
+        return ModeEditTimeperiod().page_menu(config, breadcrumb)
 
     def _vs_ical(self) -> Dictionary:
         return Dictionary(
@@ -417,11 +416,11 @@ class ModeTimeperiodImportICal(WatoMode):
         ):
             raise MKUserError(varprefix, _("The file does not seem to be a valid iCalendar file."))
 
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         if not request.var("upload"):
             self._show_import_ical_page()
         else:
-            self._show_add_timeperiod_page()
+            self._show_add_timeperiod_page(config)
 
     def _show_import_ical_page(self) -> None:
         html.p(
@@ -439,7 +438,7 @@ class ModeTimeperiodImportICal(WatoMode):
             forms.end()
             html.hidden_fields()
 
-    def _show_add_timeperiod_page(self) -> None:
+    def _show_add_timeperiod_page(self, config: Config) -> None:
         # If an ICalendar file is uploaded, we process the htmlvars here, to avoid
         # "Request URI too long exceptions"
         vs_ical = self._vs_ical()
@@ -501,7 +500,7 @@ class ModeTimeperiodImportICal(WatoMode):
 
         request.set_var("mode", "edit_timeperiod")
 
-        ModeEditTimeperiod().page()
+        ModeEditTimeperiod().page(config)
 
 
 class ModeEditTimeperiod(WatoMode):
@@ -545,7 +544,7 @@ class ModeEditTimeperiod(WatoMode):
     def title(self) -> str:
         return _("Add time period") if self._name is None else _("Edit time period")
 
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         return make_simple_form_page_menu(
             _("Time period"), breadcrumb, form_name="timeperiod", button_name="_save"
         )
@@ -729,7 +728,7 @@ class ModeEditTimeperiod(WatoMode):
 
         return False
 
-    def action(self) -> ActionResult:
+    def action(self, config: Config) -> ActionResult:
         check_csrf_token()
 
         if not transactions.check_transaction():
@@ -746,22 +745,22 @@ class ModeEditTimeperiod(WatoMode):
                 self._name,
                 self._timeperiod,
                 user_id=user.id,
-                pprint_value=active_config.wato_pprint_config,
-                use_git=active_config.wato_use_git,
+                pprint_value=config.wato_pprint_config,
+                use_git=config.wato_use_git,
             )
         else:
             watolib.timeperiods.modify_timeperiod(
                 self._name,
                 self._timeperiod,
                 user_id=user.id,
-                pprint_value=active_config.wato_pprint_config,
-                use_git=active_config.wato_use_git,
+                pprint_value=config.wato_pprint_config,
+                use_git=config.wato_use_git,
             )
 
         self._timeperiods = load_timeperiods()
         return redirect(mode_url("timeperiods"))
 
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         with html.form_context("timeperiod", method="POST"):
             self._valuespec().render_input("timeperiod", self._to_valuespec(self._timeperiod))
             forms.end()
@@ -866,7 +865,7 @@ class ModeEditTimeperiod(WatoMode):
             time_exceptions = exceptions_details
 
         return {
-            day: self._time_ranges_from_valuespec(time_exceptions[day])
+            day: self._time_ranges_from_valuespec(time_ranges)
             for day, time_ranges in time_exceptions.items()
             if time_ranges
         }

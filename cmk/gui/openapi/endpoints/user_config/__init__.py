@@ -10,7 +10,8 @@ from collections.abc import Mapping
 from typing import Any, Literal, NotRequired, TypedDict
 
 from cmk.ccc.user import UserId
-
+from cmk.crypto.password import Password, PasswordPolicy
+from cmk.gui.config import active_config
 from cmk.gui.exceptions import MKUserError
 from cmk.gui.fields import Username
 from cmk.gui.http import Response
@@ -43,14 +44,12 @@ from cmk.gui.watolib.users import (
     verify_password_policy,
 )
 
-from cmk.crypto.password import Password
-
 TIMESTAMP_RANGE = tuple[float, float]
 
 USERNAME = {
     "username": Username(
         required=True,
-        should_exist=True,
+        presence="should_exist",
         description="An unique username for the user",
         example="cmkuser",
     )
@@ -62,6 +61,7 @@ class ApiInterfaceAttributes(TypedDict, total=False):
     sidebar_position: Literal["left", "right"]
     navigation_bar_icons: Literal["show", "hide"]
     main_menu_icons: Literal["topic", "entry"]
+    mega_menu_icons: Literal["topic", "entry"]  # TODO: DEPRECATED(18295) remove "mega_menu_icons"
     show_mode: Literal["default", "default_show_less", "default_show_more", "enforce_show_more"]
     contextual_help_icon: Literal["show_icon", "hide_icon"]
 
@@ -140,7 +140,15 @@ def create_user(params: Mapping[str, Any]) -> Response:
     # The interface options must be set for a new user, but we restrict the setting through the API
     internal_attrs: UserSpec = {"force_authuser": False}
 
-    internal_attrs = _api_to_internal_format(internal_attrs, api_attrs, new_user=True)
+    internal_attrs = _api_to_internal_format(
+        internal_attrs,
+        api_attrs,
+        PasswordPolicy(
+            active_config.password_policy.get("min_length"),
+            active_config.password_policy.get("num_groups"),
+        ),
+        new_user=True,
+    )
     edit_users(
         {
             username: {
@@ -149,6 +157,7 @@ def create_user(params: Mapping[str, Any]) -> Response:
             }
         },
         user_features_registry.features().sites,
+        use_git=active_config.wato_use_git,
     )
     return serve_user(username)
 
@@ -164,7 +173,11 @@ def create_user(params: Mapping[str, Any]) -> Response:
 def delete_user(params: Mapping[str, Any]) -> Response:
     """Delete a user"""
     username = params["username"]
-    delete_users([username], user_features_registry.features().sites)
+    delete_users(
+        [username],
+        user_features_registry.features().sites,
+        use_git=active_config.wato_use_git,
+    )
     return Response(status=204)
 
 
@@ -190,7 +203,14 @@ def edit_user(params: Mapping[str, Any]) -> Response:
 
     current_attrs = _load_user(username)
     constructors.require_etag(constructors.hash_of_dict(current_attrs))
-    internal_attrs = _api_to_internal_format(current_attrs, api_attrs)
+    internal_attrs = _api_to_internal_format(
+        current_attrs,
+        api_attrs,
+        PasswordPolicy(
+            active_config.password_policy.get("min_length"),
+            active_config.password_policy.get("num_groups"),
+        ),
+    )
 
     if connector_id := internal_attrs.get("connector"):
         user_locked_attributes = set(locked_attributes(connector_id))
@@ -212,6 +232,7 @@ def edit_user(params: Mapping[str, Any]) -> Response:
             }
         },
         user_features_registry.features().sites,
+        use_git=active_config.wato_use_git,
     )
     return serve_user(username)
 
@@ -259,7 +280,7 @@ def serialize_user(
     )
 
 
-def _api_to_internal_format(internal_attrs, api_configurations, new_user=False):
+def _api_to_internal_format(internal_attrs, api_configurations, password_policy, new_user=False):
     attrs = internal_attrs.copy()
     for attr, value in api_configurations.items():
         if attr in (
@@ -293,7 +314,9 @@ def _api_to_internal_format(internal_attrs, api_configurations, new_user=False):
             api_configurations.get("contact_options"), attrs.get("email")
         )
     )
-    attrs = _update_auth_options(attrs, api_configurations["auth_option"], new_user=new_user)
+    attrs = _update_auth_options(
+        attrs, api_configurations["auth_option"], password_policy, new_user=new_user
+    )
     attrs = _update_notification_options(attrs, api_configurations.get("disable_notifications"))
     attrs = _update_idle_options(attrs, api_configurations.get("idle_timeout"))
 
@@ -497,6 +520,7 @@ class AuthOptions(TypedDict, total=False):
 def _update_auth_options(
     internal_attrs: dict[str, int | str | bool],
     auth_options: AuthOptions,
+    password_policy: PasswordPolicy,
     new_user: bool = False,
 ) -> dict[str, int | str | bool]:
     """Update the internal attributes with the authentication options (used for create and update)
@@ -518,7 +542,7 @@ def _update_auth_options(
         internal_attrs["is_automation_user"] = False
         internal_attrs["serial"] = 1
     else:
-        internal_auth_attrs = _auth_options_to_internal_format(auth_options)
+        internal_auth_attrs = _auth_options_to_internal_format(auth_options, password_policy)
         if new_user and "password" not in internal_auth_attrs:
             # "password" (the password hash) is set for both automation users and regular users,
             # although automation users don't really use it yet (but they should, eventually).
@@ -542,49 +566,9 @@ def _update_auth_options(
 
 
 def _auth_options_to_internal_format(
-    auth_details: AuthOptions,
+    auth_details: AuthOptions, password_policy: PasswordPolicy
 ) -> dict[str, int | str | bool]:
-    """Format the authentication information to be Checkmk compatible
-
-    Args:
-        auth_details:
-            user provided authentication details
-
-    Returns:
-        formatted authentication details for Checkmk user_attrs
-
-    Examples:
-
-    Setting a new automation secret:
-
-        >>> _auth_options_to_internal_format(
-        ...     {"auth_type": "automation", "secret": "TNBJCkwane3$cfn0XLf6p6a"}
-        ... )  # doctest:+ELLIPSIS
-        {'password': ..., 'automation_secret': 'TNBJCkwane3$cfn0XLf6p6a', 'store_automation_secret': False, 'is_automation_user': True, 'last_pw_change': ...}
-
-    Enforcing password change without changing the password:
-
-        >>> _auth_options_to_internal_format(
-        ...     {"auth_type": "password", "enforce_password_change": True}
-        ... )
-        {'enforce_pw_change': True}
-
-    Empty password is not allowed and passwords result in MKUserErrors:
-
-        >>> _auth_options_to_internal_format(
-        ...     {"auth_type": "password", "enforce_password_change": True, "password": ""}
-        ... )
-        Traceback (most recent call last):
-        ...
-        cmk.gui.exceptions.MKUserError: Password must not be empty
-
-        >>> _auth_options_to_internal_format(
-        ...     {"auth_type": "password", "enforce_password_change": True, "password": "\\0"}
-        ... )
-        Traceback (most recent call last):
-        ...
-        cmk.gui.exceptions.MKUserError: Password must not contain null bytes
-    """
+    """Convert authentication information received via REST API to the Checkmk internal format"""
     internal_options: dict[str, str | bool | int] = {}
     if not auth_details:
         return internal_options
@@ -608,7 +592,7 @@ def _auth_options_to_internal_format(
         internal_options["password"] = htpasswd.hash_password(password)
 
         if auth_type == "password":
-            verify_password_policy(password)
+            verify_password_policy(password, "password", password_policy)
             internal_options["is_automation_user"] = False
 
         if auth_type == "automation":
@@ -671,10 +655,16 @@ def _interface_options_to_internal_format(
             "show": None,
             "hide": "hide",
         }[show_icon_titles]
-    if main_menu_icons := api_interface_options.get("main_menu_icons"):
+
+    # TODO: DEPRECATED(18295) remove "mega_menu_icons"
+    icons_per_item = api_interface_options.get("main_menu_icons", None)
+    if icons_per_item is None:
+        icons_per_item = api_interface_options.get("mega_menu_icons", None)
+    if icons_per_item is not None:
         internal_inteface_options["icons_per_item"] = {"topic": None, "entry": "entry"}[
-            main_menu_icons
+            icons_per_item
         ]
+
     if show_mode := api_interface_options.get("show_mode"):
         internal_inteface_options["show_mode"] = {
             "default": None,
@@ -706,6 +696,10 @@ def _interface_options_to_api_format(
         )
 
     if "icons_per_item" in internal_interface_options:
+        # TODO: DEPRECATED(18295) remove "mega_menu_icons"
+        attributes["mega_menu_icons"] = (
+            "topic" if internal_interface_options["icons_per_item"] is None else "entry"
+        )
         attributes["main_menu_icons"] = (
             "topic" if internal_interface_options["icons_per_item"] is None else "entry"
         )

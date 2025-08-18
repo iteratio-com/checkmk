@@ -12,12 +12,13 @@ from collections.abc import Callable, Collection, Iterable, Iterator, Sequence
 from copy import deepcopy
 from typing import Any, Final
 
-from cmk.ccc.exceptions import MKGeneralException
+from livestatus import SiteConfigurations
 
 import cmk.gui.watolib.changes as _changes
+from cmk.ccc.exceptions import MKGeneralException
 from cmk.gui import forms
 from cmk.gui.breadcrumb import Breadcrumb
-from cmk.gui.config import active_config
+from cmk.gui.config import active_config, Config
 from cmk.gui.exceptions import MKAuthException, MKUserError
 from cmk.gui.global_config import get_global_config
 from cmk.gui.htmllib.generator import HTMLWriter
@@ -38,7 +39,12 @@ from cmk.gui.page_menu import (
     PageMenuSearch,
     PageMenuTopic,
 )
-from cmk.gui.site_config import configured_sites
+from cmk.gui.search import (
+    ABCMatchItemGenerator,
+    MatchItem,
+    MatchItemGeneratorRegistry,
+    MatchItems,
+)
 from cmk.gui.type_defs import ActionResult, GlobalSettings, PermissionName
 from cmk.gui.utils import escaping
 from cmk.gui.utils.csrf_token import check_csrf_token
@@ -64,12 +70,6 @@ from cmk.gui.watolib.global_settings import load_configuration_settings, save_gl
 from cmk.gui.watolib.hosts_and_folders import folder_preserving_link
 from cmk.gui.watolib.mode import mode_url, ModeRegistry, redirect, WatoMode
 from cmk.gui.watolib.piggyback_hub import validate_piggyback_hub_config
-from cmk.gui.watolib.search import (
-    ABCMatchItemGenerator,
-    MatchItem,
-    MatchItemGeneratorRegistry,
-    MatchItems,
-)
 
 
 def register(
@@ -132,14 +132,14 @@ class ABCGlobalSettingsMode(WatoMode):
     def edit_mode_name(self) -> str:
         return "edit_configvar"
 
-    def _should_show_config_variable(self, config_variable: ConfigVariable) -> bool:
+    def _should_show_config_variable(self, config_variable: ConfigVariable, *, debug: bool) -> bool:
         varname = config_variable.ident()
 
         if not (domain := config_variable.domain()).enabled():
             return False
 
         if isinstance(domain, ConfigDomainCore) and varname not in self._default_values:
-            if active_config.debug:
+            if debug:
                 raise MKGeneralException(
                     "The configuration variable <tt>%s</tt> is unknown to "
                     "your local Checkmk installation" % varname
@@ -177,7 +177,7 @@ class ABCGlobalSettingsMode(WatoMode):
         )
 
     def iter_all_configuration_variables(
-        self,
+        self, *, debug: bool
     ) -> Iterable[tuple[ConfigVariableGroup, Iterable[ConfigVariable]]]:
         yield from (
             (
@@ -185,19 +185,19 @@ class ABCGlobalSettingsMode(WatoMode):
                 (
                     config_variable
                     for config_variable in group.config_variables()
-                    if self._should_show_config_variable(config_variable)
+                    if self._should_show_config_variable(config_variable, debug=debug)
                 ),
             )
             for group in sorted(self._groups(), key=lambda g: g.sort_index())
         )
 
-    def _show_configuration_variables(self) -> None:
+    def _show_configuration_variables(self, *, debug: bool) -> None:
         search = self._search
 
         at_least_one_painted = False
         html.open_div(class_="globalvars")
         global_config = get_global_config()
-        for group, config_variables in self.iter_all_configuration_variables():
+        for group, config_variables in self.iter_all_configuration_variables(debug=debug):
             header_is_painted = False  # needed for omitting empty groups
 
             for config_variable in config_variables:
@@ -327,7 +327,7 @@ class ABCEditGlobalSettingMode(WatoMode):
             return user.may("wato.add_or_modify_executables")
         return True
 
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         menu = make_simple_form_page_menu(
             _("Setting"), breadcrumb, form_name="value_editor", button_name="_save"
         )
@@ -356,7 +356,7 @@ class ABCEditGlobalSettingMode(WatoMode):
 
         return menu
 
-    def action(self) -> ActionResult:
+    def action(self, config: Config) -> ActionResult:
         check_csrf_token()
 
         current = self._current_settings.get(self._varname)
@@ -368,7 +368,9 @@ class ABCEditGlobalSettingMode(WatoMode):
             if self._varname == CONFIG_VARIABLE_PIGGYBACK_HUB_IDENT:
                 default_settings = ABCConfigDomain.get_all_default_globals()
                 self._validate_update_piggyback_hub_config(
-                    default_settings[self._varname], default_settings
+                    default_settings[self._varname],
+                    default_settings,
+                    config.sites,
                 )
 
             try:
@@ -385,7 +387,7 @@ class ABCEditGlobalSettingMode(WatoMode):
 
             if self._varname == CONFIG_VARIABLE_PIGGYBACK_HUB_IDENT:
                 self._validate_update_piggyback_hub_config(
-                    new_value, ABCConfigDomain.get_all_default_globals()
+                    new_value, ABCConfigDomain.get_all_default_globals(), config.sites
                 )
 
             self._current_settings[self._varname] = new_value
@@ -397,7 +399,7 @@ class ABCEditGlobalSettingMode(WatoMode):
                 )
             )
 
-        self._save()
+        self._save(pprint_value=config.wato_pprint_config, use_git=config.wato_use_git)
         if new_value and self._varname == "trusted_certificate_authorities":
             ConfigDomainCACertificates.log_changes(current, new_value)
 
@@ -412,17 +414,17 @@ class ABCEditGlobalSettingMode(WatoMode):
             domain_settings={
                 domain.ident(): {"need_apache_reload": self._config_variable.need_apache_reload()}
             },
-            use_git=active_config.wato_use_git,
+            use_git=config.wato_use_git,
         )
 
         return redirect(self._back_url())
 
     def _validate_update_piggyback_hub_config(
-        self, new_value: bool, default_settings: GlobalSettings
+        self, new_value: bool, default_settings: GlobalSettings, site_configs: SiteConfigurations
     ) -> None:
         site_specific_settings = {
             site_id: deepcopy(site_conf.get("globals", {}))
-            for site_id, site_conf in configured_sites().items()
+            for site_id, site_conf in site_configs.items()
         }
         global_settings = dict(deepcopy(self._global_settings))
         if (sites := self._affected_sites()) is not None:
@@ -432,16 +434,17 @@ class ABCEditGlobalSettingMode(WatoMode):
             global_settings[self._varname] = new_value
 
         validate_piggyback_hub_config(
+            site_configs,
             finalize_all_settings_per_site(
                 default_settings, global_settings, site_specific_settings
-            )
+            ),
         )
 
     @abc.abstractmethod
     def _back_url(self) -> str:
         raise NotImplementedError()
 
-    def _save(self):
+    def _save(self, *, pprint_value: bool, use_git: bool) -> None:
         save_global_settings(self._current_settings)
 
     @abc.abstractmethod
@@ -456,7 +459,7 @@ class ABCEditGlobalSettingMode(WatoMode):
         # Non _ vars are always added as hidden vars into a form
         return "_vue_global_settings"
 
-    def page(self) -> None:
+    def page(self, config: Config) -> None:
         is_configured = self._is_configured()
         is_configured_globally = self._varname in self._global_settings
 
@@ -478,7 +481,7 @@ class ABCEditGlobalSettingMode(WatoMode):
             title = self._valuespec.title()
             assert isinstance(title, str)
             forms.header(title)
-            if not active_config.wato_hide_varnames:
+            if not config.wato_hide_varnames:
                 forms.section(_("Configuration variable:"))
                 html.tt(self._varname)
 
@@ -543,7 +546,7 @@ class ModeEditGlobals(ABCGlobalSettingsMode):
             return _("Global settings matching '%s'") % self._search
         return _("Global settings")
 
-    def page_menu(self, breadcrumb: Breadcrumb) -> PageMenu:
+    def page_menu(self, config: Config, breadcrumb: Breadcrumb) -> PageMenu:
         dropdowns = []
 
         dropdowns.append(
@@ -577,7 +580,7 @@ class ModeEditGlobals(ABCGlobalSettingsMode):
             item=make_simple_link("wato.py?mode=sites"),
         )
 
-    def action(self) -> ActionResult:
+    def action(self, config: Config) -> ActionResult:
         varname = request.var("_varname")
         if not varname:
             return None
@@ -610,15 +613,15 @@ class ModeEditGlobals(ABCGlobalSettingsMode):
             domain_settings={
                 domain.ident(): {"need_apache_reload": config_variable.need_apache_reload()}
             },
-            use_git=active_config.wato_use_git,
+            use_git=config.wato_use_git,
         )
 
         if action == "_reset":
             flash(msg)
         return redirect(mode_url("globalvars"))
 
-    def page(self) -> None:
-        self._show_configuration_variables()
+    def page(self, config: Config) -> None:
+        self._show_configuration_variables(debug=config.debug)
 
 
 class DefaultModeEditGlobals(ModeEditGlobals):
@@ -701,7 +704,9 @@ class MatchItemGeneratorSettings(ABCMatchItemGenerator):
         mode = self._mode_class()
         yield from (
             self._config_variable_to_match_item(config_variable, mode.edit_mode_name)
-            for _group, config_variables in mode.iter_all_configuration_variables()
+            for _group, config_variables in mode.iter_all_configuration_variables(
+                debug=active_config.debug
+            )
             for config_variable in config_variables
         )
 

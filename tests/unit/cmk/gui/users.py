@@ -10,17 +10,14 @@ import string
 from collections.abc import Iterator
 from datetime import datetime
 
-from cmk.ccc.user import UserId
-
 import cmk.utils.paths
-
+from cmk.ccc.user import UserId
+from cmk.crypto.password_hashing import PasswordHash
 from cmk.gui import config
 from cmk.gui.session import SuperUserContext
-from cmk.gui.type_defs import UserObject, UserSpec
+from cmk.gui.type_defs import UserObjectValue, UserSpec
 from cmk.gui.userdb.store import load_users, save_users
 from cmk.gui.watolib.users import edit_users, user_features_registry
-
-from cmk.crypto.password_hashing import PasswordHash
 
 
 def _mk_user_obj(
@@ -29,7 +26,7 @@ def _mk_user_obj(
     automation: bool,
     role: str,
     custom_attrs: UserSpec | None = None,
-) -> UserObject:
+) -> dict[UserId, UserObjectValue]:
     # This dramatically improves the performance of the unit tests using this in fixtures
     precomputed_hashes = {
         "Ischbinwischtisch": PasswordHash(
@@ -40,7 +37,7 @@ def _mk_user_obj(
     if password not in precomputed_hashes:
         raise ValueError("Add your hash to precomputed_hashes")
 
-    user: UserObject = {
+    user: dict[UserId, UserObjectValue] = {
         username: {
             "attributes": {
                 "alias": "Test user",
@@ -85,6 +82,7 @@ def create_and_destroy_user(
         edit_users(
             _mk_user_obj(user_id, password, automation, role, custom_attrs=custom_attrs),
             user_features_registry.features().sites,
+            use_git=False,
         )
 
     # Load the config with the newly created user

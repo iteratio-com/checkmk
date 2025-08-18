@@ -3,9 +3,8 @@
 # This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 # conditions defined in the file COPYING, which is part of this source code package.
 
-from tests.testlib.unit.rest_api_client import ClientRegistry
-
 from cmk.gui.config import builtin_role_ids
+from tests.testlib.unit.rest_api_client import ClientRegistry
 
 
 def test_get_userrole_endpoint(clients: ClientRegistry) -> None:
@@ -64,7 +63,7 @@ def test_delete_non_existing_userrole_endpoint(clients: ClientRegistry) -> None:
     resp = clients.UserRole.delete(role_id="non-existing-user-role", expect_ok=False)
     assert (
         "The role should exist but it doesn't: 'non-existing-user-role'"
-        in resp.json["fields"]["role_id"]
+        in resp.json["fields"]["path.role_id"]["msg"]
     )
 
 
@@ -72,7 +71,8 @@ def test_delete_builtin_userrole(clients: ClientRegistry) -> None:
     resp = clients.UserRole.delete(role_id="admin", expect_ok=False)
     resp.assert_status_code(404)
     assert (
-        "The role should be a custom role but it's not: 'admin'" in resp.json["fields"]["role_id"]
+        "The role should be a custom role but it's not: 'admin'"
+        in resp.json["fields"]["path.role_id"]["msg"]
     )
 
 

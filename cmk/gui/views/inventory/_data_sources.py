@@ -8,11 +8,8 @@ from collections.abc import Iterable, Sequence
 
 from livestatus import LivestatusResponse, OnlySites
 
-from cmk.ccc.hostaddress import HostName
-
 import cmk.utils.paths
-from cmk.utils.structured_data import InventoryStore, RetentionInterval, SDValue
-
+from cmk.ccc.hostaddress import HostName
 from cmk.gui import sites
 from cmk.gui.config import active_config
 from cmk.gui.data_source import ABCDataSource, RowTable
@@ -26,6 +23,7 @@ from cmk.gui.type_defs import ColumnName, Row, Rows, SingleInfos, VisualContext
 from cmk.gui.utils.user_errors import user_errors
 from cmk.gui.visuals import get_livestatus_filter_headers
 from cmk.gui.visuals.filter import Filter
+from cmk.utils.structured_data import HistoryStore, RetentionInterval, SDValue
 
 
 class ABCDataSourceInventory(ABCDataSource):
@@ -156,7 +154,7 @@ class RowTableInventoryHistory(ABCRowTable):
     def _get_rows(self, hostrow: Row) -> Iterable[Row]:
         hostname: HostName = hostrow["host_name"]
         history, corrupted_history_files = get_history(
-            InventoryStore(cmk.utils.paths.omd_root),
+            HistoryStore(cmk.utils.paths.omd_root),
             hostname,
         )
         if corrupted_history_files:
@@ -171,7 +169,7 @@ class RowTableInventoryHistory(ABCRowTable):
             )
         for history_entry in history:
             yield {
-                "invhist_time": history_entry.timestamp,
+                "invhist_time": history_entry.current_timestamp,
                 "invhist_delta": history_entry.delta_tree,
                 "invhist_removed": history_entry.removed,
                 "invhist_new": history_entry.new,

@@ -7,7 +7,7 @@ import hashlib
 import warnings
 from collections.abc import Callable, Iterator, Sequence
 from dataclasses import is_dataclass
-from typing import Any, cast, ClassVar, is_typeddict, Literal
+from typing import Any, cast, is_typeddict, Literal
 
 import apispec
 import pydantic_core
@@ -17,9 +17,9 @@ from pydantic import BaseModel, PydanticInvalidForJsonSchema, TypeAdapter
 from pydantic.json_schema import GenerateJsonSchema, JsonSchemaValue, PydanticJsonSchemaWarning
 from pydantic_core import core_schema, PydanticOmit, PydanticSerializationError
 
-from cmk.utils.object_diff import make_diff
-
+from cmk.gui.openapi._type_adapter import get_cached_type_adapter
 from cmk.gui.openapi.framework.model.omitted import ApiOmitted
+from cmk.utils.object_diff import make_diff
 
 type Direction = Literal["inbound", "outbound"]
 
@@ -222,7 +222,7 @@ class CheckmkGenerateJsonSchema(GenerateJsonSchema):
     def encode_default(self, dft: Any) -> Any:
         type_ = type(dft)
         config = self._config
-        adapter = TypeAdapter(  # nosemgrep: type-adapter-detected
+        adapter = get_cached_type_adapter(
             type_,
             config=(
                 None  # can't set config if the type itself supports configs
@@ -299,9 +299,6 @@ class CheckmkPydanticResolver:
     a return statement.
     """
 
-    # (TypeAdapter id, direction) -> (schema_name, schema)
-    refs: ClassVar[dict[tuple[int, Direction], tuple[str, dict[str, object]]]] = {}
-
     def __init__(self, spec: apispec.APISpec) -> None:
         self.spec = spec
 
@@ -309,31 +306,27 @@ class CheckmkPydanticResolver:
         self, maybe_adapter: TypeAdapter | object, direction: Direction
     ) -> object:
         if isinstance(maybe_adapter, TypeAdapter):
-            schema_name, _ = self.get_cached_adapter_schema(maybe_adapter, direction)
+            schema_name, _ = self.get_adapter_schema(maybe_adapter, direction)
             return {"$ref": f"#/components/schemas/{schema_name}"}
 
         # do not touch other cases, as they should in most cases be Marshmallow schemas
         return maybe_adapter
 
-    def get_cached_adapter_schema(
+    def get_adapter_schema(
         self, adapter: TypeAdapter, direction: Direction
     ) -> tuple[str, dict[str, object]]:
-        key = id(adapter), direction
-        if key not in self.refs:
-            json_schema = _get_json_schema(self.spec, adapter, direction)
-            if "title" in json_schema:
-                title = json_schema["title"]
-                assert isinstance(title, str)
-                schema_name = title
-            else:
-                sha = hashlib.sha256()
-                sha.update(str(json_schema).encode("utf-8"))
-                schema_name = sha.hexdigest()
-                warnings.warn("Pydantic plugin got schema without title, using hash of schema")
+        json_schema = _get_json_schema(self.spec, adapter, direction)
+        if "title" in json_schema:
+            title = json_schema["title"]
+            assert isinstance(title, str)
+            schema_name = title
+        else:
+            sha = hashlib.sha256()
+            sha.update(str(json_schema).encode("utf-8"))
+            schema_name = sha.hexdigest()
+            warnings.warn("Pydantic plugin got schema without title, using hash of schema")
 
-            self.refs[key] = schema_name, json_schema
-
-        return self.refs[key]
+        return schema_name, json_schema
 
     def resolve_schema(self, data: dict[str, Any] | Any, direction: Direction) -> None:
         """Resolves a Pydantic model in an OpenAPI component or header.
@@ -428,9 +421,7 @@ class CheckmkPydanticResolver:
             if "schema" in parameter:
                 schema = parameter["schema"]
                 if isinstance(schema, TypeAdapter):
-                    _, parameter["schema"] = self.get_cached_adapter_schema(
-                        schema, direction="inbound"
-                    )
+                    _, parameter["schema"] = self.get_adapter_schema(schema, direction="inbound")
 
             # TODO: might need to do this, when we remove the marshmallow plugin
             #       but while we still have marshmallow this might break the plugin
