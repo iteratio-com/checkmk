@@ -3,6 +3,36 @@
 // conditions defined in the file COPYING, which is part of this source code package.
 
 #[cfg(windows)]
+use crate::ms_sql::client::is_service_running;
+/// Verarbeitet nur laufende Instanzen
+#[cfg(windows)]
+pub fn process_sql_instances(instances: Vec<&str>) {
+    for instance_name in instances {
+        let service_name = if instance_name.to_uppercase() == "MSSQLSERVER" {
+            "MSSQLSERVER".to_string()
+        } else {
+            format!("MSSQL${}", instance_name)
+        };
+        match is_service_running(&service_name) {
+            Ok(true) => {
+                println!("Info: Service '{}' for instance '{}' is running. Proceeding...", service_name, instance_name);
+                // Hier kann die eigentliche Instanzverarbeitung erfolgen
+                // connect_and_query(instance_name);
+            },
+            Ok(false) => {
+                println!("Info: Skipping instance '{}' because its service '{}' is not running.", instance_name, service_name);
+                continue;
+            },
+            Err(e) => {
+                eprintln!("Warning: Could not check status for service '{}': {}. Skipping instance.", service_name, e);
+                continue;
+            }
+        }
+    }
+}
+
+
+#[cfg(windows)]
 use super::client::OdbcClient;
 use super::client::{self, UniClient};
 use super::custom::get_sql_dir;
@@ -2040,6 +2070,41 @@ async fn find_working_instances(
     }
 
     log::info!("Found {} working SQL server instances", builders.len());
+    #[cfg(windows)]
+    use crate::ms_sql::client::is_service_running;
+    #[cfg(windows)]
+    let filtered_builders = builders
+        .into_iter()
+        .filter(|b| {
+            let name = b.get_name().to_string();
+            let service_name = if name.to_uppercase() == "MSSQLSERVER" {
+                "MSSQLSERVER".to_string()
+            } else {
+                format!("MSSQL${}", name)
+            };
+            match is_service_running(&service_name) {
+                Ok(true) => true,
+                Ok(false) => {
+                    log::info!("Skipping instance '{}' because its service '{}' is not running.", name, service_name);
+                    false
+                },
+                Err(e) => {
+                    log::warn!("Could not check status for service '{}': {}. Skipping instance.", service_name, e);
+                    false
+                }
+            }
+        })
+        .collect::<Vec<_>>();
+    #[cfg(windows)]
+    Ok(filtered_builders
+        .into_iter()
+        .map(|b: SqlInstanceBuilder| {
+            b.environment(environment)
+                .cache_dir(&ms_sql.config_cache_dir())
+                .build()
+        })
+        .collect::<Vec<SqlInstance>>())
+    #[cfg(not(windows))]
     Ok(builders
         .into_iter()
         .map(|b: SqlInstanceBuilder| {

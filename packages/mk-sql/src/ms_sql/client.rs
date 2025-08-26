@@ -2,6 +2,48 @@
 // This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 // conditions defined in the file COPYING, which is part of this source code package.
 
+#[cfg(windows)]
+use windows::Win32::System::ServiceManagement::{OpenSCManagerW, OpenServiceW, QueryServiceStatus, SC_MANAGER_CONNECT, SERVICE_QUERY_STATUS, SERVICE_STATUS, SERVICE_RUNNING};
+#[cfg(windows)]
+use windows::Win32::Foundation::{PWSTR, CloseServiceHandle};
+#[cfg(windows)]
+use std::ptr::null_mut;
+
+#[cfg(windows)]
+/// Prüft, ob ein Windows-Dienst läuft
+pub fn is_service_running(service_name: &str) -> anyhow::Result<bool> {
+    use std::ffi::OsStr;
+    use std::os::windows::ffi::OsStrExt;
+    let service_name_w: Vec<u16> = OsStr::new(service_name)
+        .encode_wide()
+        .chain(std::iter::once(0))
+        .collect();
+    unsafe {
+        let scm = OpenSCManagerW(
+            PWSTR(null_mut()),
+            PWSTR(null_mut()),
+            SC_MANAGER_CONNECT,
+        );
+        if scm.is_invalid() {
+            return Err(anyhow::anyhow!("OpenSCManagerW failed"));
+        }
+        let service = OpenServiceW(scm, PWSTR(service_name_w.as_ptr() as _), SERVICE_QUERY_STATUS);
+        if service.is_invalid() {
+            CloseServiceHandle(scm);
+            return Ok(false);
+        }
+        let mut status = SERVICE_STATUS::default();
+        let success = QueryServiceStatus(service, &mut status).as_bool();
+        CloseServiceHandle(service);
+        CloseServiceHandle(scm);
+        if !success {
+            return Err(anyhow::anyhow!("QueryServiceStatus failed"));
+        }
+        Ok(status.dwCurrentState == SERVICE_RUNNING)
+    }
+}
+
+
 use crate::config::{self, ms_sql::AuthType, ms_sql::Endpoint};
 use crate::types::{CertPath, Edition, HostName, Port};
 use anyhow::Result;
