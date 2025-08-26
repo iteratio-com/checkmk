@@ -2071,48 +2071,50 @@ async fn find_working_instances(
 
     log::info!("Found {} working SQL server instances", builders.len());
     #[cfg(windows)]
-    use crate::ms_sql::client::is_service_running;
-    #[cfg(windows)]
-    let filtered_builders = builders
-        .into_iter()
-        .filter(|b| {
-            let name = b.get_name().to_string();
-            let service_name = if name.to_uppercase() == "MSSQLSERVER" {
-                "MSSQLSERVER".to_string()
-            } else {
-                format!("MSSQL${}", name)
-            };
-            match is_service_running(&service_name) {
-                Ok(true) => true,
-                Ok(false) => {
-                    log::info!("Skipping instance '{}' because its service '{}' is not running.", name, service_name);
-                    false
-                },
-                Err(e) => {
-                    log::warn!("Could not check status for service '{}': {}. Skipping instance.", service_name, e);
-                    false
+    {
+        use crate::ms_sql::client::is_service_running;
+        let filtered_builders = builders
+            .into_iter()
+            .filter(|b| {
+                let name = b.get_name().to_string();
+                let service_name = if name.to_uppercase() == "MSSQLSERVER" {
+                    "MSSQLSERVER".to_string()
+                } else {
+                    format!("MSSQL${}", name)
+                };
+                match is_service_running(&service_name) {
+                    Ok(true) => true,
+                    Ok(false) => {
+                        log::info!("Skipping instance '{}' because its service '{}' is not running.", name, service_name);
+                        false
+                    },
+                    Err(e) => {
+                        log::warn!("Could not check status for service '{}': {}. Skipping instance.", service_name, e);
+                        false
+                    }
                 }
-            }
-        })
-        .collect::<Vec<_>>();
-    #[cfg(windows)]
-    Ok(filtered_builders
-        .into_iter()
-        .map(|b: SqlInstanceBuilder| {
-            b.environment(environment)
-                .cache_dir(&ms_sql.config_cache_dir())
-                .build()
-        })
-        .collect::<Vec<SqlInstance>>())
+            })
+            .collect::<Vec<_>>();
+        return Ok(filtered_builders
+            .into_iter()
+            .map(|b: SqlInstanceBuilder| {
+                b.environment(environment)
+                    .cache_dir(&ms_sql.config_cache_dir())
+                    .build()
+            })
+            .collect::<Vec<SqlInstance>>());
+    }
     #[cfg(not(windows))]
-    Ok(builders
-        .into_iter()
-        .map(|b: SqlInstanceBuilder| {
-            b.environment(environment)
-                .cache_dir(&ms_sql.config_cache_dir())
-                .build()
-        })
-        .collect::<Vec<SqlInstance>>())
+    {
+        return Ok(builders
+            .into_iter()
+            .map(|b: SqlInstanceBuilder| {
+                b.environment(environment)
+                    .cache_dir(&ms_sql.config_cache_dir())
+                    .build()
+            })
+            .collect::<Vec<SqlInstance>>());
+    }
 }
 
 pub async fn find_all_instance_builders(

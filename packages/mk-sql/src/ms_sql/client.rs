@@ -3,9 +3,12 @@
 // conditions defined in the file COPYING, which is part of this source code package.
 
 #[cfg(windows)]
-use windows::Win32::System::ServiceManagement::{OpenSCManagerW, OpenServiceW, QueryServiceStatus, SC_MANAGER_CONNECT, SERVICE_QUERY_STATUS, SERVICE_STATUS, SERVICE_RUNNING};
+use windows::Win32::System::Services::{
+    OpenSCManagerW, OpenServiceW, QueryServiceStatus, SC_MANAGER_CONNECT, SERVICE_QUERY_STATUS,
+    SERVICE_STATUS, SERVICE_RUNNING, CloseServiceHandle
+};
 #[cfg(windows)]
-use windows::Win32::Foundation::{PWSTR, CloseServiceHandle};
+use windows::core::PWSTR;
 #[cfg(windows)]
 use std::ptr::null_mut;
 
@@ -23,22 +26,12 @@ pub fn is_service_running(service_name: &str) -> anyhow::Result<bool> {
             PWSTR(null_mut()),
             PWSTR(null_mut()),
             SC_MANAGER_CONNECT,
-        );
-        if scm.is_invalid() {
-            return Err(anyhow::anyhow!("OpenSCManagerW failed"));
-        }
-        let service = OpenServiceW(scm, PWSTR(service_name_w.as_ptr() as _), SERVICE_QUERY_STATUS);
-        if service.is_invalid() {
-            CloseServiceHandle(scm);
-            return Ok(false);
-        }
+        )?;
+        let service = OpenServiceW(scm, PWSTR(service_name_w.as_ptr() as _), SERVICE_QUERY_STATUS)?;
         let mut status = SERVICE_STATUS::default();
-        let success = QueryServiceStatus(service, &mut status).as_bool();
-        CloseServiceHandle(service);
-        CloseServiceHandle(scm);
-        if !success {
-            return Err(anyhow::anyhow!("QueryServiceStatus failed"));
-        }
+        QueryServiceStatus(service, &mut status)?;
+        CloseServiceHandle(service)?;
+        CloseServiceHandle(scm)?;
         Ok(status.dwCurrentState == SERVICE_RUNNING)
     }
 }
