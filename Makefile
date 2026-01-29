@@ -107,7 +107,7 @@ setversion:
 	# IMPORTANT do not version bazelized packages here.  Bazel can set the
 	# version natively.
 	sed -ri 's/^(VERSION[[:space:]]*:?= *).*/\1'"$(NEW_VERSION)/" defines.make
-	sed -i 's/^__version__ = ".*"$$/__version__ = "$(NEW_VERSION)"/' packages/cmk-ccc/cmk/ccc/version.py bin/livedump
+	sed -i 's/^__version__ = ".*"$$/__version__ = "$(NEW_VERSION)"/' bin/livedump
 	$(MAKE) -C agents NEW_VERSION=$(NEW_VERSION) setversion
 	sed -i 's/^ARG CMK_VERSION=.*$$/ARG CMK_VERSION="$(NEW_VERSION)"/g' docker_image/Dockerfile
 ifneq ($(EDITION),community)
@@ -204,4 +204,4 @@ check_python_requirements:
 
 # .venv is PHONY because the dependencies are resolved by bazel
 .venv: check_python_requirements
-	CC="gcc" bazel run //:create_venv
+	CC="gcc" bazel run --cmk_version=$(VERSION) //:create_venv
