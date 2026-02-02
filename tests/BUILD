@@ -206,7 +206,9 @@ py_library(
     }),
     imports = [".."],
     deps = [
+        ":scripts",
         ":testlib",
+        requirement("clickhouse_connect"),
         requirement("pytest"),
         requirement("cryptography"),
         requirement("requests"),
