@@ -4,7 +4,6 @@
 # conditions defined in the file COPYING, which is part of this source code package.
 
 # mypy: disable-error-code="no-untyped-call"
-# mypy: disable-error-code="no-untyped-def"
 
 import re
 from collections.abc import Mapping
@@ -18,22 +17,22 @@ RE_ATTRIBUTES = re.compile(r"[()]")
 
 
 def parse_ibm_mq_managers(string_table: StringTable) -> Section:
-    def get_data_of_line(line):
+    def get_data_of_line(line: str) -> dict[str, str]:
         splits = RE_ATTRIBUTES.split(line)
-        data = {}
+        data: dict[str, str] = {}
         for key, value in zip(splits[::2], splits[1::2]):
             data[key.strip()] = value.strip()
         return data
 
-    parsed = {}
-    qmname = None
+    parsed: dict[str, dict[str, Any]] = {}
+    qmname: str | None = None
     for line in string_table:
         data = get_data_of_line(line[0])
         if "QMNAME" in data:
             qmname = data["QMNAME"]
             parsed[qmname] = data
-        elif "INSTANCE" in data:
-            instances = parsed[qmname].setdefault("INSTANCES", [])
+        elif "INSTANCE" in data and qmname is not None:
+            instances: list[tuple[str, str]] = parsed[qmname].setdefault("INSTANCES", [])
             instances.append((data["INSTANCE"], data["MODE"]))
     return parsed
 
