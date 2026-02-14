@@ -4,11 +4,10 @@
 # conditions defined in the file COPYING, which is part of this source code package.
 
 # mypy: disable-error-code="no-untyped-call"
-# mypy: disable-error-code="no-untyped-def"
 
 import calendar
 import time
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any, Literal, TypedDict
 
@@ -300,7 +299,10 @@ def _sanitise_line(line: Sequence[str]) -> Sequence[str]:
     return line
 
 
-def _partition_string_table(iter_string_table, next_section_headers=None):
+def _partition_string_table(
+    iter_string_table: Iterator[Sequence[str]],
+    next_section_headers: set[str] | None = None,
+) -> Iterable[Sequence[str]]:
     if not next_section_headers:
         yield from (l for l in iter_string_table)
         return
