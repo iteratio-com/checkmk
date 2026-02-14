@@ -4,7 +4,6 @@
 # conditions defined in the file COPYING, which is part of this source code package.
 
 # mypy: disable-error-code="no-untyped-call"
-# mypy: disable-error-code="no-untyped-def"
 # mypy: disable-error-code="type-arg"
 
 
@@ -64,7 +63,9 @@ Section = Mapping[str, Mapping]
 
 
 def parse_cmctc_output(string_table: Sequence[StringTable]) -> Section:
-    def parse_output_sensor(table_idx, sensor):
+    def parse_output_sensor(
+        table_idx: str, sensor: Sequence[str]
+    ) -> tuple[str, Mapping[str, object]] | None:
         type_map = {
             # ID    Type                                    Unit      Perfkey
             "4": ("Door locking TS8 Ergoform", "", None),
