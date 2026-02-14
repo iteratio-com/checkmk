@@ -4,16 +4,25 @@
 # conditions defined in the file COPYING, which is part of this source code package.
 
 # mypy: disable-error-code="no-untyped-call"
-# mypy: disable-error-code="no-untyped-def"
 
+
+from typing import TypedDict
 
 from cmk.agent_based.v2 import AgentSection, StringTable
 from cmk.plugins.docker import lib as docker
 from cmk.plugins.lib.cpu_utilization_os import SectionCpuUtilizationOs
 
 
-def __parse_docker_container_cpu(info):
-    parsed = {}
+class _DockerCpuData(TypedDict, total=False):
+    system_ticks: int
+    container_ticks: int
+    num_cpus: int
+    user: int
+    system: int
+
+
+def __parse_docker_container_cpu(info: StringTable) -> _DockerCpuData:
+    parsed: _DockerCpuData = {}
     version = docker.get_version(info)
     if version is None:
         # agent running inside a docker container
@@ -21,7 +30,7 @@ def __parse_docker_container_cpu(info):
             if line[0] == "cpu":
                 parsed["system_ticks"] = sum(map(int, line[1:]))
             else:
-                parsed[line[0]] = int(line[1])
+                parsed[line[0]] = int(line[1])  # type: ignore[literal-required]
         if "user" in parsed and "system" in parsed:
             parsed["container_ticks"] = parsed["user"] + parsed["system"]
         return parsed
