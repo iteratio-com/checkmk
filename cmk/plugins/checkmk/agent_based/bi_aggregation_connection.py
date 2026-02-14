@@ -3,11 +3,7 @@
 # This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 # conditions defined in the file COPYING, which is part of this source code package.
 
-# mypy: disable-error-code="no-untyped-def"
-
-
-# mypy: disable-error-code="var-annotated"
-
+import ast
 from typing import Any
 
 from cmk.agent_based.v2 import (
@@ -18,14 +14,13 @@ from cmk.agent_based.v2 import (
     Result,
     Service,
     State,
+    StringTable,
 )
 
 
-def parse_bi_aggregation_connection(string_table):
-    import ast
-
+def parse_bi_aggregation_connection(string_table: StringTable) -> dict[str, set[str]]:
     fields = ["missing_sites", "missing_aggr", "generic_errors"]
-    parsed = {}
+    parsed: dict[str, set[str]] = {}
     for line in string_table:
         connection_info = ast.literal_eval(line[0])
         for field in fields:
