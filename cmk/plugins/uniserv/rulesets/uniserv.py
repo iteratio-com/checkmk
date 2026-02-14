@@ -4,7 +4,6 @@
 # conditions defined in the file COPYING, which is part of this source code package.
 
 # mypy: disable-error-code="no-untyped-call"
-# mypy: disable-error-code="no-untyped-def"
 
 from collections.abc import Mapping
 
@@ -27,7 +26,7 @@ def _migrate(value: object) -> Mapping[str, object]:
     if not isinstance(value, dict):
         raise TypeError(value)
 
-    def _kept_values():
+    def _kept_values() -> dict[str, object]:
         return {str(k): v for k, v in value.items() if k != "job"}
 
     match value.get("job"):
@@ -41,7 +40,7 @@ def _migrate(value: object) -> Mapping[str, object]:
             raise ValueError(other)
 
 
-def _valuespec_active_checks_uniserv():
+def _valuespec_active_checks_uniserv() -> Dictionary:
     return Dictionary(
         migrate=_migrate,
         title=Title("Check uniserv service"),
