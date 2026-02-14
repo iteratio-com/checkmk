@@ -3,8 +3,6 @@
 # This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 # conditions defined in the file COPYING, which is part of this source code package.
 
-# mypy: disable-error-code="no-untyped-def"
-
 # .1.3.6.1.4.1.9.9.117.1.4.1.1.1.534 2
 # .1.3.6.1.4.1.9.9.117.1.4.1.1.1.535 2
 # .1.3.6.1.4.1.9.9.117.1.4.1.1.1.536 2
@@ -52,7 +50,7 @@
 
 # mypy: disable-error-code="var-annotated"
 
-from typing import Any
+from collections.abc import Sequence
 
 from cmk.agent_based.v2 import (
     all_of,
@@ -68,10 +66,13 @@ from cmk.agent_based.v2 import (
     SNMPSection,
     SNMPTree,
     State,
+    StringTable,
 )
 
+type Section = dict[str, tuple[State, str]]
 
-def parse_cisco_fantray(string_table):
+
+def parse_cisco_fantray(string_table: Sequence[StringTable]) -> Section:
     map_states = {
         "1": (State.UNKNOWN, "unknown"),
         "2": (State.OK, "powered on"),
@@ -102,12 +103,12 @@ def parse_cisco_fantray(string_table):
     return parsed
 
 
-def discover_cisco_fantray(section: Any) -> DiscoveryResult:
+def discover_cisco_fantray(section: Section) -> DiscoveryResult:
     for item in section:
         yield Service(item=item)
 
 
-def check_cisco_fantray(item: str, section: Any) -> CheckResult:
+def check_cisco_fantray(item: str, section: Section) -> CheckResult:
     if item in section:
         state, state_readable = section[item]
         yield Result(state=state, summary="Status: %s" % state_readable)
