@@ -4,7 +4,6 @@
 # conditions defined in the file COPYING, which is part of this source code package.
 
 # mypy: disable-error-code="no-untyped-call"
-# mypy: disable-error-code="no-untyped-def"
 
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -64,14 +63,16 @@ LevelsType = tuple[float | int, float | int]
 
 
 def parse(string_table: StringTable) -> SectionTableSpaces:
-    def to_bytes(value, uom):
-        exponent = {"KB": 1, "MB": 2, "GB": 3, "TB": 4}.get(uom, 0)
+    def to_bytes(value: str, uom: str) -> float | None:
+        exponents: dict[str, int] = {"KB": 1, "MB": 2, "GB": 3, "TB": 4}
+        exponent: int = exponents.get(uom, 0)
         try:
-            return float(value) * (1024**exponent)
+            result: float = float(value) * (1024**exponent)
+            return result
         except ValueError:
             return None
 
-    section = {}
+    section: dict[str, MSSQLTableSpace] = {}
     for line in string_table:
         if len(line) < 14:
             continue
@@ -80,14 +81,17 @@ def parse(string_table: StringTable) -> SectionTableSpaces:
         values = (to_bytes(*p) for p in pairs[1:])
 
         keys = ("size", "unallocated", "reserved", "data", "indexes", "unused")
-        data = dict(zip(keys, values))
+        tablespace_data: dict[str, float | None] = dict(zip(keys, values))
 
-        data["error"] = (
+        error_msg: str | None = (
             " ".join(line[15:]) if len(line) > 14 and line[14].startswith("ERROR:") else None
         )
 
         item = f"{line[0]} {line[1]}"
-        section[item] = MSSQLTableSpace(**data)
+        section[item] = MSSQLTableSpace(
+            **tablespace_data,
+            error=error_msg,
+        )
     return section
 
 
