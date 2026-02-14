@@ -51,7 +51,7 @@ def check_mssql_connections(
     item: str, params: CheckParams, section: MSSQLConnections
 ) -> CheckResult:
     if item not in section:
-        return None
+        return
 
     yield from check_levels(
         value=section[item],
