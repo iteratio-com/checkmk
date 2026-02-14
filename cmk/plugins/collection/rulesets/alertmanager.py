@@ -4,7 +4,6 @@
 # conditions defined in the file COPYING, which is part of this source code package.
 
 # mypy: disable-error-code="no-untyped-call"
-# mypy: disable-error-code="no-untyped-def"
 
 from collections.abc import Mapping
 from enum import StrEnum
@@ -53,7 +52,7 @@ def migrate_dropdown_ident(raw_value: object) -> tuple[str, object]:
     return ("one_service", None)
 
 
-def _discovery_parameters_form_alertmanager():
+def _discovery_parameters_form_alertmanager() -> Dictionary:
     return Dictionary(
         title=Title("Alertmanager discovery"),
         elements={
@@ -133,7 +132,7 @@ def migrate_non_identifier_key(raw_value: object) -> Mapping[str, object]:
     return raw_value
 
 
-def form_alert_remapping():
+def form_alert_remapping() -> List[Mapping[str, object]]:
     return List(
         element_template=Dictionary(
             elements={
@@ -192,7 +191,7 @@ def form_alert_remapping():
     )
 
 
-def _check_parameters_form_alertmanager():
+def _check_parameters_form_alertmanager() -> Dictionary:
     return Dictionary(
         title=Title("Alert manager rule state"),
         elements={
