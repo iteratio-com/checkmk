@@ -8,7 +8,6 @@ Checkmk special agent for monitoring VNX quotas.
 """
 
 # mypy: disable-error-code="no-untyped-call"
-# mypy: disable-error-code="no-untyped-def"
 
 import argparse
 import shlex
@@ -44,7 +43,7 @@ def get_ssh_client() -> paramiko.SSHClient:
     return client
 
 
-def parse_arguments(argv):
+def parse_arguments(argv: list[str]) -> argparse.Namespace:
     prog, description = __doc__.split("\n\n", maxsplit=1)
     parser = argparse.ArgumentParser(
         prog=prog, description=description, formatter_class=argparse.RawTextHelpFormatter
@@ -59,7 +58,7 @@ def parse_arguments(argv):
     return parser.parse_args(argv)
 
 
-def get_client_connection(args):
+def get_client_connection(args: argparse.Namespace) -> paramiko.SSHClient:
     try:
         client = get_ssh_client()
         client.connect(
@@ -74,13 +73,13 @@ def get_client_connection(args):
         raise Exception("Failed to connect to remote host: %s" % e)
 
 
-def main(args=None):
+def main(args: list[str] | None = None) -> None:
     if args is None:
         args = sys.argv[1:]
 
-    args = parse_arguments(args)
-    opt_debug = args.debug
-    nas_db_env = "export NAS_DB=%s; " % shlex.quote(args.nas_db)
+    parsed_args = parse_arguments(args)
+    opt_debug = parsed_args.debug
+    nas_db_env = "export NAS_DB=%s; " % shlex.quote(parsed_args.nas_db)
     queries = {
         "quotas": nas_db_env + "/nas/bin/nas_fs -query:* "
         "-fields:TreeQuotas -format:'%q' -query:* "
@@ -90,7 +89,7 @@ def main(args=None):
         "-fields:Name,SizeValues -format:'%L|%s\\n'",
     }
 
-    client = get_client_connection(args)
+    client = get_client_connection(parsed_args)
 
     sys.stdout.write("<<<vnx_version:sep(124)>>>\n")
     stdin, stdout, stderr = client.exec_command(  # nosec B601 # BNS:2aa916
