@@ -3,8 +3,6 @@
 # This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 # conditions defined in the file COPYING, which is part of this source code package.
 
-# mypy: disable-error-code="no-untyped-def"
-
 from collections.abc import Mapping, Sequence
 from contextlib import suppress
 from typing import Any
@@ -87,10 +85,14 @@ def check_sap_hana_data_volume(
         yield Result(state=State.OK, summary="Path: %s" % path)
 
 
-def cluster_check_sap_hana_data_volume(item, params, section):
+def cluster_check_sap_hana_data_volume(
+    item: str,
+    params: Mapping[str, Any],
+    section: Mapping[str, sap_hana.ParsedSection | None],
+) -> CheckResult:
     yield Result(state=State.OK, summary="Nodes: %s" % ", ".join(section.keys()))
     for node_section in section.values():
-        if item in node_section:
+        if node_section is not None and item in node_section:
             yield from check_sap_hana_data_volume(item, params, node_section)
             return
 
