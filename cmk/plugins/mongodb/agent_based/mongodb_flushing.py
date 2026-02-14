@@ -4,7 +4,6 @@
 # conditions defined in the file COPYING, which is part of this source code package.
 
 # mypy: disable-error-code="no-untyped-call"
-# mypy: disable-error-code="no-untyped-def"
 
 # <<<mongodb_flushing>>>
 # average_ms 1.28893335892
@@ -95,8 +94,8 @@ def check_mongodb_flushing(params: Mapping[str, Any], section: StringTable) -> C
     )
 
 
-def _get_missing_keys(key_list, info_dict):
-    missing_keys = []
+def _get_missing_keys(key_list: list[str], info_dict: dict[str, str]) -> str:
+    missing_keys: list[str] = []
     for key in key_list:
         if key not in info_dict:
             missing_keys += [str(key)]
