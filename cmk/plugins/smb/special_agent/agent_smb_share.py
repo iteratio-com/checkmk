@@ -7,7 +7,8 @@
 Checkmk special agent for SMB shares
 """
 # mypy: disable-error-code="no-untyped-call"
-# mypy: disable-error-code="no-untyped-def"
+# mypy: disable-error-code="import-untyped"
+# mypy: disable-error-code="misc"
 
 import argparse
 import logging
@@ -18,7 +19,7 @@ from collections.abc import Generator, Sequence
 from contextlib import contextmanager
 from datetime import datetime, UTC
 from fnmatch import fnmatch
-from typing import NamedTuple
+from typing import NamedTuple, Protocol
 
 from smb.base import NotConnectedError, ProtocolError, SharedFile
 from smb.smb_structs import OperationFailure
@@ -35,6 +36,20 @@ PASSWORD_OPTION = "password"
 
 
 class SMBShareAgentError(Exception): ...
+
+
+class _Share(Protocol):
+    """Protocol for SMB share objects."""
+
+    @property
+    def name(self) -> str: ...
+
+
+class SMBConnectionProtocol(Protocol):
+    """Protocol for SMB connection objects."""
+
+    def listPath(self, share_name: str, path: str) -> list[SharedFile]: ...
+    def listShares(self) -> Sequence[_Share]: ...
 
 
 class File(NamedTuple):
@@ -120,7 +135,7 @@ def parse_arguments(argv: Sequence[str] | None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def get_child_dirs(conn, share_name, subdir):
+def get_child_dirs(conn: SMBConnectionProtocol, share_name: str, subdir: str) -> Generator[str]:
     yield subdir
 
     for shared_file in conn.listPath(share_name, subdir):
@@ -132,7 +147,14 @@ def get_child_dirs(conn, share_name, subdir):
             yield from get_child_dirs(conn, share_name, f"{relative_path}\\")
 
 
-def iter_shared_files(conn, hostname, share_name, pattern, subdir="", recursive=False):
+def iter_shared_files(
+    conn: SMBConnectionProtocol,
+    hostname: str,
+    share_name: str,
+    pattern: list[str],
+    subdir: str = "",
+    recursive: bool = False,
+) -> Generator[File]:
     if pattern[0] == "**" and recursive:
         child_dirs = get_child_dirs(conn, share_name, subdir)
         for child_dir in child_dirs:
@@ -173,7 +195,7 @@ def iter_shared_files(conn, hostname, share_name, pattern, subdir="", recursive=
 
 
 def get_all_shared_files(
-    conn: SMBConnection, hostname: str, patterns: list[str], recursive: bool
+    conn: SMBConnectionProtocol, hostname: str, patterns: list[str], recursive: bool
 ) -> Generator[tuple[str, set[File]]]:
     share_names = [s.name.lower() for s in conn.listShares()]
     for pattern_string in patterns:
