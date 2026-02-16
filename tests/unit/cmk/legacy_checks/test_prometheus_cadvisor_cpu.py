@@ -50,25 +50,28 @@ def test_cadvisor_cpu_check(parsed: Mapping[str, float]) -> None:
     assert len(result) == 3
 
     # Check user CPU result
-    state, summary, metrics = result[0]
+    state, summary, *rest = result[0]
     assert state == 0
     assert summary == "User: 0.11%"
+    metrics = rest[0] if rest else []
     assert len(metrics) == 1
     assert metrics[0][0] == "user"
     assert abs(metrics[0][1] - 0.10996819381471273) < 1e-10
 
     # Check system CPU result
-    state, summary, metrics = result[1]
+    state, summary, *rest = result[1]
     assert state == 0
     assert summary == "System: 0.13%"
+    metrics = rest[0] if rest else []
     assert len(metrics) == 1
     assert metrics[0][0] == "system"
     assert abs(metrics[0][1] - 0.12688637747851422) < 1e-10
 
     # Check total CPU result
-    state, summary, metrics = result[2]
+    state, summary, *rest = result[2]
     assert state == 0
     assert summary == "Total CPU: 0.24%"
+    metrics = rest[0] if rest else []
     assert len(metrics) == 1
     assert metrics[0][0] == "util"
     # Total should be user + system
@@ -86,7 +89,8 @@ def test_cadvisor_cpu_check_with_levels(parsed: Mapping[str, float]) -> None:
     assert len(result) == 3
 
     # All should be OK since total CPU is only ~0.24%
-    for state, summary, metrics in result:
+    for item in result:
+        state = item[0]
         assert state == 0
 
 

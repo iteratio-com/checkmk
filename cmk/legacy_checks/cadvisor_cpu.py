@@ -3,24 +3,24 @@
 # This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 # conditions defined in the file COPYING, which is part of this source code package.
 
-# mypy: disable-error-code="no-untyped-def"
 # mypy: disable-error-code="type-arg"
 
 
 import json
-from collections.abc import Iterable, Mapping
+from collections.abc import Generator, Iterable, Mapping
+from typing import Any
 
-from cmk.agent_based.legacy.v0_unstable import check_levels, LegacyCheckDefinition
-from cmk.agent_based.v2 import render
+from cmk.agent_based.legacy.v0_unstable import check_levels, LegacyCheckDefinition, LegacyResult
+from cmk.agent_based.v2 import render, StringTable
 
 check_info = {}
 
 Section = Mapping[str, float]
 
 
-def parse_cadvisor_cpu(string_table):
+def parse_cadvisor_cpu(string_table: StringTable) -> Section:
     cpu_info = json.loads(string_table[0][0])
-    parsed = {}
+    parsed: dict[str, float] = {}
     for cpu_name, cpu_entries in cpu_info.items():
         if len(cpu_entries) != 1:
             continue
@@ -31,12 +31,14 @@ def parse_cadvisor_cpu(string_table):
     return parsed
 
 
-def discover_cadvisor_cpu(section: Section) -> Iterable[tuple[None, dict]]:
+def discover_cadvisor_cpu(section: Section) -> Iterable[tuple[None, dict[str, Any]]]:
     if section:
         yield None, {}
 
 
-def check_cadvisor_cpu(_item, params, parsed):
+def check_cadvisor_cpu(
+    _item: None, params: Mapping[str, Any], parsed: Section
+) -> Generator[LegacyResult]:
     # No suitable function in cpu_util.include
     cpu_user = parsed["cpu_user"]
     cpu_system = parsed["cpu_system"]

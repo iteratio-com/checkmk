@@ -61,7 +61,10 @@ def test_discover_cadvisor_cpu(
     ],
 )
 def test_check_cadvisor_cpu(
-    item: str, params: Mapping[str, Any], string_table: StringTable, expected_results: Sequence[Any]
+    item: None,
+    params: Mapping[str, Any],
+    string_table: StringTable,
+    expected_results: Sequence[Any],
 ) -> None:
     """Test check function for cadvisor_cpu check."""
     parsed = parse_cadvisor_cpu(string_table)
