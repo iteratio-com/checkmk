@@ -38,38 +38,34 @@ def test_discover_mbg_lantime_ng_fan(
 
 
 @pytest.mark.parametrize(
-    "item, params, string_table, expected_results",
+    "item, string_table, expected_results",
     [
         (
             "1",
-            {},
             [["1", "2", "1"], ["2", "2", "1"], ["3", "0", "1"], ["4", "2", "1"], ["5", "2", ""]],
             [(0, "Status: on"), (0, "Errors: no")],
         ),
         (
             "2",
-            {},
             [["1", "2", "1"], ["2", "2", "1"], ["3", "0", "1"], ["4", "2", "1"], ["5", "2", ""]],
             [(0, "Status: on"), (0, "Errors: no")],
         ),
         (
             "4",
-            {},
             [["1", "2", "1"], ["2", "2", "1"], ["3", "0", "1"], ["4", "2", "1"], ["5", "2", ""]],
             [(0, "Status: on"), (0, "Errors: no")],
         ),
         (
             "5",
-            {},
             [["1", "2", "1"], ["2", "2", "1"], ["3", "0", "1"], ["4", "2", "1"], ["5", "2", ""]],
             [(0, "Status: on"), (3, "Errors: not available")],
         ),
     ],
 )
 def test_check_mbg_lantime_ng_fan(
-    item: str, params: Mapping[str, Any], string_table: StringTable, expected_results: Sequence[Any]
+    item: str, string_table: StringTable, expected_results: Sequence[Any]
 ) -> None:
     """Test check function for mbg_lantime_ng_fan check."""
     parsed = parse_mbg_lantime_ng_fan(string_table)
-    result = list(check_mbg_lantime_ng_fan(item, params, parsed))
+    result = list(check_mbg_lantime_ng_fan(item, None, parsed))
     assert result == expected_results

@@ -3,26 +3,25 @@
 # This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 # conditions defined in the file COPYING, which is part of this source code package.
 
-# mypy: disable-error-code="no-untyped-def"
 
+from collections.abc import Generator, Iterable
+from typing import Any
 
-# mypy: disable-error-code="var-annotated"
-
-from cmk.agent_based.legacy.v0_unstable import LegacyCheckDefinition
-from cmk.agent_based.v2 import SNMPTree
+from cmk.agent_based.legacy.v0_unstable import LegacyCheckDefinition, LegacyResult
+from cmk.agent_based.v2 import SNMPTree, StringTable
 from cmk.plugins.meinberg.liblantime import DETECT_MBG_LANTIME_NG
 
 check_info = {}
 
 
-def parse_mbg_lantime_ng_fan(string_table):
-    parsed = {}
-    fan_states = {
+def parse_mbg_lantime_ng_fan(string_table: StringTable) -> dict[str, dict[str, dict[str, Any]]]:
+    parsed: dict[str, dict[str, dict[str, Any]]] = {}
+    fan_states: dict[str, tuple[int, str]] = {
         "0": (3, "not available"),
         "1": (2, "off"),
         "2": (0, "on"),
     }
-    fan_errors = {
+    fan_errors: dict[str, tuple[int, str]] = {
         "0": (0, "not available"),
         "1": (0, "no"),
         "2": (2, "yes"),
@@ -53,13 +52,17 @@ def parse_mbg_lantime_ng_fan(string_table):
     return parsed
 
 
-def discover_mbg_lantime_ng_fan(section):
+def discover_mbg_lantime_ng_fan(
+    section: dict[str, dict[str, dict[str, Any]]],
+) -> Iterable[tuple[str, dict[str, Any]]]:
     yield from (
         (item, {}) for item, data in section.items() if data["status"]["name"] != "not available"
     )
 
 
-def check_mbg_lantime_ng_fan(item, _no_params, parsed):
+def check_mbg_lantime_ng_fan(
+    item: str, _no_params: None, parsed: dict[str, dict[str, dict[str, Any]]]
+) -> Generator[LegacyResult]:
     if not (data := parsed.get(item)):
         return
 
