@@ -31,6 +31,7 @@ py_library(
     imports = ["."],
     visibility = ["//:__subpackages__"],
     deps = [
+        "//packages/cmk-ccc:regex",
         "//packages/cmk-ccc:site",
         requirement("bcrypt"),
         requirement("cryptography"),
