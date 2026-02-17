@@ -1477,7 +1477,12 @@ class CheckmkCommandDiagnosticsElementTextDump(ABCDiagnosticsElementTextDump):
             )
 
         except subprocess.CalledProcessError:
-            return ""
+            raise DiagnosticsElementError("Command %s returned an unexpected error.")
+
+        except FileNotFoundError:
+            raise DiagnosticsElementError(
+                "Command %s not available on this system." % " ".join(self.command)
+            )
 
         return "\n".join(sorted(output.split("\n")))
 
