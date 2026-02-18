@@ -141,78 +141,6 @@ def _user_used_in_notification_rule(all_rules: list[EventRule], user_id: UserId)
     ]
 
 
-def edit_users(
-    changed_users: dict[UserId, UserSpec],
-    sites: _UserAssociatedSitesFn,
-    user_attributes: Sequence[tuple[str, UserAttribute]],
-    *,
-    use_git: bool,
-    acting_user: LoggedInUser,
-) -> None:
-    acting_user.need_permission("wato.users")
-    acting_user.need_permission("wato.edit")
-
-    all_users = userdb.load_users(lock=True)
-    modified_users_info = []
-    affected_sites: _AffectedSites = set()
-
-    for user_id, changed_user_attrs in changed_users.items():
-        # TODO: we could also abort early and avoid creating wrong log entries
-        if (old_user_attrs := all_users.get(user_id)) is None:
-            raise MKUserError(None, _("The user you are trying to edit does not exist."))
-
-        _validate_user_attributes(user_id, changed_user_attrs, user_attributes, user)
-
-        affected_sites = _update_affected_sites(affected_sites, sites(changed_user_attrs))
-        affected_sites = _update_affected_sites(affected_sites, sites(old_user_attrs))
-
-        modified_users_info.append(user_id)
-
-        log_audit(
-            action="edit-user",
-            message="Modified user: %s" % user_id,
-            user_id=acting_user.id,
-            use_git=use_git,
-            diff_text=make_diff_text(
-                make_user_audit_log_object(old_user_attrs),
-                make_user_audit_log_object(changed_user_attrs),
-            ),
-            object_ref=make_user_object_ref(user_id),
-        )
-
-        connection_id = changed_user_attrs.get("connector", None)
-        connection = get_connection(connection_id)
-        log_security_event(
-            UserManagementEvent(
-                event="user modified",
-                affected_user=user_id,
-                acting_user=acting_user.id,
-                connector=connection.type() if connection else None,
-                connection_id=connection_id,
-            )
-        )
-
-        all_users[user_id] = changed_user_attrs
-
-    if modified_users_info:
-        add_change(
-            action_name="edit-users",
-            text=_l("Modified users: %s") % ", ".join(modified_users_info),
-            user_id=acting_user.id,
-            sites=None if affected_sites == "all" else list(affected_sites),
-            use_git=use_git,
-        )
-
-    userdb.save_users(
-        all_users,
-        user_attributes,
-        active_config.user_connections,
-        now=datetime.now(),
-        pprint_value=active_config.wato_pprint_config,
-        call_users_saved_hook=True,
-    )
-
-
 def edit_user(
     user_id: UserId,
     new_spec: UserSpec,
@@ -337,18 +265,71 @@ def remove_custom_attribute_from_all_users(
     *,
     use_git: bool,
 ) -> None:
-    edit_users(
-        {
-            user_id: cast(
-                UserSpec, {k: v for k, v in settings.items() if k != custom_attribute_name}
+    # This function duplicates code from edit_user. However, it is the only place in the codebase
+    # where we need to update all users at once. For this it calls userdb.save_users directly.
+    user.need_permission("wato.users")
+    user.need_permission("wato.edit")
+
+    all_users = userdb.load_users(lock=True)
+    modified_users_info = []
+    affected_sites: _AffectedSites = set()
+
+    for user_id, old_user_attrs in all_users.items():
+        if custom_attribute_name not in old_user_attrs:
+            continue
+
+        changed_user_attrs = cast(
+            UserSpec, {k: v for k, v in old_user_attrs.items() if k != custom_attribute_name}
+        )
+
+        _validate_user_attributes(user_id, changed_user_attrs, user_attributes, user)
+
+        affected_sites = _update_affected_sites(affected_sites, sites(old_user_attrs))
+
+        modified_users_info.append(user_id)
+
+        log_audit(
+            action="edit-user",
+            message="Modified user: %s" % user_id,
+            user_id=user.id,
+            use_git=use_git,
+            diff_text=make_diff_text(
+                make_user_audit_log_object(old_user_attrs),
+                make_user_audit_log_object(changed_user_attrs),
+            ),
+            object_ref=make_user_object_ref(user_id),
+        )
+
+        connection_id = changed_user_attrs.get("connector", None)
+        connection = get_connection(connection_id)
+        log_security_event(
+            UserManagementEvent(
+                event="user modified",
+                affected_user=user_id,
+                acting_user=user.id,
+                connector=connection.type() if connection else None,
+                connection_id=connection_id,
             )
-            for user_id, settings in userdb.load_users(lock=True).items()
-        },
-        sites,
-        user_attributes,
-        use_git=use_git,
-        acting_user=user,
-    )
+        )
+
+        all_users[user_id] = changed_user_attrs
+
+    if modified_users_info:
+        add_change(
+            action_name="edit-users",
+            text=_l("Modified users: %s") % ", ".join(modified_users_info),
+            user_id=user.id,
+            sites=None if affected_sites == "all" else list(affected_sites),
+            use_git=use_git,
+        )
+        userdb.save_users(
+            all_users,
+            user_attributes,
+            active_config.user_connections,
+            now=datetime.now(),
+            pprint_value=active_config.wato_pprint_config,
+            call_users_saved_hook=True,
+        )
 
 
 def make_user_audit_log_object(attributes: UserSpec) -> UserSpec:

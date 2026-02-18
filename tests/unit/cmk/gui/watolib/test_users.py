@@ -7,6 +7,8 @@
 # mypy: disable-error-code="possibly-undefined"
 
 from collections.abc import Generator
+from datetime import datetime
+from typing import cast
 
 import pytest
 
@@ -16,12 +18,20 @@ from cmk.ccc.site import SiteId
 from cmk.ccc.user import UserId
 from cmk.gui import userdb
 from cmk.gui.config import active_config
-from cmk.gui.logged_in import LoggedInSuperUser
+from cmk.gui.exceptions import MKAuthException
+from cmk.gui.logged_in import LoggedInNobody, LoggedInSuperUser
+from cmk.gui.session import _UserContext, SuperUserContext
 from cmk.gui.type_defs import UserSpec
 from cmk.gui.userdb import get_user_attributes
 from cmk.gui.watolib.paths import wato_var_dir
 from cmk.gui.watolib.site_changes import SiteChanges
-from cmk.gui.watolib.users import create_user, default_sites, delete_users, edit_user
+from cmk.gui.watolib.users import (
+    create_user,
+    default_sites,
+    delete_users,
+    edit_user,
+    remove_custom_attribute_from_all_users,
+)
 
 USER1_ID = UserId("user1")
 USER2_ID = UserId("user2")
@@ -246,3 +256,128 @@ def test_only_affected_sites_require_activation_when_deleting_users(
     all_users = userdb.load_users()
     assert not any(user_id in all_users for user_id in users_to_delete)
     assert expected_changed_sites == _changed_sites(sites)
+
+
+CUSTOM_ATTR_NAME = "my_custom_attr"
+
+
+def _add_custom_attr_to_user(user_id: UserId, attr_name: str, value: str) -> None:
+    """Inject a raw custom attribute into a user's stored spec, bypassing UserData."""
+    all_users = userdb.load_users(lock=True)
+    all_users[user_id] = cast(UserSpec, {**all_users[user_id], attr_name: value})
+    userdb.save_users(
+        all_users,
+        get_user_attributes([]),
+        active_config.user_connections,
+        now=datetime.now(),
+        pprint_value=active_config.wato_pprint_config,
+        call_users_saved_hook=False,
+    )
+
+
+@pytest.mark.usefixtures("request_context")
+def test_remove_custom_attribute_only_touches_affected_users(sites: list[SiteId]) -> None:
+    # GIVEN user1 has the custom attribute, user2 does not
+    create_user(
+        USER1_ID,
+        UserSpec({"alias": "user1", "locked": False, "roles": []}),
+        default_sites,
+        get_user_attributes([]),
+        use_git=False,
+        acting_user=LoggedInSuperUser(),
+    )
+    create_user(
+        USER2_ID,
+        UserSpec({"alias": "user2", "locked": False, "roles": []}),
+        default_sites,
+        get_user_attributes([]),
+        use_git=False,
+        acting_user=LoggedInSuperUser(),
+    )
+    _add_custom_attr_to_user(USER1_ID, CUSTOM_ATTR_NAME, "some_value")
+    _reset_site_changes(ALL_SITES)
+
+    # WHEN
+    with SuperUserContext():
+        remove_custom_attribute_from_all_users(
+            CUSTOM_ATTR_NAME,
+            default_sites,
+            get_user_attributes([]),
+            use_git=False,
+        )
+
+    # THEN user1 lost the attribute; user2 is completely untouched
+    all_users = userdb.load_users()
+    assert CUSTOM_ATTR_NAME not in all_users[USER1_ID]
+    assert CUSTOM_ATTR_NAME not in all_users[USER2_ID]
+    assert all_users[USER2_ID]["alias"] == "user2"
+
+
+@pytest.mark.parametrize(
+    "user1_has_attr, expected_changed_sites",
+    [
+        pytest.param(True, [SITE1], id="only user1-site changes when user1 has attribute"),
+        pytest.param(False, [], id="no sites change when no user has attribute"),
+    ],
+)
+@pytest.mark.usefixtures("request_context")
+def test_remove_custom_attribute_only_affected_sites_require_activation(
+    sites: list[SiteId],
+    user1_has_attr: bool,
+    expected_changed_sites: list[SiteId],
+) -> None:
+    # GIVEN user1 on site1, user2 on site2
+    create_user(
+        USER1_ID,
+        UserSpec({"alias": "user1", "locked": False, "authorized_sites": [SITE1], "roles": []}),
+        default_sites,
+        get_user_attributes([]),
+        use_git=False,
+        acting_user=LoggedInSuperUser(),
+    )
+    create_user(
+        USER2_ID,
+        UserSpec({"alias": "user2", "locked": False, "authorized_sites": [SITE2], "roles": []}),
+        default_sites,
+        get_user_attributes([]),
+        use_git=False,
+        acting_user=LoggedInSuperUser(),
+    )
+    if user1_has_attr:
+        _add_custom_attr_to_user(USER1_ID, CUSTOM_ATTR_NAME, "some_value")
+    _reset_site_changes(ALL_SITES)
+
+    # WHEN
+    with SuperUserContext():
+        remove_custom_attribute_from_all_users(
+            CUSTOM_ATTR_NAME,
+            default_sites,
+            get_user_attributes([]),
+            use_git=False,
+        )
+
+    # THEN
+    assert expected_changed_sites == _changed_sites(sites)
+
+
+@pytest.mark.usefixtures("request_context")
+def test_remove_custom_attribute_requires_permissions(sites: list[SiteId]) -> None:
+    # GIVEN a user with the custom attribute
+    create_user(
+        USER1_ID,
+        UserSpec({"alias": "user1", "locked": False, "roles": []}),
+        default_sites,
+        get_user_attributes([]),
+        use_git=False,
+        acting_user=LoggedInSuperUser(),
+    )
+    _add_custom_attr_to_user(USER1_ID, CUSTOM_ATTR_NAME, "some_value")
+
+    # WHEN called without permissions, THEN it raises
+    with _UserContext(LoggedInNobody()), pytest.raises(MKAuthException):
+        remove_custom_attribute_from_all_users(
+            CUSTOM_ATTR_NAME,
+            default_sites,
+            get_user_attributes([]),
+            use_git=False,
+        )
