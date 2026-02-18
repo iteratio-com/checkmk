@@ -103,7 +103,7 @@ from cmk.gui.watolib.user_scripts import load_notification_scripts
 from cmk.gui.watolib.users import (
     create_user,
     delete_users,
-    edit_users,
+    edit_user,
     get_vs_user_idle_timeout,
     make_user_object_ref,
     user_features_registry,
@@ -957,8 +957,9 @@ class ModeEditUser(WatoMode):
                 acting_user=user,
             )
         else:
-            edit_users(
-                {self._user_id: user_attrs},
+            edit_user(
+                self._user_id,
+                user_attrs,
                 user_features_registry.features().sites,
                 user_attributes,
                 use_git=config.wato_use_git,

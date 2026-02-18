@@ -21,7 +21,7 @@ from cmk.gui.type_defs import UserSpec
 from cmk.gui.userdb import get_user_attributes
 from cmk.gui.watolib.paths import wato_var_dir
 from cmk.gui.watolib.site_changes import SiteChanges
-from cmk.gui.watolib.users import create_user, default_sites, delete_users, edit_users
+from cmk.gui.watolib.users import create_user, default_sites, delete_users, edit_user
 
 USER1_ID = UserId("user1")
 USER2_ID = UserId("user2")
@@ -177,12 +177,9 @@ def test_only_affected_sites_require_activation_when_changing_user(sites: list[S
     _reset_site_changes(ALL_SITES)
 
     # WHEN "moving" this user to site2
-    edit_users(
-        {
-            USER1_ID: UserSpec(
-                {"alias": "user1", "locked": False, "authorized_sites": [SITE2], "roles": []}
-            )
-        },
+    edit_user(
+        USER1_ID,
+        UserSpec({"alias": "user1", "locked": False, "authorized_sites": [SITE2], "roles": []}),
         default_sites,
         get_user_attributes([]),
         use_git=False,

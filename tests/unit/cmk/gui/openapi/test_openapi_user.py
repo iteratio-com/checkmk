@@ -39,7 +39,7 @@ from cmk.gui.type_defs import CustomUserAttrSpec, Users, UserSpec
 from cmk.gui.userdb import ConnectorType, get_user_attributes, UserRole
 from cmk.gui.watolib.custom_attributes import save_custom_attrs_to_mk_file, update_user_custom_attrs
 from cmk.gui.watolib.userroles import clone_role, RoleID
-from cmk.gui.watolib.users import create_user, default_sites, edit_users
+from cmk.gui.watolib.users import create_user, default_sites, edit_user
 from cmk.utils import paths
 from tests.testlib.unit.rest_api_client import ClientRegistry
 from tests.unit.cmk.web_test_app import SetConfig
@@ -174,9 +174,11 @@ def test_openapi_user_minimal_settings(
     user_attributes.pop("last_pw_change", None)
 
     assert user_attributes == {
+        "user_id": "user",
         "alias": "User Name",
         "customer": "provider",
         "contactgroups": [],
+        "contextual_help_icon": None,
         "disable_notifications": {},
         "email": "",
         "enforce_pw_change": False,
@@ -185,6 +187,7 @@ def test_openapi_user_minimal_settings(
         "pager": "",
         "roles": [],
         "user_scheme_serial": 1,
+        "navbar_changes_action": None,
         "num_failed_logins": 0,
         "serial": 0,
         "is_automation_user": False,
@@ -338,23 +341,26 @@ def test_openapi_user_internal_with_notifications(
 
     assert _load_internal_attributes(name) == {
         "alias": "KPECYCq79E",
-        "customer": "provider",
-        "pager": "",
         "contactgroups": [],
-        "email": "",
-        "fallback_contact": False,
+        "contextual_help_icon": None,
+        "customer": "provider",
         "disable_notifications": {"timerange": (1577836800.0, 1577923200.0)},
-        "user_scheme_serial": 1,
-        "locked": False,
-        "roles": [],
-        "password": "$5$rounds=535000$eUtToQgKz6n7Qyqk$hh5tq.snoP4J95gVoswOep4LbUxycNG1QF1HI7B4d8C",
-        "serial": 1,
-        "last_pw_change": 1265013000,
+        "email": "",
         "enforce_pw_change": True,
-        "num_failed_logins": 0,
+        "fallback_contact": False,
         "is_automation_user": False,
+        "last_pw_change": 1265013000,
+        "locked": False,
+        "navbar_changes_action": None,
+        "num_failed_logins": 0,
+        "pager": "",
+        "password": "$5$rounds=535000$eUtToQgKz6n7Qyqk$hh5tq.snoP4J95gVoswOep4LbUxycNG1QF1HI7B4d8C",
+        "roles": [],
+        "serial": 1,
         "store_automation_secret": False,
         "created_on_version": __version__,
+        "user_id": name,
+        "user_scheme_serial": 1,
     }
 
 
@@ -561,8 +567,9 @@ def test_openapi_user_internal_auth_handling(
             {"auth_option": {"secret": "QWXWBFUCSUOXNCPJUMS@", "auth_type": "automation"}},
             PasswordPolicy(12, None),
         )
-        edit_users(
-            {name: updated_internal_attributes},
+        edit_user(
+            name,
+            updated_internal_attributes,
             default_sites,
             get_user_attributes([]),
             use_git=False,
@@ -582,8 +589,9 @@ def test_openapi_user_internal_auth_handling(
             {"auth_option": {"auth_type": "remove"}},
             PasswordPolicy(12, None),
         )
-        edit_users(
-            {name: updated_internal_attributes},
+        edit_user(
+            name,
+            updated_internal_attributes,
             default_sites,
             get_user_attributes([]),
             use_git=False,

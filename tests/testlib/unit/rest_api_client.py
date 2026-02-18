@@ -660,6 +660,8 @@ class UserClient(RestApiClient):
         disable_login: bool | None = None,
         contact_options: dict[str, Any] | None = None,
         pager_address: str | None = None,
+        language: str | None = None,
+        temperature_unit: str | None = None,
         extra: dict[str, Any] | None = None,
         roles: list[str] | None = None,
         start_url: str | None = None,
@@ -685,6 +687,8 @@ class UserClient(RestApiClient):
                 "contact_options": contact_options,
                 "disable_login": disable_login,
                 "pager_address": pager_address,
+                "language": language,
+                "temperature_unit": temperature_unit,
                 "start_url": start_url,
             }.items()
             if v is not None

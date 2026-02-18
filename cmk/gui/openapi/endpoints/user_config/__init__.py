@@ -49,10 +49,10 @@ from cmk.gui.watolib.custom_attributes import load_custom_attrs_from_mk_file
 from cmk.gui.watolib.users import create_user as wato_create_user
 from cmk.gui.watolib.users import (
     delete_users,
-    edit_users,
     user_features_registry,
     verify_password_policy,
 )
+from cmk.gui.watolib.users import edit_user as wato_edit_user
 
 TIMESTAMP_RANGE = tuple[float, float]
 
@@ -237,8 +237,9 @@ def edit_user(params: Mapping[str, Any]) -> Response:
                     detail=f"Request attempts to modify the following locked attributes: {', '.join(locked_changes)}",
                 )
 
-    edit_users(
-        {username: internal_attrs},
+    wato_edit_user(
+        username,
+        internal_attrs,
         user_features_registry.features().sites,
         user_attributes,
         use_git=active_config.wato_use_git,

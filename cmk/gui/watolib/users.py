@@ -24,6 +24,7 @@ from cmk.gui.type_defs import AnnotatedUserId, UserContactDetails, Users, UserSp
 from cmk.gui.user_connection_config_types import UserConnectionConfig
 from cmk.gui.userdb import add_internal_attributes, UserAttribute
 from cmk.gui.userdb._connections import get_connection
+from cmk.gui.userdb.userdata import UserAlreadyExistsError, UserData, UserDB, UserNotFoundError
 from cmk.gui.utils.security_log_events import UserManagementEvent
 from cmk.gui.valuespec import Age, Alternative, EmailAddress, FixedValue
 from cmk.gui.watolib.audit_log import log_audit
@@ -212,6 +213,65 @@ def edit_users(
     )
 
 
+def edit_user(
+    user_id: UserId,
+    new_spec: UserSpec,
+    sites: _UserAssociatedSitesFn,
+    user_attributes: Sequence[tuple[str, UserAttribute]],
+    *,
+    use_git: bool,
+    acting_user: LoggedInUser,
+) -> None:
+    acting_user.need_permission("wato.users")
+    acting_user.need_permission("wato.edit")
+
+    _validate_user_attributes(user_id, new_spec, user_attributes, acting_user)
+
+    affected_sites: _AffectedSites = set()
+
+    try:
+        with UserDB(user_attributes).get_user_for_editing(user_id) as edit_user_data:
+            affected_sites = _update_affected_sites(
+                affected_sites, sites(edit_user_data.to_userspec())
+            )
+            affected_sites = _update_affected_sites(affected_sites, sites(new_spec))
+
+            diff = edit_user_data.update_from_userspec(new_spec, user_attributes)
+
+            log_audit(
+                action="edit-user",
+                message="Modified user: %s" % user_id,
+                user_id=acting_user.id,
+                use_git=use_git,
+                diff_text=diff,
+                object_ref=make_user_object_ref(user_id),
+            )
+
+            connection_id = edit_user_data.connection_id
+            log_security_event(
+                UserManagementEvent(
+                    event="user modified",
+                    affected_user=user_id,
+                    acting_user=acting_user.id,
+                    connector=connection.type()
+                    if (connection := get_connection(connection_id))
+                    else None,
+                    connection_id=connection_id,
+                )
+            )
+
+    except UserNotFoundError:
+        raise MKUserError(None, _("The user you are trying to edit does not exist."))
+
+    add_change(
+        action_name="edit-users",
+        text=_l("Modified user: %s") % user_id,
+        user_id=acting_user.id,
+        sites=None if affected_sites == "all" else list(affected_sites),
+        use_git=use_git,
+    )
+
+
 def create_user(
     user_id: UserId,
     new_user: UserSpec,
@@ -229,17 +289,15 @@ def create_user(
     acting_user.need_permission("wato.users")
     acting_user.need_permission("wato.edit")
 
-    if user_id == "":  # reserved for UserId.builtin()
-        raise MKUserError("user_id", _("UserId cannot be empty"))
-
-    all_users = userdb.load_users(lock=True)
-
-    if user_id in all_users:
-        raise MKUserError("user_id", _("This username is already being used by another user."))
-
     _validate_user_attributes(user_id, new_user, user_attributes, acting_user)
 
     add_internal_attributes(new_user)
+
+    new_user_data = UserData.from_userspec(user_id, new_user, user_attributes)
+    try:
+        UserDB(user_attributes).add_user(new_user_data)
+    except UserAlreadyExistsError:
+        raise MKUserError("user_id", _("This username is already being used by another user."))
 
     log_audit(
         action="edit-user",
@@ -269,16 +327,6 @@ def create_user(
         user_id=acting_user.id,
         sites=None if affected_sites == "all" else list(affected_sites),
         use_git=use_git,
-    )
-
-    all_users[user_id] = new_user
-    userdb.save_users(
-        all_users,
-        user_attributes,
-        user_connections,
-        now=datetime.now(),
-        pprint_value=active_config.wato_pprint_config,
-        call_users_saved_hook=True,
     )
 
 
@@ -335,26 +383,25 @@ def _validate_user_attributes(
     user_attributes: Sequence[tuple[str, UserAttribute]],
     acting_user: LoggedInUser,
 ) -> None:
+    if user_id == "":  # reserved for UserId.builtin()
+        raise MKUserError("user_id", _("UserId cannot be empty"))
+
     # Full name
-    alias = user_attrs.get("alias")
-    if not alias:
+    if not user_attrs.get("alias"):
         raise MKUserError(
             "alias", _("Please specify a full name or descriptive alias for the user.")
         )
 
     # Locking
-    locked = user_attrs["locked"]
-    if user_id == acting_user.id and locked:
+    if user_id == acting_user.id and user_attrs.get("locked", False):
         raise MKUserError("locked", _("You cannot lock your own account!"))
 
     # Automation Secret
     # Note: if a password is used it is verified before this; we only know the hash here
-    if "automation_secret" in user_attrs:
-        secret = user_attrs["automation_secret"]
-        if len(secret) < 10:
-            raise MKUserError(
-                "_auth_secret", _("Please enter an automation secret of at least 10 characters.")
-            )
+    if "automation_secret" in user_attrs and len(user_attrs["automation_secret"]) < 10:
+        raise MKUserError(
+            "_auth_secret", _("Please enter an automation secret of at least 10 characters.")
+        )
 
     # Email
     email = user_attrs.get("email")
