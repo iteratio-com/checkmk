@@ -11,7 +11,7 @@ from email.mime.text import MIMEText
 from functools import partial
 from pathlib import Path
 from time import time as time_time
-from typing import Any, Final, Literal, NotRequired, TypedDict
+from typing import Any, Final, Literal, NamedTuple, NotRequired, TypedDict
 
 from pydantic import TypeAdapter
 
@@ -50,7 +50,7 @@ from cmk.gui.page_menu import (
 )
 from cmk.gui.pages import PageContext, PageEndpoint, PageRegistry
 from cmk.gui.permissions import Permission, permission_registry
-from cmk.gui.type_defs import AnnotatedUserId, IconNames, StaticIcon, UserSpec
+from cmk.gui.type_defs import AnnotatedUserId, IconNames, StaticIcon
 from cmk.gui.utils.html import HTML
 from cmk.gui.utils.transaction_manager import transactions
 from cmk.gui.valuespec import AbsoluteDate
@@ -257,6 +257,19 @@ permission_registry.register(
 )
 
 
+class _MessageRecipient(NamedTuple):
+    user_id: UserId
+    alias: str
+
+
+def _get_users_from_multisite_config(config: Config) -> Sequence[_MessageRecipient]:
+    # This function is here to contain the UserSpec as much as possible until we get rid of it.
+    return [
+        _MessageRecipient(user_id=UserId(uid), alias=userspec.get("alias", uid))
+        for uid, userspec in config.multisite_users.items()
+    ]
+
+
 def page_message(ctx: PageContext) -> None:
     if not user.may("general.message"):
         raise MKAuthException(_("You are not allowed to use the message module."))
@@ -266,9 +279,8 @@ def page_message(ctx: PageContext) -> None:
     menu = _page_menu(breadcrumb)
     make_header(html, title, breadcrumb, menu)
 
-    spec = _message_spec(ctx.config.multisite_users)
-
-    flat_catalog = create_flat_catalog_from_dictionary(spec)
+    recipients = _get_users_from_multisite_config(ctx.config)
+    flat_catalog = create_flat_catalog_from_dictionary(_message_spec(recipients))
 
     catalog_field_id = "_message_id"
     if transactions.check_transaction():
@@ -282,7 +294,7 @@ def page_message(ctx: PageContext) -> None:
                     methods=msg["methods"],
                     valid_till=msg["valid_till"],
                 ),
-                multisite_user_ids=ctx.config.multisite_users.keys(),
+                multisite_user_ids={r.user_id for r in recipients},
             )
         except MKUserError as e:
             html.user_error(e)
@@ -325,9 +337,9 @@ def _page_menu(breadcrumb: Breadcrumb) -> PageMenu:
     return menu
 
 
-def _message_spec(users: Mapping[str, UserSpec]) -> Dictionary:
+def _message_spec(users: Sequence[_MessageRecipient]) -> Dictionary:
     return Dictionary(
-        custom_validate=[partial(_validate_msg, all_user_ids=map(UserId, users.keys()))],
+        custom_validate=[partial(_validate_msg, all_users=users)],
         elements={
             "text": DictElement(
                 required=True,
@@ -362,17 +374,14 @@ def _message_spec(users: Mapping[str, UserSpec]) -> Dictionary:
                                 parameter_form=MultipleChoice(
                                     elements=[
                                         MultipleChoiceElement(
-                                            name=key,
+                                            name=recipient.user_id,
                                             title=Title(  # astrein: disable=localization-checker
-                                                value
+                                                recipient.alias
                                             ),
                                         )
-                                        for key, value in sorted(
-                                            [
-                                                (uid, u.get("alias", uid))
-                                                for uid, u in users.items()
-                                            ],
-                                            key=lambda x: x[1].lower(),
+                                        for recipient in sorted(
+                                            users,
+                                            key=lambda u: u.alias.lower(),
                                         )
                                     ],
                                     custom_validate=[validators.LengthInRange(min_value=1)],
@@ -432,7 +441,9 @@ def _message_spec(users: Mapping[str, UserSpec]) -> Dictionary:
     )
 
 
-def _validate_msg(msg_with_topic: Mapping[str, Any], all_user_ids: Iterable[UserId]) -> None:
+def _validate_msg(
+    msg_with_topic: Mapping[str, Any], all_users: Sequence[_MessageRecipient]
+) -> None:
     msg = msg_with_topic["topic0"]
     assert isinstance(msg, dict)
     if not msg.get("methods"):
@@ -445,7 +456,8 @@ def _validate_msg(msg_with_topic: Mapping[str, Any], all_user_ids: Iterable[User
 
     # On manually entered list of users validate the names
     if isinstance(msg["dest"], tuple) and msg["dest"][0] == "list":
-        unknown_user_ids = set(msg["dest"][1]) - frozenset(all_user_ids)
+        known_user_ids = frozenset(user.user_id for user in all_users)
+        unknown_user_ids = set(msg["dest"][1]) - known_user_ids
         if unknown_user_ids:
             first_unknown = next(iter(unknown_user_ids))
             raise ValidationError(
