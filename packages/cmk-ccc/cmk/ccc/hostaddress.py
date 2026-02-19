@@ -13,7 +13,13 @@ from collections.abc import Callable, Iterable, Iterator, Sequence
 from dataclasses import dataclass
 from typing import Final, Self, TypeAlias
 
-__all__ = ["HostAddress", "Hosts", "HostName"]
+__all__ = ["HostAddress", "Hosts", "HostName", "HostNameValidationError"]
+
+
+class HostNameValidationError(ValueError):
+    def __init__(self, message: str, raw: str) -> None:
+        super().__init__(message)
+        self.raw = raw
 
 
 @dataclass(frozen=True)
@@ -40,7 +46,7 @@ class HostAddress(str):
         """Construct a new HostAddress object
 
         Raises:
-            - ValueError: whenever the given text is not a valid HostAddress
+            - HostNameValidationError: whenever the given text is not a valid HostAddress
 
         >>> HostAddress("checkmk.com")
         'checkmk.com'
@@ -51,26 +57,26 @@ class HostAddress(str):
         >>> HostAddress("Â")
         Traceback (most recent call last):
             ...
-        ValueError: invalid host address: 'Â'
+        packages.cmk-ccc.cmk.ccc.hostaddress.HostNameValidationError: invalid host address: 'Â'
 
         >>> HostAddress(".")
         Traceback (most recent call last):
             ...
-        ValueError: invalid host address: '.'
+        packages.cmk-ccc.cmk.ccc.hostaddress.HostNameValidationError: invalid host address: '.'
         """
         if len(text) > 240:
             # Ext4 and others allow filenames of up to 255 bytes.
             # As we add prefixes and/or suffixes, the number has to be way lower.
             # 240 seems to be OK to still be able to delete a host if it causes
             # trouble elsewhere
-            raise ValueError(f"host address too long: {text[:16] + '…'!r}")
+            raise HostNameValidationError(f"host address too long: {text[:16] + '…'!r}", raw=text)
 
         try:
             ipaddress.ip_address(text)
         except ValueError:
             # TODO: Why do we want to allow empty host names?
             if text and not HostAddress.REGEX_HOST_NAME.match(text):
-                raise ValueError(f"invalid host address: {text!r}")
+                raise HostNameValidationError(f"invalid host address: {text!r}", raw=text)
 
         return super().__new__(cls, text)
 
@@ -80,7 +86,7 @@ class HostAddress(str):
             return x
         if isinstance(x, str):
             return cls(x)
-        raise ValueError(f"invalid host address: {x!r}")
+        raise HostNameValidationError(f"invalid host address: {x!r}", raw=repr(x))
 
     @classmethod
     def project_valid(cls, text: str) -> Self:
