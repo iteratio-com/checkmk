@@ -22,6 +22,7 @@ from multiprocessing.synchronize import Event
 from pathlib import Path
 
 from cmk.ccc.daemon import daemonize, pid_file_lock
+from cmk.ccc.hostaddress import HostNameValidationError
 from cmk.messaging import Channel, DeliveryTag, QueueName, set_logging_level
 
 from ._config import CONFIG_QUEUE, ConfigType, PiggybackHubConfig, save_config
@@ -167,17 +168,12 @@ def run_piggyback_hub(
     raise RuntimeError("Unreachable code reached")
 
 
-def main(crash_report_callback: Callable[[], str], argv: list[str] | None = None) -> int:
-    if argv is None:
-        argv = sys.argv
-
-    if crash_report_callback is None:
-
-        def dummy_crash_report():
-            return "No crash report created"
-
-        crash_report_callback = dummy_crash_report
-
+def main(
+    argv: list[str],
+    *,
+    crash_report_callback: Callable[[], str] = lambda: "No crash report created",
+    invalid_hostname_callback: Callable[[HostNameValidationError], None] = lambda e: None,
+) -> int:
     args = _parse_arguments(argv)
     logger = _setup_logging(args)
     omd_root = Path(args.omd_root)
@@ -194,6 +190,8 @@ def main(crash_report_callback: Callable[[], str], argv: list[str] | None = None
     except Exception as exc:
         if args.debug:
             raise
+        if isinstance(exc, HostNameValidationError):
+            invalid_hostname_callback(exc)
         logger.exception("Exception: %s: %s", APP_NAME.value, exc)
         crash_report_msg = crash_report_callback()
         logger.error(crash_report_msg)

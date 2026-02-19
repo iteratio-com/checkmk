@@ -18,27 +18,12 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Self
 
-from cmk.ccc.hostaddress import HostAddress, HostName, HostNameValidationError
-from cmk.utils.log.security_event import InputValidationFailureEvent, log_security_event
+from cmk.ccc.hostaddress import HostAddress, HostName
 
 from ._inotify import Event, INotify, Masks
 from ._paths import payload_dir, source_status_dir
 
 logger = logging.getLogger(__name__)
-
-
-def _hostname_validation_helper(value: str) -> HostName:
-    try:
-        return HostName(value)
-    except HostNameValidationError:
-        log_security_event(
-            InputValidationFailureEvent(
-                summary="Piggyback host name rejected",
-                input_value=value,
-                validation_entity="HostName",
-            )
-        )
-        raise
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -107,12 +92,14 @@ def watch_new_messages(omd_root: Path) -> Iterator[PiggybackMessage]:
                 continue
             if event.watchee == watch_for_deleted_status_files:
                 if event.type & Masks.DELETE:
-                    source = _hostname_validation_helper(event.name)
-                    for piggybacked_host in _get_piggybacked_hosts_for_source(omd_root, source):
+                    source = HostName(event.name)
+                    for piggybacked_host_path in _get_piggybacked_hosts_for_source(
+                        omd_root, source
+                    ):
                         yield PiggybackMessage(
                             PiggybackMetaData(
                                 source=source,
-                                piggybacked=piggybacked_host,
+                                piggybacked=HostName(piggybacked_host_path.name),
                                 last_update=int(time.time()),
                                 last_contact=None,
                             ),
@@ -125,8 +112,10 @@ def watch_new_messages(omd_root: Path) -> Iterator[PiggybackMessage]:
 
 
 def _make_message_from_event(event: Event, omd_root: Path) -> PiggybackMessage | None:
+    # Note: we deliberately ignore potential host name validation errors here.
+    # The are handled further up the callstack, depending on the callsite.
     source = HostAddress(event.name)
-    piggybacked = _hostname_validation_helper(event.watchee.path.name)
+    piggybacked = HostName(event.watchee.path.name)
     status_file_path = _get_source_status_file_path(source, omd_root)
     payload_file_path = event.watchee.path / event.name
 
@@ -204,9 +193,9 @@ def get_piggybacked_host_with_sources(
     }
 
 
-def _get_piggybacked_hosts_for_source(omd_root: Path, source: HostName) -> Sequence[HostName]:
+def _get_piggybacked_hosts_for_source(omd_root: Path, source: HostName) -> Sequence[Path]:
     return [
-        _hostname_validation_helper(piggybacked_host.name)
+        piggybacked_host
         for piggybacked_host in _get_piggybacked_host_folders(omd_root)
         if (piggybacked_host / source).exists()
     ]
