@@ -18,7 +18,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Self
 
-from cmk.ccc.hostaddress import HostAddress, HostName
+from cmk.ccc.hostaddress import HostAddress, HostName, HostNameValidationError
 from cmk.utils.log.security_event import InputValidationFailureEvent, log_security_event
 
 from ._inotify import Event, INotify, Masks
@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 def _hostname_validation_helper(value: str) -> HostName:
     try:
         return HostName(value)
-    except ValueError:
+    except HostNameValidationError:
         log_security_event(
             InputValidationFailureEvent(
                 summary="Piggyback host name rejected",
@@ -55,8 +55,8 @@ class PiggybackMetaData:
     def deserialize(cls, serialized: str, /) -> Self:
         raw = json.loads(serialized)
         return cls(
-            source=_hostname_validation_helper(raw["source"]),
-            piggybacked=_hostname_validation_helper(raw["piggybacked"]),
+            source=HostName(raw["source"]),
+            piggybacked=HostName(raw["piggybacked"]),
             last_update=int(raw["last_update"]),
             last_contact=None if (i := raw["last_contact"]) is None else int(i),
         )

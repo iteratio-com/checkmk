@@ -128,7 +128,7 @@ from cmk.ccc.exceptions import (
     MKTimeout,
     OnError,
 )
-from cmk.ccc.hostaddress import HostAddress, HostName, Hosts
+from cmk.ccc.hostaddress import HostAddress, HostName, HostNameValidationError, Hosts
 from cmk.ccc.timeout import Timeout
 from cmk.ccc.version import edition_supports_nagvis
 from cmk.checkengine.checkerplugin import ConfiguredService
@@ -219,6 +219,7 @@ from cmk.utils.everythingtype import EVERYTHING
 from cmk.utils.ip_lookup import make_lookup_mgmt_board_ip_address
 from cmk.utils.labels import DiscoveredHostLabelsStore, HostLabel, LabelManager, Labels
 from cmk.utils.log import console
+from cmk.utils.log.security_event import InputValidationFailureEvent, log_security_event
 from cmk.utils.macros import replace_macros_in_str
 from cmk.utils.password_store import make_staged_passwords_lookup
 from cmk.utils.paths import (
@@ -4212,6 +4213,14 @@ def automation_get_agent_output(
                 success = False
                 output += walk_errors
     except Exception as e:
+        if isinstance(e, HostNameValidationError):
+            log_security_event(
+                InputValidationFailureEvent(
+                    summary="Host name rejected",
+                    input_value=e.raw,
+                    validation_entity="HostName",
+                )
+            )
         success = False
         output = f"Failed to fetch data from {hostname}: {e}\n"
         if cmk.ccc.debug.enabled():

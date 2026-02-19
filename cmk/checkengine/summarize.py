@@ -97,6 +97,7 @@ def summarize_piggyback(
 ) -> Sequence[ActiveCheckResult]:
     summary_section = SectionName("piggyback_source_summary")
     now = int(time.time()) if now is None else now
+    # Note: this can raise, but only if someone fiddled with the data
     if meta_infos := [
         PiggybackMetaData.deserialize(raw_file_info)
         for (raw_file_info,) in host_sections.sections.get(summary_section, [])
