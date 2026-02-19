@@ -301,8 +301,12 @@ def _format_error(error: str) -> str:
     return f"{2 * _GAP}{tty.error} - {error}"
 
 
+def _format_warn(warn: str) -> str:
+    return f"{2 * _GAP}{tty.warn} - {warn}"
+
+
 def _format_info(info: str) -> str:
-    return f"{2 * _GAP}{tty.blue}{tty.bold}{info}{tty.normal}"
+    return f"{2 * _GAP}{tty.blue}{tty.bold}INFO{tty.normal} - {info}"
 
 
 # .
@@ -493,6 +497,14 @@ class DiagnosticsDump:
                 console.info(f"{_format_error(str(e))}")
                 continue
 
+            except DiagnosticsElementWarning as e:
+                console.info(f"{_format_warn(str(e))}")
+                continue
+
+            except DiagnosticsElementInfo as e:
+                console.info(f"{_format_info(str(e))}")
+                continue
+
             except Exception:
                 console.info(f"{_format_error(traceback.format_exc())}")
                 continue
@@ -549,7 +561,7 @@ def verify_checkmk_server_host(checkmk_server_host: str | None) -> HostName:
     try:
         return HostName(result[0][0])
     except IndexError:
-        raise DiagnosticsElementError("No Checkmk server found")
+        raise DiagnosticsElementWarning("No Checkmk server found")
 
 
 # .
@@ -564,6 +576,14 @@ def verify_checkmk_server_host(checkmk_server_host: str | None) -> HostName:
 
 
 class DiagnosticsElementError(Exception):
+    pass
+
+
+class DiagnosticsElementWarning(Exception):
+    pass
+
+
+class DiagnosticsElementInfo(Exception):
     pass
 
 
@@ -637,7 +657,7 @@ class ABCDiagnosticsElementJSONDump(ABCDiagnosticsElement):
     def add_or_get_files(self, tmp_dump_folder: Path) -> DiagnosticsElementFilepaths:
         infos = self._collect_infos()
         if not infos:
-            raise DiagnosticsElementError("No information")
+            raise DiagnosticsElementInfo("No data")
 
         filepath = tmp_dump_folder.joinpath(self.ident).with_suffix(".json")
         store.save_text_to_file(filepath, json.dumps(infos, sort_keys=True, indent=4))
@@ -653,7 +673,7 @@ class ABCDiagnosticsElementCSVDump(ABCDiagnosticsElement):
     def add_or_get_files(self, tmp_dump_folder: Path) -> DiagnosticsElementFilepaths:
         infos = self._collect_infos()
         if not infos:
-            raise DiagnosticsElementError("No information")
+            raise DiagnosticsElementInfo("No data")
 
         filepath = tmp_dump_folder.joinpath(self.ident).with_suffix(".csv")
         store.save_text_to_file(filepath, infos)
@@ -1239,7 +1259,9 @@ def _get_checkmk_overview_content(inventory_store: InventoryStore, checkmk_serve
             )
         )
     ):
-        raise DiagnosticsElementError("No HW/SW Inventory node 'Software > Applications > Checkmk'")
+        raise DiagnosticsElementWarning(
+            "No HW/SW Inventory node 'Software > Applications > Checkmk'"
+        )
     return json.dumps(serialize_tree(node), sort_keys=True, indent=4)
 
 
@@ -1480,7 +1502,7 @@ class CheckmkCommandDiagnosticsElementTextDump(ABCDiagnosticsElementTextDump):
             raise DiagnosticsElementError("Command %s returned an unexpected error.")
 
         except FileNotFoundError:
-            raise DiagnosticsElementError(
+            raise DiagnosticsElementInfo(
                 "Command %s not available on this system." % " ".join(self.command)
             )
 
