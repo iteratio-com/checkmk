@@ -43,7 +43,7 @@ VARIABLES:
       SH: "echo '${CHANGED_FILES_REL}' | grep '^tests/Makefile' || true"
 
     - NAME: CHANGED_PYTHON_FILES
-      SH: "git diff-tree --no-commit-id --name-only -r ${BASE_COMMIT_ID}..HEAD | xargs realpath | ${WORKSPACE}/scripts/find-python-files --filter"
+      SH: "git diff-tree --no-commit-id --name-only -r ${BASE_COMMIT_ID}..HEAD | xargs realpath | ${WORKSPACE}/scripts/find-python-files --filter --with-packages"
 
     - NAME: CHANGED_GROOVY_LINT_RC
       SH: "echo '${CHANGED_FILES_REL}' | grep '.groovylintrc.json$' || true"
