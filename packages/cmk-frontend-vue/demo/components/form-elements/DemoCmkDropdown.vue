@@ -4,6 +4,7 @@ This file is part of Checkmk (https://checkmk.com). It is subject to the terms a
 conditions defined in the file COPYING, which is part of this source code package.
 -->
 <script setup lang="ts">
+import AccessibilityTable from '@demo/_demo/components/DemoAccessibilityTable.vue'
 import PropertiesPanel from '@demo/_demo/components/DemoPropertiesPanel.vue'
 import { type PanelConfig, createPanelState } from '@demo/_demo/types/prop-panel.ts'
 import { computed, ref } from 'vue'
@@ -14,6 +15,33 @@ import type { Suggestions } from '@/components/CmkSuggestions'
 
 defineProps<{ screenshotMode: boolean }>()
 const selectedValue = ref<string | null>(null)
+
+const a11yDataCmkDropdown = [
+  {
+    key: 'Enter',
+    description: 'Selects the currently highlighted suggestion and triggers the update.'
+  },
+  {
+    key: 'Tab',
+    description:
+      'Selects the currently highlighted suggestion (functions identically to the Enter key in this component).'
+  },
+  {
+    key: 'Escape',
+    description:
+      'Closes the suggestions dropdown or removes focus from the filter input without making a selection.'
+  },
+  {
+    key: 'ArrowDown',
+    description:
+      'Moves the active highlight to the next selectable suggestion in the list, scrolling it into view if necessary.'
+  },
+  {
+    key: 'ArrowUp',
+    description:
+      'Moves the active highlight to the previous selectable suggestion in the list, scrolling it into view if necessary.'
+  }
+]
 
 const panelConfig = {
   optionsType: {
@@ -74,4 +102,5 @@ const dynamicOptions = computed<Suggestions>(() => {
   />
 
   <PropertiesPanel v-model="propState" :config="panelConfig" />
+  <AccessibilityTable :data="a11yDataCmkDropdown" />
 </template>
