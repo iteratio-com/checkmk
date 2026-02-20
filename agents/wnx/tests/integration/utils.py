@@ -94,6 +94,10 @@ async def _telnet_shell(reader: telnetlib3.TelnetReader, _: telnetlib3.TelnetWri
         data = await reader.read(1024)
         if not data:
             break
+        # On Windows `reader.read` "unexpectedly" returns str( instead of bytes) due to telnetlib3
+        # strange implementation. Itis allowed but rather difficult to deteremine and myoy can't guess it.
+        # We do not want to improve it, but we want to be able to test it. So we just ignore type here.
+        # Additionally this test is ASCII only, so it is not a problem.
         _result += data  # type: ignore[operator]
 
 
