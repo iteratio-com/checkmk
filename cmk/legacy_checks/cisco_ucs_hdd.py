@@ -7,14 +7,22 @@
 
 # comNET GmbH, Fabian Binder - 2018-05-07
 
-from collections.abc import Iterable, Iterator, Mapping
-from typing import Any, Final, NamedTuple
+from collections.abc import Mapping
+from typing import Final, NamedTuple
 
-from cmk.agent_based.legacy.v0_unstable import LegacyCheckDefinition
-from cmk.agent_based.v2 import render, SNMPTree, StringTable
+from cmk.agent_based.v2 import (
+    CheckPlugin,
+    CheckResult,
+    DiscoveryResult,
+    render,
+    Result,
+    Service,
+    SimpleSNMPSection,
+    SNMPTree,
+    State,
+    StringTable,
+)
 from cmk.plugins.cisco.lib_ucs import DETECT, MAP_OPERABILITY
-
-check_info = {}
 
 _HOT_SPARE_VALUES: Final = {3, 4}
 
@@ -48,32 +56,28 @@ def parse_cisco_ucs_hdd(string_table: StringTable) -> Section:
     }
 
 
-def discover_cisco_ucs_hdd(section: Section) -> Iterable[tuple[str, dict]]:
-    yield from ((hdd.disk_id, {}) for hdd in section.values() if hdd.operability != "removed")
+def discover_cisco_ucs_hdd(section: Section) -> DiscoveryResult:
+    yield from (
+        Service(item=hdd.disk_id) for hdd in section.values() if hdd.operability != "removed"
+    )
 
 
-def check_cisco_ucs_hdd(
-    item: str, _no_params: Mapping[str, Any], section: Section
-) -> Iterator[tuple[int, str]]:
+def check_cisco_ucs_hdd(item: str, section: Section) -> CheckResult:
     hdd = section.get(item)
     if hdd is None:
         return
 
-    yield (
-        (
-            0,
-            f"Status: {hdd.operability} (hot spare)",
-        )
-        if hdd.drive_status in _HOT_SPARE_VALUES
-        else (hdd.state, f"Status: {hdd.operability}")
-    )
-    yield 0, f"Size: {render.disksize(hdd.size)}"
-    yield 0, f"Model: {hdd.model}"
-    yield 0, f"Vendor: {hdd.vendor}"
-    yield 0, f"Serial number: {hdd.serial}"
+    if hdd.drive_status in _HOT_SPARE_VALUES:
+        yield Result(state=State.OK, summary=f"Status: {hdd.operability} (hot spare)")
+    else:
+        yield Result(state=State(hdd.state), summary=f"Status: {hdd.operability}")
+    yield Result(state=State.OK, summary=f"Size: {render.disksize(hdd.size)}")
+    yield Result(state=State.OK, summary=f"Model: {hdd.model}")
+    yield Result(state=State.OK, summary=f"Vendor: {hdd.vendor}")
+    yield Result(state=State.OK, summary=f"Serial number: {hdd.serial}")
 
 
-check_info["cisco_ucs_hdd"] = LegacyCheckDefinition(
+snmp_section_cisco_ucs_hdd = SimpleSNMPSection(
     name="cisco_ucs_hdd",
     detect=DETECT,
     fetch=SNMPTree(
@@ -81,6 +85,11 @@ check_info["cisco_ucs_hdd"] = LegacyCheckDefinition(
         oids=["6", "7", "9", "12", "13", "14", "18"],
     ),
     parse_function=parse_cisco_ucs_hdd,
+)
+
+
+check_plugin_cisco_ucs_hdd = CheckPlugin(
+    name="cisco_ucs_hdd",
     service_name="HDD %s",
     discovery_function=discover_cisco_ucs_hdd,
     check_function=check_cisco_ucs_hdd,
