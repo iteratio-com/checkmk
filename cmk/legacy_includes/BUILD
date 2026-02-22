@@ -12,6 +12,7 @@ py_library(
     deps = [
         "//cmk/plugins:cmk_plugins",
         "//packages/cmk-plugin-apis:agent_based",
+        "//packages/cmk-plugins:aws",
         "//packages/cmk-plugins:graylog",
         "//packages/cmk-plugins:lib",
         requirement("pydantic"),

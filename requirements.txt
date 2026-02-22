@@ -342,24 +342,14 @@ blinker==1.9.0 \
 boto3==1.42.49 \
     --hash=sha256:99e1df4361c3f6ff6ade65803c043ea96314826134962dd3b385433b309eb819 \
     --hash=sha256:9cd252f640567b86e92b0a8ffdd4ade9a3018ee357c724bff6a21b8c8a41be0c
-    # via -r cmk/requirements.in
-boto3-stubs[logs]==1.42.49 \
-    --hash=sha256:8edb22726cf4b733e008733f4d44adde389eb7648b0c22cf071a675fed8daaab \
-    --hash=sha256:ec4368a2905e4ccbba6d606cf3e0549f159962a0e5751384e8c6624116a1729a
-    # via -r tests/dev-requirements.in
+    # via -r packages/cmk-plugins/requirements.in
 botocore==1.42.49 \
     --hash=sha256:1c33544f72101eed4ccf903ebb667a803e14e25b2af4e0836e4b871da1c0af37 \
     --hash=sha256:333115a64a507697b0c450ade7e2d82bc8b4e21c0051542514532b455712bdcc
     # via
-    #   -r cmk/requirements.in
+    #   -r packages/cmk-plugins/requirements.in
     #   boto3
     #   s3transfer
-botocore-stubs==1.42.41 \
-    --hash=sha256:9423110fb0e391834bd2ed44ae5f879d8cb370a444703d966d30842ce2bcb5f0 \
-    --hash=sha256:dbeac2f744df6b814ce83ec3f3777b299a015cbea57a2efc41c33b8c38265825
-    # via
-    #   -r tests/dev-requirements.in
-    #   boto3-stubs
 bson==0.5.10 \
     --hash=sha256:d6511b2ab051139a9123c184de1a04227262173ad593429d21e443d6462d6590
     # via -r tests/dev-requirements.in
@@ -1076,7 +1066,9 @@ fastapi==0.129.0 \
 feedparser==6.0.12 \
     --hash=sha256:64f76ce90ae3e8ef5d1ede0f8d3b50ce26bcce71dd8ae5e82b1cd2d4a5f94228 \
     --hash=sha256:6bbff10f5a52662c00a2e3f86a38928c37c48f77b3c511aedcd51de933549324
-    # via -r cmk/requirements.in
+    # via
+    #   -r cmk/requirements.in
+    #   -r packages/cmk-plugins/requirements.in
 fido2==2.1.1 \
     --hash=sha256:f1379f845870cc7fc64c7f07323c3ce41e8c96c37054e79e0acd5630b3fec5ac \
     --hash=sha256:f85c16c8084abf6530b6c6ec3a0cf8575943321842e06916686943a8b784182c
@@ -2777,7 +2769,7 @@ mypy==1.19.1 \
 mypy-boto3-logs==1.42.10 \
     --hash=sha256:3abe41d76fa533fe82254b4e00812372fd8f240dffd7c0ddd4be34503d1f783f \
     --hash=sha256:adbce9eb21b2f982fc7c8d20a4e1522120f117ff07e3cceb6c4ee1bf714ebba7
-    # via boto3-stubs
+    # via -r packages/cmk-plugins/requirements.in
 mypy-extensions==1.1.0 \
     --hash=sha256:1be4cccdb0f2482337c4743e60421de3a356cd97508abadd57d47403e94f5505 \
     --hash=sha256:52e68efc3284861e772bbcd66823fde5ae21fd2fdb51c62a211403730b916558
@@ -5181,10 +5173,6 @@ typeguard==4.5.0 \
     --hash=sha256:749bea21cdb2553e12831bc29f1eae980b22c7de8331ab67ae7db9e85470b5a7 \
     --hash=sha256:cfda388fc88a9ce42a41890900d6f31ee124bea9b73bb84701a32438e92165c3
     # via inflect
-types-awscrt==0.31.2 \
-    --hash=sha256:3d6a29c1cca894b191be408f4d985a8e3a14d919785652dd3fa4ee558143e4bf \
-    --hash=sha256:dc79705acd24094656b8105b8d799d7e273c8eac37c69137df580cd84beb54f6
-    # via botocore-stubs
 types-docker==7.1.0.20260109 \
     --hash=sha256:001a5a377d3fb287b7279cf4265b8ba3857e7d4203a16ab03e6e512f68f2f3d4 \
     --hash=sha256:b36ef355ec9ba8bf29bcc4e32cc61dd9138ce4d8352c599c8fbc65f1a3e87b57
@@ -5280,10 +5268,6 @@ types-requests==2.32.4.20260107 \
     # via
     #   -r tests/dev-requirements.in
     #   types-docker
-types-s3transfer==0.16.0 \
-    --hash=sha256:1c0cd111ecf6e21437cb410f5cddb631bfb2263b77ad973e79b9c6d0cb24e0ef \
-    --hash=sha256:b4636472024c5e2b62278c5b759661efeb52a81851cde5f092f24100b1ecb443
-    # via boto3-stubs
 types-setuptools==82.0.0.20260210 \
     --hash=sha256:5124a7daf67f195c6054e0f00f1d97c69caad12fdcf9113eba33eff0bce8cd2b \
     --hash=sha256:d9719fbbeb185254480ade1f25327c4654f8c00efda3fec36823379cebcdee58

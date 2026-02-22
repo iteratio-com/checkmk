@@ -424,9 +424,6 @@ KNOWN_UNDECLARED_DEPENDENCIES = {
     ImportName("ibm_db"): {Path("cmk/plugins/sql/active_check/check_sql.py")},
     ImportName("sqlanydb"): {Path("cmk/plugins/sql/active_check/check_sql.py")},
     ImportName("ibm_db_dbi"): {Path("cmk/plugins/sql/active_check/check_sql.py")},
-    ImportName("mypy_boto3_logs"): {  # used by mypy within typing.TYPE_CHECKING
-        Path("cmk/plugins/aws/special_agent/agent_aws.py")
-    },
     ImportName("tinkerforge"): {Path("cmk/plugins/tinkerforge/special_agent/agent_tinkerforge.py")},
     ImportName("rados"): {Path("cmk/plugins/ceph/agents/mk_ceph.py")},
     ImportName("netsnmp"): {  # We ship it with omd/packages

@@ -25,6 +25,47 @@ FAMILIES = [
 ]
 
 py_library(
+    name = "aws",
+    srcs = glob(["cmk/plugins/aws/**/*.py"]),
+    data = glob([
+        "cmk/plugins/aws/checkman/*",
+        "cmk/plugins/aws/libexec/*",
+    ]) + ["cmk/plugins/aws/py.typed"],
+    imports = ["."],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":lib",
+        "//packages/cmk-plugin-apis:agent_based",
+        "//packages/cmk-plugin-apis:graphing",
+        "//packages/cmk-plugin-apis:password_store",
+        "//packages/cmk-plugin-apis:rulesets",
+        "//packages/cmk-plugin-apis:server_side_calls",
+        "//packages/cmk-plugin-apis:server_side_programs",
+        requirement("boto3"),
+        requirement("botocore"),
+        requirement("feedparser"),
+        requirement("mypy-boto3-logs"),
+        requirement("requests"),
+    ],
+)
+
+py_test(
+    name = "aws-test",
+    size = "small",
+    srcs = glob(["tests/cmk/plugins/aws/**/*.py"]) + [":__test__.py"],
+    main = ":__test__.py",
+    deps = [
+        ":__test__",
+        ":aws",
+        requirement("mypy-boto3-logs"),
+        requirement("pytest"),
+        requirement("polyfactory"),
+        requirement("python-dateutil"),
+        requirement("requests"),
+    ],
+)
+
+py_library(
     name = "cisco_prime",
     srcs = glob(["cmk/plugins/cisco_prime/**/*.py"]),
     data = glob([

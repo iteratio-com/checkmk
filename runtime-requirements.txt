@@ -322,13 +322,13 @@ boto3==1.42.49 \
     --hash=sha256:9cd252f640567b86e92b0a8ffdd4ade9a3018ee357c724bff6a21b8c8a41be0c
     # via
     #   -c requirements.txt
-    #   -r cmk/requirements.in
+    #   -r packages/cmk-plugins/requirements.in
 botocore==1.42.49 \
     --hash=sha256:1c33544f72101eed4ccf903ebb667a803e14e25b2af4e0836e4b871da1c0af37 \
     --hash=sha256:333115a64a507697b0c450ade7e2d82bc8b4e21c0051542514532b455712bdcc
     # via
     #   -c requirements.txt
-    #   -r cmk/requirements.in
+    #   -r packages/cmk-plugins/requirements.in
     #   boto3
     #   s3transfer
 build==1.4.0 \
@@ -772,6 +772,7 @@ feedparser==6.0.12 \
     # via
     #   -c requirements.txt
     #   -r cmk/requirements.in
+    #   -r packages/cmk-plugins/requirements.in
 fido2==2.1.1 \
     --hash=sha256:f1379f845870cc7fc64c7f07323c3ce41e8c96c37054e79e0acd5630b3fec5ac \
     --hash=sha256:f85c16c8084abf6530b6c6ec3a0cf8575943321842e06916686943a8b784182c
@@ -1895,6 +1896,12 @@ multidict==6.7.1 \
     #   -c requirements.txt
     #   aiohttp
     #   yarl
+mypy-boto3-logs==1.42.10 \
+    --hash=sha256:3abe41d76fa533fe82254b4e00812372fd8f240dffd7c0ddd4be34503d1f783f \
+    --hash=sha256:adbce9eb21b2f982fc7c8d20a4e1522120f117ff07e3cceb6c4ee1bf714ebba7
+    # via
+    #   -c requirements.txt
+    #   -r packages/cmk-plugins/requirements.in
 mypy-extensions==1.1.0 \
     --hash=sha256:1be4cccdb0f2482337c4743e60421de3a356cd97508abadd57d47403e94f5505 \
     --hash=sha256:52e68efc3284861e772bbcd66823fde5ae21fd2fdb51c62a211403730b916558

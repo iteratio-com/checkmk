@@ -2,8 +2,6 @@ azure-mgmt-resource  # used by the release process to publish the azure image to
 azure-mgmt-compute  # used by the release process to add a new image version
 bandit[toml,sarif]  # linter
 beautifulsoup4  # used by the GUI crawler and various tests
-boto3-stubs[logs]  # used for type checking, keep version in sync with boto3
-botocore-stubs  # used for type checking, keep version in sync with botocore
 bson  # used by test_mk_mongodb unit test
 checkmk-dev-tools  # provides tooling for build artifacts
 datamodel-code-generator  # used for cmk-shared-typing generation

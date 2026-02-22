@@ -17,12 +17,10 @@ REQUIRED_EXTERNAL_DEPS = [
     "azure-identity",
     "azure-storage-blob",
     "bcrypt",
-    "boto3",
-    "botocore",
     "cryptography",
     "docstring-parser",
     "fastapi",
-    "feedparser",
+    "feedparser",  # agent azure status
     "fido2",
     "flask",
     "GitPython",
@@ -39,7 +37,6 @@ REQUIRED_EXTERNAL_DEPS = [
     "marshmallow-oneofschema",
     "meraki",
     "msal",
-    "mypy-boto3-logs",
     "numpy",
     "oauthlib",
     "openapi-spec-validator",
@@ -200,6 +197,7 @@ py_library(
         "//cmk/rrd:cmk_rrd",
         "//cmk/server_side_calls_backend:cmk_server_side_calls_backend",
         "//cmk/utils:cmk_utils",
+        "//packages/cmk-plugins:aws",  # legacy checks + quicksetup
         "//packages/cmk-plugins:graylog",  # via legacy_checks.
     ] + CMK_PACKAGES + [requirement(dep) for dep in REQUIRED_EXTERNAL_DEPS],
 )

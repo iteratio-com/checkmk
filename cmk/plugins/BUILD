@@ -296,8 +296,6 @@ filegroup(
         "alertmanager/libexec/agent_alertmanager",
         "allnet_ip_sensoric/libexec/agent_allnet_ip_sensoric",
         "appdynamics/libexec/agent_appdynamics",
-        "aws/libexec/agent_aws",
-        "aws/libexec/agent_aws_status",
         "azure_deprecated/libexec/agent_azure",
         "azure_status/libexec/agent_azure_status",
         "azure_v2/libexec/agent_azure_v2",
