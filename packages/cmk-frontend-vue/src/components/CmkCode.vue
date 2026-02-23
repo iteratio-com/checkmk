@@ -26,6 +26,7 @@ const { _t } = usei18n()
 const props = defineProps<{
   title?: TranslatedString
   code_txt: string
+  width?: 'default' | 'fill'
 }>()
 
 const TOOLTIP_DISPLAY_DURATION = 8000
@@ -83,13 +84,18 @@ const shouldShowToggle = computed(() => codeLines.value.length > MAX_LINES)
 const toggleExpansion = () => {
   isExpanded.value = !isExpanded.value
 }
+const containerClasses = computed(() => ({
+  'has-toggle': shouldShowToggle.value,
+  expanded: isExpanded.value,
+  'cmk-code__is-wide': props.width === 'fill'
+}))
 </script>
 
 <template>
   <div>
     <CmkHeading v-if="title" type="h4" class="cmk-code__heading">{{ title }}</CmkHeading>
     <div class="code_wrapper">
-      <div class="code_container" :class="{ 'has-toggle': shouldShowToggle, expanded: isExpanded }">
+      <div class="code_container" :class="containerClasses">
         <CmkScrollContainer type="outer" class="code_scroll_container">
           <pre><code v-text="displayedCode"></code></pre>
         </CmkScrollContainer>
@@ -169,6 +175,10 @@ const toggleExpansion = () => {
     min-width: 0;
 
     --scroll-bar-thickness: 20px;
+
+    &.cmk-code__is-wide {
+      width: 100%;
+    }
 
     /* stylelint-disable-next-line checkmk/vue-bem-naming-convention */
     .code_scroll_container {

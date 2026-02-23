@@ -58,6 +58,9 @@ const multilineShortCodeText = `C:\\Program Files (x86)\\checkmk\\service\\cmk-a
     <h2>Multiline short code</h2>
     <br />
     <CmkCode title="Super title" :code_txt="multilineShortCodeText" />
+    <h2>Multiline short code (fill full width of container)</h2>
+    <br />
+    <CmkCode title="Super title" :code_txt="multilineShortCodeText" width="fill" />
   </div>
 </template>
 
