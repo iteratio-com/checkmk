@@ -4,16 +4,23 @@ This file is part of Checkmk (https://checkmk.com). It is subject to the terms a
 conditions defined in the file COPYING, which is part of this source code package.
 -->
 <script setup lang="ts">
-import AccessibilityTable from '@demo/_demo/components/DemoAccessibilityTable.vue'
-import PropertiesPanel from '@demo/_demo/components/DemoPropertiesPanel.vue'
+import {
+  DemoDetailPageAccessibility,
+  DemoDetailPageCodeExample,
+  DemoDetailPageComponent,
+  DemoDetailPageDeveloperPlayground,
+  DemoDetailPageHeader,
+  DemoDetailPageLayout,
+  DemoPropertiesPanel
+} from '@demo/_demo/components/detail-page'
 import { type PanelConfig, createPanelState } from '@demo/_demo/types/prop-panel.ts'
 import { computed, ref } from 'vue'
 
-import CmkCode from '@/components/CmkCode.vue'
 import CmkDropdown from '@/components/CmkDropdown'
 import type { ButtonVariants } from '@/components/CmkDropdown/CmkDropdownButton.vue'
 import type { Suggestions } from '@/components/CmkSuggestions'
-import CmkHeading from '@/components/typography/CmkHeading.vue'
+
+import DemoCmkDropdownDev from './DemoCmkDropdownDev.vue'
 
 defineProps<{ screenshotMode: boolean }>()
 const selectedValue = ref<string | null>(null)
@@ -116,22 +123,33 @@ const dynamicOptions = computed<Suggestions>(() => {
 </script>
 
 <template>
-  <h1>CmkDropDown</h1>
+  <DemoDetailPageLayout>
+    <DemoDetailPageHeader>CmkDropdown</DemoDetailPageHeader>
 
-  <CmkDropdown
-    v-model:selected-option="selectedValue"
-    :options="dynamicOptions"
-    :input-hint="propState.inputHint"
-    :no-results-hint="propState.noResultsHint"
-    :width="propState.width as ButtonVariants['width']"
-    :disabled="propState.disabled"
-    :required="propState.required"
-    label="demo dropdown"
-    :form-validation="propState.formValidation"
-  />
+    <DemoDetailPageComponent>
+      <CmkDropdown
+        v-model:selected-option="selectedValue"
+        :options="dynamicOptions"
+        :input-hint="propState.inputHint"
+        :no-results-hint="propState.noResultsHint"
+        :width="propState.width as ButtonVariants['width']"
+        :disabled="propState.disabled"
+        :required="propState.required"
+        label="demo dropdown"
+        :form-validation="propState.formValidation"
+      />
 
-  <PropertiesPanel v-model="propState" :config="panelConfig" />
-  <CmkHeading level="2">Code Example</CmkHeading>
-  <CmkCode :code_txt="codeExampleCmkDropdown" width="fill"> </CmkCode>
-  <AccessibilityTable :data="a11yDataCmkDropdown" />
+      <template #properties>
+        <DemoPropertiesPanel v-model="propState" :config="panelConfig" />
+      </template>
+    </DemoDetailPageComponent>
+
+    <DemoDetailPageCodeExample :code="codeExampleCmkDropdown" />
+
+    <DemoDetailPageAccessibility :data="a11yDataCmkDropdown" />
+
+    <DemoDetailPageDeveloperPlayground>
+      <DemoCmkDropdownDev :screenshot-mode="screenshotMode" />
+    </DemoDetailPageDeveloperPlayground>
+  </DemoDetailPageLayout>
 </template>
