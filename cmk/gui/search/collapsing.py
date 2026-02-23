@@ -48,8 +48,8 @@ def _collapse_items(
     collapsed_results: list[UnifiedSearchResultItem] = []
     collapsed_result_count = 0
 
-    tr_hostsetup, tr_hostname, tr_hostalias = _("Hosts"), _("Host name"), _("Hostalias")
-    tr_host_keys = frozenset({tr_hostsetup, tr_hostname, tr_hostalias})
+    tr_hostsetup, tr_hostname = _("Hosts"), _("Host name")
+    tr_host_keys = frozenset({tr_hostsetup, tr_hostname})
 
     for _title, group in groupby(results, key=lambda item: item.title):
         host_items: dict[str, UnifiedSearchResultItem] = {}
@@ -59,7 +59,6 @@ def _collapse_items(
         # the sort algorithm. We expect the following (translated) topics:
         #   1. setup host (topic "Hosts")
         #   2. monitoring host (topic "Host name")
-        #   3. optionally: monitoring host alias (topic "Hostalias")
         # to be grouped together and in this order in the unified search result. When that changes,
         # then this functionality will no longer work.
         for item in group:
@@ -68,39 +67,16 @@ def _collapse_items(
             else:
                 other_items.append(item)
 
-        match (
-            host_items.get(tr_hostsetup),
-            host_items.get(tr_hostname),
-            host_items.get(tr_hostalias),
-        ):
-            case (
-                UnifiedSearchResultItem() as setup,
-                UnifiedSearchResultItem() as name,
-                UnifiedSearchResultItem() as alias,
-            ):
-                collapsed_results.append(_collapse_host_items([name, alias], setup))
+        match host_items.get(tr_hostsetup), host_items.get(tr_hostname):
+            case (UnifiedSearchResultItem() as setup, UnifiedSearchResultItem() as monitoring):
+                collapsed_results.append(_collapse_host_items(monitoring, setup))
                 collapsed_result_count += 1
-            case (
-                UnifiedSearchResultItem() as setup,
-                UnifiedSearchResultItem() as name,
-                None,
-            ):
-                collapsed_results.append(_collapse_host_items([name], setup))
-            case (
-                None,
-                UnifiedSearchResultItem() as name,
-                UnifiedSearchResultItem() as alias,
-            ):
-                collapsed_results.append(_collapse_host_items([name, alias]))
-                collapsed_result_count += 1
-            case (
-                None,
-                UnifiedSearchResultItem() as name,
-                None,
-            ):
-                collapsed_results.append(_collapse_host_items([name]))
+            case (None, UnifiedSearchResultItem() as monitoring):
+                collapsed_results.append(_collapse_host_items(monitoring))
+            case (UnifiedSearchResultItem() as setup, None):
+                collapsed_results.append(setup)
             case _:
-                collapsed_results.extend(host_items.values())
+                pass
 
         if other_items:
             collapsed_results.extend(other_items)
@@ -108,7 +84,7 @@ def _collapse_items(
     updated_counts = UnifiedSearchResultCounts(
         total=len(collapsed_results),
         setup=counts.setup,
-        monitoring=counts.monitoring - collapsed_result_count,
+        monitoring=counts.monitoring,
         customize=counts.customize,
     )
 
@@ -116,15 +92,14 @@ def _collapse_items(
 
 
 def _collapse_host_items(
-    monitoring_items: list[UnifiedSearchResultItem],
+    monitoring_item: UnifiedSearchResultItem,
     setup_item: UnifiedSearchResultItem | None = None,
 ) -> UnifiedSearchResultItem:
     return UnifiedSearchResultItem(
-        title=monitoring_items[0].title,
-        target=monitoring_items[0].target,
+        title=monitoring_item.title,
+        target=monitoring_item.target,
         provider=ProviderName.monitoring,
         topic="Hosts",
-        context=", ".join(item.topic for item in monitoring_items),
         inline_buttons=[
             UnifiedSearchResultItemInlineButton(
                 target=setup_item.target,
