@@ -48,11 +48,9 @@ def _collapse_items(
     collapsed_results: list[UnifiedSearchResultItem] = []
     collapsed_result_count = 0
 
-    tr_hostsetup, tr_hostname = _("Hosts"), _("Host name")
-    tr_host_keys = frozenset({tr_hostsetup, tr_hostname})
-
     for _title, group in groupby(results, key=lambda item: item.title):
-        host_items: dict[str, UnifiedSearchResultItem] = {}
+        host_setup_item: UnifiedSearchResultItem | None = None
+        host_monitoring_item: UnifiedSearchResultItem | None = None
         other_items: list[UnifiedSearchResultItem] = []
 
         # WARN: this logic only works because of some assumptions we make about the ordering from
@@ -62,12 +60,14 @@ def _collapse_items(
         # to be grouped together and in this order in the unified search result. When that changes,
         # then this functionality will no longer work.
         for item in group:
-            if item.topic in tr_host_keys:
-                host_items.update({item.topic: item})
+            if item.topic == _("Hosts"):
+                host_setup_item = item
+            elif item.topic == _("Host name"):
+                host_monitoring_item = item
             else:
                 other_items.append(item)
 
-        match host_items.get(tr_hostsetup), host_items.get(tr_hostname):
+        match host_setup_item, host_monitoring_item:
             case (UnifiedSearchResultItem() as setup, UnifiedSearchResultItem() as monitoring):
                 collapsed_results.append(_collapse_host_items(monitoring, setup))
                 collapsed_result_count += 1
