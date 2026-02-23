@@ -128,7 +128,13 @@ search.onSearch((result?: UnifiedSearchResult) => {
   }
 
   void setHistoryResults(result?.get('search-history') as SearchProviderResult<SearchHistoryResult>)
-  void setSearchResults(result?.get('unified') as SearchProviderResult<UnifiedSearchApiResponse>)
+  if (
+    (search.get('unified') as UnifiedSearchProvider).shouldExecuteSearch(
+      searchUtils.query.toQueryLike()
+    )
+  ) {
+    void setSearchResults(result?.get('unified') as SearchProviderResult<UnifiedSearchApiResponse>)
+  }
 })
 
 const searchResult = ref<UnifiedSearchApiResponse>()
@@ -148,6 +154,7 @@ provideSearchUtils(searchUtils)
 searchUtils.onResetSearch(() => {
   setTimeout(() => {
     searchResult.value = undefined
+    searchUtils.input.setProviderValue({ type: 'provider', value: 'all', title: 'all' })
   })
 })
 
