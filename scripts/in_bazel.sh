@@ -11,16 +11,7 @@ limit=${3:-0}
 
 out=$(
     comm -23 \
-        <(
-            find . -type f -name "*.$ext" \
-                -not -path './bazel-*/*' \
-                -not -path './.git/*' \
-                -not -path './.venv/*' \
-                -not -path './doc/*' \
-                -not -path './.claude/*' |
-                sed 's|^\./||' |
-                sort
-        ) \
+        <(git ls-files "*\.$ext" ":!doc/*" | sort) \
         <(
             bazel cquery '
             kind("source file", deps(kind("'"$kind"'", //...)))
