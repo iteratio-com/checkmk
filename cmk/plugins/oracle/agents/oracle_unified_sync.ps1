@@ -21,9 +21,9 @@ if (-not $env:MK_CONFDIR -or -not (Test-Path -Path $env:MK_CONFDIR -PathType Con
     exit 1
 }
 
-if (-not (Test-Path -Path (Join-Path $env:MK_CONFDIR 'oracle.yml') -PathType Leaf)) {
-    Write-Host "Configuration file oracle.yml not found in $env:MK_CONFDIR"
+if (-not (Test-Path -Path (Join-Path $env:MK_CONFDIR 'mk-oracle.yml') -PathType Leaf)) {
+    Write-Host "Configuration file mk-oracle.yml not found in $env:MK_CONFDIR"
     exit 1
 }
 
-& $bin_exe -c $env:MK_CONFDIR/oracle.yml --filter sync
+& $bin_exe -c $env:MK_CONFDIR/mk-oracle.yml --filter sync
