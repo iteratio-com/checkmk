@@ -9,9 +9,11 @@ import PropertiesPanel from '@demo/_demo/components/DemoPropertiesPanel.vue'
 import { type PanelConfig, createPanelState } from '@demo/_demo/types/prop-panel.ts'
 import { computed, ref } from 'vue'
 
+import CmkCode from '@/components/CmkCode.vue'
 import CmkDropdown from '@/components/CmkDropdown'
 import type { ButtonVariants } from '@/components/CmkDropdown/CmkDropdownButton.vue'
 import type { Suggestions } from '@/components/CmkSuggestions'
+import CmkHeading from '@/components/typography/CmkHeading.vue'
 
 defineProps<{ screenshotMode: boolean }>()
 const selectedValue = ref<string | null>(null)
@@ -42,6 +44,33 @@ const a11yDataCmkDropdown = [
       'Moves the active highlight to the previous selectable suggestion in the list, scrolling it into view if necessary.'
   }
 ]
+
+const codeExampleCmkDropdown = `<script setup lang="ts">
+import { ref } from 'vue'
+
+import CmkDropdown from '@/components/CmkDropdown'
+import type { Suggestions } from '@/components/CmkSuggestions'
+
+const selected = ref<string | null>(null)
+const options: Suggestions = {
+  type: 'fixed',
+  suggestions: [
+    { name: '1', title: 'one' },
+    { name: '2', title: 'two' }
+  ]
+}
+<${'/'}script>
+
+<template>
+  <CmkDropdown
+    v-model:selected-option="selected"
+    :options="options"
+    input-hint="some input hint"
+    no-results-hint="no results hint"
+    label="some label"
+    required
+  />
+</template>`
 
 const panelConfig = {
   optionsType: {
@@ -102,5 +131,7 @@ const dynamicOptions = computed<Suggestions>(() => {
   />
 
   <PropertiesPanel v-model="propState" :config="panelConfig" />
+  <CmkHeading level="2">Code Example</CmkHeading>
+  <CmkCode :code_txt="codeExampleCmkDropdown" width="fill"> </CmkCode>
   <AccessibilityTable :data="a11yDataCmkDropdown" />
 </template>
