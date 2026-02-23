@@ -177,7 +177,7 @@ STAGES:
 
     - NAME: "Bazel sanity check"
       COMMAND: |
-          ./scripts/in_bazel.sh "py" "py_binary|py_library|py_test" 28 > ${RESULTS}/results.txt
+          ./scripts/in_bazel.sh "py" "py_binary|py_library|py_test" 27 > ${RESULTS}/results.txt
       RESULT_CHECK_FILE_PATTERN: "results/results.txt"
       BAZEL_LOCKS_AMOUNT: 1
 

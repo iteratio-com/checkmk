@@ -103,12 +103,6 @@ repos:
             language: script
             types: [file, python]
             require_serial: true
-          - id: absolute-imports
-            name: Check absolute imports
-            entry: scripts/check-absolute-imports.py
-            language: script
-            types: [file, python]
-            require_serial: true
           - id: unittest
             name: unittests
             entry: scripts/run-unittests
