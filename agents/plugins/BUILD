@@ -123,8 +123,6 @@ sh_library(
         "nfsexports",
         "nfsexports.solaris",
         "nvidia_smi",
-        "oracle_unified_async",
-        "oracle_unified_sync",
         "runas",
         "smart",
         "smart_posix",
