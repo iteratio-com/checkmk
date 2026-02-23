@@ -1,0 +1,5 @@
+sh_binary(
+    name = "shunit2_bin",
+    srcs = ["shunit2"],
+    visibility = ["//visibility:public"],
+)
