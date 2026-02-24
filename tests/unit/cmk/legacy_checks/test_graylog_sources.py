@@ -9,7 +9,7 @@ import pytest
 
 from cmk.agent_based.v2 import Metric, Result, State, StringTable
 from cmk.checkengine.plugins import AgentBasedPlugins, CheckPlugin, CheckPluginName, SectionName
-from cmk.legacy_includes import graylog
+from cmk.plugins.graylog import lib as graylog
 
 
 @pytest.fixture(name="check")

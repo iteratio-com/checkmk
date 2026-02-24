@@ -11,9 +11,9 @@ import time
 
 from cmk.agent_based.legacy.v0_unstable import check_levels, LegacyCheckDefinition
 from cmk.agent_based.v2 import render
-from cmk.legacy_includes.graylog import (
+from cmk.plugins.graylog.lib import (
+    deserialize_and_merge_json,
     handle_iso_utc_to_localtimestamp,
-    parse_graylog_agent_data,
 )
 
 check_info = {}
@@ -112,7 +112,7 @@ def _handle_readable_output(value):
 
 check_info["graylog_license"] = LegacyCheckDefinition(
     name="graylog_license",
-    parse_function=parse_graylog_agent_data,
+    parse_function=deserialize_and_merge_json,
     service_name="Graylog License",
     discovery_function=discover_graylog_license,
     check_function=check_graylog_license,

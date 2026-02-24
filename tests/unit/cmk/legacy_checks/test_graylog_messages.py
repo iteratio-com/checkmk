@@ -17,7 +17,7 @@ from typing import Any
 import pytest
 
 from cmk.legacy_checks import graylog_messages
-from cmk.legacy_includes import graylog
+from cmk.plugins.graylog import lib as graylog
 
 
 @pytest.fixture
@@ -33,7 +33,7 @@ def test_discovery_graylog_messages() -> None:
         ['{"events": 1000}'],
     ]
 
-    parsed = graylog.parse_graylog_agent_data(info)
+    parsed = graylog.deserialize_and_merge_json(info)
     result = list(graylog_messages.discover_graylog_messages(parsed))
 
     # Should discover one item with None as the item name
@@ -48,7 +48,7 @@ def test_check_graylog_messages(monkeypatch: pytest.MonkeyPatch) -> None:
         ['{"events": 1000}'],
     ]
 
-    parsed = graylog.parse_graylog_agent_data(info)
+    parsed = graylog.deserialize_and_merge_json(info)
     params: dict[str, Any] = {}
 
     # Pre-populate value store to avoid GetRateError on first run

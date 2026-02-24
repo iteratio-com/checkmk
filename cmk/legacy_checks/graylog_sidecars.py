@@ -9,11 +9,12 @@
 
 # mypy: disable-error-code="var-annotated"
 
+import json
 import time
 
 from cmk.agent_based.legacy.v0_unstable import check_levels, LegacyCheckDefinition
 from cmk.agent_based.v2 import render
-from cmk.legacy_includes.graylog import handle_iso_utc_to_localtimestamp, json
+from cmk.plugins.graylog.lib import handle_iso_utc_to_localtimestamp
 
 check_info = {}
 

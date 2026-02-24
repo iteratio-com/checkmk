@@ -18,7 +18,7 @@ from cmk.legacy_checks.graylog_license import (
     check_graylog_license,
     discover_graylog_license,
 )
-from cmk.legacy_includes.graylog import parse_graylog_agent_data
+from cmk.plugins.graylog.lib import deserialize_and_merge_json
 
 
 def test_discovery_graylog_license() -> None:
@@ -28,7 +28,7 @@ def test_discovery_graylog_license() -> None:
         ['{"status": [{"valid": true, "expired": false, "violated": false}]}'],
     ]
 
-    parsed = parse_graylog_agent_data(info)
+    parsed = deserialize_and_merge_json(info)
     result = list(discover_graylog_license(parsed))
 
     # Should discover one item with None as the item name
@@ -45,7 +45,7 @@ def test_check_graylog_license() -> None:
         ],
     ]
 
-    parsed = parse_graylog_agent_data(info)
+    parsed = deserialize_and_merge_json(info)
     params: dict[str, Any] = {}
 
     result = list(check_graylog_license(None, params, parsed))
@@ -83,7 +83,7 @@ def test_check_graylog_license_no_enterprise() -> None:
         ['{"status": []}'],
     ]
 
-    parsed = parse_graylog_agent_data(info)
+    parsed = deserialize_and_merge_json(info)
     params: dict[str, Any] = {"no_enterprise": 1}
 
     result = list(check_graylog_license(None, params, parsed))

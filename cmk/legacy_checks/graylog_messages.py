@@ -7,7 +7,7 @@
 
 
 from cmk.agent_based.legacy.v0_unstable import LegacyCheckDefinition
-from cmk.legacy_includes.graylog import handle_graylog_messages, parse_graylog_agent_data
+from cmk.plugins.graylog.lib import deserialize_and_merge_json, handle_graylog_messages
 
 check_info = {}
 
@@ -32,7 +32,7 @@ def check_graylog_messages(_no_item, params, parsed):
 
 check_info["graylog_messages"] = LegacyCheckDefinition(
     name="graylog_messages",
-    parse_function=parse_graylog_agent_data,
+    parse_function=deserialize_and_merge_json,
     service_name="Graylog Messages",
     discovery_function=discover_graylog_messages,
     check_function=check_graylog_messages,
