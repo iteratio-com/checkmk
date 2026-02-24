@@ -49,7 +49,10 @@ def _get_weighted_index_sorter(query: str) -> Sorter:
         title_ = item.title.lower()
         topic_ = item.topic.lower()
 
-        is_deprecated = is_deprecated_result_item(title_)
+        # TODO: once metadata is factored out of code, introduce a "deprecated" attribute.
+        # NOTE: need to check for both translated and untranslated patterns since some titles are
+        # don't have translations.
+        is_deprecated = any(pattern in title_ for pattern in ("(deprecated)", _("(deprecated)")))
 
         if query_ == title_:
             match_rank = _MatchRank.EXACT_TITLE
@@ -93,12 +96,3 @@ class _MatchRank(enum.IntEnum):
     TITLE_STARTS_WITH_QUERY = 2
     DEFAULT_RANK = 3
     DEPRECATED_RESULT_ITEM = 4
-
-
-# TODO: once metadata is factored out of code, introduce a "deprecated" attribute to result item.
-def is_deprecated_result_item(title: str) -> bool:
-    # NOTE: need to check for both translated and untranslated patterns since some titles are don't
-    # have translations.
-    if any(pattern in title for pattern in ("(deprecated)", _("(deprecated)"))):
-        return True
-    return False
