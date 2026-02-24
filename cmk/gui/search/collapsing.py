@@ -3,6 +3,7 @@
 # This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 # conditions defined in the file COPYING, which is part of this source code package.
 
+import dataclasses
 from collections.abc import Sequence
 from itertools import groupby
 from typing import Protocol
@@ -81,14 +82,7 @@ def _collapse_items(
         if other_items:
             collapsed_results.extend(other_items)
 
-    updated_counts = UnifiedSearchResultCounts(
-        total=len(collapsed_results),
-        setup=counts.setup,
-        monitoring=counts.monitoring,
-        customize=counts.customize,
-    )
-
-    return collapsed_results, updated_counts
+    return collapsed_results, dataclasses.replace(counts, total=len(collapsed_results))
 
 
 def _collapse_host_items(
