@@ -11,9 +11,10 @@ test_cleanup_old_jobs() {
     # arange
     jobdir="$(mktemp -d)"
 
-    # lets create some job that needs to be cleaned up, because the process
-    # name/command does not contain mk-job
-    touch "$jobdir/something.1running"
+    # a running process whose command does not contain mk-job — should be cleaned up
+    sleep 9999 &
+    bg_pid=$!
+    touch "$jobdir/something.${bg_pid}running"
     # this one is no longer running (we don't know the name then, so we don't
     # have to fake it):
     touch "$jobdir/something.$(bash -c 'echo $$')running"
@@ -26,6 +27,7 @@ test_cleanup_old_jobs() {
     assertEquals "3" "$(find "$jobdir" -type f | wc -l)"
 
     cleanup_running_files "$jobdir" "something"
+    kill "$bg_pid" 2>/dev/null
 
     # assert
     assertEquals "1" "$(find "$jobdir" -type f | wc -l)"
