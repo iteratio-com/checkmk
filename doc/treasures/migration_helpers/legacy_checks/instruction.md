@@ -134,13 +134,6 @@ Legacy check plugins use an older, less type-safe API. The migration:
 - **Anti-pattern**: String formatting with `%` or `.format()`
   - **Better**: Use f-strings
 
-### Testing Failures
-
-- **Problem**: Plugin not discovered after migration
-  - **Solution**: Verify `_NOT_YET_MOVED_PLUGINS` is correctly set in Commit 1
-- **Problem**: Tests fail after move to final location
-  - **Solution**: Ensure `_NOT_YET_MOVED_PLUGINS` is reverted in Commit 2
-
 ## Plugin Family Categories
 
 Choose the appropriate family when moving files in Commit 2.
