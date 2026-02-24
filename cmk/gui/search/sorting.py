@@ -49,7 +49,7 @@ def _get_weighted_index_sorter(query: str) -> Sorter:
         title_ = item.title.lower()
         topic_ = item.topic.lower()
 
-        is_deprecated = is_deprecated_result_item(title_, topic_)
+        is_deprecated = is_deprecated_result_item(title_)
 
         if query_ == title_:
             match_rank = _MatchRank.EXACT_TITLE
@@ -96,13 +96,9 @@ class _MatchRank(enum.IntEnum):
 
 
 # TODO: once metadata is factored out of code, introduce a "deprecated" attribute to result item.
-def is_deprecated_result_item(title: str, topic: str) -> bool:
+def is_deprecated_result_item(title: str) -> bool:
     # NOTE: need to check for both translated and untranslated patterns since some titles are don't
     # have translations.
     if any(pattern in title for pattern in ("(deprecated)", _("(deprecated)"))):
-        return True
-    # TODO: this is an expensive check to just satisfy the notification feature. Now that we have a
-    # check for deprecated in the title, let's try and add a deprecated suffix to this entry.
-    if title.startswith("push notifications") and topic == "service monitoring rules":
         return True
     return False
