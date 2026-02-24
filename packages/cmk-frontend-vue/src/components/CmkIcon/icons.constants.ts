@@ -399,6 +399,7 @@ import lightIconQsAwsSvg from '~cmk-frontend/themes/facelift/images/icon_qs_aws.
 import lightIconQsAzureSvg from '~cmk-frontend/themes/facelift/images/icon_qs_azure.svg?url&no-inline'
 import lightIconQsGcpSvg from '~cmk-frontend/themes/facelift/images/icon_qs_gcp.svg?url&no-inline'
 import lightIconQsOtelSvg from '~cmk-frontend/themes/facelift/images/icon_qs_otel.svg?url&no-inline'
+import lightIconQsPrometheusSvg from '~cmk-frontend/themes/facelift/images/icon_qs_prometheus.svg?url&no-inline'
 import lightIconQsRelaySvg from '~cmk-frontend/themes/facelift/images/icon_qs_relay.svg?url&no-inline'
 import lightIconQuickSetupAwsSvg from '~cmk-frontend/themes/facelift/images/icon_quick_setup_aws.svg?url&no-inline'
 import lightIconQuicksearchPng from '~cmk-frontend/themes/facelift/images/icon_quicksearch.png?url&no-inline'
@@ -1169,6 +1170,7 @@ export const unthemedIcons: Partial<Record<IconNames | '2fa' | '2fa-backup-codes
   'qs-azure': lightIconQsAzureSvg,
   'qs-gcp': lightIconQsGcpSvg,
   'qs-otel': lightIconQsOtelSvg,
+  'qs-prometheus': lightIconQsPrometheusSvg,
   'qs-relay': lightIconQsRelaySvg,
   'quick-setup-aws': lightIconQuickSetupAwsSvg,
   quicksearch: lightIconQuicksearchPng,
