@@ -14,11 +14,11 @@ from cmk.agent_based.legacy.v0_unstable import (
     LegacyCheckResult,
 )
 from cmk.agent_based.v2 import render
-from cmk.legacy_includes.wmi import (
+from cmk.plugins.windows.agent_based.libwmi import parse_wmi_table, WMISection
+from cmk.plugins.windows.agent_based.libwmi_legacy import (
     inventory_wmi_table_instances,
     wmi_calculate_raw_average,
 )
-from cmk.plugins.windows.agent_based.libwmi import parse_wmi_table, WMISection
 
 
 def _wmi_filter_global_only(

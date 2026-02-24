@@ -17,7 +17,7 @@ import pytest
 
 from cmk.agent_based.v2 import GetRateError
 from cmk.legacy_checks import msexch_owa
-from cmk.legacy_includes import wmi
+from cmk.plugins.windows.agent_based import libwmi_legacy as wmi
 from cmk.plugins.windows.agent_based.libwmi import parse_wmi_table
 
 

@@ -9,12 +9,12 @@
 from collections.abc import Mapping
 
 from cmk.agent_based.legacy.v0_unstable import LegacyCheckDefinition, LegacyCheckResult
-from cmk.legacy_includes.wmi import (
+from cmk.plugins.windows.agent_based.libwmi import parse_wmi_table, WMISection
+from cmk.plugins.windows.agent_based.libwmi_legacy import (
     inventory_wmi_table_total,
     wmi_yield_raw_counter,
     wmi_yield_raw_persec,
 )
-from cmk.plugins.windows.agent_based.libwmi import parse_wmi_table, WMISection
 
 check_info = {}
 

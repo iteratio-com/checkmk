@@ -7,8 +7,11 @@
 
 
 from cmk.agent_based.legacy.v0_unstable import LegacyCheckDefinition
-from cmk.legacy_includes.wmi import inventory_wmi_table_total, wmi_yield_raw_persec
 from cmk.plugins.windows.agent_based.libwmi import parse_wmi_table
+from cmk.plugins.windows.agent_based.libwmi_legacy import (
+    inventory_wmi_table_total,
+    wmi_yield_raw_persec,
+)
 
 check_info = {}
 

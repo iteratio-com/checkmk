@@ -14,7 +14,8 @@ from cmk.agent_based.legacy.v0_unstable import (
     LegacyCheckResult,
 )
 from cmk.agent_based.v2 import render, StringTable
-from cmk.legacy_includes.wmi import (
+from cmk.plugins.windows.agent_based.libwmi import parse_wmi_table, WMISection, WMITable
+from cmk.plugins.windows.agent_based.libwmi_legacy import (
     get_levels_quadruple,
     inventory_wmi_table_instances,
     inventory_wmi_table_total,
@@ -23,7 +24,6 @@ from cmk.legacy_includes.wmi import (
     wmi_yield_raw_counter,
     wmi_yield_raw_persec,
 )
-from cmk.plugins.windows.agent_based.libwmi import parse_wmi_table, WMISection, WMITable
 
 check_info = {}
 

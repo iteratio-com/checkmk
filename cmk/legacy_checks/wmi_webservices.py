@@ -7,8 +7,11 @@ from collections.abc import Iterable, Mapping
 from typing import Any
 
 from cmk.agent_based.legacy.v0_unstable import LegacyCheckDefinition
-from cmk.legacy_includes.wmi import inventory_wmi_table_instances, wmi_yield_raw_counter
 from cmk.plugins.windows.agent_based.libwmi import parse_wmi_table, WMISection
+from cmk.plugins.windows.agent_based.libwmi_legacy import (
+    inventory_wmi_table_instances,
+    wmi_yield_raw_counter,
+)
 
 check_info: dict[str, Any] = {}
 

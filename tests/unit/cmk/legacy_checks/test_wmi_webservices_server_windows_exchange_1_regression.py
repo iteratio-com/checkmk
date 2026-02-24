@@ -16,7 +16,7 @@ from typing import Any
 import pytest
 
 from cmk.legacy_checks import wmi_webservices
-from cmk.legacy_includes import wmi
+from cmk.plugins.windows.agent_based import libwmi_legacy as wmi
 from cmk.plugins.windows.agent_based.libwmi import parse_wmi_table
 
 
