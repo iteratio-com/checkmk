@@ -11,7 +11,7 @@ from collections.abc import Iterable, Mapping
 
 from cmk.agent_based.legacy.v0_unstable import check_levels, LegacyCheckDefinition
 from cmk.agent_based.v2 import render
-from cmk.legacy_includes.aws import parse_aws
+from cmk.plugins.aws.lib import parse_aws
 
 check_info = {}
 

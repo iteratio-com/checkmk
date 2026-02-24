@@ -11,12 +11,16 @@ from collections.abc import Iterable, Mapping
 from typing import Any
 
 from cmk.agent_based.legacy.v0_unstable import LegacyCheckDefinition
-from cmk.legacy_includes.aws import AWSRegions, inventory_aws_generic, parse_aws
-from cmk.plugins.aws.lib import aws_rds_service_item
+from cmk.legacy_includes.aws import inventory_aws_generic
+from cmk.plugins.aws.constants import AWS_REGIONS
+from cmk.plugins.aws.lib import aws_rds_service_item, parse_aws
 
 check_info = {}
 
 Section = Mapping[str, Any]
+
+
+_REGIONS: Mapping[str, str] = dict(AWS_REGIONS)
 
 
 def parse_aws_rds_summary(string_table):
@@ -96,7 +100,7 @@ def check_aws_rds_summary_db(item, params, parsed):
     if zone is not None:
         region = zone[:-1]
         zone_info = zone[-1]
-        yield 0, f"Availability zone: {AWSRegions[region]} ({zone_info})"
+        yield 0, f"Availability zone: {_REGIONS[region]} ({zone_info})"
 
 
 def discover_aws_rds_summary_db_status(p):

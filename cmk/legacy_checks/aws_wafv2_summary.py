@@ -7,13 +7,16 @@
 # mypy: disable-error-code="type-arg"
 
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 
 from cmk.agent_based.legacy.v0_unstable import LegacyCheckDefinition
-from cmk.legacy_includes.aws import AWSRegions
+from cmk.plugins.aws.constants import AWS_REGIONS
 from cmk.plugins.aws.lib import GenericAWSSection, parse_aws
 
 check_info = {}
+
+
+_REGIONS: Mapping[str, str] = dict(AWS_REGIONS)
 
 
 def discover_aws_wafv2_summary(section: GenericAWSSection) -> Iterable[tuple[None, dict]]:
@@ -26,7 +29,7 @@ def check_aws_wafv2_summary(item, params, parsed):
 
     for web_acl in parsed:
         try:
-            region_key = AWSRegions[web_acl["Region"]]
+            region_key = _REGIONS[web_acl["Region"]]
         except KeyError:
             region_key = web_acl["Region"]  # CloudFront
         web_acls_by_region.setdefault(region_key, {})[web_acl["Name"]] = web_acl

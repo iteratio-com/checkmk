@@ -13,7 +13,7 @@ import pytest
 
 from cmk.agent_based.v2 import StringTable
 from cmk.legacy_checks.aws_ec2_limits import check_aws_ec2_limits, discover_aws_ec2_limits
-from cmk.legacy_includes.aws import parse_aws_limits_generic
+from cmk.plugins.aws.lib import parse_aws_limits_generic
 
 
 @pytest.mark.parametrize(

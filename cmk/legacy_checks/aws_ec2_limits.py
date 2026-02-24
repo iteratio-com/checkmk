@@ -9,7 +9,8 @@
 
 import cmk.plugins.aws.constants as aws_types
 from cmk.agent_based.legacy.v0_unstable import LegacyCheckDefinition
-from cmk.legacy_includes.aws import check_aws_limits, parse_aws_limits_generic
+from cmk.legacy_includes.aws import check_aws_limits
+from cmk.plugins.aws.lib import parse_aws_limits_generic
 
 check_info = {}
 

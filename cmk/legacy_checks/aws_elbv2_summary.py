@@ -7,7 +7,8 @@
 
 
 from cmk.agent_based.legacy.v0_unstable import LegacyCheckDefinition
-from cmk.legacy_includes.aws import check_aws_elb_summary_generic, parse_aws
+from cmk.legacy_includes.aws import check_aws_elb_summary_generic
+from cmk.plugins.aws.lib import parse_aws
 
 check_info = {}
 

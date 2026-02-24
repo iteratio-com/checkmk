@@ -16,7 +16,7 @@ from cmk.legacy_checks.aws_wafv2_limits import (
     check_aws_wafv2_limits,
     discover_aws_wafv2_limits,
 )
-from cmk.legacy_includes.aws import parse_aws_limits_generic
+from cmk.plugins.aws.lib import parse_aws_limits_generic
 
 
 @pytest.mark.parametrize(

@@ -11,11 +11,8 @@ from cmk.agent_based.legacy.v0_unstable import (
     LegacyCheckResult,
     LegacyDiscoveryResult,
 )
-from cmk.legacy_includes.aws import (
-    AWSLimitsByRegion,
-    check_aws_limits,
-    parse_aws_limits_generic,
-)
+from cmk.legacy_includes.aws import check_aws_limits
+from cmk.plugins.aws.lib import AWSLimitsByRegion, parse_aws_limits_generic
 
 check_info = {}
 

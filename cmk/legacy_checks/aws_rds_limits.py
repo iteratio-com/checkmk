@@ -10,7 +10,8 @@ from typing import Any
 
 from cmk.agent_based.legacy.v0_unstable import LegacyCheckDefinition
 from cmk.agent_based.v2 import render
-from cmk.legacy_includes.aws import AWSLimitsByRegion, check_aws_limits, parse_aws
+from cmk.legacy_includes.aws import check_aws_limits
+from cmk.plugins.aws.lib import AWSLimitsByRegion, parse_aws
 
 check_info = {}
 

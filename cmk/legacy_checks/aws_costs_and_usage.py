@@ -11,7 +11,7 @@
 import collections
 
 from cmk.agent_based.legacy.v0_unstable import check_levels, LegacyCheckDefinition
-from cmk.legacy_includes.aws import parse_aws
+from cmk.plugins.aws.lib import parse_aws
 
 check_info = {}
 
