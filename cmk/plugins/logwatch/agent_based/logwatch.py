@@ -114,7 +114,7 @@ def _discovery_make_groups(
     section: logwatch.Section,
 ) -> tuple[Sequence[_Group], Iterable[str]]:
     log_filter = logwatch.LogFileFilter(
-        logwatch.RulesetAccess.logwatch_ec_all(params[0]["host_name"])
+        logwatch.RulesetAccess().logwatch_ec_all(params[0]["host_name"])
     )
     not_forwarded_logs = {
         item for item in logwatch.discoverable_items(section) if not log_filter.is_forwarded(item)
@@ -141,7 +141,7 @@ def check_logwatch_node(
 ) -> CheckResult:
     """fall back to the cluster case with node=None"""
     host_name = params["host_name"]
-    rules_params = logwatch.RulesetAccess.logwatch_rules_all(
+    rules_params = logwatch.RulesetAccess().logwatch_rules_all(
         host_name=host_name, plugin=check_plugin_logwatch, logfile=item
     )
     yield from check_logwatch(item, rules_params, {None: section}, host_name)
@@ -153,7 +153,7 @@ def check_logwatch_cluster(
     section: Mapping[str, logwatch.Section | None],
 ) -> CheckResult:
     host_name = params["host_name"]
-    rules_params = logwatch.RulesetAccess.logwatch_rules_all(
+    rules_params = logwatch.RulesetAccess().logwatch_rules_all(
         host_name=host_name, plugin=check_plugin_logwatch, logfile=item
     )
     yield from check_logwatch(
@@ -303,7 +303,7 @@ def check_logwatch_groups_node(
     section: logwatch.Section,
 ) -> CheckResult:
     """fall back to the cluster case with node=None"""
-    params_rules = logwatch.RulesetAccess.logwatch_rules_all(
+    params_rules = logwatch.RulesetAccess().logwatch_rules_all(
         host_name=params["host_name"],
         plugin=check_plugin_logwatch_groups,
         logfile=item,
@@ -316,7 +316,7 @@ def check_logwatch_groups_cluster(
     params: DiscoveredGroupParams,
     section: Mapping[str, logwatch.Section | None],
 ) -> CheckResult:
-    params_rules = logwatch.RulesetAccess.logwatch_rules_all(
+    params_rules = logwatch.RulesetAccess().logwatch_rules_all(
         host_name=params["host_name"],
         plugin=check_plugin_logwatch_groups,
         logfile=item,

@@ -62,7 +62,7 @@ CHECK_DEFAULT_PARAMETERS: logwatch.PreDictLogwatchEc = {
 
 def discover_group(section: logwatch.Section, params: Mapping[str, str]) -> DiscoveryResult:
     yield from discover_logwatch_ec_common(
-        section, logwatch.RulesetAccess.logwatch_ec_all(params["host_name"]), "groups"
+        section, logwatch.RulesetAccess().logwatch_ec_all(params["host_name"]), "groups"
     )
 
 
@@ -108,7 +108,7 @@ check_plugin_logwatch_ec = CheckPlugin(
 
 def discover_single(section: logwatch.Section, params: Mapping[str, str]) -> DiscoveryResult:
     yield from discover_logwatch_ec_common(
-        section, logwatch.RulesetAccess.logwatch_ec_all(params["host_name"]), "single"
+        section, logwatch.RulesetAccess().logwatch_ec_all(params["host_name"]), "single"
     )
 
 
@@ -350,7 +350,7 @@ def check_logwatch_ec_common(
         lines = _filter_accumulated_lines(parsed, logfile, seen_batches)
 
         # Determine logwatch patterns specifically for this logfile
-        rules_for_this_file = logwatch.RulesetAccess.logwatch_rules_all(
+        rules_for_this_file = logwatch.RulesetAccess().logwatch_rules_all(
             host_name=host_name, plugin=plugin, logfile=logfile
         )
         logfile_reclassify_settings = (

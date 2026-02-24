@@ -22,6 +22,17 @@ from tests.unit.cmk.base.empty_config import EMPTY_CONFIG
 TEST_DISCO_PARAMS = [logwatch_.ParameterLogwatchGroups(host_name="test-host", grouping_patterns=[])]
 
 
+def _patch_config_cache(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        config,
+        config.access_globally_cached_config_cache.__name__,
+        lambda: config.ConfigCache(
+            EMPTY_CONFIG,
+            make_app(edition(paths.omd_root)).get_builtin_host_labels,
+        ),
+    )
+
+
 @pytest.mark.parametrize(
     "group_patterns, filename, expected",
     [
@@ -109,8 +120,11 @@ SECTION1 = logwatch_.Section(
 
 
 def test_discovery_single(monkeypatch: pytest.MonkeyPatch) -> None:
+    _patch_config_cache(monkeypatch)
     monkeypatch.setattr(
-        logwatch_.RulesetAccess, logwatch_.RulesetAccess.logwatch_ec_all.__name__, lambda _host: []
+        logwatch_.RulesetAccess,
+        logwatch_.RulesetAccess.logwatch_ec_all.__name__,
+        lambda self, _host: [],
     )
     assert sorted(
         logwatch.discover_logwatch_single(TEST_DISCO_PARAMS, SECTION1),
@@ -230,14 +244,7 @@ def test_check_logwatch_groups_node(
     expected_result: Iterable[Result],
 ) -> None:
     monkeypatch.setattr(logwatch, "get_value_store", lambda: {})
-    monkeypatch.setattr(
-        config,
-        config.access_globally_cached_config_cache.__name__,
-        lambda: config.ConfigCache(
-            EMPTY_CONFIG,
-            make_app(edition(paths.omd_root)).get_builtin_host_labels,
-        ),
-    )
+    _patch_config_cache(monkeypatch)
     monkeypatch.setattr(
         logwatch_,
         logwatch_.compile_reclassify_params.__name__,
@@ -302,10 +309,11 @@ SECTION2 = logwatch_.Section(
 
 
 def test_logwatch_discover_single_restrict(monkeypatch: pytest.MonkeyPatch) -> None:
+    _patch_config_cache(monkeypatch)
     monkeypatch.setattr(
         logwatch_.RulesetAccess,
         logwatch_.RulesetAccess.logwatch_ec_all.__name__,
-        lambda _host: [{"restrict_logfiles": [".*2"]}],
+        lambda self, _host: [{"restrict_logfiles": [".*2"]}],
     )
     assert sorted(
         logwatch.discover_logwatch_single(TEST_DISCO_PARAMS, SECTION2),
@@ -327,8 +335,11 @@ def test_logwatch_discover_single_groups(monkeypatch: pytest.MonkeyPatch) -> Non
         )
     ]
 
+    _patch_config_cache(monkeypatch)
     monkeypatch.setattr(
-        logwatch_.RulesetAccess, logwatch_.RulesetAccess.logwatch_ec_all.__name__, lambda _host: []
+        logwatch_.RulesetAccess,
+        logwatch_.RulesetAccess.logwatch_ec_all.__name__,
+        lambda self, _host: [],
     )
 
     assert list(logwatch.discover_logwatch_single(params, SECTION2)) == [
@@ -347,8 +358,11 @@ def test_logwatch_discover_groups(monkeypatch: pytest.MonkeyPatch) -> None:
         )
     ]
 
+    _patch_config_cache(monkeypatch)
     monkeypatch.setattr(
-        logwatch_.RulesetAccess, logwatch_.RulesetAccess.logwatch_ec_all.__name__, lambda _host: []
+        logwatch_.RulesetAccess,
+        logwatch_.RulesetAccess.logwatch_ec_all.__name__,
+        lambda self, _host: [],
     )
 
     assert list(logwatch.discover_logwatch_groups(params, SECTION2)) == [

@@ -198,10 +198,11 @@ def test_logwatch_ec_inventory_single(
 ) -> None:
     parsed = parse_logwatch(info)
 
+    _patch_config_cache(monkeypatch)
     monkeypatch.setattr(
         logwatch_.RulesetAccess,
         logwatch_.RulesetAccess.logwatch_ec_all.__name__,
-        lambda _host: fwd_rule,
+        lambda self, _host: fwd_rule,
     )
     actual_result = sorted(
         logwatch_ec.discover_single(parsed, {"host_name": "test-host"}), key=lambda s: s.item or ""
@@ -238,10 +239,11 @@ def test_logwatch_ec_inventory_groups(
 ) -> None:
     parsed = parse_logwatch(info)
 
+    _patch_config_cache(monkeypatch)
     monkeypatch.setattr(
         logwatch_.RulesetAccess,
         logwatch_.RulesetAccess.logwatch_ec_all.__name__,
-        lambda _host: fwd_rule,
+        lambda self, _host: fwd_rule,
     )
     actual_result = list(logwatch_ec.discover_group(parsed, {"host_name": "test-host"}))
     assert actual_result == expected_result

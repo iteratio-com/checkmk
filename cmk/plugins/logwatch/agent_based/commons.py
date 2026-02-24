@@ -23,8 +23,6 @@ from dataclasses import dataclass
 from re import Pattern
 from typing import Any, Literal, NamedTuple, Never, NotRequired, TypedDict
 
-# from cmk.base.config import logwatch_rule will NOT work!
-import cmk.base.config
 from cmk.agent_based.v2 import CheckPlugin, CheckResult, Result, State
 from cmk.base.configlib.servicename import (
     make_final_service_name_config,
@@ -152,13 +150,30 @@ class RulesetAccess:
       (currently the options in EC are only 'group everything' or 'group nothing').
     """
 
+    def __init__(self) -> None:
+        # from cmk.base.config import logwatch_rule will NOT work!
+        # this import is only local so that we can move this class in
+        # the next step without chaning it in *any* way (for better review)
+        # This is a temporary solution.
+        import cmk.base.config
+
+        cc = cmk.base.config.access_globally_cached_config_cache()
+        self._label_manager = cc.label_manager
+        self._matcher = cc.ruleset_matcher
+        self._service_name_config = cc.make_passive_service_name_config(
+            make_final_service_name_config(
+                cc._loaded_config,
+                cc.ruleset_matcher,
+            )
+        )
+        self._logwatch_rules = cmk.base.config.logwatch_rules
+        self._logwatch_ec_rules = cmk.base.config.checkgroup_parameters.get("logwatch_ec", [])
+
     # This is only wishful typing -- but lets assume this is what we get.
-    @staticmethod
     def logwatch_rules_all(
-        *, host_name: str, plugin: CheckPlugin, logfile: str
+        self, *, host_name: str, plugin: CheckPlugin, logfile: str
     ) -> Sequence[ParameterLogwatchRules]:
         host_name = HostName(host_name)
-        cc = cmk.base.config.access_globally_cached_config_cache()
         # We're using the logfile to match the ruleset, not necessarily the "item"
         # (which might be the group). However: the ruleset matcher expects this to be the item.
         # As a result, the following will all fail (hidden in `service_extra_conf`):
@@ -169,36 +184,31 @@ class RulesetAccess:
 
         # Fail #2: Compute the correct service description
         # This will be wrong if the logfile is grouped.
-        service_description = cc.make_passive_service_name_config(
-            make_final_service_name_config(
-                cc._loaded_config,
-                cc.ruleset_matcher,
-            )
-        )(host_name, ServiceID(CheckPluginName(plugin.name), logfile), plugin.service_name)
+        service_description = self._service_name_config(
+            host_name, ServiceID(CheckPluginName(plugin.name), logfile), plugin.service_name
+        )
 
         # Fail #3: Retrieve the configured labels for this service.
         # This might be wrong as a result of #2.
-        service_labels = cc.label_manager.labels_of_service(
+        service_labels = self._label_manager.labels_of_service(
             host_name, service_description, discovered_labels
         )
         # => Matching this rule agains service labels will most likely fail.
-        return cc.ruleset_matcher.get_checkgroup_ruleset_values(
+        return self._matcher.get_checkgroup_ruleset_values(
             host_name,
             logfile,
             service_labels,
-            cmk.base.config.logwatch_rules,  # type: ignore[arg-type]
-            cc.label_manager.labels_of_host,
+            self._logwatch_rules,  # type: ignore[arg-type]
+            self._label_manager.labels_of_host,
         )
 
     # This is only wishful typing -- but lets assume this is what we get.
-    @staticmethod
-    def logwatch_ec_all(host_name: str) -> Sequence[ParameterLogwatchEc]:
+    def logwatch_ec_all(self, host_name: str) -> Sequence[ParameterLogwatchEc]:
         """Isolate the remaining API violation w.r.t. parameters"""
-        cc = cmk.base.config.access_globally_cached_config_cache()
-        return cc.ruleset_matcher.get_host_values_all(
+        return self._matcher.get_host_values_all(
             HostName(host_name),
-            cmk.base.config.checkgroup_parameters.get("logwatch_ec", []),  # type: ignore[arg-type]
-            cc.label_manager.labels_of_host,
+            self._logwatch_ec_rules,  # type: ignore[arg-type]
+            self._label_manager.labels_of_host,
         )
 
 
