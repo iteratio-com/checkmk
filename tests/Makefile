@@ -390,6 +390,24 @@ what-gerrit-makes:
 EXCLUDE_PATTERN_MEDIUM_CHAIN := unit|unit-shell|agent-plugin-unit|qa-test-data
 TEST_DIRS_MEDIUM_CHAIN := $(shell find $(realpath) -mindepth 1 -maxdepth 1 -type d | grep -v -E "/($(EXCLUDE_PATTERN_MEDIUM_CHAIN))$$")
 
+# execute all tests marked for the medium test chain
 test-medium-chain:
 	$(PYTEST) --log-cli-level=INFO -m medium_test_chain \
+	$(TEST_DIRS_MEDIUM_CHAIN)
+
+# just list all tests marked for the medium test chain
+# and write them to a file as lines:
+#   tests/some/directory/test_module.py::test_function_name
+TESTS_MEDIUM_CHAIN_OUTFILE="tests_medium_chain_master.list"
+test-medium-chain-list:
+	$(PYTEST) --log-cli-level=INFO -m medium_test_chain --collect-only -q \
 	$(TEST_DIRS_MEDIUM_CHAIN) \
+	| grep "::" \
+	> $(TESTS_MEDIUM_CHAIN_OUTFILE); \
+	if [ -s $(TESTS_MEDIUM_CHAIN_OUTFILE) ]; then \
+		echo "Written tests to:"; \
+		wc -l $(TESTS_MEDIUM_CHAIN_OUTFILE); \
+	else \
+		echo "No tests found with marker 'medium_test_chain'"; \
+		exit 1; \
+	fi
