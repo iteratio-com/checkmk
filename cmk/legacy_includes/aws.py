@@ -21,7 +21,7 @@ from cmk.agent_based.legacy.v0_unstable import (
 )
 from cmk.agent_based.v2 import IgnoreResultsError, render
 
-AWSRegions = dict(agent_aws_types.AWSRegions)
+AWSRegions = dict(agent_aws_types.AWS_REGIONS)
 
 parse_aws_limits_generic = aws.parse_aws_limits_generic
 parse_aws = aws.parse_aws

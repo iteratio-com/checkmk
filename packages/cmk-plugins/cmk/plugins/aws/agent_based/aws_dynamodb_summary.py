@@ -17,7 +17,7 @@ from cmk.agent_based.v2 import (
     Service,
     State,
 )
-from cmk.plugins.aws.constants import AWSRegions
+from cmk.plugins.aws.constants import AWS_REGIONS
 from cmk.plugins.aws.lib import GenericAWSSection, parse_aws
 
 
@@ -41,7 +41,7 @@ def _build_detail_text_from_tables(tables_by_region: Mapping[str, Mapping], regi
 def check_aws_dynamodb_summary(section: GenericAWSSection) -> CheckResult:
     yield Result(state=State.OK, summary=f"Total number of tables: {len(section)}")
     tables_by_region: dict[str, dict] = {}
-    aws_regions = dict(AWSRegions)
+    aws_regions = dict(AWS_REGIONS)
     for table in section:
         tables_by_region.setdefault(aws_regions[table["Region"]], {})[table["TableName"]] = table
     regions_sorted = sorted(tables_by_region.keys())

@@ -13,7 +13,7 @@ import random
 from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
 from typing import Any, TypedDict
 
-from cmk.plugins.aws.constants import AWSEC2InstTypes
+from cmk.plugins.aws.constants import AWS_EC2_INST_TYPES
 
 #   .--entities------------------------------------------------------------.
 #   |                             _   _ _   _                              |
@@ -1278,7 +1278,7 @@ class EC2DescribeReservedInstancesIB(InstanceBuilder):
             Timestamp("End"),
             Str("FixedPrice"),
             Int("InstanceCount"),
-            Choice("InstanceType", AWSEC2InstTypes),
+            Choice("InstanceType", AWS_EC2_INST_TYPES),
             Choice(
                 "ProductDescription",
                 [
@@ -1650,7 +1650,7 @@ class EC2DescribeSpotInstanceRequestsIB(InstanceBuilder):
                         ],
                     ),
                     Str("ImageId"),
-                    Choice("InstanceType", AWSEC2InstTypes),
+                    Choice("InstanceType", AWS_EC2_INST_TYPES),
                     Str("KernelId"),
                     Str("KeyName"),
                     List(
@@ -1850,7 +1850,7 @@ class EC2DescribeSpotFleetRequestsIB(InstanceBuilder):
                                 ],
                             ),
                             Str("ImageId"),
-                            Choice("InstanceType", AWSEC2InstTypes),
+                            Choice("InstanceType", AWS_EC2_INST_TYPES),
                             Str("KernelId"),
                             Str("KeyName"),
                             Dict("Monitoring", [BoolChoice("Enabled")]),
@@ -1964,7 +1964,7 @@ class EC2DescribeSpotFleetRequestsIB(InstanceBuilder):
                             List(
                                 "Overrides",
                                 [
-                                    Choice("InstanceType", AWSEC2InstTypes),
+                                    Choice("InstanceType", AWS_EC2_INST_TYPES),
                                     Str("SpotPrice"),
                                     Str("SubnetId"),
                                     Str("AvailabilityZone"),
@@ -2049,7 +2049,7 @@ class EC2DescribeInstancesIB(InstanceBuilder):
             Int("AmiLaunchIndex"),
             Str("ImageId"),
             Str("InstanceId"),
-            Choice("InstanceType", AWSEC2InstTypes),
+            Choice("InstanceType", AWS_EC2_INST_TYPES),
             Str("KernelId"),
             Str("KeyName"),
             Timestamp("LaunchTime"),

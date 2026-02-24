@@ -16,7 +16,7 @@ from cmk.rulesets.v1 import Title
 #   '----------------------------------------------------------------------'
 #   .--regions--------------------------------------------------------------
 
-AWSRegions = [
+AWS_REGIONS = [
     # Changes to the right-hand side of this list cause the following user facing changes:
     # - Incompatible: the service name of the check `aws_status`
     # - Compatible: in the summary of check `aws_elb_summary`
@@ -61,7 +61,7 @@ to get all instance types from the API, do something like:
 
 instance_types = []
 
-for region in AWSRegions:
+for region in AWS_REGIONS:
 
     try:
         session = boto3.session.Session(aws_access_key_id=...,
@@ -84,7 +84,7 @@ instance_types = set(instance_types)
 # the first list is the result of the API calls, the second list are instances we had listed before
 # (without using the API) and which are not returned by the API, so they can probably be removed
 
-AWSEC2InstTypes = [
+AWS_EC2_INST_TYPES = [
     "a1.2xlarge",
     "a1.4xlarge",
     "a1.large",
@@ -1007,7 +1007,7 @@ AWSEC2InstTypes = [
     "z1d.xlarge",
 ]
 
-AWSEC2InstFamilies = {
+AWS_EC2_INST_FAMILIES = {
     "f": Title("Running On-Demand F instances"),
     "g": Title("Running On-Demand G instances"),
     "inf": Title("Running On-Demand Inf instances"),
@@ -1017,9 +1017,9 @@ AWSEC2InstFamilies = {
 }
 
 # (On-Demand, Reserved, Spot)
-AWSEC2LimitsDefault = (20, 20, 5)
+AWS_EC2_LIMITS_DEFAULT = (20, 20, 5)
 
-AWSEC2LimitsSpecial = {
+AWS_EC2_LIMITS_SPECIAL = {
     "c4.4xlarge": (10, 20, 5),
     "c4.8xlarge": (5, 20, 5),
     "c5.4xlarge": (10, 20, 5),
@@ -1074,14 +1074,14 @@ AWSEC2LimitsSpecial = {
     "__vcpu": (1152, None, None),
 }
 
-AWSECSQuotaDefaults = {
+AWS_ECS_QUOTA_DEFAULTS = {
     "Clusters per account": 10000,
     "Services per cluster": 5000,
     "Container instances per cluster": 5000,
     "Capacity providers per cluster": 10,
 }
 
-AWSElastiCacheQuotaDefaults = {
+AWS_ELASTICACHE_QUOTA_DEFAULTS = {
     "Nodes per cluster per instance type (Redis cluster mode enabled)": 90,
     "Nodes per Region": 300,
     "Parameter groups per Region": 150,

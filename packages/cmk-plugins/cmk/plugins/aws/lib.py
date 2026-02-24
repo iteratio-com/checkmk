@@ -28,7 +28,7 @@ from cmk.agent_based.v2 import (
     State,
     StringTable,
 )
-from cmk.plugins.aws.constants import AWSRegions
+from cmk.plugins.aws.constants import AWS_REGIONS
 from cmk.plugins.lib.labels import ensure_valid_labels
 
 GenericAWSSection = Sequence[Any]
@@ -413,8 +413,8 @@ def aws_region_to_monitor() -> list[tuple[str, str]]:
         return regionid_display[1]
 
     regions_by_display_order = [
-        *sorted((r for r in AWSRegions if "GovCloud" not in r[1]), key=key),
-        *sorted((r for r in AWSRegions if "GovCloud" in r[1]), key=key),
+        *sorted((r for r in AWS_REGIONS if "GovCloud" not in r[1]), key=key),
+        *sorted((r for r in AWS_REGIONS if "GovCloud" in r[1]), key=key),
     ]
     return [(id_, " | ".join((region, id_))) for id_, region in regions_by_display_order]
 

@@ -20,10 +20,10 @@ from cmk.gui.form_specs.unstable.legacy_converter import (
 )
 from cmk.gui.form_specs.unstable.legacy_converter.generators import TupleLevels
 from cmk.plugins.aws.constants import (  # astrein: disable=cmk-module-layer-violation
-    AWSEC2InstFamilies,
-    AWSEC2InstTypes,
-    AWSEC2LimitsDefault,
-    AWSEC2LimitsSpecial,
+    AWS_EC2_INST_FAMILIES,
+    AWS_EC2_INST_TYPES,
+    AWS_EC2_LIMITS_DEFAULT,
+    AWS_EC2_LIMITS_SPECIAL,
 )
 from cmk.rulesets.v1 import Help, Message, Title
 from cmk.rulesets.v1.form_specs import (
@@ -765,10 +765,10 @@ def _vs_limits_inst_types() -> List:
                     title=Title(inst_type),  # astrein: disable=localization-checker
                     parameter_form=fs_aws_limits(
                         Title("%s instances") % inst_type,
-                        AWSEC2LimitsSpecial.get(inst_type, AWSEC2LimitsDefault)[0],
+                        AWS_EC2_LIMITS_SPECIAL.get(inst_type, AWS_EC2_LIMITS_DEFAULT)[0],
                     ),
                 )
-                for inst_type in AWSEC2InstTypes
+                for inst_type in AWS_EC2_INST_TYPES
             ],
         ),
         title=Title("Set limits and levels for running on-demand instances"),
@@ -785,10 +785,10 @@ def _vs_limits_vcpu_families() -> List:
                     title=fam_name,
                     parameter_form=fs_aws_limits(
                         fam_name,
-                        AWSEC2LimitsSpecial.get("%s_vcpu" % inst_fam, AWSEC2LimitsDefault)[0],
+                        AWS_EC2_LIMITS_SPECIAL.get("%s_vcpu" % inst_fam, AWS_EC2_LIMITS_DEFAULT)[0],
                     ),
                 )
-                for inst_fam, fam_name in AWSEC2InstFamilies.items()
+                for inst_fam, fam_name in AWS_EC2_INST_FAMILIES.items()
             ],
         ),
         title=Title("Set limits and levels for running on-demand vCPUs on instance families"),

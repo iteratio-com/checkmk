@@ -52,13 +52,13 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from cmk.password_store.v1_unstable import parser_add_secret_option, resolve_secret_option
 from cmk.plugins.aws.constants import (
-    AWSEC2InstFamilies,
-    AWSEC2InstTypes,
-    AWSEC2LimitsDefault,
-    AWSEC2LimitsSpecial,
-    AWSECSQuotaDefaults,
-    AWSElastiCacheQuotaDefaults,
-    AWSRegions,
+    AWS_EC2_INST_FAMILIES,
+    AWS_EC2_INST_TYPES,
+    AWS_EC2_LIMITS_DEFAULT,
+    AWS_EC2_LIMITS_SPECIAL,
+    AWS_ECS_QUOTA_DEFAULTS,
+    AWS_ELASTICACHE_QUOTA_DEFAULTS,
+    AWS_REGIONS,
 )
 from cmk.server_side_programs.v1_unstable import report_agent_crashes, Storage, vcrtrace
 
@@ -1310,7 +1310,7 @@ class EC2Limits(AWSSectionLimits):
             q["QuotaName"]: q["Value"]
             for q in quotas
             if q["QuotaName"]
-            in {name.localize(lambda x: x) for name in AWSEC2InstFamilies.values()}
+            in {name.localize(lambda x: x) for name in AWS_EC2_INST_FAMILIES.values()}
         }
 
         self._add_instance_limits(
@@ -1362,16 +1362,16 @@ class EC2Limits(AWSSectionLimits):
                     continue
                 ondemand_limits[inst_type] = ondemand_limits.get(inst_type, 0) + ondemand
 
-        dflt_ondemand_limit, _reserved_limit1, _spot_limit1 = AWSEC2LimitsDefault
+        dflt_ondemand_limit, _reserved_limit1, _spot_limit1 = AWS_EC2_LIMITS_DEFAULT
         total_instances = 0
         for inst_type, count in ondemand_limits.items():
-            ondemand_limit, _reserved_limit, _spot_limit = AWSEC2LimitsSpecial.get(
-                inst_type, AWSEC2LimitsDefault
+            ondemand_limit, _reserved_limit, _spot_limit = AWS_EC2_LIMITS_SPECIAL.get(
+                inst_type, AWS_EC2_LIMITS_DEFAULT
             )
             if inst_type.endswith("_vcpu"):
                 # Maybe should raise instead of unknown family
                 try:
-                    inst_fam_name = AWSEC2InstFamilies[inst_type[0]].localize(lambda x: x)
+                    inst_fam_name = AWS_EC2_INST_FAMILIES[inst_type[0]].localize(lambda x: x)
                 except KeyError:
                     inst_fam_name = "Unknown Instance Family"
                 ondemand_limit = instance_quotas.get(inst_fam_name, ondemand_limit)
@@ -1421,7 +1421,9 @@ class EC2Limits(AWSSectionLimits):
             )
 
             vcount = inst["CpuOptions"]["CoreCount"] * inst["CpuOptions"]["ThreadsPerCore"]
-            vcpu_family = "%s_vcpu" % (inst_type[0] if inst_type[0] in AWSEC2InstFamilies else "_")
+            vcpu_family = "%s_vcpu" % (
+                inst_type[0] if inst_type[0] in AWS_EC2_INST_FAMILIES else "_"
+            )
             inst_limits[inst_az][vcpu_family] = inst_limits[inst_az].get(vcpu_family, 0) + vcount
         return inst_limits
 
@@ -1431,7 +1433,7 @@ class EC2Limits(AWSSectionLimits):
             if res_inst["State"] != "active":
                 continue
             inst_type = res_inst["InstanceType"]
-            if inst_type not in AWSEC2InstTypes:
+            if inst_type not in AWS_EC2_INST_TYPES:
                 logging.info("%s: Unknown instance type '%s'", self.name, inst_type)
                 continue
 
@@ -5972,7 +5974,7 @@ class ECSLimits(AWSSectionLimits):
             if quota_name == quota.QuotaName:
                 return int(quota.Value)
 
-        return AWSECSQuotaDefaults[quota_name]
+        return AWS_ECS_QUOTA_DEFAULTS[quota_name]
 
     def _compute_content(
         self, raw_content: AWSRawContent, colleague_contents: AWSColleagueContents
@@ -6293,7 +6295,7 @@ class ElastiCacheLimits(AWSSectionLimits):
         for quota in quotas:
             if quota_name == quota.QuotaName:
                 return int(quota.Value)
-        return AWSElastiCacheQuotaDefaults[quota_name]
+        return AWS_ELASTICACHE_QUOTA_DEFAULTS[quota_name]
 
     def _compute_content(
         self, raw_content: AWSRawContent, colleague_contents: AWSColleagueContents
@@ -7138,7 +7140,7 @@ class AWSServiceAttributes(NamedTuple):
     limits: bool
 
 
-AWSServices = [
+AWS_SERVICES = [
     AWSServiceAttributes(
         key="ce",
         title="Costs and usage",
@@ -7336,19 +7338,19 @@ def parse_arguments(argv: Sequence[str] | None) -> argparse.Namespace:
     parser.add_argument(
         "--regions",
         nargs="+",
-        help="Regions to use:\n%s" % "\n".join(["%-15s %s" % e for e in AWSRegions]),
+        help="Regions to use:\n%s" % "\n".join(["%-15s %s" % e for e in AWS_REGIONS]),
     )
     parser.add_argument(
         "--global-services",
         nargs="+",
         help="Global services to monitor:\n%s"
-        % "\n".join(["%-15s %s" % (e.key, e.title) for e in AWSServices if e.global_service]),
+        % "\n".join(["%-15s %s" % (e.key, e.title) for e in AWS_SERVICES if e.global_service]),
     )
     parser.add_argument(
         "--services",
         nargs="+",
         help="Services per region to monitor:\n%s"
-        % "\n".join(["%-15s %s" % (e.key, e.title) for e in AWSServices if not e.global_service]),
+        % "\n".join(["%-15s %s" % (e.key, e.title) for e in AWS_SERVICES if not e.global_service]),
     )
     parser.add_argument(
         "--s3-requests",
@@ -7401,7 +7403,7 @@ def parse_arguments(argv: Sequence[str] | None) -> argparse.Namespace:
     )
     group_import_tags.set_defaults(tag_key_pattern=TagsImportPatternOption.import_all)
 
-    for service in AWSServices:
+    for service in AWS_SERVICES:
         if service.filter_by_names:
             parser.add_argument(
                 "--%s-names" % service.key, nargs="+", help="Names for %s" % service.title
@@ -7558,7 +7560,7 @@ def _sanitize_aws_services_params(
     if r_aws_services is not None:
         aws_service_keys = aws_service_keys.union(r_aws_services)
 
-    aws_services_map = {e.key: e for e in AWSServices}
+    aws_services_map = {e.key: e for e in AWS_SERVICES}
     global_services = []
     regional_services = []
     for service_key in aws_service_keys:

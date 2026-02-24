@@ -14,11 +14,11 @@ from cmk.legacy_includes.aws import check_aws_limits, parse_aws_limits_generic
 check_info = {}
 
 default_running_ondemand_instances = [
-    (inst_type, (None, 80.0, 90.0)) for inst_type in aws_types.AWSEC2InstTypes
+    (inst_type, (None, 80.0, 90.0)) for inst_type in aws_types.AWS_EC2_INST_TYPES
 ]
 
 default_running_ondemand_instance_families = [
-    ("%s_vcpu" % inst_fam, (None, 80.0, 90.0)) for inst_fam in aws_types.AWSEC2InstFamilies
+    ("%s_vcpu" % inst_fam, (None, 80.0, 90.0)) for inst_fam in aws_types.AWS_EC2_INST_FAMILIES
 ]
 
 

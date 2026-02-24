@@ -10,7 +10,7 @@ from cmk.plugins.aws.agent_based.aws_dynamodb_summary import (
     check_aws_dynamodb_summary,
     discover_aws_dynamodb_summary,
 )
-from cmk.plugins.aws.constants import AWSRegions
+from cmk.plugins.aws.constants import AWS_REGIONS
 
 test_section = [
     {
@@ -59,7 +59,7 @@ def test_discover_aws_dynamodb_summary():
 
 def test_check_aws_dynamodb_summary():
     check_results = list(check_aws_dynamodb_summary(test_section))
-    aws_regions = dict(AWSRegions)
+    aws_regions = dict(AWS_REGIONS)
 
     table_count_result = check_results[0]
     assert isinstance(table_count_result, Result)
