@@ -5,15 +5,20 @@
 #
 # comNET GmbH, Fabian Binder - 2018-05-07
 
-# mypy: disable-error-code="no-untyped-def"
-
 from typing import NamedTuple
 
-from cmk.agent_based.legacy.v0_unstable import LegacyCheckDefinition
-from cmk.agent_based.v2 import SNMPTree, StringTable
+from cmk.agent_based.v2 import (
+    CheckPlugin,
+    CheckResult,
+    DiscoveryResult,
+    Result,
+    Service,
+    SimpleSNMPSection,
+    SNMPTree,
+    State,
+    StringTable,
+)
 from cmk.plugins.cisco.lib_ucs import DETECT, MAP_OPERABILITY
-
-check_info = {}
 
 
 class Section(NamedTuple):
@@ -35,18 +40,18 @@ def parse_cisco_ucs_raid(string_table: StringTable) -> Section | None:
     )
 
 
-def discover_cisco_ucs_raid(section):
-    yield None, {}
+def discover_cisco_ucs_raid(section: Section) -> DiscoveryResult:
+    yield Service()
 
 
-def check_cisco_ucs_raid(_no_item, _no_params, section):
-    yield section.state, f"Status: {section.operability}"
-    yield 0, f"Model: {section.model}"
-    yield 0, f"Vendor: {section.vendor}"
-    yield 0, f"Serial number: {section.serial}"
+def check_cisco_ucs_raid(section: Section) -> CheckResult:
+    yield Result(state=State(section.state), summary=f"Status: {section.operability}")
+    yield Result(state=State.OK, summary=f"Model: {section.model}")
+    yield Result(state=State.OK, summary=f"Vendor: {section.vendor}")
+    yield Result(state=State.OK, summary=f"Serial number: {section.serial}")
 
 
-check_info["cisco_ucs_raid"] = LegacyCheckDefinition(
+snmp_section_cisco_ucs_raid = SimpleSNMPSection(
     name="cisco_ucs_raid",
     detect=DETECT,
     fetch=SNMPTree(
@@ -54,6 +59,10 @@ check_info["cisco_ucs_raid"] = LegacyCheckDefinition(
         oids=["5", "7", "14", "17"],
     ),
     parse_function=parse_cisco_ucs_raid,
+)
+
+check_plugin_cisco_ucs_raid = CheckPlugin(
+    name="cisco_ucs_raid",
     service_name="RAID Controller",
     discovery_function=discover_cisco_ucs_raid,
     check_function=check_cisco_ucs_raid,
