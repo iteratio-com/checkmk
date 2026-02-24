@@ -17,9 +17,23 @@ from cmk.agent_based.v2 import render
 from cmk.legacy_includes.wmi import (
     inventory_wmi_table_instances,
     wmi_calculate_raw_average,
-    wmi_filter_global_only,
 )
 from cmk.plugins.windows.agent_based.libwmi import parse_wmi_table, WMISection
+
+
+def _wmi_filter_global_only(
+    tables: WMISection,
+    row: str | int,
+) -> bool:
+    for table in tables.values():
+        try:
+            value = table.get(row, "Name")
+        except KeyError:
+            return False
+        if value != "_Global_":
+            return False
+    return True
+
 
 check_info = {}
 
@@ -43,7 +57,7 @@ def check_dotnet_clrmemory(
 
 
 def discover_dotnet_clrmemory(parsed):
-    return inventory_wmi_table_instances(parsed, filt=wmi_filter_global_only, levels={})
+    return inventory_wmi_table_instances(parsed, filt=_wmi_filter_global_only, levels={})
 
 
 check_info["dotnet_clrmemory"] = LegacyCheckDefinition(

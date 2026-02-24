@@ -52,20 +52,6 @@ from cmk.plugins.windows.agent_based.libwmi import (
 #   '----------------------------------------------------------------------'
 
 
-def wmi_filter_global_only(
-    tables: WMISection,
-    row: str | int,
-) -> bool:
-    for table in tables.values():
-        try:
-            value = table.get(row, "Name")
-        except KeyError:
-            return False
-        if value != "_Global_":
-            return False
-    return True
-
-
 # .
 #   .--Inventory-----------------------------------------------------------.
 #   |            ___                      _                                |
