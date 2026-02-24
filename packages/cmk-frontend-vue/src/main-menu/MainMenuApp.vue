@@ -77,7 +77,6 @@ function navElClick(e: MouseEvent) {
         :hide-item-title="props.hide_item_title"
         :active="mainMenu.isNavItemActive(item.id)"
         @click.stop="onClick(item.id)"
-        @mouseover="mainMenu.navigateIfAnyNavItemIsActive(item.id)"
       />
       <div class="mm-app__key-hint-wrapper">
         <CmkButton
@@ -103,7 +102,6 @@ function navElClick(e: MouseEvent) {
         :hide-item-title="props.hide_item_title"
         :active="mainMenu.isNavItemActive(item.id)"
         @click.stop="onClick(item.id)"
-        @mouseover="mainMenu.navigateIfAnyNavItemIsActive(item.id)"
       />
       <SidebarToggle :hide-item-title="props.hide_item_title" />
     </ul>
