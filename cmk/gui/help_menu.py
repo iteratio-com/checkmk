@@ -234,6 +234,14 @@ def default_about_checkmk_entries() -> list[NavItemTopicEntry]:
             sort_index=30,
             icon=DefaultIcon(id=IconNames.checkmk_logo_min),
         ),
+        NavItemTopicEntry(
+            id="product_usage_analytics_manifest",
+            title=_("Product usage analytics manifest"),
+            url="https://analytics.checkmk.com/manifest",
+            target="_blank",
+            sort_index=40,
+            icon=DefaultIcon(id=IconNames.checkmk_logo_min),
+        ),
     ]
 
 
