@@ -127,7 +127,16 @@ search.onSearch((result?: UnifiedSearchResult) => {
     }
   }
 
-  void setHistoryResults(result?.get('search-history') as SearchProviderResult<SearchHistoryResult>)
+  if (
+    (search.get('search-history') as UnifiedSearchProvider).shouldExecuteSearch(
+      searchUtils.query.toQueryLike()
+    )
+  ) {
+    void setHistoryResults(
+      result?.get('search-history') as SearchProviderResult<SearchHistoryResult>
+    )
+  }
+
   if (
     (search.get('unified') as UnifiedSearchProvider).shouldExecuteSearch(
       searchUtils.query.toQueryLike()
@@ -154,6 +163,7 @@ provideSearchUtils(searchUtils)
 searchUtils.onResetSearch(() => {
   setTimeout(() => {
     searchResult.value = undefined
+    historyResult.value = undefined
     searchUtils.input.setProviderValue({ type: 'provider', value: 'all', title: 'all' })
   })
 })
