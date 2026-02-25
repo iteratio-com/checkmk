@@ -11,12 +11,10 @@ Checkmk follows a modular architecture with several key components:
 - **cmk/base/**: Core monitoring engine, configuration handling, and host management
 - **cmk/gui/**: Web interface and user interaction components
 - **cmk/checkengine/**: Check execution framework and result processing
-- **cmk/fetchers/**: Data fetching mechanisms (SNMP, agent, piggyback, etc.)
 - **cmk/plugins/**: Monitoring plugins and check implementations
 - **cmk/utils/**: Shared utilities and helper functions
 - **cmk/piggyback/**: Piggyback data handling for host relationships
 - **cmk/rrd/**: RRD database interactions for metrics storage
-- **cmk/ec/**: Event Console for log monitoring and correlation
 - ...
 
 ### Supporting Components
@@ -42,6 +40,8 @@ The `packages/` directory contains independent subprojects, each with its own `r
 - **cmk-mkp-tool/**: MKP (Monitoring Knowledge Package) management
 - **cmk-events/**: Event processing and notification handling
 - **cmk-plugin-apis/**: API definitions for plugin development
+- **cmk-ec/**: Event Console for log monitoring and correlation
+- **cmk-check-engine/**: Data fetching mechanisms (SNMP, agent, piggyback, etc.) and checking
 
 #### Frontend Packages
 
