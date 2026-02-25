@@ -28,8 +28,10 @@ from cmk.agent_based.v2 import (
 )
 from cmk.base import config
 from cmk.base.app import make_app
+from cmk.base.configlib.logwatch import RulesetAccess
 from cmk.ccc.hostaddress import HostName
 from cmk.ccc.version import edition
+from cmk.logwatch.config import ParameterLogwatchEc
 from cmk.plugins.logwatch.agent_based import commons as logwatch_
 from cmk.plugins.logwatch.agent_based import logwatch_ec
 from cmk.plugins.logwatch.agent_based.logwatch_section import parse_logwatch
@@ -91,7 +93,7 @@ SECTION1 = logwatch_.Section(
     },
 )
 
-DEFAULT_TEST_PARAMETERS = logwatch_.ParameterLogwatchEc(
+DEFAULT_TEST_PARAMETERS = ParameterLogwatchEc(
     {
         **logwatch_ec.CHECK_DEFAULT_PARAMETERS,
         "service_level": 10,
@@ -200,8 +202,8 @@ def test_logwatch_ec_inventory_single(
 
     _patch_config_cache(monkeypatch)
     monkeypatch.setattr(
-        logwatch_.RulesetAccess,
-        logwatch_.RulesetAccess.logwatch_ec_all.__name__,
+        RulesetAccess,
+        RulesetAccess.logwatch_ec_all.__name__,
         lambda self, _host: fwd_rule,
     )
     actual_result = sorted(
@@ -241,8 +243,8 @@ def test_logwatch_ec_inventory_groups(
 
     _patch_config_cache(monkeypatch)
     monkeypatch.setattr(
-        logwatch_.RulesetAccess,
-        logwatch_.RulesetAccess.logwatch_ec_all.__name__,
+        RulesetAccess,
+        RulesetAccess.logwatch_ec_all.__name__,
         lambda self, _host: fwd_rule,
     )
     actual_result = list(logwatch_ec.discover_group(parsed, {"host_name": "test-host"}))
@@ -293,7 +295,7 @@ class _FakeForwarder:
 )
 def test_check_logwatch_ec_common_single_node(
     item: str | None,
-    params: logwatch_.ParameterLogwatchEc,
+    params: ParameterLogwatchEc,
     parsed: logwatch_.ClusterSection,
     expected_result: CheckResult,
     monkeypatch: pytest.MonkeyPatch,
@@ -501,7 +503,7 @@ def test_check_logwatch_ec_common_multiple_nodes_grouped(
 )
 @pytest.mark.skip("Flaky test - will be re-enabled with CMK-17338")
 def test_check_logwatch_ec_common_multiple_nodes_ungrouped(
-    params: logwatch_.ParameterLogwatchEc,
+    params: ParameterLogwatchEc,
     cluster_section: logwatch_.ClusterSection,
     expected_result: CheckResult,
 ) -> None:

@@ -13,6 +13,7 @@ from pytest_mock import MockerFixture
 from cmk.agent_based.v2 import Result, Service, State
 from cmk.base import config
 from cmk.base.app import make_app
+from cmk.base.configlib.logwatch import RulesetAccess
 from cmk.ccc.version import edition
 from cmk.plugins.logwatch.agent_based import commons as logwatch_
 from cmk.plugins.logwatch.agent_based import logwatch
@@ -122,8 +123,8 @@ SECTION1 = logwatch_.Section(
 def test_discovery_single(monkeypatch: pytest.MonkeyPatch) -> None:
     _patch_config_cache(monkeypatch)
     monkeypatch.setattr(
-        logwatch_.RulesetAccess,
-        logwatch_.RulesetAccess.logwatch_ec_all.__name__,
+        RulesetAccess,
+        RulesetAccess.logwatch_ec_all.__name__,
         lambda self, _host: [],
     )
     assert sorted(
@@ -311,8 +312,8 @@ SECTION2 = logwatch_.Section(
 def test_logwatch_discover_single_restrict(monkeypatch: pytest.MonkeyPatch) -> None:
     _patch_config_cache(monkeypatch)
     monkeypatch.setattr(
-        logwatch_.RulesetAccess,
-        logwatch_.RulesetAccess.logwatch_ec_all.__name__,
+        RulesetAccess,
+        RulesetAccess.logwatch_ec_all.__name__,
         lambda self, _host: [{"restrict_logfiles": [".*2"]}],
     )
     assert sorted(
@@ -337,8 +338,8 @@ def test_logwatch_discover_single_groups(monkeypatch: pytest.MonkeyPatch) -> Non
 
     _patch_config_cache(monkeypatch)
     monkeypatch.setattr(
-        logwatch_.RulesetAccess,
-        logwatch_.RulesetAccess.logwatch_ec_all.__name__,
+        RulesetAccess,
+        RulesetAccess.logwatch_ec_all.__name__,
         lambda self, _host: [],
     )
 
@@ -360,8 +361,8 @@ def test_logwatch_discover_groups(monkeypatch: pytest.MonkeyPatch) -> None:
 
     _patch_config_cache(monkeypatch)
     monkeypatch.setattr(
-        logwatch_.RulesetAccess,
-        logwatch_.RulesetAccess.logwatch_ec_all.__name__,
+        RulesetAccess,
+        RulesetAccess.logwatch_ec_all.__name__,
         lambda self, _host: [],
     )
 

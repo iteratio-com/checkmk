@@ -1,0 +1,42 @@
+#!/usr/bin/env python3
+# Copyright (C) 2019 Checkmk GmbH - License: GNU General Public License v2
+# This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
+# conditions defined in the file COPYING, which is part of this source code package.
+
+
+from collections.abc import Mapping, Sequence
+from typing import Literal, Never, NotRequired, TypedDict
+
+# Watch out! Matching the 'logwatch_rules' ruleset against labels will not
+# work as expected, if logfiles are grouped!
+NEVER_DISCOVER_SERVICE_LABELS: Sequence[Never] = ()
+
+
+SyslogConfig = tuple[Literal["tcp"], dict] | tuple[Literal["udp"], dict]  # type: ignore[type-arg]
+
+
+class CommonLogwatchEc(TypedDict):
+    activation: NotRequired[bool]
+    method: NotRequired[Literal["", "spool:"] | str | SyslogConfig]
+    facility: NotRequired[int]
+    restrict_logfiles: NotRequired[list[str]]
+    monitor_logfilelist: NotRequired[bool]
+    expected_logfiles: NotRequired[list[str]]
+    logwatch_reclassify: NotRequired[bool]
+    monitor_logfile_access_state: NotRequired[Literal[0, 1, 2, 3]]
+    separate_checks: NotRequired[bool]
+
+
+class ParameterLogwatchEc(CommonLogwatchEc):
+    """Parameters as created by the 'logwatch_ec' ruleset"""
+
+    service_level: int
+    host_name: str
+
+
+StateMap = Mapping[Literal["c_to", "w_to", "o_to", "._to"], Literal["C", "W", "O", "I", "."]]
+
+
+class ParameterLogwatchRules(TypedDict):
+    reclassify_patterns: list[tuple[Literal["C", "W", "O", "I"], str, str]]
+    reclassify_states: NotRequired[StateMap]

@@ -37,9 +37,15 @@ from cmk.agent_based.v2 import (
     Service,
     State,
 )
+from cmk.base.configlib.logwatch import RulesetAccess
 from cmk.ccc.hostaddress import HostName
 from cmk.ec.event import create_event_from_syslog_message
 from cmk.ec.syslog import forward_to_unix_socket, SyslogMessage
+from cmk.logwatch.config import (
+    CommonLogwatchEc,
+    NEVER_DISCOVER_SERVICE_LABELS,
+    ParameterLogwatchEc,
+)
 
 from . import commons as logwatch
 
@@ -62,13 +68,11 @@ CHECK_DEFAULT_PARAMETERS: logwatch.PreDictLogwatchEc = {
 
 def discover_group(section: logwatch.Section, params: Mapping[str, str]) -> DiscoveryResult:
     yield from discover_logwatch_ec_common(
-        section, logwatch.RulesetAccess().logwatch_ec_all(params["host_name"]), "groups"
+        section, RulesetAccess().logwatch_ec_all(params["host_name"]), "groups"
     )
 
 
-def check_logwatch_ec(
-    params: logwatch.ParameterLogwatchEc, section: logwatch.Section
-) -> CheckResult:
+def check_logwatch_ec(params: ParameterLogwatchEc, section: logwatch.Section) -> CheckResult:
     # fall back to the cluster case with None as node name.
     yield from check_logwatch_ec_common(
         None,
@@ -81,7 +85,7 @@ def check_logwatch_ec(
 
 
 def cluster_check_logwatch_ec(
-    params: logwatch.ParameterLogwatchEc, section: Mapping[str, logwatch.Section | None]
+    params: ParameterLogwatchEc, section: Mapping[str, logwatch.Section | None]
 ) -> CheckResult:
     yield from check_logwatch_ec_common(
         None,
@@ -108,13 +112,13 @@ check_plugin_logwatch_ec = CheckPlugin(
 
 def discover_single(section: logwatch.Section, params: Mapping[str, str]) -> DiscoveryResult:
     yield from discover_logwatch_ec_common(
-        section, logwatch.RulesetAccess().logwatch_ec_all(params["host_name"]), "single"
+        section, RulesetAccess().logwatch_ec_all(params["host_name"]), "single"
     )
 
 
 def check_logwatch_ec_single(
     item: str,
-    params: logwatch.ParameterLogwatchEc,
+    params: ParameterLogwatchEc,
     section: logwatch.Section,
 ) -> CheckResult:
     # fall back to the cluster case with None as node name.
@@ -130,7 +134,7 @@ def check_logwatch_ec_single(
 
 def cluster_check_logwatch_ec_single(
     item: str,
-    params: logwatch.ParameterLogwatchEc,
+    params: ParameterLogwatchEc,
     section: Mapping[str, logwatch.Section | None],
 ) -> CheckResult:
     # fall back to the cluster case with None as node name.
@@ -174,9 +178,9 @@ def logwatch_to_prio(level: str) -> int:
 
 
 def _logwatch_inventory_mode_rules(
-    forward_settings: Sequence[logwatch.ParameterLogwatchEc],
-) -> tuple[Literal["no", "single", "groups"], logwatch.CommonLogwatchEc]:
-    merged_rules: logwatch.CommonLogwatchEc = {}
+    forward_settings: Sequence[ParameterLogwatchEc],
+) -> tuple[Literal["no", "single", "groups"], CommonLogwatchEc]:
+    merged_rules: CommonLogwatchEc = {}
     for rule in forward_settings[-1::-1]:
         merged_rules.update(rule)
 
@@ -190,7 +194,7 @@ def _logwatch_inventory_mode_rules(
 
 def discover_logwatch_ec_common(
     section: logwatch.Section,
-    params: Sequence[logwatch.ParameterLogwatchEc],
+    params: Sequence[ParameterLogwatchEc],
     use_mode: str,
 ) -> DiscoveryResult:
     log_filter = logwatch.LogFileFilter(params)
@@ -208,11 +212,11 @@ def discover_logwatch_ec_common(
     if mode == "groups":
         yield Service(
             parameters={"expected_logfiles": sorted(forwarded_logs)},
-            labels=logwatch.NEVER_DISCOVER_SERVICE_LABELS,
+            labels=NEVER_DISCOVER_SERVICE_LABELS,
         )
         return
 
-    single_log_params = logwatch.CommonLogwatchEc()
+    single_log_params = CommonLogwatchEc()
     for key in [
         "activation",
         "method",
@@ -228,7 +232,7 @@ def discover_logwatch_ec_common(
         yield Service(
             item=log,
             parameters=single_log_params.copy(),
-            labels=logwatch.NEVER_DISCOVER_SERVICE_LABELS,
+            labels=NEVER_DISCOVER_SERVICE_LABELS,
         )
 
 
@@ -287,7 +291,7 @@ def _filter_accumulated_lines(
 
 def check_logwatch_ec_common(
     item: str | None,
-    params: logwatch.ParameterLogwatchEc,
+    params: ParameterLogwatchEc,
     parsed: logwatch.ClusterSection,
     plugin: CheckPlugin,
     *,
@@ -350,7 +354,7 @@ def check_logwatch_ec_common(
         lines = _filter_accumulated_lines(parsed, logfile, seen_batches)
 
         # Determine logwatch patterns specifically for this logfile
-        rules_for_this_file = logwatch.RulesetAccess().logwatch_rules_all(
+        rules_for_this_file = RulesetAccess().logwatch_rules_all(
             host_name=host_name, plugin=plugin, logfile=logfile
         )
         logfile_reclassify_settings = (

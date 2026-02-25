@@ -23,6 +23,7 @@ py_library(
         "//cmk/core_client:cmk_core_client",
         "//cmk/diagnostics:cmk_diagnostics",
         "//cmk/inventory:cmk_inventory",
+        "//cmk/logwatch:config",
         "//cmk/piggyback:backend",
         "//cmk/rrd:cmk_rrd",
         "//cmk/server_side_calls_backend:cmk_server_side_calls_backend",

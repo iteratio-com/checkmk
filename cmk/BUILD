@@ -564,6 +564,7 @@ py_wheel(
         "//cmk/inventory:cmk_inventory",
         "//cmk/legacy_checks:cmk_legacy_checks",
         "//cmk/legacy_includes:cmk_legacy_includes",
+        "//cmk/logwatch:config",
         "//cmk/notification_plugins:cmk_notification_plugins",
         "//cmk/piggyback:backend",
         "//cmk/piggyback:hub",

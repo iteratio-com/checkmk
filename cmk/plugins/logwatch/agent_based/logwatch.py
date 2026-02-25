@@ -43,6 +43,11 @@ from cmk.agent_based.v2 import (
     Service,
     State,
 )
+from cmk.base.configlib.logwatch import RulesetAccess
+from cmk.logwatch.config import (
+    NEVER_DISCOVER_SERVICE_LABELS,
+    ParameterLogwatchRules,
+)
 from cmk.plugins.lib import eval_regex
 
 from . import commons as logwatch
@@ -82,9 +87,7 @@ def discover_logwatch_single(
     section: logwatch.Section,
 ) -> DiscoveryResult:
     _groups, singles = _discovery_make_groups(params, section)
-    yield from (
-        Service(item=item, labels=logwatch.NEVER_DISCOVER_SERVICE_LABELS) for item in singles
-    )
+    yield from (Service(item=item, labels=NEVER_DISCOVER_SERVICE_LABELS) for item in singles)
 
 
 def discover_logwatch_groups(
@@ -96,7 +99,7 @@ def discover_logwatch_groups(
         Service(
             item=group.name,
             parameters={"group_patterns": sorted(group.patterns)},
-            labels=logwatch.NEVER_DISCOVER_SERVICE_LABELS,
+            labels=NEVER_DISCOVER_SERVICE_LABELS,
         )
         for group in groups
     )
@@ -113,9 +116,7 @@ def _discovery_make_groups(
     params: Sequence[logwatch.ParameterLogwatchGroups],
     section: logwatch.Section,
 ) -> tuple[Sequence[_Group], Iterable[str]]:
-    log_filter = logwatch.LogFileFilter(
-        logwatch.RulesetAccess().logwatch_ec_all(params[0]["host_name"])
-    )
+    log_filter = logwatch.LogFileFilter(RulesetAccess().logwatch_ec_all(params[0]["host_name"]))
     not_forwarded_logs = {
         item for item in logwatch.discoverable_items(section) if not log_filter.is_forwarded(item)
     }
@@ -141,7 +142,7 @@ def check_logwatch_node(
 ) -> CheckResult:
     """fall back to the cluster case with node=None"""
     host_name = params["host_name"]
-    rules_params = logwatch.RulesetAccess().logwatch_rules_all(
+    rules_params = RulesetAccess().logwatch_rules_all(
         host_name=host_name, plugin=check_plugin_logwatch, logfile=item
     )
     yield from check_logwatch(item, rules_params, {None: section}, host_name)
@@ -153,7 +154,7 @@ def check_logwatch_cluster(
     section: Mapping[str, logwatch.Section | None],
 ) -> CheckResult:
     host_name = params["host_name"]
-    rules_params = logwatch.RulesetAccess().logwatch_rules_all(
+    rules_params = RulesetAccess().logwatch_rules_all(
         host_name=host_name, plugin=check_plugin_logwatch, logfile=item
     )
     yield from check_logwatch(
@@ -166,7 +167,7 @@ def check_logwatch_cluster(
 
 def check_logwatch(
     item: str,
-    params: Sequence[logwatch.ParameterLogwatchRules],
+    params: Sequence[ParameterLogwatchRules],
     section: ClusterSection,
     host_name: str,
 ) -> CheckResult:
@@ -303,7 +304,7 @@ def check_logwatch_groups_node(
     section: logwatch.Section,
 ) -> CheckResult:
     """fall back to the cluster case with node=None"""
-    params_rules = logwatch.RulesetAccess().logwatch_rules_all(
+    params_rules = RulesetAccess().logwatch_rules_all(
         host_name=params["host_name"],
         plugin=check_plugin_logwatch_groups,
         logfile=item,
@@ -316,7 +317,7 @@ def check_logwatch_groups_cluster(
     params: DiscoveredGroupParams,
     section: Mapping[str, logwatch.Section | None],
 ) -> CheckResult:
-    params_rules = logwatch.RulesetAccess().logwatch_rules_all(
+    params_rules = RulesetAccess().logwatch_rules_all(
         host_name=params["host_name"],
         plugin=check_plugin_logwatch_groups,
         logfile=item,
@@ -329,7 +330,7 @@ def check_logwatch_groups_cluster(
 def check_logwatch_groups(
     item: str,
     params: DiscoveredGroupParams,
-    params_rules: Sequence[logwatch.ParameterLogwatchRules],
+    params_rules: Sequence[ParameterLogwatchRules],
     section: ClusterSection,
 ) -> CheckResult:
     yield from logwatch.check_errors(section)
