@@ -89,7 +89,10 @@ def _is_summary_format(string_table: StringTable) -> bool:
     return False
 
 
-def _aggregate_disk_usage(existing: DiskUsage, new: DiskUsage) -> DiskUsage:
+def _aggregate_disk_usage(existing: DiskUsage | None, new: DiskUsage) -> DiskUsage:
+    if existing is None:
+        return new
+
     return DiskUsage(
         size=existing.size + new.size,
         reclaimable_size=(
@@ -108,8 +111,7 @@ def _parse_summary_format(string_table: StringTable) -> Mapping[str, DiskUsage]:
         data = json.loads(line[0])
         entries = data if isinstance(data, list) else [data]
         for entry in entries:
-            type_key = _SUMMARY_TYPE_MAP.get(entry.get("Type", ""))
-            if type_key is None:
+            if not (type_key := _SUMMARY_TYPE_MAP.get(entry.get("Type"))):
                 continue
             usage = DiskUsage(
                 size=float(entry.get("RawSize", 0)),
@@ -117,10 +119,7 @@ def _parse_summary_format(string_table: StringTable) -> Mapping[str, DiskUsage]:
                 total_number=int(entry.get("Total", 0)),
                 active_number=int(entry.get("Active", 0)),
             )
-            if type_key in aggregated:
-                aggregated[type_key] = _aggregate_disk_usage(aggregated[type_key], usage)
-            else:
-                aggregated[type_key] = usage
+            aggregated[type_key] = _aggregate_disk_usage(aggregated.get(type_key), usage)
     return aggregated
 
 
