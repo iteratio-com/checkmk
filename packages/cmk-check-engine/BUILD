@@ -40,6 +40,7 @@ py_library(
     srcs = [
         "cmk/helper_interface/__init__.py",
         "cmk/helper_interface/_agentdatatype.py",
+        "cmk/helper_interface/_crashreporting.py",
         "cmk/helper_interface/_exceptions.py",
         "cmk/helper_interface/_source_info.py",
     ],
@@ -47,6 +48,7 @@ py_library(
     imports = ["."],
     visibility = ["//visibility:public"],
     deps = [
+        "//packages/cmk-ccc:crash-reporting",
         "//packages/cmk-ccc:hostaddress",
     ],
 )
