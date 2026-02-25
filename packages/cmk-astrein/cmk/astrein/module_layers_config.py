@@ -885,6 +885,7 @@ COMPONENTS: Mapping[Component, ImportCheckerProtocol] = {
         "cmk.utils.typing_helpers",
         "cmk.utils.urls",
         "cmk.utils.visuals",
+        "cmk.utils.jsontype",
         exclude=("cmk.gui.plugins", "cmk.gui.nonfree.pro.plugins"),
     ),
     Component("cmk.gui.nonfree.ultimate"): _allow(

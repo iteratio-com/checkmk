@@ -5,22 +5,27 @@
  */
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen } from '@testing-library/vue'
-import { type GraphLines, type GraphOptions } from 'cmk-shared-typing/typescript/graph_designer'
+import { type GraphLines } from 'cmk-shared-typing/typescript/graph_designer'
 import { HttpResponse, http } from 'msw'
 import { setupServer } from 'msw/node'
 
 import { initializeComponentRegistry } from '@/form/private/FormEditDispatcher/dispatch'
 
 import GraphDesignerApp from '@/graph-designer/GraphDesignerApp.vue'
+import { type AjaxGraph } from '@/graph-designer/private/graph.ts'
 
 initializeComponentRegistry()
 
-async function fakeGraphRenderer(
-  _graphId: string,
-  _graphLines: GraphLines,
-  _graphOptions: GraphOptions,
-  _container: HTMLDivElement
-) {
+const server = setupServer(
+  http.post('ajax_fetch_ajax_graph.py', () => {
+    return HttpResponse.json({ result_code: 0, result: {} })
+  })
+)
+
+beforeAll(() => server.listen({ onUnhandledRequest: 'bypass' }))
+afterAll(() => server.close())
+
+async function fakeGraphRenderer(_ajaxGraph: AjaxGraph, _container: HTMLDivElement) {
   return
 }
 
@@ -519,9 +524,7 @@ test.each(graphLineTypesExceptQuery)(
 )
 
 describe('Adding a Query graph line', { timeout: 10_000 }, () => {
-  let worker: ReturnType<typeof setupServer>
-
-  beforeAll(async () => {
+  beforeAll(() => {
     async function autocompleteInterceptor({
       params
     }: {
@@ -558,18 +561,16 @@ describe('Adding a Query graph line', { timeout: 10_000 }, () => {
       })
     }
 
-    worker = setupServer(
+    server.use(
       http.post(
         `${location.protocol}//${location.host}/api/1.0/objects/autocomplete/:autocompleter`,
         autocompleteInterceptor
       )
     )
-
-    worker.listen({ onUnhandledRequest: 'bypass' })
   })
 
   afterAll(() => {
-    worker.close()
+    server.resetHandlers()
   })
 
   test.skip('works as expected', async () => {
