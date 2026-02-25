@@ -754,6 +754,7 @@ COMPONENTS: Mapping[Component, ImportCheckerProtocol] = {
         "cmk.check_helper_protocol",
         "cmk.relay_fetcher_trigger",
         "cmk.metric_backend.fetcher.agent_otel",
+        "cmk.relay_trigger_protocol",
     ),
     Component("cmk.gui.cmkcert"): _allow(
         *PACKAGE_CCC,
@@ -1264,6 +1265,7 @@ COMPONENTS: Mapping[Component, ImportCheckerProtocol] = {
         "cmk.fetcher_encoder",
         "cmk.helper_interface",
         "cmk.snmplib",
+        "cmk.relay_trigger_protocol",
     ),
     Component("cmk.testlib.agent_receiver"): _allow(
         "cmk.agent_receiver",
@@ -1469,6 +1471,7 @@ COMPONENTS: Mapping[Component, ImportCheckerProtocol] = {
         "cmk.relay_fetcher_trigger",
         "cmk.snmplib",
         "cmk.utils",
+        "cmk.relay_trigger_protocol",
     ),
     Component("tests.unit.cmk.diagnostics"): _allow(
         "cmk.diagnostics",
@@ -1544,6 +1547,12 @@ COMPONENTS: Mapping[Component, ImportCheckerProtocol] = {
         *PACKAGE_LIVESTATUS_CLIENT,
         "cmk.piggyback",
         "cmk.utils",
+    ),
+    Component("cmk.relay_trigger_protocol"): _allow(
+        *PACKAGE_CCC,
+        "cmk.check_helper_protocol",
+        "cmk.helper_interface",
+        "cmk.snmplib",
     ),
 }
 
