@@ -94,10 +94,6 @@ make -C tests test-gui-e2e
 
 ### Module Organization
 
-- **cmk.base**: Core monitoring functionality, not GUI-dependent
-- **cmk.gui**: Web interface and user-facing components
-- **cmk.utils**: Shared utilities accessible across components
-- **cmk.ec**: Event Console functionality
 - Component isolation enforced - GUI cannot import base internals
 
 ### Python Standards
