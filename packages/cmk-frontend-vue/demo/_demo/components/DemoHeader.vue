@@ -8,7 +8,7 @@ conditions defined in the file COPYING, which is part of this source code packag
 import { ref } from 'vue'
 
 import iconUrl from '../assets/images/checkmk_logo.svg'
-import DemoGlobalStyles from './DemoGlobalStyles.vue'
+import DemoGlobalTheme from './DemoGlobalTheme.vue'
 
 const selectedTheme = ref<'facelift' | 'modern-dark'>('facelift')
 </script>
@@ -22,7 +22,7 @@ const selectedTheme = ref<'facelift' | 'modern-dark'>('facelift')
       </div>
     </div>
     <div class="demo-header__item">
-      <DemoGlobalStyles v-model:theme="selectedTheme" />
+      <DemoGlobalTheme v-model:theme="selectedTheme" />
     </div>
   </div>
 </template>

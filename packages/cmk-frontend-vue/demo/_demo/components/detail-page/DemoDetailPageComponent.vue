@@ -3,7 +3,9 @@ Copyright (C) 2026 Checkmk GmbH - License: GNU General Public License v2
 This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 conditions defined in the file COPYING, which is part of this source code package.
 -->
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import DemoLegacyCssSwitch from './DemoLegacyCssSwitch.vue'
+</script>
 
 <template>
   <div class="demo-detail-page-component__component-container">
@@ -12,6 +14,7 @@ conditions defined in the file COPYING, which is part of this source code packag
     </div>
     <div class="demo-detail-page-component__properties-panel">
       <slot name="properties"></slot>
+      <DemoLegacyCssSwitch></DemoLegacyCssSwitch>
     </div>
   </div>
 </template>

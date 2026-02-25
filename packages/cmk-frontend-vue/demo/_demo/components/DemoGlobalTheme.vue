@@ -27,23 +27,14 @@ const selectedThemeModel = computed({
   set: (newTheme: Theme) => setTheme(newTheme)
 })
 
-async function setCss() {
-  const url = (await import(`~cmk-frontend/themes/${currentTheme.value}/theme.css?url`)).default
-  const linkEl = document.getElementById('cmk-theming-stylesheet')
-  if (linkEl instanceof HTMLLinkElement) {
-    linkEl.href = url
-  }
-}
-
 function applyThemeToBody(name: Theme) {
   document.body!.dataset['theme'] = name
 }
 
 immediateWatch(
   () => currentTheme.value,
-  async (name) => {
-    await setCss()
-    await applyThemeToBody(name as Theme)
+  (name) => {
+    applyThemeToBody(name as Theme)
   }
 )
 

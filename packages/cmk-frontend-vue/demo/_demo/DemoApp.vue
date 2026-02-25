@@ -12,6 +12,9 @@ import { useRoute } from 'vue-router'
 import DemoFooter from './components/DemoFooter.vue'
 import DemoHeader from './components/DemoHeader.vue'
 import DemoNavigation from './components/DemoNavigation.vue'
+import { useLegacyCss } from './composables/useLegacyCss'
+
+useLegacyCss()
 
 const currentRoute = useRoute()
 const screenshotMode = ref(currentRoute.query.screenshot === 'true')
