@@ -6,6 +6,7 @@
 import { Folder, Page } from '@demo/_demo/types/page'
 
 import { pages as formSpecPages } from '../form'
+import DemoCmkTag from './DemoCmkTag.vue'
 import DemoCmkBadge from './basic-elements/DemoCmkBadge.vue'
 import DemoCmkButton from './basic-elements/DemoCmkButton.vue'
 import DemoCmkChip from './basic-elements/DemoCmkChip.vue'
@@ -59,7 +60,8 @@ const basicElementsPages = [
   new Page('CmkChip', DemoCmkChip),
   new Page('CmkCode', DemoCmkCode),
   new Page('CmkColorPicker', DemoCmkColorPicker),
-  new Page('CmkSwitch', DemoCmkSwitch)
+  new Page('CmkSwitch', DemoCmkSwitch),
+  new Page('CmkTag', DemoCmkTag)
 ]
 
 const contentOrganizationPages = [
