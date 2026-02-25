@@ -2871,6 +2871,10 @@ msgstr "AIX"
 msgid "AI assistance"
 msgstr "Instantie"
 
+#, fuzzy
+msgid "AI features"
+msgstr "Herstel starten"
+
 msgid "AIX"
 msgstr "AIX"
 
@@ -4200,11 +4204,7 @@ msgid "Add OID descriptions"
 msgstr "OID-beschrijvingen toevoegen"
 
 #, fuzzy
-msgid "Add OpenTelemetry Collector Prometheus scraping configuration"
-msgstr "Nieuwe gebruikersconfiguratie toevoegen"
-
-#, fuzzy
-msgid "Add OpenTelemetry Collector receiver configuration"
+msgid "Add OpenTelemetry Collector configuration"
 msgstr "Nieuwe gebruikersconfiguratie toevoegen"
 
 #, fuzzy
@@ -4213,6 +4213,10 @@ msgstr "Nieuwe gebruikersconfiguratie toevoegen"
 
 msgid "Add Prefix"
 msgstr "Voorvoegsel toevoegen"
+
+#, fuzzy
+msgid "Add Prometheus scraper configuration"
+msgstr "Configuratie toestand toevoegen"
 
 #, fuzzy
 msgid "Add Relay configuration"
@@ -16504,7 +16508,7 @@ msgid "Consumed load balancer capacity units"
 msgstr "Verbruikte Load Balancer-capaciteitseenheden"
 
 #, fuzzy
-msgid "Consumer count is the size of connected consumers to a queue"
+msgid "Consumer count is the number of connected consumers to a queue"
 msgstr ""
 "Consumententelling is de grootte van het aantal aangesloten consumenten op "
 "een wachtrij"
@@ -18335,6 +18339,11 @@ msgstr "Customcheck"
 
 msgid "Custom checks - defined via rule"
 msgstr "Aangepaste controles - gedefinieerd via regels"
+
+msgid ""
+"Custom endpoint URL for S3-compatible storage services (e.g., Backblaze B2). "
+"Leave empty to use the default AWS S3 endpoint."
+msgstr ""
 
 msgid "Custom event limit"
 msgstr "Aangepaste gebeurtenislimiet"
@@ -24271,6 +24280,10 @@ msgstr "Activeer 'Uitvoeren als <b>Lokale groep</b>' voor scripts"
 msgid "Enable 'Run As <b>User</b>' for scripts"
 msgstr "Activeer 'Uitvoeren als <b>Gebruiker</b>' voor scripts"
 
+#, fuzzy
+msgid "Enable AI-based explanations"
+msgstr "Inschakelen replicatie"
+
 msgid "Enable Caching"
 msgstr "Caching inschakelen"
 
@@ -24401,6 +24414,12 @@ msgstr "Meldingen loggen inschakelen"
 #, fuzzy
 msgid "Enable notifications?"
 msgstr "meldingen inschakelen"
+
+msgid ""
+"Enable or disable the 'Explain with AI' feature globally. When set to yes, "
+"all users will have access to the 'Explain with AI' button. Disabling this "
+"means that no data is sent to the AI provider."
+msgstr ""
 
 #, fuzzy
 msgid "Enable package"
@@ -24754,6 +24773,10 @@ msgstr "Beëindigd"
 
 msgid "Endpoint"
 msgstr "Eindpunt"
+
+#, fuzzy
+msgid "Endpoint URL (optional)"
+msgstr "Commentaar (facultatief)"
 
 #, fuzzy
 msgid "Endpoints to monitor"
@@ -44489,10 +44512,6 @@ msgstr ""
 msgid "Miscellaneous"
 msgstr "Diversen"
 
-#, python-format
-msgid "Mismatching owner in `%s` mode."
-msgstr ""
-
 #, fuzzy
 msgid "Misplaced Objects"
 msgstr "Beheerde objecten"
@@ -49251,6 +49270,12 @@ msgstr "OAuth2 (ClientID/TenantID)"
 msgid "OAuth2 connection"
 msgstr "Aansluiting toevoegen"
 
+#, python-format
+msgid "OAuth2 connection '%s' is still being used by this rule: %s"
+msgid_plural "OAuth2 connection '%s' is still being used by these rules: %s"
+msgstr[0] ""
+msgstr[1] ""
+
 #, fuzzy
 msgid "OAuth2 connection ID"
 msgstr "Aansluiting toevoegen"
@@ -50110,27 +50135,15 @@ msgid "OpenTelemetry Collector"
 msgstr "Configuratie toestand toevoegen"
 
 #, fuzzy
-msgid "OpenTelemetry Collector Prometheus scraping configurations"
-msgstr "Configuratie toestand toevoegen"
-
-#, fuzzy
 msgid "OpenTelemetry Collector configuration"
 msgstr "Configuratie toestand toevoegen"
 
 #, fuzzy
+msgid "OpenTelemetry Collector configurations"
+msgstr "Configuratie toestand toevoegen"
+
+#, fuzzy
 msgid "OpenTelemetry Collector memory limit"
-msgstr "Configuratie toestand toevoegen"
-
-#, fuzzy
-msgid "OpenTelemetry Collector receiver configurations"
-msgstr "Configuratie toestand toevoegen"
-
-#, fuzzy
-msgid "OpenTelemetry Collector: Prometheus scraping"
-msgstr "Configuratie toestand toevoegen"
-
-#, fuzzy
-msgid "OpenTelemetry Collector: Receiver"
 msgstr "Configuratie toestand toevoegen"
 
 #, fuzzy
@@ -55298,8 +55311,12 @@ msgid "Prometheus custom services"
 msgstr "Prometheus aangepaste diensten"
 
 #, fuzzy
-msgid "Prometheus scraping"
+msgid "Prometheus scraper"
 msgstr "Alertmanager"
+
+#, fuzzy
+msgid "Prometheus scraper configurations"
+msgstr "Configuratie toestand toevoegen"
 
 #, fuzzy
 msgid "Prometheus targets"
@@ -56143,6 +56160,10 @@ msgstr "RabbitMQ vhosts"
 
 msgid "Radial layout"
 msgstr "Radiale indeling"
+
+#, fuzzy
+msgid "Radio channel"
+msgstr "Snelheid van verandering"
 
 msgid "Raid controllers from Areca"
 msgstr "Raid controllers van Areca"
@@ -57178,6 +57199,12 @@ msgstr "Vertraging:"
 #, fuzzy
 msgid "Relay configuration"
 msgstr "configuratie"
+
+#, fuzzy
+msgid "Relay configuration can only be managed from the central site."
+msgstr ""
+"Check_MK kan alleen op de centrale site van de beheerder worden "
+"geconfigureerd."
 
 #, fuzzy
 msgid "Relay configurations"
@@ -63150,6 +63177,10 @@ msgstr "Toon meer"
 #, fuzzy
 msgid "Show object type"
 msgstr "Geen objecttype"
+
+#, fuzzy
+msgid "Show only aggregation differences"
+msgstr "Toon alleen deze aggregatie"
 
 msgid "Show only modified settings"
 msgstr "Toon alleen gewijzigde instellingen"
@@ -75383,6 +75414,10 @@ msgstr ""
 
 msgid "This name will be used in the description of the service"
 msgstr "Deze naam zal worden gebruikt in de beschrijving van de dienst"
+
+#, fuzzy
+msgid "This node has nested aggregation differences."
+msgstr "De gevraagde BI-aggregatie bestaat niet."
 
 msgid "This node is not in the frozen aggregation"
 msgstr "Dit knooppunt zit niet in de bevroren aggregatie"
@@ -94713,9 +94748,6 @@ msgstr "minder tonen"
 msgid "show more"
 msgstr "meer laten zien"
 
-msgid "show only problems"
-msgstr "laat alleen problemen zien"
-
 msgid "signing"
 msgstr "ondertekening"
 
@@ -95301,6 +95333,10 @@ msgstr "Dashboard"
 #, fuzzy
 msgid "Review applied filters."
 msgstr "Toegepaste filters:"
+
+#, fuzzy
+msgid "Not available on shared dashboards"
+msgstr "U mag dashboards niet bewerken."
 
 msgid ""
 "Due to a limitation in how Checkmk handles metrics internally, the results "
@@ -97307,6 +97343,10 @@ msgid "Download and install"
 msgstr "Gedownloade Agent"
 
 #, fuzzy
+msgid "This requires the generation of a download token."
+msgstr "Met deze toestemming kan elke bestaande host worden geregistreerd."
+
+#, fuzzy
 msgid "Next step: Register agent"
 msgstr "Ontvanger"
 
@@ -98131,10 +98171,6 @@ msgstr "Group Werks by"
 msgid "Add your first host"
 msgstr "Regel toevoegen voor huidige host"
 
-#, fuzzy
-msgid "This requires the generation of a download token."
-msgstr "Met deze toestemming kan elke bestaande host worden geregistreerd."
-
 msgid "View your newly added host"
 msgstr ""
 
@@ -98655,6 +98691,33 @@ msgstr ""
 msgid ""
 "You can still access it later via Help > Learning Checkmk > Welcome page"
 msgstr ""
+
+#, fuzzy
+#~ msgid "Add OpenTelemetry Collector Prometheus scraping configuration"
+#~ msgstr "Nieuwe gebruikersconfiguratie toevoegen"
+
+#, fuzzy
+#~ msgid "Add OpenTelemetry Collector receiver configuration"
+#~ msgstr "Nieuwe gebruikersconfiguratie toevoegen"
+
+#, fuzzy
+#~ msgid "OpenTelemetry Collector Prometheus scraping configurations"
+#~ msgstr "Configuratie toestand toevoegen"
+
+#, fuzzy
+#~ msgid "OpenTelemetry Collector receiver configurations"
+#~ msgstr "Configuratie toestand toevoegen"
+
+#, fuzzy
+#~ msgid "OpenTelemetry Collector: Prometheus scraping"
+#~ msgstr "Configuratie toestand toevoegen"
+
+#, fuzzy
+#~ msgid "OpenTelemetry Collector: Receiver"
+#~ msgstr "Configuratie toestand toevoegen"
+
+#~ msgid "show only problems"
+#~ msgstr "laat alleen problemen zien"
 
 #, fuzzy
 #~ msgid "Authentication mode"
@@ -99552,10 +99615,6 @@ msgstr ""
 #~ "U hebt nog geen agent <a href='%s'>signature keys</a> aangemaakt. Dit is "
 #~ "nodig."
 
-#, fuzzy
-#~ msgid "Prometheus scrape configurations"
-#~ msgstr "Configuratie toestand toevoegen"
-
 #, python-format
 #~ msgid "do not activate this %s"
 #~ msgstr "activeer deze %s niet"
@@ -100086,10 +100145,6 @@ msgstr ""
 #, fuzzy
 #~ msgid "Error retrieving AI service information. Please try again later."
 #~ msgstr "Geen overeenkomende rijen gevonden. Probeer een andere zoekterm."
-
-#, fuzzy
-#~ msgid "Add OpenTelemetry collector configuration"
-#~ msgstr "Nieuwe gebruikersconfiguratie toevoegen"
 
 #, fuzzy
 #~ msgid "OpenTelemetry collector configurations"

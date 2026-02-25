@@ -2905,6 +2905,10 @@ msgstr "AIX"
 msgid "AI assistance"
 msgstr "Instanța"
 
+#, fuzzy
+msgid "AI features"
+msgstr "Începeți restaurarea"
+
 msgid "AIX"
 msgstr "AIX"
 
@@ -4221,11 +4225,7 @@ msgid "Add OID descriptions"
 msgstr "Adăugați descrieri OID"
 
 #, fuzzy
-msgid "Add OpenTelemetry Collector Prometheus scraping configuration"
-msgstr "Adaugp o noua configurație de utilizator"
-
-#, fuzzy
-msgid "Add OpenTelemetry Collector receiver configuration"
+msgid "Add OpenTelemetry Collector configuration"
 msgstr "Adaugp o noua configurație de utilizator"
 
 #, fuzzy
@@ -4234,6 +4234,10 @@ msgstr "Adaugp o noua configurație de utilizator"
 
 msgid "Add Prefix"
 msgstr "Adăugați prefixul"
+
+#, fuzzy
+msgid "Add Prometheus scraper configuration"
+msgstr "Configurația stilului selectat"
 
 #, fuzzy
 msgid "Add Relay configuration"
@@ -16551,7 +16555,7 @@ msgid "Consumed load balancer capacity units"
 msgstr "Unități de capacitate de echilibrare a încărcăturii consumate"
 
 #, fuzzy
-msgid "Consumer count is the size of connected consumers to a queue"
+msgid "Consumer count is the number of connected consumers to a queue"
 msgstr ""
 "Numărul de consumatori este dimensiunea consumatorilor conectați la o coadă "
 "de așteptare"
@@ -18389,6 +18393,11 @@ msgstr "Verificare personalizată"
 
 msgid "Custom checks - defined via rule"
 msgstr "Verificări personalizate - definite prin intermediul unei reguli"
+
+msgid ""
+"Custom endpoint URL for S3-compatible storage services (e.g., Backblaze B2). "
+"Leave empty to use the default AWS S3 endpoint."
+msgstr ""
 
 msgid "Custom event limit"
 msgstr "Limita evenimentului personalizat"
@@ -24351,6 +24360,10 @@ msgstr "Activați 'Run As <b>Local Group</b>' pentru scripturi"
 msgid "Enable 'Run As <b>User</b>' for scripts"
 msgstr "Activați 'Run As <b>User</b>' pentru scripturi"
 
+#, fuzzy
+msgid "Enable AI-based explanations"
+msgstr "Activați replicarea"
+
 msgid "Enable Caching"
 msgstr "Activați Caching"
 
@@ -24481,6 +24494,12 @@ msgstr "Activați jurnalizarea notificărilor"
 
 msgid "Enable notifications?"
 msgstr "Activați notificările?"
+
+msgid ""
+"Enable or disable the 'Explain with AI' feature globally. When set to yes, "
+"all users will have access to the 'Explain with AI' button. Disabling this "
+"means that no data is sent to the AI provider."
+msgstr ""
 
 #, fuzzy
 msgid "Enable package"
@@ -24853,6 +24872,10 @@ msgstr "S-a încheiat"
 
 msgid "Endpoint"
 msgstr "Punct final"
+
+#, fuzzy
+msgid "Endpoint URL (optional)"
+msgstr "Comentariu (opțional)"
 
 msgid "Endpoints to monitor"
 msgstr "Puncte finale de monitorizat"
@@ -44611,10 +44634,6 @@ msgstr ""
 msgid "Miscellaneous"
 msgstr "Diverse"
 
-#, python-format
-msgid "Mismatching owner in `%s` mode."
-msgstr ""
-
 #, fuzzy
 msgid "Misplaced Objects"
 msgstr "Obiecte gestionate"
@@ -49377,6 +49396,13 @@ msgstr "OAuth2 (ClientID/TenantID)"
 msgid "OAuth2 connection"
 msgstr "Adăugați o conexiune"
 
+#, python-format
+msgid "OAuth2 connection '%s' is still being used by this rule: %s"
+msgid_plural "OAuth2 connection '%s' is still being used by these rules: %s"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
 #, fuzzy
 msgid "OAuth2 connection ID"
 msgstr "Adăugați o conexiune"
@@ -50253,27 +50279,15 @@ msgid "OpenTelemetry Collector"
 msgstr "Configurația stilului selectat"
 
 #, fuzzy
-msgid "OpenTelemetry Collector Prometheus scraping configurations"
-msgstr "Configurația stilului selectat"
-
-#, fuzzy
 msgid "OpenTelemetry Collector configuration"
 msgstr "Configurația stilului selectat"
 
 #, fuzzy
+msgid "OpenTelemetry Collector configurations"
+msgstr "Configurația stilului selectat"
+
+#, fuzzy
 msgid "OpenTelemetry Collector memory limit"
-msgstr "Configurația stilului selectat"
-
-#, fuzzy
-msgid "OpenTelemetry Collector receiver configurations"
-msgstr "Configurația stilului selectat"
-
-#, fuzzy
-msgid "OpenTelemetry Collector: Prometheus scraping"
-msgstr "Configurația stilului selectat"
-
-#, fuzzy
-msgid "OpenTelemetry Collector: Receiver"
 msgstr "Configurația stilului selectat"
 
 #, fuzzy
@@ -55439,8 +55453,12 @@ msgid "Prometheus custom services"
 msgstr "Servicii personalizate Prometheus"
 
 #, fuzzy
-msgid "Prometheus scraping"
+msgid "Prometheus scraper"
 msgstr "Alertmanager"
+
+#, fuzzy
+msgid "Prometheus scraper configurations"
+msgstr "Configurația stilului selectat"
 
 #, fuzzy
 msgid "Prometheus targets"
@@ -56286,6 +56304,10 @@ msgstr "RabbitMQ vhosts"
 
 msgid "Radial layout"
 msgstr "Dispunere radială"
+
+#, fuzzy
+msgid "Radio channel"
+msgstr "Rata de schimbare"
 
 msgid "Raid controllers from Areca"
 msgstr "Controlere Raid de la Areca"
@@ -57319,6 +57341,10 @@ msgstr "Întârziere:"
 #, fuzzy
 msgid "Relay configuration"
 msgstr "configurare"
+
+#, fuzzy
+msgid "Relay configuration can only be managed from the central site."
+msgstr "Checkmk poate fi configurat numai pe site-ul central al managerilor."
 
 #, fuzzy
 msgid "Relay configurations"
@@ -63364,6 +63390,10 @@ msgstr "Arată obiectul"
 
 msgid "Show object type"
 msgstr "Arată tipul de obiect"
+
+#, fuzzy
+msgid "Show only aggregation differences"
+msgstr "Afișați numai această agregare"
 
 msgid "Show only modified settings"
 msgstr "Afișați numai setările modificate"
@@ -75660,6 +75690,10 @@ msgstr ""
 
 msgid "This name will be used in the description of the service"
 msgstr "Acest nume va fi utilizat în descrierea serviciului."
+
+#, fuzzy
+msgid "This node has nested aggregation differences."
+msgstr "Agregarea BI solicitată nu există."
 
 msgid "This node is not in the frozen aggregation"
 msgstr "Acest nod nu se află în agregarea înghețată"
@@ -95006,9 +95040,6 @@ msgstr "arată mai puțin"
 msgid "show more"
 msgstr "arată mai mult"
 
-msgid "show only problems"
-msgstr "afiseaza numai probleme"
-
 msgid "signing"
 msgstr "semnarea"
 
@@ -95599,6 +95630,10 @@ msgstr "Tabloul de bord"
 #, fuzzy
 msgid "Review applied filters."
 msgstr "Filtre aplicate:"
+
+#, fuzzy
+msgid "Not available on shared dashboards"
+msgstr "Nu aveți voie să editați tablouri de bord."
 
 msgid ""
 "Due to a limitation in how Checkmk handles metrics internally, the results "
@@ -97609,6 +97644,10 @@ msgid "Download and install"
 msgstr "Agent descărcat"
 
 #, fuzzy
+msgid "This requires the generation of a download token."
+msgstr "Această permisiune permite înregistrarea oricărei gazde existente."
+
+#, fuzzy
 msgid "Next step: Register agent"
 msgstr "Destinatarul"
 
@@ -98443,10 +98482,6 @@ msgstr "Lucrări în grup de"
 msgid "Add your first host"
 msgstr "Adăugați o regulă pentru gazda curentă"
 
-#, fuzzy
-msgid "This requires the generation of a download token."
-msgstr "Această permisiune permite înregistrarea oricărei gazde existente."
-
 msgid "View your newly added host"
 msgstr ""
 
@@ -98969,6 +99004,33 @@ msgstr ""
 msgid ""
 "You can still access it later via Help > Learning Checkmk > Welcome page"
 msgstr ""
+
+#, fuzzy
+#~ msgid "Add OpenTelemetry Collector Prometheus scraping configuration"
+#~ msgstr "Adaugp o noua configurație de utilizator"
+
+#, fuzzy
+#~ msgid "Add OpenTelemetry Collector receiver configuration"
+#~ msgstr "Adaugp o noua configurație de utilizator"
+
+#, fuzzy
+#~ msgid "OpenTelemetry Collector Prometheus scraping configurations"
+#~ msgstr "Configurația stilului selectat"
+
+#, fuzzy
+#~ msgid "OpenTelemetry Collector receiver configurations"
+#~ msgstr "Configurația stilului selectat"
+
+#, fuzzy
+#~ msgid "OpenTelemetry Collector: Prometheus scraping"
+#~ msgstr "Configurația stilului selectat"
+
+#, fuzzy
+#~ msgid "OpenTelemetry Collector: Receiver"
+#~ msgstr "Configurația stilului selectat"
+
+#~ msgid "show only problems"
+#~ msgstr "afiseaza numai probleme"
 
 #~ msgid "Authentication mode"
 #~ msgstr "Mod de autentificare"
@@ -99882,10 +99944,6 @@ msgstr ""
 #~ "Nu ați creat încă niciun agent <a href='%s' target='_blank'>signature "
 #~ "keys</a>. Acest lucru este necesar."
 
-#, fuzzy
-#~ msgid "Prometheus scrape configurations"
-#~ msgstr "Configurația stilului selectat"
-
 #, python-format
 #~ msgid "do not activate this %s"
 #~ msgstr "nu activați acest %s"
@@ -100421,10 +100479,6 @@ msgstr ""
 #~ msgstr ""
 #~ "Nu s-au găsit rânduri corespunzătoare. Vă rugăm să încercați un alt "
 #~ "termen de căutare."
-
-#, fuzzy
-#~ msgid "Add OpenTelemetry collector configuration"
-#~ msgstr "Adaugp o noua configurație de utilizator"
 
 #, fuzzy
 #~ msgid "OpenTelemetry collector configurations"

@@ -2891,6 +2891,10 @@ msgstr "AIX"
 msgid "AI assistance"
 msgstr "Instancia"
 
+#, fuzzy
+msgid "AI features"
+msgstr "Iniciar la restauración"
+
 msgid "AIX"
 msgstr "AIX"
 
@@ -4224,11 +4228,7 @@ msgid "Add OID descriptions"
 msgstr "Añadir descripciones de OID"
 
 #, fuzzy
-msgid "Add OpenTelemetry Collector Prometheus scraping configuration"
-msgstr "Añadir una nueva configuración de usuario"
-
-#, fuzzy
-msgid "Add OpenTelemetry Collector receiver configuration"
+msgid "Add OpenTelemetry Collector configuration"
 msgstr "Añadir una nueva configuración de usuario"
 
 #, fuzzy
@@ -4237,6 +4237,10 @@ msgstr "Añadir una nueva configuración de usuario"
 
 msgid "Add Prefix"
 msgstr "Añadir prefijo"
+
+#, fuzzy
+msgid "Add Prometheus scraper configuration"
+msgstr "Añadir configuración de estado"
 
 #, fuzzy
 msgid "Add Relay configuration"
@@ -16622,7 +16626,7 @@ msgid "Consumed load balancer capacity units"
 msgstr "Unidades de capacidad del balanceador de carga consumidas"
 
 #, fuzzy
-msgid "Consumer count is the size of connected consumers to a queue"
+msgid "Consumer count is the number of connected consumers to a queue"
 msgstr ""
 "El recuento de consumidores es el tamaño de los consumidores conectados a "
 "una cola"
@@ -18459,6 +18463,11 @@ msgstr "Customcheck"
 
 msgid "Custom checks - defined via rule"
 msgstr "Controles personalizados - definidos mediante reglas"
+
+msgid ""
+"Custom endpoint URL for S3-compatible storage services (e.g., Backblaze B2). "
+"Leave empty to use the default AWS S3 endpoint."
+msgstr ""
 
 msgid "Custom event limit"
 msgstr "Límite de eventos personalizados"
@@ -24448,6 +24457,10 @@ msgstr "Habilitar 'Ejecutar como <b>grupo local</b>' para los scripts"
 msgid "Enable 'Run As <b>User</b>' for scripts"
 msgstr "Habilitar 'Ejecutar como <b>Usuario</b>' para los scripts"
 
+#, fuzzy
+msgid "Enable AI-based explanations"
+msgstr "Activar la replicación"
+
 msgid "Enable Caching"
 msgstr "Activar el caché"
 
@@ -24582,6 +24595,12 @@ msgstr "Activar el registro de notificaciones"
 #, fuzzy
 msgid "Enable notifications?"
 msgstr "activar las notificaciones"
+
+msgid ""
+"Enable or disable the 'Explain with AI' feature globally. When set to yes, "
+"all users will have access to the 'Explain with AI' button. Disabling this "
+"means that no data is sent to the AI provider."
+msgstr ""
 
 #, fuzzy
 msgid "Enable package"
@@ -24937,6 +24956,10 @@ msgstr "Terminado"
 
 msgid "Endpoint"
 msgstr "Puntos finales"
+
+#, fuzzy
+msgid "Endpoint URL (optional)"
+msgstr "Comentario (opcional)"
 
 #, fuzzy
 msgid "Endpoints to monitor"
@@ -44827,10 +44850,6 @@ msgstr ""
 msgid "Miscellaneous"
 msgstr "Varios"
 
-#, python-format
-msgid "Mismatching owner in `%s` mode."
-msgstr ""
-
 #, fuzzy
 msgid "Misplaced Objects"
 msgstr "Objetos gestionados"
@@ -49629,6 +49648,12 @@ msgstr "OAuth2 (ClientID/TenantID)"
 msgid "OAuth2 connection"
 msgstr "Añadir conexión"
 
+#, python-format
+msgid "OAuth2 connection '%s' is still being used by this rule: %s"
+msgid_plural "OAuth2 connection '%s' is still being used by these rules: %s"
+msgstr[0] ""
+msgstr[1] ""
+
 #, fuzzy
 msgid "OAuth2 connection ID"
 msgstr "Añadir conexión"
@@ -50500,27 +50525,15 @@ msgid "OpenTelemetry Collector"
 msgstr "Añadir configuración de estado"
 
 #, fuzzy
-msgid "OpenTelemetry Collector Prometheus scraping configurations"
-msgstr "Añadir configuración de estado"
-
-#, fuzzy
 msgid "OpenTelemetry Collector configuration"
 msgstr "Añadir configuración de estado"
 
 #, fuzzy
+msgid "OpenTelemetry Collector configurations"
+msgstr "Añadir configuración de estado"
+
+#, fuzzy
 msgid "OpenTelemetry Collector memory limit"
-msgstr "Añadir configuración de estado"
-
-#, fuzzy
-msgid "OpenTelemetry Collector receiver configurations"
-msgstr "Añadir configuración de estado"
-
-#, fuzzy
-msgid "OpenTelemetry Collector: Prometheus scraping"
-msgstr "Añadir configuración de estado"
-
-#, fuzzy
-msgid "OpenTelemetry Collector: Receiver"
 msgstr "Añadir configuración de estado"
 
 #, fuzzy
@@ -55726,8 +55739,12 @@ msgid "Prometheus custom services"
 msgstr "Servicios personalizados de Prometheus"
 
 #, fuzzy
-msgid "Prometheus scraping"
+msgid "Prometheus scraper"
 msgstr "Gestor de alertas"
+
+#, fuzzy
+msgid "Prometheus scraper configurations"
+msgstr "Añadir configuración de estado"
 
 #, fuzzy
 msgid "Prometheus targets"
@@ -56576,6 +56593,10 @@ msgstr "RabbitMQ vhosts"
 
 msgid "Radial layout"
 msgstr "Diseño radial"
+
+#, fuzzy
+msgid "Radio channel"
+msgstr "Tasa de cambio"
 
 msgid "Raid controllers from Areca"
 msgstr "Controladores Raid de Areca"
@@ -57615,6 +57636,10 @@ msgstr "Retraso:"
 #, fuzzy
 msgid "Relay configuration"
 msgstr "configuración"
+
+#, fuzzy
+msgid "Relay configuration can only be managed from the central site."
+msgstr "Checkmk sólo puede configurarse en el sitio central de los gestores."
 
 #, fuzzy
 msgid "Relay configurations"
@@ -63676,6 +63701,10 @@ msgstr "Mostrar más"
 #, fuzzy
 msgid "Show object type"
 msgstr "Ningún tipo de objeto"
+
+#, fuzzy
+msgid "Show only aggregation differences"
+msgstr "Mostrar sólo esta agregación"
 
 msgid "Show only modified settings"
 msgstr "Mostrar sólo los ajustes modificados"
@@ -75996,6 +76025,10 @@ msgstr ""
 
 msgid "This name will be used in the description of the service"
 msgstr "Este nombre se utilizará en la descripción del servicio"
+
+#, fuzzy
+msgid "This node has nested aggregation differences."
+msgstr "La agregación de BI solicitada no existe."
 
 msgid "This node is not in the frozen aggregation"
 msgstr "Este nodo no está en la agregación congelada"
@@ -95453,9 +95486,6 @@ msgstr "mostrar menos"
 msgid "show more"
 msgstr "ver más"
 
-msgid "show only problems"
-msgstr "mostrar sólo los problemas"
-
 msgid "signing"
 msgstr "firmando"
 
@@ -96045,6 +96075,10 @@ msgstr "Tablero de mandos"
 #, fuzzy
 msgid "Review applied filters."
 msgstr "Filtros aplicados:"
+
+#, fuzzy
+msgid "Not available on shared dashboards"
+msgstr "No está permitido editar los cuadros de mando."
 
 msgid ""
 "Due to a limitation in how Checkmk handles metrics internally, the results "
@@ -98053,6 +98087,10 @@ msgid "Download and install"
 msgstr "Agente descargado"
 
 #, fuzzy
+msgid "This requires the generation of a download token."
+msgstr "Este permiso permite el registro de cualquier host existente."
+
+#, fuzzy
 msgid "Next step: Register agent"
 msgstr "Destinatario"
 
@@ -98882,10 +98920,6 @@ msgstr "Trabajos en grupo de"
 msgid "Add your first host"
 msgstr "Añadir regla para el host actual"
 
-#, fuzzy
-msgid "This requires the generation of a download token."
-msgstr "Este permiso permite el registro de cualquier host existente."
-
 msgid "View your newly added host"
 msgstr ""
 
@@ -99407,6 +99441,33 @@ msgstr ""
 msgid ""
 "You can still access it later via Help > Learning Checkmk > Welcome page"
 msgstr ""
+
+#, fuzzy
+#~ msgid "Add OpenTelemetry Collector Prometheus scraping configuration"
+#~ msgstr "Añadir una nueva configuración de usuario"
+
+#, fuzzy
+#~ msgid "Add OpenTelemetry Collector receiver configuration"
+#~ msgstr "Añadir una nueva configuración de usuario"
+
+#, fuzzy
+#~ msgid "OpenTelemetry Collector Prometheus scraping configurations"
+#~ msgstr "Añadir configuración de estado"
+
+#, fuzzy
+#~ msgid "OpenTelemetry Collector receiver configurations"
+#~ msgstr "Añadir configuración de estado"
+
+#, fuzzy
+#~ msgid "OpenTelemetry Collector: Prometheus scraping"
+#~ msgstr "Añadir configuración de estado"
+
+#, fuzzy
+#~ msgid "OpenTelemetry Collector: Receiver"
+#~ msgstr "Añadir configuración de estado"
+
+#~ msgid "show only problems"
+#~ msgstr "mostrar sólo los problemas"
 
 #, fuzzy
 #~ msgid "Authentication mode"
@@ -100323,10 +100384,6 @@ msgstr ""
 #~ "Todavía no ha creado ninguna clave de firma de agente <a href='%s'></a>. "
 #~ "Esto es necesario."
 
-#, fuzzy
-#~ msgid "Prometheus scrape configurations"
-#~ msgstr "Añadir configuración de estado"
-
 #, python-format
 #~ msgid "do not activate this %s"
 #~ msgstr "no activar este %s"
@@ -100864,10 +100921,6 @@ msgstr ""
 #~ msgstr ""
 #~ "No se han encontrado filas coincidentes. Por favor, intente con otro "
 #~ "término de búsqueda."
-
-#, fuzzy
-#~ msgid "Add OpenTelemetry collector configuration"
-#~ msgstr "Añadir una nueva configuración de usuario"
 
 #, fuzzy
 #~ msgid "OpenTelemetry collector configurations"
