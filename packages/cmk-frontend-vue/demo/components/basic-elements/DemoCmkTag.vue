@@ -18,33 +18,31 @@ import {
 } from '@demo/_demo/components/detail-page'
 import { ref } from 'vue'
 
-import CmkBadge, {
-  type Colors,
-  type Shapes,
-  type Sizes,
-  type Types
-} from '@/components/CmkBadge.vue'
+import CmkTag, { type Colors, type Sizes, type Variants } from '@/components/CmkTag.vue'
 
-import DemoCmkBadgeDev from './DemoCmkBadgeDev.vue'
+import DemoCmkTagDev from './DemoCmkTagDev.vue'
 
 defineProps<{ screenshotMode: boolean }>()
 
-const codeExampleCmkBadge = `<script setup lang="ts">
-${'import'} CmkBadge from '@/components/CmkBadge.vue'
+const codeExampleCmkTag = `<script setup lang="ts">
+${'import'} CmkTag from '@/components/CmkTag.vue'
 <${'/'}script>
 
 <template>
-  <CmkBadge
-    color="danger"
-    type="fill"
-    shape="circle"
+  <CmkTag
+    content="Critical Issue"
+    color="default"
+    variant="outline"
     size="medium"
-  >
-    99
-  </CmkBadge>
+  />
 </template>`
 
 const panelConfig = {
+  content: {
+    type: 'string',
+    title: 'Content',
+    initialState: 'Status Tag'
+  },
   size: {
     type: 'list',
     title: 'Size',
@@ -66,23 +64,14 @@ const panelConfig = {
     ] satisfies Options<Colors>[],
     initialState: 'default' as const
   },
-  type: {
+  variant: {
     type: 'list',
-    title: 'Type',
+    title: 'Variant',
     options: [
-      { title: 'Fill', name: 'fill' },
-      { title: 'Outline', name: 'outline' }
-    ] satisfies Options<Types>[],
-    initialState: 'fill' as const
-  },
-  shape: {
-    type: 'list',
-    title: 'Shape',
-    options: [
-      { title: 'Default', name: 'default' },
-      { title: 'Circle', name: 'circle' }
-    ] satisfies Options<Shapes>[],
-    initialState: 'default' as const
+      { title: 'Outline', name: 'outline' },
+      { title: 'Fill', name: 'fill' }
+    ] satisfies Options<Variants>[],
+    initialState: 'outline' as const
   }
 } satisfies PanelConfig
 
@@ -91,29 +80,27 @@ const propState = ref(createPanelState(panelConfig))
 
 <template>
   <DemoDetailPageLayout>
-    <DemoDetailPageHeader>CmkBadge</DemoDetailPageHeader>
+    <DemoDetailPageHeader>CmkTag</DemoDetailPageHeader>
 
     <DemoDetailPageComponent>
-      <CmkBadge
+      <CmkTag
+        :content="propState.content"
         :size="propState.size"
         :color="propState.color"
-        :type="propState.type"
-        :shape="propState.shape"
-      >
-        99
-      </CmkBadge>
+        :variant="propState.variant"
+      />
 
       <template #properties>
         <DemoPropertiesPanel v-model="propState" :config="panelConfig" />
       </template>
     </DemoDetailPageComponent>
 
-    <DemoDetailPageCodeExample :code="codeExampleCmkBadge" />
+    <DemoDetailPageCodeExample :code="codeExampleCmkTag" />
 
     <DemoDetailPageAccessibility :data="[]" />
 
     <DemoDetailPageDeveloperPlayground>
-      <DemoCmkBadgeDev :screenshot-mode="screenshotMode" />
+      <DemoCmkTagDev :screenshot-mode="screenshotMode" />
     </DemoDetailPageDeveloperPlayground>
   </DemoDetailPageLayout>
 </template>

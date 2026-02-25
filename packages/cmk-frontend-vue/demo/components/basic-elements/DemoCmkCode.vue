@@ -1,72 +1,95 @@
 <!--
-Copyright (C) 2024 Checkmk GmbH - License: GNU General Public License v2
+Copyright (C) 2026 Checkmk GmbH - License: GNU General Public License v2
 This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 conditions defined in the file COPYING, which is part of this source code package.
 -->
 <script setup lang="ts">
+import {
+  DemoDetailPageAccessibility,
+  DemoDetailPageCodeExample,
+  DemoDetailPageComponent,
+  DemoDetailPageDeveloperPlayground,
+  DemoDetailPageHeader,
+  DemoDetailPageLayout,
+  DemoPropertiesPanel,
+  type PanelConfig,
+  createPanelState
+} from '@demo/_demo/components/detail-page'
+import { ref } from 'vue'
+
 import CmkCode from '@/components/CmkCode.vue'
+
+import DemoCmkCodeDev from './DemoCmkCodeDev.vue'
 
 defineProps<{ screenshotMode: boolean }>()
 
-const shortCodeText = `sudo cmk-agent-ctl register`
-const longCodeText = `sudo cmk-agent-ctl register --hostname heute --server localhost --site heute --user agent_registration --password 'mypasswd'`
-const multilineCodeText = `C:\\Program Files (x86)\\checkmk\\service\\cmk-agent-ctl.exe" ^
-  register ^
-  --hostname mynewhost ^
-  --server cmkserver --site mysite ^
-  --user agent_registration --password "PASSWD"
-sudo dpkg -i check-mk-agent.deb very long long text
-sudo dpkg -i check-mk-agent.deb very long long text
-sudo dpkg -i check-mk-agent.deb very long long text
-sudo dpkg -i check-mk-agent.deb very long long text
-sudo dpkg -i check-mk-agent.deb very long long textsudo dpkg -i check-mk-agent.deb very long long textsudo dpkg -i check-mk-agent.deb very long long textsudo dpkg -i check-mk-agent.deb very long long textsudo dpkg -i check-mk-agent.deb very long long textsudo dpkg -i check-mk-agent.deb very long long text
-sudo dpkg -i check-mk-agent.deb very long long textsudo dpkg -i check-mk-agent.deb very long long textsudo dpkg -i check-mk-agent.deb very long long textsudo dpkg -i check-mk-agent.deb very long long textsudo dpkg -i check-mk-agent.deb very long long textsudo dpkg -i check-mk-agent.deb very long long text
-sudo dpkg -i check-mk-agent.deb very long long textsudo dpkg -i check-mk-agent.deb very long long textsudo dpkg -i check-mk-agent.deb very long long textsudo dpkg -i check-mk-agent.deb very long long textsudo dpkg -i check-mk-agent.deb very long long textsudo dpkg -i check-mk-agent.deb very long long text
-sudo dpkg -i check-mk-agent.deb very long long textsudo dpkg -i check-mk-agent.deb very long long textsudo dpkg -i check-mk-agent.deb very long long textsudo dpkg -i check-mk-agent.deb very long long textsudo dpkg -i check-mk-agent.deb very long long textsudo dpkg -i check-mk-agent.deb very long long text
-sudo dpkg -i check-mk-agent.deb very long long textsudo dpkg -i check-mk-agent.deb very long long textsudo dpkg -i check-mk-agent.deb very long long textsudo dpkg -i check-mk-agent.deb very long long textsudo dpkg -i check-mk-agent.deb very long long textsudo dpkg -i check-mk-agent.deb very long long text`
-const multilineShortCodeText = `C:\\Program Files (x86)\\checkmk\\service\\cmk-agent-ctl.exe" ^
-  register ^
-  --hostname mynewhost ^
-  --server cmkserver --site mysite ^
-  --user agent_registration --password "PASSWD"
-  --hostname mynewhost ^
-  --server cmkserver --site mysite ^
-  --user agent_registration --password "PASSWD"
-  --hostname mynewhost ^
-  --server cmkserver --site mysite ^
-  --user agent_registration --password "PASSWD"
-  --hostname mynewhost ^
-  --server cmkserver --site mysite ^
-  --user agent_registration --password "PASSWD"
-  --hostname mynewhost ^
-  --server cmkserver --site mysite ^
-  --user agent_registration --password "PASSWD"
-  `
+const a11yDataCmkCode = [
+  {
+    keys: ['Tab'],
+    description:
+      'Moves focus sequentially to the scrollable code container, the "Show more/less" toggle button (if visible), and the Copy button. While the focus outline is hidden from view, its underlying functionality remains intact.'
+  },
+  {
+    keys: [['Shift', 'Tab']],
+    description: 'Moves focus in reverse through the focusable elements.'
+  },
+  {
+    keys: ['Enter', 'Space'],
+    description:
+      'Activates the "Show more/less" toggle or triggers the code copy action when the respective button is focused.'
+  }
+]
+
+const codeExampleCmkCode = `<script setup lang="ts">
+${'import'} CmkCode from '@/components/CmkCode.vue'
+
+const mySnippet = \`const greet = () => {
+  console.log("Hello Checkmk!");
+};
+greet();\`
+<${'/'}script>
+
+<template>
+  <CmkCode
+    title="Greeting Function"
+    :code_txt="mySnippet"
+  />
+</template>`
+
+const panelConfig = {
+  title: {
+    type: 'string',
+    title: 'Title',
+    initialState: 'Example Code Snippet'
+  },
+  code_txt: {
+    type: 'string',
+    title: 'Code Text',
+    initialState: codeExampleCmkCode
+  }
+} satisfies PanelConfig
+
+const propState = ref(createPanelState(panelConfig))
 </script>
 
 <template>
-  <div class="demo-cmk-code__container">
-    <h2>Short code</h2>
-    <br />
-    <CmkCode title="Some title" :code_txt="shortCodeText" />
-    <h2>Long code</h2>
-    <br />
-    <CmkCode title="Some title" :code_txt="longCodeText" />
-    <h2>Multiline code</h2>
-    <br />
-    <CmkCode title="Super title" :code_txt="multilineCodeText" />
-    <h2>Multiline short code</h2>
-    <br />
-    <CmkCode title="Super title" :code_txt="multilineShortCodeText" />
-    <h2>Multiline short code (fill full width of container)</h2>
-    <br />
-    <CmkCode title="Super title" :code_txt="multilineShortCodeText" width="fill" />
-  </div>
-</template>
+  <DemoDetailPageLayout>
+    <DemoDetailPageHeader>CmkCode</DemoDetailPageHeader>
 
-<style scoped>
-.demo-cmk-code__container {
-  max-width: 800px;
-  width: 100%;
-}
-</style>
+    <DemoDetailPageComponent>
+      <CmkCode :title="propState.title" :code_txt="propState.code_txt" />
+
+      <template #properties>
+        <DemoPropertiesPanel v-model="propState" :config="panelConfig" />
+      </template>
+    </DemoDetailPageComponent>
+
+    <DemoDetailPageCodeExample :code="codeExampleCmkCode" />
+
+    <DemoDetailPageAccessibility :data="a11yDataCmkCode" />
+
+    <DemoDetailPageDeveloperPlayground>
+      <DemoCmkCodeDev :screenshot-mode="screenshotMode" />
+    </DemoDetailPageDeveloperPlayground>
+  </DemoDetailPageLayout>
+</template>

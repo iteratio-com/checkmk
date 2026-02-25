@@ -22,8 +22,8 @@ defineProps<{ screenshotMode: boolean }>()
   <CmkTag size="large" content="1"></CmkTag>
   <CmkTag size="large" content="some long content"></CmkTag>
   <h1>Color and Variant</h1>
-  <div class="demo-cmk-tag__matrix-container">
-    <table class="demo-cmk-tag__tag-matrix">
+  <div class="demo-cmk-tag-dev__matrix-container">
+    <table class="demo-cmk-tag-dev__tag-matrix">
       <thead>
         <tr>
           <th>Color / Variant</th>
@@ -33,22 +33,22 @@ defineProps<{ screenshotMode: boolean }>()
       </thead>
       <tbody>
         <tr>
-          <td class="demo-cmk-tag__color-label">Default</td>
+          <td class="demo-cmk-tag-dev__color-label">Default</td>
           <td><CmkTag color="default" variant="fill" content="Default Fill"></CmkTag></td>
           <td><CmkTag color="default" variant="outline" content="Default Outline"></CmkTag></td>
         </tr>
         <tr>
-          <td class="demo-cmk-tag__color-label">Success</td>
+          <td class="demo-cmk-tag-dev__color-label">Success</td>
           <td><CmkTag color="success" variant="fill" content="Success Fill"></CmkTag></td>
           <td><CmkTag color="success" variant="outline" content="Success Outline"></CmkTag></td>
         </tr>
         <tr>
-          <td class="demo-cmk-tag__color-label">Warning</td>
+          <td class="demo-cmk-tag-dev__color-label">Warning</td>
           <td><CmkTag color="warning" variant="fill" content="Warning Fill"></CmkTag></td>
           <td><CmkTag color="warning" variant="outline" content="Warning Outline"></CmkTag></td>
         </tr>
         <tr>
-          <td class="demo-cmk-tag__color-label">Danger</td>
+          <td class="demo-cmk-tag-dev__color-label">Danger</td>
           <td><CmkTag color="danger" variant="fill" content="Danger Fill"></CmkTag></td>
           <td><CmkTag color="danger" variant="outline" content="Danger Outline"></CmkTag></td>
         </tr>
@@ -74,41 +74,41 @@ h2 {
   margin: 16px 0;
 }
 
-.demo-cmk-tag__matrix-container {
+.demo-cmk-tag-dev__matrix-container {
   margin: 20px 0;
 }
 
-.demo-cmk-tag__tag-matrix {
+.demo-cmk-tag-dev__tag-matrix {
   border-collapse: collapse;
   width: 100%;
   max-width: 600px;
   margin: 0 auto;
 }
 
-.demo-cmk-tag__tag-matrix th,
-.demo-cmk-tag__tag-matrix td {
+.demo-cmk-tag-dev__tag-matrix th,
+.demo-cmk-tag-dev__tag-matrix td {
   border: 1px solid var(--ux-theme-1);
   padding: 16px;
   text-align: center;
   vertical-align: middle;
 }
 
-.demo-cmk-tag__tag-matrix th {
+.demo-cmk-tag-dev__tag-matrix th {
   background-color: var(--ux-theme-2);
   font-weight: bold;
 }
 
-.demo-cmk-tag__color-label {
+.demo-cmk-tag-dev__color-label {
   font-weight: 600;
   background-color: var(--ux-theme-3);
   text-align: left;
 }
 
-.demo-cmk-tag__tag-matrix tr:nth-child(even) {
+.demo-cmk-tag-dev__tag-matrix tr:nth-child(even) {
   background-color: var(--ux-theme-4);
 }
 
-.demo-cmk-tag__tag-matrix tr:hover {
+.demo-cmk-tag-dev__tag-matrix tr:hover {
   background-color: var(--ux-theme-5);
 }
 </style>
