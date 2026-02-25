@@ -97,6 +97,7 @@ mainMenu.onNavigate((item: NavItem) => {
             "
             :topic="topic"
             :nav-item-id="item.id"
+            :class="{ 'mm-item-popup__topics-small': props.item.popup_small }"
           />
         </template>
       </div>
@@ -120,5 +121,15 @@ mainMenu.onNavigate((item: NavItem) => {
   .mm-nav-item-topic {
     writing-mode: horizontal-tb;
   }
+}
+
+.mm-item-popup--small {
+  .mm-item-popup__topics {
+    height: auto;
+  }
+}
+
+.mm-item-popup__topics-small {
+  min-width: 290px;
 }
 </style>
