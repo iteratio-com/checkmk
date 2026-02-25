@@ -1247,6 +1247,7 @@ COMPONENTS: Mapping[Component, ImportCheckerProtocol] = {
         *PACKAGE_CRYPTO,
         *PACKAGE_RELAY_PROTOCOLS,
         "cmk.check_helper_protocol",
+        "cmk.relay_trigger_protocol",
     ),
     Component("cmk.relay_engine"): _allow(
         *PACKAGE_CCC,
