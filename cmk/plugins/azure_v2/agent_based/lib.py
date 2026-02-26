@@ -69,6 +69,7 @@ class Resource(BaseModel):
     subscription: str | None = None
     subscription_name: str | None = None
     tenant_id: str | None = None
+    tenant_name: str | None = None
 
 
 class SustainedLevelDirection(Enum):
@@ -198,6 +199,7 @@ def _get_resource(
         subscription=resource.get("subscription"),
         subscription_name=resource.get("subscription_name"),
         tenant_id=resource.get("tenant_id"),
+        tenant_name=resource.get("tenant_name"),
     )
 
 
@@ -501,6 +503,7 @@ def create_inventory_function() -> Callable[[Resource], InventoryResult]:
             "object": "type",
             "name": "name",
             "tenant_id": "tenant_id",
+            "tenant_name": "tenant_name",
             "subscription_id": "subscription",
             "subscription_name": "subscription_name",
             "resource_group": "group",
