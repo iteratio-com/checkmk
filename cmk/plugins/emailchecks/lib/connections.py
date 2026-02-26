@@ -27,7 +27,7 @@ from datetime import datetime
 from email.message import Message as POPIMAPMessage
 from typing import assert_never, final, Literal, Self, TypedDict
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from cmk.password_store.v1_unstable import (
     PasswordStore,
@@ -82,9 +82,7 @@ class GraphApiMessage(BaseModel):
     toRecipients: list[Recipient] = Field(default_factory=list)
     receivedDateTime: str | None = None
 
-    class Config:
-        populate_by_name = True
-        extra = "ignore"
+    model_config = ConfigDict(populate_by_name=True, extra="ignore")
 
     @property
     def received_at(self) -> float | None:

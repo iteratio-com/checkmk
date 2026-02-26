@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Literal, NamedTuple
 
 import yaml
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from cmk.bakery.v2_unstable import (
     BakeryPlugin,
@@ -84,11 +84,10 @@ class GuiAuthUserPasswordData(BaseModel):
 
 
 class GuiAuthConf(BaseModel):
+    model_config = ConfigDict(use_enum_values=True)
+
     auth_type: tuple[OracleAuthType, GuiAuthUserPasswordData | None] | None = None
     role: str | None = None
-
-    class Config:
-        use_enum_values = True
 
 
 class GuiOracleIdentificationConf(BaseModel):
@@ -174,13 +173,12 @@ class OracleSection(BaseModel):
 
 
 class OracleAuth(BaseModel):
+    model_config = ConfigDict(use_enum_values=True)
+
     username: str | None = None
     password: str | None = None
     role: str | None = None
     type: OracleAuthType | None = None
-
-    class Config:
-        use_enum_values = True
 
 
 class OracleConnection(BaseModel):
