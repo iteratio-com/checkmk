@@ -1,113 +1,148 @@
 <!--
-Copyright (C) 2024 Checkmk GmbH - License: GNU General Public License v2
+Copyright (C) 2026 Checkmk GmbH - License: GNU General Public License v2
 This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 conditions defined in the file COPYING, which is part of this source code package.
 -->
-
 <script setup lang="ts">
-import { type Ref, ref } from 'vue'
+import {
+  DemoDetailPageAccessibility,
+  DemoDetailPageCodeExample,
+  DemoDetailPageComponent,
+  DemoDetailPageDeveloperPlayground,
+  DemoDetailPageHeader,
+  DemoDetailPageLayout,
+  DemoPropertiesPanel,
+  type Options,
+  type PanelConfig,
+  createPanelState
+} from '@demo/_demo/components/detail-page'
+import { ref } from 'vue'
 
-import CmkList from '@/components/CmkList'
+import CmkList from '@/components/CmkList/CmkList.vue'
+
+import DemoCmkListDev from './DemoCmkListDev.vue'
 
 defineProps<{ screenshotMode: boolean }>()
 
-function setupList(): {
-  data: Ref<string[]>
-  addElement: () => boolean
-  deleteElement: (index: number) => boolean
-  reorderElements: (order: number[]) => void
-} {
-  const data = ref(['element 1', 'element 2', 'element 3'])
+const listData = ref({
+  titles: ['Primary Server', 'Backup Database', 'Cache Node']
+})
 
-  function addElement() {
-    data.value.push('new element')
-    return true
-  }
-
-  function deleteElement(index: number) {
-    data.value.splice(index, 1)
-    return true
-  }
-
-  function reorderElements(order: number[]) {
-    data.value = order.map((index) => data.value[index]!)
-  }
-
-  return {
-    data,
-    addElement,
-    deleteElement,
-    reorderElements
-  }
+const tryDelete = (_index: number) => {
+  return true
 }
 
-const {
-  data: data1,
-  addElement: addElement1,
-  deleteElement: deleteElement1,
-  reorderElements: reorderElements1
-} = setupList()
+const tryAdd = () => {
+  listData.value.titles.push(`New Node ${listData.value.titles.length + 1}`)
+  return true
+}
 
-const { data: data2, addElement: addElement2, deleteElement: deleteElement2 } = setupList()
+const a11yDataCmkList = [
+  {
+    keys: ['Tab'],
+    description:
+      'Moves keyboard focus to end of list. While the focus outline is hidden from view, its underlying functionality remains intact.'
+  },
+  {
+    keys: [['Shift', 'Tab']],
+    description: 'Moves focus in reverse order through the list elements.'
+  },
+  {
+    keys: ['Enter', 'Space'],
+    description: 'Deletes the focused item from the list.'
+  }
+]
+
+const codeExampleCmkList = `<script setup lang="ts">
+import { ref } from 'vue'
+${'import'} CmkList from '@/components/CmkList/CmkList.vue'
+
+const itemsData = ref({
+  names: ['Alice', 'Bob', 'Charlie'],
+  roles: ['Admin', 'Editor', 'Viewer']
+})
+
+const handleAdd = () => {
+  itemsData.value.names.push('New User')
+  itemsData.value.roles.push('Viewer')
+  return true
+}
+
+const handleDelete = (index: number) => {
+  return true
+}
+<${'/'}script>
+
+<template>
+  <CmkList
+    :items-props="itemsData"
+    orientation="vertical"
+    :try-delete="handleDelete"
+    :add="{ show: true, tryAdd: handleAdd, label: 'Add User' }"
+  >
+    <template #item-props="{ names, roles }">
+      <div>
+        <strong>{{ names }}</strong> - <span>{{ roles }}</span>
+      </div>
+    </template>
+  </CmkList>
+</template>`
+
+type ListOrientation = 'vertical' | 'horizontal'
+
+const panelConfig = {
+  orientation: {
+    type: 'list',
+    title: 'Orientation',
+    options: [
+      { title: 'Vertical', name: 'vertical' },
+      { title: 'Horizontal', name: 'horizontal' }
+    ] satisfies Options<ListOrientation>[],
+    initialState: 'vertical' as const
+  },
+  showAdd: {
+    type: 'boolean',
+    title: 'Show Add Button',
+    initialState: true
+  },
+  enableDrag: {
+    type: 'boolean',
+    title: 'Enable Drag & Drop',
+    initialState: false
+  }
+} satisfies PanelConfig
+
+const propState = ref(createPanelState(panelConfig))
 </script>
 
 <template>
-  <dl>
-    <dt>
-      <code>
-        &lt;CmkList :orientation="'vertical'" :draggable="{ onReorder: reorderElements }" ...&gt;
-      </code>
-    </dt>
-    <dd>
+  <DemoDetailPageLayout>
+    <DemoDetailPageHeader>CmkList</DemoDetailPageHeader>
+
+    <DemoDetailPageComponent>
       <CmkList
-        :items-props="{ itemData: data1 }"
-        :drag-callbacks="{ onReorder: reorderElements1 }"
-        :add="{
-          show: true,
-          tryAdd: addElement1,
-          label: 'Add new entry'
-        }"
-        :try-delete="deleteElement1"
-        :orientation="'vertical'"
+        :items-props="listData"
+        :orientation="propState.orientation"
+        :try-delete="tryDelete"
+        :add="{ show: propState.showAdd, tryAdd, label: 'Add Item' }"
+        :drag-callbacks="propState.enableDrag ? { onReorder: () => {} } : null"
       >
-        <template #item-props="{ itemData }">
-          {{ itemData }}
+        <template #item-props="{ index, titles }">
+          {{ titles }} <small style="opacity: 0.6">(ID: {{ index }})</small>
         </template>
       </CmkList>
-    </dd>
-    <dt>
-      <code> &lt;CmkList :orientation="'horizontal'" ...&gt; </code>
-    </dt>
-    <dd>
-      <CmkList
-        :items-props="{ itemData: data2 }"
-        :add="{
-          show: true,
-          tryAdd: addElement2,
-          label: 'Add new entry'
-        }"
-        :try-delete="deleteElement2"
-        :orientation="'horizontal'"
-      >
-        <template #item-props="{ itemData }">
-          {{ itemData }}
-        </template>
-      </CmkList>
-    </dd>
-  </dl>
+
+      <template #properties>
+        <DemoPropertiesPanel v-model="propState" :config="panelConfig" />
+      </template>
+    </DemoDetailPageComponent>
+
+    <DemoDetailPageCodeExample :code="codeExampleCmkList" />
+
+    <DemoDetailPageAccessibility :data="a11yDataCmkList" />
+
+    <DemoDetailPageDeveloperPlayground>
+      <DemoCmkListDev :screenshot-mode="screenshotMode" />
+    </DemoDetailPageDeveloperPlayground>
+  </DemoDetailPageLayout>
 </template>
-
-<style scoped>
-code {
-  white-space: pre-line;
-}
-
-dt {
-  margin: 0 0 2em;
-}
-
-dd {
-  margin: 0 0 2em;
-  padding: 0;
-}
-</style>

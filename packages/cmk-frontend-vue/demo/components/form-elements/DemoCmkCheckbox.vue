@@ -1,95 +1,134 @@
 <!--
-Copyright (C) 2024 Checkmk GmbH - License: GNU General Public License v2
+Copyright (C) 2026 Checkmk GmbH - License: GNU General Public License v2
 This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 conditions defined in the file COPYING, which is part of this source code package.
 -->
 <script setup lang="ts">
+import {
+  DemoDetailPageAccessibility,
+  DemoDetailPageCodeExample,
+  DemoDetailPageComponent,
+  DemoDetailPageDeveloperPlayground,
+  DemoDetailPageHeader,
+  DemoDetailPageLayout,
+  DemoPropertiesPanel,
+  type Options,
+  type PanelConfig,
+  createPanelState
+} from '@demo/_demo/components/detail-page'
 import { ref } from 'vue'
 
-import CmkButton from '@/components/CmkButton.vue'
 import CmkCheckbox from '@/components/user-input/CmkCheckbox.vue'
+
+import DemoCmkCheckboxDev from './DemoCmkCheckboxDev.vue'
 
 defineProps<{ screenshotMode: boolean }>()
 
-const value1 = ref<boolean>(true)
-const value2 = ref<boolean>(false)
-const value3 = ref<boolean>(false)
-const value4 = ref<boolean>(false)
-const value5 = ref<boolean>(false)
-const value6 = ref<boolean>(false)
-const value7 = ref<boolean>(false)
-const value8 = ref<boolean>(true)
-const value9 = ref<boolean>(false)
+const a11yDataCmkCheckbox = [
+  {
+    keys: ['Tab'],
+    description:
+      'Moves keyboard focus to the checkbox. While the focus outline is hidden from view, its underlying functionality remains intact.'
+  },
+  {
+    keys: [['Shift', 'Tab']],
+    description: 'Moves focus to the checkbox from the next focusable element in reverse order.'
+  },
+  {
+    keys: ['Space'],
+    description: 'Toggles the checkbox state between checked and unchecked.'
+  }
+]
 
-const externalErrors = ref<string[]>([])
+const codeExampleCmkCheckbox = `<script setup lang="ts">
+import { ref } from 'vue'
+${'import'} CmkCheckbox from '@/components/user-input/CmkCheckbox.vue'
+
+const isChecked = ref(false)
+<${'/'}script>
+
+<template>
+  <CmkCheckbox
+    v-model="isChecked"
+    label="Enable notifications"
+    help="You will receive alerts via email."
+  />
+</template>`
+
+type CheckboxPadding = 'both' | 'top' | 'bottom'
+
+const panelConfig = {
+  modelValue: {
+    type: 'boolean',
+    title: 'Checked',
+    initialState: false
+  },
+  label: {
+    type: 'string',
+    title: 'Label',
+    initialState: 'Enable notifications'
+  },
+  help: {
+    type: 'string',
+    title: 'Help Text',
+    initialState: 'You will receive alerts via email.'
+  },
+  disabled: {
+    type: 'boolean',
+    title: 'Disabled',
+    initialState: false
+  },
+  padding: {
+    type: 'list',
+    title: 'Padding',
+    options: [
+      { title: 'Both', name: 'both' },
+      { title: 'Top', name: 'top' },
+      { title: 'Bottom', name: 'bottom' }
+    ] satisfies Options<CheckboxPadding>[],
+    initialState: 'both' as const
+  },
+  dots: {
+    type: 'boolean',
+    title: 'Show Dots',
+    initialState: false
+  },
+  externalErrors: {
+    type: 'string',
+    title: 'External Error Message',
+    initialState: ''
+  }
+} satisfies PanelConfig
+
+const propState = ref(createPanelState(panelConfig))
 </script>
 
 <template>
-  <p>
-    <CmkButton
-      @click="
-        externalErrors.length > 0
-          ? (externalErrors = [])
-          : (externalErrors = ['This is an external error'])
-      "
-      >Toggle external validation error</CmkButton
-    >
-  </p>
+  <DemoDetailPageLayout>
+    <DemoDetailPageHeader>CmkCheckbox</DemoDetailPageHeader>
 
-  <hr />
-  <ul>
-    <li>
-      <CmkCheckbox v-model="value1" label="some checkbox" :external-errors="externalErrors" />
-    </li>
-    <li>
-      <CmkCheckbox v-model="value2" label="some other checkbox with dots" dots />
-    </li>
-    <li>checkbox without label: <CmkCheckbox v-model="value3" /></li>
-    <li>
-      <!-- testing vertical alignment -->
-      two in one large line:<CmkCheckbox v-model="value4" /><span style="font-size: 30px"
-        >vertical element<CmkCheckbox v-model="value5"
-      /></span>
-    </li>
-    <li :style="{ width: '372px', border: '1px solid gray' }">
+    <DemoDetailPageComponent>
       <CmkCheckbox
-        v-model="value6"
-        label="Label with help which wraps help icon with last word"
-        help="foo bar"
-        dots
+        v-model="propState.modelValue"
+        :label="propState.label"
+        :help="propState.help"
+        :disabled="propState.disabled"
+        :padding="propState.padding"
+        :dots="propState.dots"
+        :external-errors="propState.externalErrors ? [propState.externalErrors] : []"
       />
-    </li>
-    <li :style="{ width: '200px', border: '1px solid gray' }">
-      <CmkCheckbox
-        v-model="value6"
-        label="Label with help which wraps but has no dots"
-        :help="'foo bar'"
-      />
-    </li>
-    <li>Checkboxes with vertical padding bottom/both/top next to one without:</li>
-    <ul>
-      <li>
-        <CmkCheckbox v-model="value7" :padding="'bottom'" />&nbsp;<CmkCheckbox v-model="value7" />
-      </li>
-      <li>
-        <CmkCheckbox v-model="value7" :padding="'both'" />&nbsp;<CmkCheckbox v-model="value7" />
-      </li>
-      <li>
-        <CmkCheckbox v-model="value7" :padding="'top'" />&nbsp;<CmkCheckbox v-model="value7" />
-      </li>
-    </ul>
-    <li>Disabled checkboxes:</li>
-    <ul>
-      <li>
-        <CmkCheckbox v-model="value8" label="Disabled checked checkbox" disabled />
-      </li>
-      <li>
-        <CmkCheckbox v-model="value9" label="Disabled unchecked checkbox" disabled />
-      </li>
-      <li>
-        Without label:
-        <CmkCheckbox v-model="value9" disabled />
-      </li>
-    </ul>
-  </ul>
+
+      <template #properties>
+        <DemoPropertiesPanel v-model="propState" :config="panelConfig" />
+      </template>
+    </DemoDetailPageComponent>
+
+    <DemoDetailPageCodeExample :code="codeExampleCmkCheckbox" />
+
+    <DemoDetailPageAccessibility :data="a11yDataCmkCheckbox" />
+
+    <DemoDetailPageDeveloperPlayground>
+      <DemoCmkCheckboxDev :screenshot-mode="screenshotMode" />
+    </DemoDetailPageDeveloperPlayground>
+  </DemoDetailPageLayout>
 </template>

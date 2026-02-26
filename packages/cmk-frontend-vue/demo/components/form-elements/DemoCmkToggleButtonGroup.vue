@@ -1,41 +1,105 @@
 <!--
-Copyright (C) 2024 Checkmk GmbH - License: GNU General Public License v2
+Copyright (C) 2026 Checkmk GmbH - License: GNU General Public License v2
 This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 conditions defined in the file COPYING, which is part of this source code package.
 -->
-
 <script setup lang="ts">
+import {
+  DemoDetailPageAccessibility,
+  DemoDetailPageCodeExample,
+  DemoDetailPageComponent,
+  DemoDetailPageHeader,
+  DemoDetailPageLayout,
+  DemoPropertiesPanel,
+  type Options,
+  type PanelConfig,
+  createPanelState
+} from '@demo/_demo/components/detail-page'
 import { ref } from 'vue'
 
-import CmkToggleButtonGroup from '@/components/CmkToggleButtonGroup.vue'
+import CmkToggleButtonGroup, {
+  type ToggleButtonOption
+} from '@/components/CmkToggleButtonGroup.vue'
 
 defineProps<{ screenshotMode: boolean }>()
 
-const model = ref<string>('1')
-</script>
+const demoOptions: ToggleButtonOption[] = [
+  { label: 'List View', value: 'list', tooltip: 'Display items in a vertical list' },
+  { label: 'Grid View', value: 'grid', tooltip: 'Display items in a grid layout' },
+  {
+    label: 'Map View',
+    value: 'map',
+    disabled: true,
+    disabledTooltip: 'Requires Checkmk Pro edition'
+  }
+]
+
+const a11yDataCmkToggleButtonGroup = [
+  {
+    keys: ['Tab'],
+    description:
+      'Moves keyboard focus through the individual toggle buttons. While the focus outline is hidden from view, its underlying functionality remains intact.'
+  },
+  {
+    keys: [['Shift', 'Tab']],
+    description: 'Moves focus in reverse order through the individual toggle buttons.'
+  },
+  {
+    keys: ['Enter', 'Space'],
+    description: 'Selects the currently focused toggle option.'
+  }
+]
+
+const codeExampleCmkToggleButtonGroup = `<script setup lang="ts">
+import { ref } from 'vue'
+${'import'} CmkToggleButtonGroup from '@/components/CmkToggleButtonGroup.vue'
+
+const currentView = ref('list')
+
+const viewOptions = [
+  { label: 'List View', value: 'list' },
+  { label: 'Grid View', value: 'grid' }
+
+]
+<${'/'}script>
 
 <template>
   <CmkToggleButtonGroup
-    v-model="model"
-    :options="[
-      { label: 'label1', value: '1' },
-      { label: 'label2', value: '2' },
-      { label: 'label3 (disabled)', value: '3', disabled: true },
-      { label: 'label4 (disabled)', value: '5', disabled: true },
-      { label: 'label5', value: '4' }
-    ]"
+    v-model="currentView"
+    :options="viewOptions"
   />
+</template>`
 
-  <pre>selectedOption={{ model }}</pre>
+const panelConfig = {
+  modelValue: {
+    type: 'list',
+    title: 'Selected Value',
+    options: [
+      { title: 'list', name: 'list' },
+      { title: 'grid', name: 'grid' },
+      { title: 'map', name: 'map' }
+    ] satisfies Options<string>[],
+    initialState: 'list' as const
+  }
+} satisfies PanelConfig
+
+const propState = ref(createPanelState(panelConfig))
+</script>
+
+<template>
+  <DemoDetailPageLayout>
+    <DemoDetailPageHeader>CmkToggleButtonGroup</DemoDetailPageHeader>
+
+    <DemoDetailPageComponent>
+      <CmkToggleButtonGroup v-model="propState.modelValue" :options="demoOptions" />
+
+      <template #properties>
+        <DemoPropertiesPanel v-model="propState" :config="panelConfig" />
+      </template>
+    </DemoDetailPageComponent>
+
+    <DemoDetailPageCodeExample :code="codeExampleCmkToggleButtonGroup" />
+
+    <DemoDetailPageAccessibility :data="a11yDataCmkToggleButtonGroup" />
+  </DemoDetailPageLayout>
 </template>
-
-<style scoped>
-ul {
-  list-style-type: none;
-  padding: 0;
-}
-
-li {
-  margin: 1em;
-}
-</style>

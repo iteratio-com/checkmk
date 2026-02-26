@@ -1,89 +1,123 @@
 <!--
-Copyright (C) 2025 Checkmk GmbH - License: GNU General Public License v2
+Copyright (C) 2026 Checkmk GmbH - License: GNU General Public License v2
 This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 conditions defined in the file COPYING, which is part of this source code package.
 -->
 <script setup lang="ts">
+import {
+  DemoDetailPageAccessibility,
+  DemoDetailPageCodeExample,
+  DemoDetailPageComponent,
+  DemoDetailPageHeader,
+  DemoDetailPageLayout,
+  DemoPropertiesPanel,
+  type Options,
+  type PanelConfig,
+  createPanelState
+} from '@demo/_demo/components/detail-page'
 import { ref } from 'vue'
 
 import CmkDualList from '@/components/CmkDualList/CmkDualList.vue'
-import { type DualListElement } from '@/components/CmkDualList/index.ts'
+import {
+  type DualListElement,
+  type SearchableListWidthVariants
+} from '@/components/CmkDualList/index.ts'
 
 defineProps<{ screenshotMode: boolean }>()
 
-function pad(num: number, len: number): string {
-  let numStr = num.toString()
-  while (numStr.length < len) {
-    numStr = `0${numStr}`
+const selectedData = ref<DualListElement[]>([{ name: 'host_admin', title: 'Host Administrator' }])
+const a11yDataCmkDualList = [
+  {
+    keys: ['Tab'],
+    description:
+      'Moves keyboard focus sequentially between the searchable lists and the action buttons.'
+  },
+  {
+    keys: [['Shift', 'Tab']],
+    description: 'Moves focus in reverse order between the searchable lists and the action buttons.'
+  },
+  {
+    keys: ['Enter', 'Space'],
+    description:
+      'Triggers the selected action button (e.g., adding or removing items between lists).'
   }
-  return numStr
-}
+]
 
-const data = ref<DualListElement[]>([{ name: 'test_name_003', title: 'Test Name 3' }])
-const elements = ref<DualListElement[]>(
-  Array.from({ length: 30 }, (_, i) => ({
-    name: `test_name_${pad(i + 1, 3)}`,
-    title: `Test Name ${i + 1}`
-  }))
-)
+const codeExampleCmkDualList = `<script setup lang="ts">
+import { ref } from 'vue'
+${'import'} CmkDualList from '@/components/CmkDualList/CmkDualList.vue'
+${'import'} { type DualListElement } from '@/components/CmkDualList/index.ts'
 
-const data2 = ref<DualListElement[]>([])
-const elements2 = ref<DualListElement[]>(
-  Array.from({ length: 30 }, (_, i) => ({
-    name: `second_name_${i + 1}`,
-    title: `Second Name ${i + 1}`
-  }))
-)
+const availableRoles = ref<DualListElement[]>([
+  { name: 'admin', title: 'Admin' },
+  { name: 'editor', title: 'Editor' },
+  { name: 'viewer', title: 'Viewer' }
+])
+
+
+const selectedRoles = ref<DualListElement[]>([availableRoles.value[2]!])
+<${'/'}script>
+
+<template>
+  <CmkDualList
+    v-model:data="selectedRoles"
+    :elements="availableRoles"
+    title="Assign User Roles"
+    :validators="[]"
+    :backendValidation="[]"
+    width="medium"
+  />
+</template>`
+
+const panelConfig = {
+  title: {
+    type: 'string',
+    title: 'Group Title',
+    initialState: 'Assign User Roles'
+  },
+  width: {
+    type: 'list',
+    title: 'Width',
+    options: [
+      { title: 'XSmall', name: 'xsmall' },
+      { title: 'Small', name: 'small' },
+      { title: 'Medium', name: 'medium' },
+      { title: 'Large', name: 'large' }
+    ] satisfies Options<SearchableListWidthVariants>[],
+    initialState: 'medium' as const
+  }
+} satisfies PanelConfig
+
+const propState = ref(createPanelState(panelConfig))
 </script>
 
 <template>
-  <h2>Demo: CmkDualList</h2>
-  <div>
-    <div>
-      <div>
-        <h3>Config example 1</h3>
-        <code>
-          * Elements: Test Name [1...30] / test_name_[1...30]<br />
-          * Title: CMK Dual List Component Demo<br />
-          * Loading & Validation are empty<br />
-        </code>
-      </div>
-      <h3>Data</h3>
-      <pre>{{ JSON.stringify(data).replace(/},/g, '},\n') }}</pre>
-    </div>
-    <CmkDualList
-      v-model:data="data"
-      :elements="elements"
-      :title="'CMK Dual List Component Demo'"
-      :validators="[]"
-      :backend-validation="[]"
-    />
-  </div>
-  <div>
-    <div>
-      <div>
-        <h3>Config example 2</h3>
-        <code>
-          * Elements: Second Name [1...30] / second_name_[1...30]<br />
-          * Title: CMK Dual List Component Demo 2<br />
-          * Loading & Validation are empty<br />
-        </code>
-      </div>
-      <h3>Data</h3>
-      <pre>{{ JSON.stringify(data2).replace(/},/g, '},\n') }}</pre>
-    </div>
-    <CmkDualList
-      v-model:data="data2"
-      :elements="elements2"
-      :title="'CMK Dual List Component Demo 2'"
-      :validators="[]"
-      :backend-validation="[]"
-    />
-  </div>
-</template>
+  <DemoDetailPageLayout>
+    <DemoDetailPageHeader>CmkDualList</DemoDetailPageHeader>
 
-<style scoped>
-code {
-  white-space: pre-line;
-}
-</style>
+    <DemoDetailPageComponent>
+      <CmkDualList
+        v-model:data="selectedData"
+        :elements="[
+          { name: 'host_admin', title: 'Host Administrator' },
+          { name: 'network_admin', title: 'Network Administrator' },
+          { name: 'db_admin', title: 'Database Administrator' },
+          { name: 'security_auditor', title: 'Security Auditor' },
+          { name: 'guest', title: 'Guest User' }
+        ]"
+        :title="propState.title"
+        :validators="[]"
+        :backend-validation="[]"
+        :width="propState.width"
+      />
+
+      <template #properties>
+        <DemoPropertiesPanel v-model="propState" :config="panelConfig" />
+      </template>
+    </DemoDetailPageComponent>
+
+    <DemoDetailPageCodeExample :code="codeExampleCmkDualList" />
+
+    <DemoDetailPageAccessibility :data="a11yDataCmkDualList" />
+  </DemoDetailPageLayout>
+</template>

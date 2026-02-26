@@ -11,9 +11,11 @@ import {
   DemoDetailPageDeveloperPlayground,
   DemoDetailPageHeader,
   DemoDetailPageLayout,
-  DemoPropertiesPanel
+  DemoPropertiesPanel,
+  type Options,
+  type PanelConfig,
+  createPanelState
 } from '@demo/_demo/components/detail-page'
-import { type PanelConfig, createPanelState } from '@demo/_demo/types/prop-panel.ts'
 import { computed, ref } from 'vue'
 
 import CmkDropdown from '@/components/CmkDropdown'
@@ -72,9 +74,9 @@ const options: Suggestions = {
   <CmkDropdown
     v-model:selected-option="selected"
     :options="options"
-    input-hint="some input hint"
-    no-results-hint="no results hint"
-    label="some label"
+    input-hint="Input Hint"
+    no-results-hint="No Results Hint"
+    label="demo dropdown"
     required
   />
 </template>`
@@ -97,8 +99,8 @@ const panelConfig = {
       { title: 'Default', name: 'default' },
       { title: 'Wide', name: 'wide' },
       { title: 'Fill', name: 'fill' }
-    ],
-    initialState: 'wide'
+    ] satisfies Options<NonNullable<ButtonVariants['width']>>[],
+    initialState: 'default' as const
   },
   disabled: { type: 'boolean', title: 'Disabled', initialState: false },
   required: { type: 'boolean', title: 'Required', initialState: false },
@@ -144,7 +146,7 @@ const dynamicOptions = computed<Suggestions>(() => {
         :options="dynamicOptions"
         :input-hint="propState.inputHint"
         :no-results-hint="propState.noResultsHint"
-        :width="propState.width as ButtonVariants['width']"
+        :width="propState.width"
         :disabled="propState.disabled"
         :required="propState.required"
         label="demo dropdown"
