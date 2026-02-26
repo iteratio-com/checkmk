@@ -3,7 +3,6 @@ load("@bazel_skylib//rules:build_test.bzl", "build_test")
 load("@cmk_requirements//:requirements.bzl", "requirement")
 load("@rules_python//python:packaging.bzl", "py_wheel")
 load("//bazel/rules:doctest.bzl", "py_doc_test")
-load("//bazel/rules:file_from_flag.bzl", "file_from_flag")
 load("//bazel/rules:package_wheel.bzl", "package_wheel")
 
 exports_files([
@@ -11,15 +10,6 @@ exports_files([
     "pyproject.toml",
     "requirements.in",
 ])
-
-file_from_flag(
-    name = "set_version",
-    src = "cmk/ccc/version.py.in",
-    out = "cmk/ccc/version.py",
-    replace_labels = {
-        "VERSION": "@cmk//version",
-    },
-)
 
 py_library(
     name = "_init",
@@ -213,7 +203,7 @@ py_library(
     name = "version",
     srcs = [
         "cmk/ccc/general_version_infos.py",
-        ":set_version",
+        "cmk/ccc/version.py",
     ],
     imports = ["."],
     visibility = ["//visibility:public"],
@@ -501,7 +491,6 @@ py_wheel(
     strip_path_prefixes = ["packages/cmk-ccc"],
     # TODO: Duplicated from pyproject.toml
     version = "1.0.0",
-    visibility = ["//visibility:public"],
     deps = _ALL + [
         ":py_typed",
     ],

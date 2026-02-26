@@ -196,7 +196,6 @@ STAGES:
               --test_env=TZ="America/Chicago" \
               --test_tag_filters=-component \
               --keep_going \
-              --cmk_version=$(make -C .. --no-print-directory print-VERSION) \
               --//:use_faked_artifacts=true \
               -- //... \
               -//packages/livestatus/... \

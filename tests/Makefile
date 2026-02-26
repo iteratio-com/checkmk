@@ -323,8 +323,7 @@ test-unit-docker:
 
 test-unit-all: test-doctest
 	cd .. && \
-	    bazel test --cmk_version=$(shell make --no-print-directory --file=../defines.make print-VERSION) \
-	    --test_verbose_timeout_warnings //tests/unit:all \
+	    bazel test --test_verbose_timeout_warnings //tests/unit:all \
 	    --test_env=TZ=$(RANDOM_TZ) \
 	    --test_arg="--numprocesses=4"
 

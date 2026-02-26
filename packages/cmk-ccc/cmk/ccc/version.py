@@ -6,8 +6,7 @@
 
 from __future__ import annotations
 
-# will be expanded during the bazel build process accordingly to @cmk_version build setting
-__version__ = "{VERSION}"
+__version__ = "2.6.0b1"
 
 import enum
 import functools
