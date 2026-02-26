@@ -17,10 +17,13 @@ PodmanSocketDetectionMethod = (
     | tuple[Literal["manual"], Sequence[str]]
 )
 
+PodmanPiggybackNameMethod = Literal["name", "nodename_name", "name_id"]
+
 
 class PodmanConfig(BaseModel, frozen=True):
     deploy: bool
     socket_detection: PodmanSocketDetectionMethod
+    piggyback_name_method: PodmanPiggybackNameMethod = "name"
 
 
 def get_mk_podman_files(
@@ -48,6 +51,8 @@ def _get_mk_podman_config(conf: PodmanConfig) -> Iterable[str]:
 
     if method == "manual" and socket_list:
         yield f"socket_paths: {','.join(socket_list)}"
+
+    yield f"piggyback_name_method: {conf.piggyback_name_method}"
 
 
 register.bakery_plugin(
