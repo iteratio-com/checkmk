@@ -22,7 +22,6 @@ void main() {
         "test-python3-code-quality",
         "test-python3-typing",
         "test-python3-unit-all",
-        "test-shell-unit",
     ];
 
     print(
