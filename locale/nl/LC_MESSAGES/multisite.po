@@ -996,6 +996,10 @@ msgstr "(ingebouwd)"
 msgid "(default is %r for %s/TLS)"
 msgstr "(standaard is %r voor %s/TLS)"
 
+#, fuzzy
+msgid "(deprecated)"
+msgstr "Afgeschreven"
+
 msgid "(disabled)"
 msgstr "(uitgeschakeld)"
 
@@ -21931,6 +21935,10 @@ msgstr "Toon inode gebruik in controle uitvoer..."
 
 msgid "Display legend for timeline"
 msgstr "Toon legende voor tijdlijn"
+
+#, python-format
+msgid "Display limit of %d monitoring results reached."
+msgstr ""
 
 #, python-format
 msgid "Display long output in timeline (<a href=\"%s\">Enable in Setup</a>)"
@@ -56787,6 +56795,9 @@ msgstr "Verwijzer"
 msgid "Refine search"
 msgstr "Zoekopdracht verfijnen"
 
+msgid "Refine your search or press Enter for host/service search."
+msgstr ""
+
 msgid "Refresh"
 msgstr "Vernieuwen"
 
@@ -70721,11 +70732,6 @@ msgstr ""
 "NOTIFY_PARAMETER_2, enz."
 
 #, python-format
-msgid "The given password is too short. It must have at least %d characters."
-msgstr ""
-"Het opgegeven wachtwoord is te kort. Het moet ten minste %d tekens bevatten."
-
-#, python-format
 msgid ""
 "The given str \"%s\" for the pending changes info does not match the "
 "required pattern: \"[number] change(s)\""
@@ -72132,13 +72138,19 @@ msgstr ""
 msgid "The password contains forbidden character: %s"
 msgstr "Hostnaam bevat illegale tekens: %s"
 
+#, fuzzy, python-format
+msgid ""
+"The password does not comply with the configured password policy: It must "
+"have at least %d characters."
+msgstr ""
+"Het opgegeven wachtwoord is te kort. Het moet ten minste %d tekens bevatten."
+
 #, python-format
 msgid ""
-"The password does not use enough character groups. You need to set a "
-"password which uses at least %d of them."
+"The password does not comply with the configured password policy: It must "
+"use at least %d different character groups, such as lowercase letters, "
+"uppercase letters, digits or special characters."
 msgstr ""
-"Het wachtwoord gebruikt niet genoeg tekengroepen. U moet een wachtwoord "
-"instellen dat er ten minste %d van gebruikt."
 
 #, fuzzy
 msgid ""
@@ -88443,6 +88455,10 @@ msgstr "Web gateway diverse statistieken"
 msgid "Web gateway statistics"
 msgstr "Web gateway statistieken"
 
+#, fuzzy
+msgid "WebAuthn login failed"
+msgstr "Authenticatie mislukt"
+
 msgid "Webhook URL"
 msgstr "Webhook URL"
 
@@ -95532,12 +95548,12 @@ msgid "Custom dashboards"
 msgstr "Aanpassen"
 
 #, fuzzy
-msgid "Built-in dashboards"
-msgstr "Kloon ingebouwd dashboard"
-
-#, fuzzy
 msgid "Unnamed Dashboard"
 msgstr "Dashboard"
+
+#, fuzzy
+msgid "Built-in dashboards"
+msgstr "Kloon ingebouwd dashboard"
 
 #, fuzzy
 msgid "Settings Menu"
@@ -98079,10 +98095,6 @@ msgstr ""
 msgid "2FA not possible (See #13325 for details)"
 msgstr ""
 
-#, fuzzy
-msgid "WebAuthn login failed"
-msgstr "Authenticatie mislukt"
-
 msgid "No filters can be applied to your current search query."
 msgstr ""
 
@@ -98131,6 +98143,16 @@ msgstr "Geen logs gevonden voor deze host."
 #, fuzzy
 msgid "Reset search"
 msgstr "Zoekopdracht verfijnen"
+
+msgid "Find services, hosts, dashboards, ..."
+msgstr ""
+
+#, fuzzy
+msgid "Find customization options"
+msgstr "Filter- en berekeningsopties"
+
+msgid "Find rules, hosts, settings ..."
+msgstr ""
 
 msgid "Find rules, hosts, dashboards, settings ..."
 msgstr ""
@@ -98691,6 +98713,14 @@ msgstr ""
 msgid ""
 "You can still access it later via Help > Learning Checkmk > Welcome page"
 msgstr ""
+
+#, python-format
+#~ msgid ""
+#~ "The password does not use enough character groups. You need to set a "
+#~ "password which uses at least %d of them."
+#~ msgstr ""
+#~ "Het wachtwoord gebruikt niet genoeg tekengroepen. U moet een wachtwoord "
+#~ "instellen dat er ten minste %d van gebruikt."
 
 #, fuzzy
 #~ msgid "Add OpenTelemetry Collector Prometheus scraping configuration"

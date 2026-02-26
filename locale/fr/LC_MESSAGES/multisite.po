@@ -997,6 +997,10 @@ msgstr "(intégré)"
 msgid "(default is %r for %s/TLS)"
 msgstr "(la valeur par défaut est %r pour %s/TLS)"
 
+#, fuzzy
+msgid "(deprecated)"
+msgstr "Déprécié"
+
 msgid "(disabled)"
 msgstr "(désactivé)"
 
@@ -22081,6 +22085,10 @@ msgstr "Afficher l'utilisation des inodes dans la sortie de vérification..."
 
 msgid "Display legend for timeline"
 msgstr "Afficher la légende de la ligne de temps"
+
+#, python-format
+msgid "Display limit of %d monitoring results reached."
+msgstr ""
 
 #, python-format
 msgid "Display long output in timeline (<a href=\"%s\">Enable in Setup</a>)"
@@ -57224,6 +57232,9 @@ msgstr "Référent"
 msgid "Refine search"
 msgstr "Affiner la recherche"
 
+msgid "Refine your search or press Enter for host/service search."
+msgstr ""
+
 msgid "Refresh"
 msgstr "Rafraîchir"
 
@@ -71305,12 +71316,6 @@ msgstr ""
 "NOTIFY_PARAMETER_1, NOTIFY_PARAMETER_2, etc."
 
 #, python-format
-msgid "The given password is too short. It must have at least %d characters."
-msgstr ""
-"Le mot de passe donné est trop court. Il doit comporter au moins %d "
-"caractères."
-
-#, python-format
 msgid ""
 "The given str \"%s\" for the pending changes info does not match the "
 "required pattern: \"[number] change(s)\""
@@ -72737,13 +72742,20 @@ msgstr ""
 msgid "The password contains forbidden character: %s"
 msgstr "Le nom d'hôte contient des caractères illégaux : %s"
 
+#, fuzzy, python-format
+msgid ""
+"The password does not comply with the configured password policy: It must "
+"have at least %d characters."
+msgstr ""
+"Le mot de passe donné est trop court. Il doit comporter au moins %d "
+"caractères."
+
 #, python-format
 msgid ""
-"The password does not use enough character groups. You need to set a "
-"password which uses at least %d of them."
+"The password does not comply with the configured password policy: It must "
+"use at least %d different character groups, such as lowercase letters, "
+"uppercase letters, digits or special characters."
 msgstr ""
-"Le mot de passe n'utilise pas suffisamment de groupes de caractères. Vous "
-"devez définir un mot de passe qui utilise au moins %d d'entre eux."
 
 #, fuzzy
 msgid ""
@@ -89203,6 +89215,10 @@ msgstr "Statistiques diverses de la passerelle Web"
 msgid "Web gateway statistics"
 msgstr "Statistiques de la passerelle Web"
 
+#, fuzzy
+msgid "WebAuthn login failed"
+msgstr "Échec de l'authentification"
+
 msgid "Webhook URL"
 msgstr "URL du Webhook"
 
@@ -96366,12 +96382,12 @@ msgid "Custom dashboards"
 msgstr "Personnaliser"
 
 #, fuzzy
-msgid "Built-in dashboards"
-msgstr "Cloner le tableau de bord intégré"
-
-#, fuzzy
 msgid "Unnamed Dashboard"
 msgstr "Tableau de bord"
+
+#, fuzzy
+msgid "Built-in dashboards"
+msgstr "Cloner le tableau de bord intégré"
 
 #, fuzzy
 msgid "Settings Menu"
@@ -98922,10 +98938,6 @@ msgstr ""
 msgid "2FA not possible (See #13325 for details)"
 msgstr ""
 
-#, fuzzy
-msgid "WebAuthn login failed"
-msgstr "Échec de l'authentification"
-
 msgid "No filters can be applied to your current search query."
 msgstr ""
 
@@ -98974,6 +98986,16 @@ msgstr "Aucun journal trouvé pour cet hôte."
 #, fuzzy
 msgid "Reset search"
 msgstr "Affiner la recherche"
+
+msgid "Find services, hosts, dashboards, ..."
+msgstr ""
+
+#, fuzzy
+msgid "Find customization options"
+msgstr "Options de filtrage et de calcul"
+
+msgid "Find rules, hosts, settings ..."
+msgstr ""
 
 msgid "Find rules, hosts, dashboards, settings ..."
 msgstr ""
@@ -99536,6 +99558,14 @@ msgstr ""
 msgid ""
 "You can still access it later via Help > Learning Checkmk > Welcome page"
 msgstr ""
+
+#, python-format
+#~ msgid ""
+#~ "The password does not use enough character groups. You need to set a "
+#~ "password which uses at least %d of them."
+#~ msgstr ""
+#~ "Le mot de passe n'utilise pas suffisamment de groupes de caractères. Vous "
+#~ "devez définir un mot de passe qui utilise au moins %d d'entre eux."
 
 #, fuzzy
 #~ msgid "Add OpenTelemetry Collector Prometheus scraping configuration"

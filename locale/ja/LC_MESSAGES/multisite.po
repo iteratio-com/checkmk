@@ -981,6 +981,10 @@ msgstr "(組み込み)"
 msgid "(default is %r for %s/TLS)"
 msgstr "(デフォルトは %r for %s/TLS)"
 
+#, fuzzy
+msgid "(deprecated)"
+msgstr "RCC(非推奨)"
+
 msgid "(disabled)"
 msgstr "(無効)"
 
@@ -20747,6 +20751,10 @@ msgstr "チェック出力にiノードの使用量を表示します。"
 
 msgid "Display legend for timeline"
 msgstr "タイムラインの凡例を表示する"
+
+#, python-format
+msgid "Display limit of %d monitoring results reached."
+msgstr ""
 
 #, python-format
 msgid "Display long output in timeline (<a href=\"%s\">Enable in Setup</a>)"
@@ -53397,6 +53405,9 @@ msgstr "リファラー"
 msgid "Refine search"
 msgstr "検索を絞り込む"
 
+msgid "Refine your search or press Enter for host/service search."
+msgstr ""
+
 msgid "Refresh"
 msgstr "リフレッシュ"
 
@@ -66665,10 +66676,6 @@ msgstr ""
 "クリプトで利用できます。"
 
 #, python-format
-msgid "The given password is too short. It must have at least %d characters."
-msgstr "指定されたパスワードが短すぎます。少なくとも %d 文字が必要です。"
-
-#, python-format
 msgid ""
 "The given str \"%s\" for the pending changes info does not match the "
 "required pattern: \"[number] change(s)\""
@@ -68028,13 +68035,18 @@ msgstr ""
 msgid "The password contains forbidden character: %s"
 msgstr "パターンに無効な文字が含まれています: %s"
 
+#, fuzzy, python-format
+msgid ""
+"The password does not comply with the configured password policy: It must "
+"have at least %d characters."
+msgstr "指定されたパスワードが短すぎます。少なくとも %d 文字が必要です。"
+
 #, python-format
 msgid ""
-"The password does not use enough character groups. You need to set a "
-"password which uses at least %d of them."
+"The password does not comply with the configured password policy: It must "
+"use at least %d different character groups, such as lowercase letters, "
+"uppercase letters, digits or special characters."
 msgstr ""
-"パスワードは十分な文字グループを使用していません。少なくとも%dを使用するパス"
-"ワードを設定する必要があります。"
 
 #, fuzzy
 msgid ""
@@ -83131,6 +83143,10 @@ msgstr "Webゲートウェイのその他の統計"
 msgid "Web gateway statistics"
 msgstr "Webゲートウェイ統計"
 
+#, fuzzy
+msgid "WebAuthn login failed"
+msgstr "認証失敗"
+
 msgid "Webhook URL"
 msgstr "WebhookのURL"
 
@@ -89915,12 +89931,12 @@ msgid "Custom dashboards"
 msgstr "カスタマイズユーザー"
 
 #, fuzzy
-msgid "Built-in dashboards"
-msgstr "組み込みダッシュボードを複製する"
-
-#, fuzzy
 msgid "Unnamed Dashboard"
 msgstr "ダッシュボード"
+
+#, fuzzy
+msgid "Built-in dashboards"
+msgstr "組み込みダッシュボードを複製する"
 
 #, fuzzy
 msgid "Settings Menu"
@@ -92372,10 +92388,6 @@ msgstr ""
 msgid "2FA not possible (See #13325 for details)"
 msgstr ""
 
-#, fuzzy
-msgid "WebAuthn login failed"
-msgstr "認証失敗"
-
 msgid "No filters can be applied to your current search query."
 msgstr ""
 
@@ -92422,6 +92434,16 @@ msgstr "お探しの結果が見つかりませんでした"
 #, fuzzy
 msgid "Reset search"
 msgstr "検索を絞り込む"
+
+msgid "Find services, hosts, dashboards, ..."
+msgstr ""
+
+#, fuzzy
+msgid "Find customization options"
+msgstr "フィルタリングと計算のオプション"
+
+msgid "Find rules, hosts, settings ..."
+msgstr ""
 
 msgid "Find rules, hosts, dashboards, settings ..."
 msgstr ""
@@ -92976,6 +92998,14 @@ msgstr ""
 msgid ""
 "You can still access it later via Help > Learning Checkmk > Welcome page"
 msgstr ""
+
+#, python-format
+#~ msgid ""
+#~ "The password does not use enough character groups. You need to set a "
+#~ "password which uses at least %d of them."
+#~ msgstr ""
+#~ "パスワードは十分な文字グループを使用していません。少なくとも%dを使用するパ"
+#~ "スワードを設定する必要があります。"
 
 #~ msgid "Add OpenTelemetry Collector Prometheus scraping configuration"
 #~ msgstr "OpenTelemetryコレクターPrometheusスクレイピング設定を追加する"

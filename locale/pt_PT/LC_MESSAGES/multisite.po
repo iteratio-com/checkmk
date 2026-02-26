@@ -6,7 +6,7 @@ msgstr ""
 "Project-Id-Version: Checkmk user interface translation 0.1\n"
 "Report-Msgid-Bugs-To: feedback@checkmk.com\n"
 "POT-Creation-Date: 2011-05-13 09:42+0200\n"
-"PO-Revision-Date: 2026-02-24 18:34+0000\n"
+"PO-Revision-Date: 2026-02-25 18:34+0000\n"
 "Language-Team: Portuguese (Portugal) <https://translate.checkmk.com/projects/"
 "checkmk/dev/pt_PT/>\n"
 "Language: pt_PT\n"
@@ -1003,6 +1003,10 @@ msgstr "(incorporado)"
 #, python-format
 msgid "(default is %r for %s/TLS)"
 msgstr "(a predefinição é %r para %s/TLS)"
+
+#, fuzzy
+msgid "(deprecated)"
+msgstr "Depreciado"
 
 msgid "(disabled)"
 msgstr "(inválido)"
@@ -21933,6 +21937,10 @@ msgstr "Exibir a utilização do inode na saída de verificação..."
 
 msgid "Display legend for timeline"
 msgstr "Exibir legenda para a linha do tempo"
+
+#, python-format
+msgid "Display limit of %d monitoring results reached."
+msgstr ""
 
 #, python-format
 msgid "Display long output in timeline (<a href=\"%s\">Enable in Setup</a>)"
@@ -56770,6 +56778,9 @@ msgstr "Referidor"
 msgid "Refine search"
 msgstr "Refinar a pesquisa"
 
+msgid "Refine your search or press Enter for host/service search."
+msgstr ""
+
 msgid "Refresh"
 msgstr "Actualizar"
 
@@ -70707,10 +70718,6 @@ msgstr ""
 "NOTIFY_PARAMETER_2, etc."
 
 #, python-format
-msgid "The given password is too short. It must have at least %d characters."
-msgstr "A senha dada é muito curta. Ela deve ter pelo menos %d caracteres."
-
-#, python-format
 msgid ""
 "The given str \"%s\" for the pending changes info does not match the "
 "required pattern: \"[number] change(s)\""
@@ -72114,13 +72121,18 @@ msgstr ""
 msgid "The password contains forbidden character: %s"
 msgstr "O nome do anfitrião contém caracteres ilegais: %s"
 
+#, fuzzy, python-format
+msgid ""
+"The password does not comply with the configured password policy: It must "
+"have at least %d characters."
+msgstr "A senha dada é muito curta. Ela deve ter pelo menos %d caracteres."
+
 #, python-format
 msgid ""
-"The password does not use enough character groups. You need to set a "
-"password which uses at least %d of them."
+"The password does not comply with the configured password policy: It must "
+"use at least %d different character groups, such as lowercase letters, "
+"uppercase letters, digits or special characters."
 msgstr ""
-"A senha não usa grupos de caracteres suficientes. Você precisa definir uma "
-"senha que use pelo menos %d deles."
 
 #, fuzzy
 msgid ""
@@ -88380,6 +88392,10 @@ msgstr "Estatísticas diversas da Web gateway"
 msgid "Web gateway statistics"
 msgstr "Estatísticas da Web gateway"
 
+#, fuzzy
+msgid "WebAuthn login failed"
+msgstr "A autenticação falhou"
+
 msgid "Webhook URL"
 msgstr "URL do Gancho da Web"
 
@@ -95436,12 +95452,12 @@ msgid "Custom dashboards"
 msgstr "Personalizar"
 
 #, fuzzy
-msgid "Built-in dashboards"
-msgstr "Clonar o painel de controlo incorporado"
-
-#, fuzzy
 msgid "Unnamed Dashboard"
 msgstr "Painel de instrumentos"
+
+#, fuzzy
+msgid "Built-in dashboards"
+msgstr "Clonar o painel de controlo incorporado"
 
 #, fuzzy
 msgid "Settings Menu"
@@ -97983,10 +97999,6 @@ msgstr ""
 msgid "2FA not possible (See #13325 for details)"
 msgstr ""
 
-#, fuzzy
-msgid "WebAuthn login failed"
-msgstr "A autenticação falhou"
-
 msgid "No filters can be applied to your current search query."
 msgstr ""
 
@@ -98035,6 +98047,16 @@ msgstr "Não foram encontrados registos para este anfitrião."
 #, fuzzy
 msgid "Reset search"
 msgstr "Refinar a pesquisa"
+
+msgid "Find services, hosts, dashboards, ..."
+msgstr ""
+
+#, fuzzy
+msgid "Find customization options"
+msgstr "Opções de filtragem e computação"
+
+msgid "Find rules, hosts, settings ..."
+msgstr ""
 
 msgid "Find rules, hosts, dashboards, settings ..."
 msgstr ""
@@ -98597,6 +98619,14 @@ msgstr ""
 msgid ""
 "You can still access it later via Help > Learning Checkmk > Welcome page"
 msgstr ""
+
+#, python-format
+#~ msgid ""
+#~ "The password does not use enough character groups. You need to set a "
+#~ "password which uses at least %d of them."
+#~ msgstr ""
+#~ "A senha não usa grupos de caracteres suficientes. Você precisa definir "
+#~ "uma senha que use pelo menos %d deles."
 
 #, fuzzy
 #~ msgid "Add OpenTelemetry Collector Prometheus scraping configuration"

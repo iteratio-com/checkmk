@@ -1011,6 +1011,10 @@ msgstr "(încorporat)"
 msgid "(default is %r for %s/TLS)"
 msgstr "(implicit este %r pentru %s/TLS)"
 
+#, fuzzy
+msgid "(deprecated)"
+msgstr "Depreciat"
+
 msgid "(disabled)"
 msgstr "(dezactivat)"
 
@@ -21990,6 +21994,10 @@ msgstr "Afișarea utilizării inode-urilor în ieșirea de verificare..."
 
 msgid "Display legend for timeline"
 msgstr "Afișarea legendei pentru linia de timp"
+
+#, python-format
+msgid "Display limit of %d monitoring results reached."
+msgstr ""
 
 #, python-format
 msgid "Display long output in timeline (<a href=\"%s\">Enable in Setup</a>)"
@@ -56931,6 +56939,9 @@ msgstr "Referer"
 msgid "Refine search"
 msgstr "Rafinează căutarea"
 
+msgid "Refine your search or press Enter for host/service search."
+msgstr ""
+
 msgid "Refresh"
 msgstr "Reîmprospătare"
 
@@ -70954,11 +70965,6 @@ msgstr ""
 "NOTIFY_PARAMETER_2 etc."
 
 #, python-format
-msgid "The given password is too short. It must have at least %d characters."
-msgstr ""
-"Parola dată este prea scurtă. Aceasta trebuie să aibă cel puțin %d caractere."
-
-#, python-format
 msgid ""
 "The given str \"%s\" for the pending changes info does not match the "
 "required pattern: \"[number] change(s)\""
@@ -72389,13 +72395,19 @@ msgstr ""
 msgid "The password contains forbidden character: %s"
 msgstr "Numele gazdei conține caractere ilegale: %s."
 
+#, fuzzy, python-format
+msgid ""
+"The password does not comply with the configured password policy: It must "
+"have at least %d characters."
+msgstr ""
+"Parola dată este prea scurtă. Aceasta trebuie să aibă cel puțin %d caractere."
+
 #, python-format
 msgid ""
-"The password does not use enough character groups. You need to set a "
-"password which uses at least %d of them."
+"The password does not comply with the configured password policy: It must "
+"use at least %d different character groups, such as lowercase letters, "
+"uppercase letters, digits or special characters."
 msgstr ""
-"Parola nu utilizează suficiente grupuri de caractere. Trebuie să setați o "
-"parolă care să utilizeze cel puțin %d dintre acestea."
 
 #, fuzzy
 msgid ""
@@ -88714,6 +88726,10 @@ msgstr "Statistici diverse ale gateway-ului web"
 msgid "Web gateway statistics"
 msgstr "Statisticile gateway-ului web"
 
+#, fuzzy
+msgid "WebAuthn login failed"
+msgstr "Autentificarea a eșuat"
+
 msgid "Webhook URL"
 msgstr "URL-ul Webhook"
 
@@ -95829,12 +95845,12 @@ msgid "Custom dashboards"
 msgstr "Personalizați"
 
 #, fuzzy
-msgid "Built-in dashboards"
-msgstr "Clonarea tabloului de bord încorporat"
-
-#, fuzzy
 msgid "Unnamed Dashboard"
 msgstr "Tabloul de bord"
+
+#, fuzzy
+msgid "Built-in dashboards"
+msgstr "Clonarea tabloului de bord încorporat"
 
 #, fuzzy
 msgid "Settings Menu"
@@ -98390,10 +98406,6 @@ msgstr ""
 msgid "2FA not possible (See #13325 for details)"
 msgstr ""
 
-#, fuzzy
-msgid "WebAuthn login failed"
-msgstr "Autentificarea a eșuat"
-
 msgid "No filters can be applied to your current search query."
 msgstr ""
 
@@ -98442,6 +98454,16 @@ msgstr "Nu s-au găsit jurnale pentru această gazdă."
 #, fuzzy
 msgid "Reset search"
 msgstr "Rafinează căutarea"
+
+msgid "Find services, hosts, dashboards, ..."
+msgstr ""
+
+#, fuzzy
+msgid "Find customization options"
+msgstr "Opțiuni de filtrare și calcul"
+
+msgid "Find rules, hosts, settings ..."
+msgstr ""
 
 msgid "Find rules, hosts, dashboards, settings ..."
 msgstr ""
@@ -99004,6 +99026,14 @@ msgstr ""
 msgid ""
 "You can still access it later via Help > Learning Checkmk > Welcome page"
 msgstr ""
+
+#, python-format
+#~ msgid ""
+#~ "The password does not use enough character groups. You need to set a "
+#~ "password which uses at least %d of them."
+#~ msgstr ""
+#~ "Parola nu utilizează suficiente grupuri de caractere. Trebuie să setați o "
+#~ "parolă care să utilizeze cel puțin %d dintre acestea."
 
 #, fuzzy
 #~ msgid "Add OpenTelemetry Collector Prometheus scraping configuration"
