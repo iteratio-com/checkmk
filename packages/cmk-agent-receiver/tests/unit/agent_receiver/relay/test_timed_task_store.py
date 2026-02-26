@@ -7,7 +7,7 @@ from collections.abc import Iterator
 from datetime import datetime, timedelta, UTC
 
 import pytest
-from time_machine import Coordinates, travel
+from time_machine import travel, Traveller
 
 from cmk.agent_receiver.relay.api.routers.tasks.libs.tasks_repository import (
     FetchSpec,
@@ -37,7 +37,7 @@ def store() -> TimedTaskStore:
 
 
 @pytest.fixture
-def time() -> Iterator[Coordinates]:
+def time() -> Iterator[Traveller]:
     with travel(datetime.now(UTC)) as traveler:
         yield traveler
 
@@ -90,7 +90,7 @@ def test_values_returns_empty_list_for_empty_store(store: TimedTaskStore) -> Non
 
 
 def test_expired_tasks_removed_on_getitem(
-    time: Coordinates,
+    time: Traveller,
     store: TimedTaskStore,
 ) -> None:
     expired_task_id = TaskID("expired-task")
@@ -99,21 +99,21 @@ def test_expired_tasks_removed_on_getitem(
     assert expired_task_id not in store
 
 
-def test_expired_tasks_removed_on_values(time: Coordinates, store: TimedTaskStore) -> None:
+def test_expired_tasks_removed_on_values(time: Traveller, store: TimedTaskStore) -> None:
     expired_task_id = TaskID("expired-task")
     store[expired_task_id] = _make_task(expired_task_id)
     time.shift(SHIFT_TO_EXPIRE)
     assert len(store.values()) == 0
 
 
-def test_expired_tasks_removed_on_contains(time: Coordinates, store: TimedTaskStore) -> None:
+def test_expired_tasks_removed_on_contains(time: Traveller, store: TimedTaskStore) -> None:
     task_id = TaskID("expired-task")
     store[task_id] = _make_task(task_id)
     time.shift(SHIFT_TO_EXPIRE)
     assert task_id not in store
 
 
-def test_multiple_expired_tasks_cleanup(time: Coordinates, store: TimedTaskStore) -> None:
+def test_multiple_expired_tasks_cleanup(time: Traveller, store: TimedTaskStore) -> None:
     for i in range(3):
         task_id = TaskID(f"expired-task-{i}")
         store[task_id] = _make_task(task_id)
@@ -127,7 +127,7 @@ def test_multiple_expired_tasks_cleanup(time: Coordinates, store: TimedTaskStore
     assert fresh_task_id in store
 
 
-def test_expiration_based_on_update_timestamp(time: Coordinates, store: TimedTaskStore) -> None:
+def test_expiration_based_on_update_timestamp(time: Traveller, store: TimedTaskStore) -> None:
     # Create task with old creation_timestamp but recent update_timestamp
     old_time = datetime.now(UTC) - timedelta(seconds=SHIFT_TO_EXPIRE)
     recent_time = datetime.now(UTC)
@@ -149,7 +149,7 @@ def test_expiration_based_on_update_timestamp(time: Coordinates, store: TimedTas
 
 
 def test_logging_during_cleanup(
-    caplog: pytest.LogCaptureFixture, time: Coordinates, store: TimedTaskStore
+    caplog: pytest.LogCaptureFixture, time: Traveller, store: TimedTaskStore
 ) -> None:
     caplog.set_level(logging.DEBUG, logger="agent-receiver")
     task_id = TaskID("test-task")
