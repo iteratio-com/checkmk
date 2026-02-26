@@ -18,14 +18,14 @@ const examplePath = '/etc/check_mk/main.mk'
 </script>
 
 <template>
-  <div class="demo-cmk-copy__container">
+  <div class="demo-cmk-copy-dev__container">
     <section>
       <h4>Icon button (default usage)</h4>
       <p>The same trigger used in <code>CmkCode</code>.</p>
-      <div class="demo-cmk-copy__row">
+      <div class="demo-cmk-copy-dev__row">
         <code>{{ exampleText }}</code>
         <CmkCopy :text="exampleText">
-          <CmkIconButton name="copied" size="medium" class="demo-cmk-copy__icon-button" />
+          <CmkIconButton name="copied" size="medium" class="demo-cmk-copy-dev__icon-button" />
         </CmkCopy>
       </div>
     </section>
@@ -33,7 +33,7 @@ const examplePath = '/etc/check_mk/main.mk'
     <section>
       <h4>Text button</h4>
       <p>A secondary button as the trigger.</p>
-      <div class="demo-cmk-copy__row">
+      <div class="demo-cmk-copy-dev__row">
         <code>{{ exampleSecret }}</code>
         <CmkCopy :text="exampleSecret">
           <CmkButton variant="secondary">
@@ -47,7 +47,7 @@ const examplePath = '/etc/check_mk/main.mk'
     <section>
       <h4>Chip</h4>
       <p>Clicking the chip itself copies the path.</p>
-      <div class="demo-cmk-copy__row">
+      <div class="demo-cmk-copy-dev__row">
         <CmkCopy :text="examplePath">
           <CmkChip color="info" variant="outline" :as-div="true">{{ examplePath }}</CmkChip>
         </CmkCopy>
@@ -57,7 +57,7 @@ const examplePath = '/etc/check_mk/main.mk'
 </template>
 
 <style scoped>
-.demo-cmk-copy__container {
+.demo-cmk-copy-dev__container {
   display: flex;
   flex-direction: column;
   gap: var(--dimension-6);
@@ -79,13 +79,13 @@ const examplePath = '/etc/check_mk/main.mk'
   }
 }
 
-.demo-cmk-copy__row {
+.demo-cmk-copy-dev__row {
   display: flex;
   align-items: center;
   gap: var(--dimension-4);
 }
 
-.demo-cmk-copy__icon-button {
+.demo-cmk-copy-dev__icon-button {
   display: flex;
   align-items: center;
   justify-content: center;

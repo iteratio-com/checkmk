@@ -42,7 +42,8 @@ import DemoI18n from './foundation-elements/typography/DemoI18n.vue'
 import DemoTypography from './foundation-elements/typography/DemoTypography.vue'
 import DemoCmkLinkCard from './navigation/DemoCmkLinkCard.vue'
 import DemoCmkAlertBox from './system-feedback/DemoCmkAlertBox.vue'
-import DemoCmkCopy from './system-feedback/DemoCmkCopy.vue'
+import DemoCmkCopyButton from './system-feedback/DemoCmkCopyButton.vue'
+import DemoCmkCopyIcon from './system-feedback/DemoCmkCopyIcon.vue'
 import DemoCmkDialog from './system-feedback/DemoCmkDialog.vue'
 import DemoCmkInlineValidation from './system-feedback/DemoCmkInlineValidation.vue'
 import DemoCmkLoading from './system-feedback/DemoCmkLoading.vue'
@@ -104,7 +105,8 @@ const navigationPages = [new Page('CmkLinkCard', DemoCmkLinkCard)]
 
 const systemFeedbackPages = [
   new Page('CmkAlertBox', DemoCmkAlertBox),
-  new Page('CmkCopy', DemoCmkCopy),
+  new Page('CmkCopyButton', DemoCmkCopyButton),
+  new Page('CmkCopyIcon', DemoCmkCopyIcon),
   new Page('CmkDialog', DemoCmkDialog),
   new Page('CmkErrorBoundary', DemoErrorBoundary),
   new Page('CmkHelpText', DemoHelp),

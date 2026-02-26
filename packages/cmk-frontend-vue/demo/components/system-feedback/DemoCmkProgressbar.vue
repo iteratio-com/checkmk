@@ -1,140 +1,82 @@
 <!--
-Copyright (C) 2024 Checkmk GmbH - License: GNU General Public License v2
+Copyright (C) 2026 Checkmk GmbH - License: GNU General Public License v2
 This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 conditions defined in the file COPYING, which is part of this source code package.
 -->
-
 <script setup lang="ts">
-import { nextTick, onMounted, ref } from 'vue'
+import {
+  DemoDetailPageAccessibility,
+  DemoDetailPageCodeExample,
+  DemoDetailPageComponent,
+  DemoDetailPageHeader,
+  DemoDetailPageLayout,
+  DemoPropertiesPanel,
+  type Options,
+  type PanelConfig,
+  createPanelState
+} from '@demo/_demo/components/detail-page'
+import { ref } from 'vue'
 
-import CmkButton from '@/components/CmkButton.vue'
-import CmkDropdown from '@/components/CmkDropdown'
-import CmkProgressbar from '@/components/CmkProgressbar.vue'
+import CmkProgressbar, { type Sizes } from '@/components/CmkProgressbar.vue'
 
 defineProps<{ screenshotMode: boolean }>()
-const value = defineModel<number>('value', { default: 30 })
-const max = defineModel<number>('max', { default: 100 })
-const labelUnit = defineModel<string>('label-unit', { default: '%' })
 
-function randomValue(): void {
-  value.value = Math.round(Math.random() * max.value)
-}
+const codeExampleCmkProgressbar = `<script setup lang="ts">
+${'import'} CmkProgressbar from '@/components/CmkProgressbar.vue'
+<${'/'}script>
 
-const infiniteSelected = ref<'default' | 'infinite'>('default')
-const showLabelSelected = ref<'yes' | 'no'>('no')
-const labelMaxSelected = ref<'yes' | 'no'>('yes')
-const sizeSelected = ref<'small' | 'medium' | 'large'>('medium')
+<template>
+  <CmkProgressbar
+    :value="30"
+    :max="100"
+    size="medium"
+    :label="{ showTotal: true, unit: '%' }"
+  />
+</template>`
 
-onMounted(() => {
-  void nextTick(() => {
-    randomValue()
-  })
-})
+const panelConfig = {
+  value: { type: 'number', title: 'Current Value', initialState: 30 },
+  max: {
+    type: 'string',
+    title: 'Max Value',
+    initialState: '100',
+    help: 'Leave empty for infinite mode'
+  },
+  size: {
+    type: 'list',
+    title: 'Size',
+    options: [
+      { title: 'Small', name: 'small' },
+      { title: 'Medium', name: 'medium' },
+      { title: 'Large', name: 'large' }
+    ] satisfies Options<NonNullable<Sizes>>[],
+    initialState: 'medium' as const
+  },
+  label: { type: 'boolean', title: 'label', initialState: true }
+} satisfies PanelConfig
+
+const propState = ref(createPanelState(panelConfig))
 </script>
 
 <template>
-  <label>Progress-Type: </label>
-  <CmkDropdown
-    v-model:selected-option="infiniteSelected"
-    :options="{
-      type: 'fixed',
-      suggestions: [
-        { name: 'default', title: 'default' },
-        { name: 'infinite', title: 'infinite' }
-      ]
-    }"
-    input-hint="some input hint"
-    no-results-hint="no results hint"
-    label="some label"
-    required
-  />
-  <br /><br /><br />
-  <label>Size: </label>
-  <CmkDropdown
-    v-model:selected-option="sizeSelected"
-    :options="{
-      type: 'fixed',
-      suggestions: [
-        { name: 'small', title: 'small' },
-        { name: 'medium', title: 'medium' },
-        { name: 'large', title: 'large' }
-      ]
-    }"
-    input-hint="some input hint"
-    no-results-hint="no results hint"
-    label="some label"
-    required
-  />
-  <br /><br /><br />
+  <DemoDetailPageLayout>
+    <DemoDetailPageHeader>CmkProgressbar</DemoDetailPageHeader>
 
-  <div v-if="infiniteSelected === 'default'">
-    <label>Show label: </label>
-    <CmkDropdown
-      v-model:selected-option="showLabelSelected"
-      :options="{
-        type: 'fixed',
-        suggestions: [
-          { name: 'yes', title: 'yes' },
-          { name: 'no', title: 'no' }
-        ]
-      }"
-      input-hint="some input hint"
-      no-results-hint="no results hint"
-      label="some label"
-      required
-    />
-    <br /><br /><br />
-
-    <div v-if="showLabelSelected === 'yes'">
-      <label>Show max value in label: </label>
-      <CmkDropdown
-        v-model:selected-option="labelMaxSelected"
-        :options="{
-          type: 'fixed',
-          suggestions: [
-            { name: 'yes', title: 'yes' },
-            { name: 'no', title: 'no' }
-          ]
-        }"
-        input-hint="some input hint"
-        no-results-hint="no results hint"
-        label="some label"
-        required
+    <DemoDetailPageComponent>
+      <CmkProgressbar
+        :value="propState.value"
+        :max="propState.max ? Number(propState.max) : 'unknown'"
+        :size="propState.size"
+        :label="propState.label ? { showTotal: true, unit: '%' } : undefined"
       />
-      <br /><br /><br />
 
-      <label>Label unit: </label>
-      <input v-model="labelUnit" />
-      <br /><br /><br />
-    </div>
+      <template #properties>
+        <DemoPropertiesPanel v-model="propState" :config="panelConfig" />
+      </template>
+    </DemoDetailPageComponent>
 
-    <label>Max-Value: </label>
-    <input v-model="max" type="number" />
-    <br /><br /><br />
+    <DemoDetailPageCodeExample :code="codeExampleCmkProgressbar" />
 
-    <CmkButton @click="randomValue">Generate random value (cur. {{ value }})</CmkButton>
-    <br /><br /><br />
-  </div>
-  <div class="demo-cmk-progressbar">
-    <CmkProgressbar
-      :value="value"
-      :size="sizeSelected"
-      :max="infiniteSelected === 'infinite' ? 'unknown' : max"
-      :label="
-        infiniteSelected === 'infinite' || showLabelSelected === 'no'
-          ? undefined
-          : {
-              showTotal: labelMaxSelected === 'yes',
-              unit: labelUnit
-            }
-      "
-    ></CmkProgressbar>
-  </div>
+    <DemoDetailPageAccessibility :data="[]" />
+  </DemoDetailPageLayout>
 </template>
-
-<style scoped>
-.demo-cmk-progressbar {
-  width: 100%;
-  height: 20px;
-}
-</style>

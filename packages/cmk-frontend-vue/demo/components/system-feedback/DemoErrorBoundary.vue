@@ -1,64 +1,104 @@
 <!--
-Copyright (C) 2024 Checkmk GmbH - License: GNU General Public License v2
+Copyright (C) 2026 Checkmk GmbH - License: GNU General Public License v2
 This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 conditions defined in the file COPYING, which is part of this source code package.
 -->
-
 <script setup lang="ts">
-import { defineComponent } from 'vue'
-
-import { CmkError } from '@/lib/error.ts'
+import {
+  DemoDetailPageAccessibility,
+  DemoDetailPageCodeExample,
+  DemoDetailPageComponent,
+  DemoDetailPageDeveloperPlayground,
+  DemoDetailPageHeader,
+  DemoDetailPageLayout,
+  DemoPropertiesPanel,
+  type PanelConfig,
+  createPanelState
+} from '@demo/_demo/components/detail-page'
+import { ref, watch } from 'vue'
 
 import { useCmkErrorBoundary } from '@/components/CmkErrorBoundary'
 
-const props = defineProps<{ screenshotMode: boolean }>()
+import DemoErrorBoundaryDev from './DemoErrorBoundaryDev.vue'
 
-class DemoError<T extends Error> extends CmkError<T> {
-  override name = 'DemoError'
-  override getContext(): string {
-    return 'DemoErrorContext'
-  }
-}
-
-function throwCmkError() {
-  try {
-    try {
-      throw new Error('something happened in code we can not control')
-    } catch (error: unknown) {
-      throw new DemoError('internal error handler, but keeps bubbeling', error as Error)
-    }
-  } catch (error: unknown) {
-    throw new CmkError('this is a cmk error', error as Error)
-  }
-}
-
-function throwError(message: string) {
-  throw new Error(message)
-}
+defineProps<{ screenshotMode: boolean }>()
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
-const ScreenshotModeEnabler = defineComponent(() => {
-  return () => {
-    if (props.screenshotMode) {
-      throwError('cheese')
-    }
+const { CmkErrorBoundary, error } = useCmkErrorBoundary()
+
+const panelConfig = {
+  error: { type: 'boolean', title: 'error', initialState: false }
+} satisfies PanelConfig
+
+const propState = ref(createPanelState(panelConfig))
+
+watch(
+  () => propState.value.error,
+  (hasError) => {
+    error.value = hasError
+      ? new Error('Something unexpected happened in the component tree.')
+      : null
   }
-}, {})
+)
+
+const a11yDataCmkErrorBoundary = [
+  {
+    keys: ['Tab'],
+    description: 'Moves keyboard focus to the error.'
+  },
+  {
+    keys: [['Shift', 'Tab']],
+    description: 'Moves focus to the previous focusable element in reverse order.'
+  },
+  {
+    keys: ['Enter', 'Space'],
+    description:
+      'When focused on the error message, pressing Enter or Space will trigger any available details to be expanded.'
+  }
+]
+
+const codeExampleCmkErrorBoundary = `<script setup lang="ts">
+${'import'} { useCmkErrorBoundary } from '@/components/CmkErrorBoundary'
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 const { CmkErrorBoundary } = useCmkErrorBoundary()
+
+function throwError() {
+  throw new Error('Something went wrong.')
+}
+<${'/'}script>
+
+<template>
+  <CmkErrorBoundary>
+    <button @click="throwError()">Throw error</button>
+  </CmkErrorBoundary>
+</template>`
+
+function throwError() {
+  throw new Error('Something unexpected happened in the component tree.')
+}
 </script>
 
 <template>
-  <div>
-    &lt;ErrorBoundary&gt;
-    <CmkErrorBoundary>
-      <button @click="throwError('this is a test error')">throw new Error()</button>
-      <button @click="throwCmkError()">throw new CmkError()</button>
-      <ScreenshotModeEnabler />
-    </CmkErrorBoundary>
-    &lt;/ErrorBoundary&gt;
-  </div>
-  <!-- I would have expected that this also triggers the onErrorCaptured method in useErrorBoundary, but its also fine this way -->
-  <button @click="throwError('another error')">throw new Error() outside error boundary</button>
+  <DemoDetailPageLayout>
+    <DemoDetailPageHeader>CmkErrorBoundary</DemoDetailPageHeader>
+
+    <DemoDetailPageComponent>
+      <CmkErrorBoundary>
+        <button @click="throwError()">Throw error</button>
+      </CmkErrorBoundary>
+
+      <template #properties>
+        <DemoPropertiesPanel v-model="propState" :config="panelConfig" />
+      </template>
+    </DemoDetailPageComponent>
+
+    <DemoDetailPageCodeExample :code="codeExampleCmkErrorBoundary" />
+
+    <DemoDetailPageAccessibility :data="a11yDataCmkErrorBoundary" />
+
+    <DemoDetailPageDeveloperPlayground>
+      <DemoErrorBoundaryDev :screenshot-mode="screenshotMode" />
+    </DemoDetailPageDeveloperPlayground>
+  </DemoDetailPageLayout>
 </template>

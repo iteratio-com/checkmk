@@ -1,72 +1,92 @@
 <!--
-Copyright (C) 2024 Checkmk GmbH - License: GNU General Public License v2
+Copyright (C) 2026 Checkmk GmbH - License: GNU General Public License v2
 This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 conditions defined in the file COPYING, which is part of this source code package.
 -->
-
 <script setup lang="ts">
-import CmkSkeleton from '@/components/CmkSkeleton.vue'
+import {
+  DemoDetailPageAccessibility,
+  DemoDetailPageCodeExample,
+  DemoDetailPageComponent,
+  DemoDetailPageDeveloperPlayground,
+  DemoDetailPageHeader,
+  DemoDetailPageLayout,
+  DemoPropertiesPanel,
+  type Options,
+  type PanelConfig,
+  createPanelState
+} from '@demo/_demo/components/detail-page'
+import { ref } from 'vue'
+
+import CmkSkeleton, { type SkeletonType } from '@/components/CmkSkeleton.vue'
+
+import DemoCmkSkeletonDev from './DemoCmkSkeletonDev.vue'
 
 defineProps<{ screenshotMode: boolean }>()
+
+const codeExampleCmkSkeleton = `<script setup lang="ts">
+${'import'} CmkSkeleton from '@/components/CmkSkeleton.vue'
+<${'/'}script>
+
+<template>
+  <div class="user-card-loading">
+    <CmkSkeleton type="icon-xlarge" />
+    <div class="user-card-text">
+      <CmkSkeleton type="h3" width="60%" />
+      <CmkSkeleton type="info-text" width="40%" />
+    </div>
+  </div>
+</template>`
+
+const panelConfig = {
+  type: {
+    type: 'list',
+    title: 'Skeleton Type',
+    options: [
+      { title: 'Box', name: 'box' },
+      { title: 'H1', name: 'h1' },
+      { title: 'H2', name: 'h2' },
+      { title: 'H3', name: 'h3' },
+      { title: 'Text', name: 'text' },
+      { title: 'Info Text', name: 'info-text' },
+      { title: 'Icon: X-Small', name: 'icon-xsmall' },
+      { title: 'Icon: Small', name: 'icon-small' },
+      { title: 'Icon: Medium', name: 'icon-medium' },
+      { title: 'Icon: Large', name: 'icon-large' },
+      { title: 'Icon: X-Large', name: 'icon-xlarge' },
+      { title: 'Icon: XX-Large', name: 'icon-xxlarge' },
+      { title: 'Icon: XXX-Large', name: 'icon-xxxlarge' }
+    ] satisfies Options<NonNullable<SkeletonType>>[],
+    initialState: 'text' as const
+  },
+  width: {
+    type: 'string',
+    title: 'Custom Width',
+    help: 'Optionally set a custom width for the skeleton using any valid CSS unit(% or px).',
+    initialState: '100%'
+  }
+} satisfies PanelConfig
+
+const propState = ref(createPanelState(panelConfig))
 </script>
 
 <template>
-  <h2>Box (width/height: 100%)</h2>
-  <div class="demo-cmk-skeleton">
-    <CmkSkeleton></CmkSkeleton>
-  </div>
+  <DemoDetailPageLayout>
+    <DemoDetailPageHeader>CmkSkeleton</DemoDetailPageHeader>
 
-  <h2>Text-Skeletons</h2>
-  <ul>
-    <li><label>h1</label><CmkSkeleton type="h1"></CmkSkeleton></li>
-    <li><label>h2</label><CmkSkeleton type="h2"></CmkSkeleton></li>
-    <li><label>h3</label><CmkSkeleton type="h3"></CmkSkeleton></li>
-    <li><label>text</label><CmkSkeleton type="text"></CmkSkeleton></li>
-    <li><label>info-text</label><CmkSkeleton type="info-text"></CmkSkeleton></li>
-  </ul>
+    <DemoDetailPageComponent>
+      <CmkSkeleton :type="propState.type" :width="propState.width" />
+      <template #properties>
+        <DemoPropertiesPanel v-model="propState" :config="panelConfig" />
+      </template>
+    </DemoDetailPageComponent>
 
-  <h2>Icon-Skeletons</h2>
-  <ul>
-    <li><label>xsmall</label><CmkSkeleton type="icon-xsmall"></CmkSkeleton></li>
-    <li><label>small</label><CmkSkeleton type="icon-small"></CmkSkeleton></li>
-    <li><label>medium</label><CmkSkeleton type="icon-medium"></CmkSkeleton></li>
-    <li><label>large</label><CmkSkeleton type="icon-large"></CmkSkeleton></li>
-    <li><label>xlarge</label><CmkSkeleton type="icon-xlarge"></CmkSkeleton></li>
-    <li><label>xxlarge</label><CmkSkeleton type="icon-xxlarge"></CmkSkeleton></li>
-    <li><label>xxxlarge</label><CmkSkeleton type="icon-xxxlarge"></CmkSkeleton></li>
-  </ul>
+    <DemoDetailPageCodeExample :code="codeExampleCmkSkeleton" />
 
-  <h2>Slotted Skeletons</h2>
-  <div class="demo-cmk-skeleton">
-    <CmkSkeleton>
-      <ul>
-        <li><CmkSkeleton type="h1"></CmkSkeleton></li>
-        <li><CmkSkeleton type="h2"></CmkSkeleton></li>
-        <li><CmkSkeleton type="h3"></CmkSkeleton></li>
-        <li><CmkSkeleton type="text"></CmkSkeleton></li>
-        <li><CmkSkeleton type="info-text"></CmkSkeleton></li>
-      </ul>
-    </CmkSkeleton>
-  </div>
+    <DemoDetailPageAccessibility :data="[]" />
+
+    <DemoDetailPageDeveloperPlayground>
+      <DemoCmkSkeletonDev :screenshot-mode="screenshotMode" />
+    </DemoDetailPageDeveloperPlayground>
+  </DemoDetailPageLayout>
 </template>
-
-<style scoped>
-.demo-cmk-skeleton {
-  width: 200px;
-  height: 100px;
-  min-width: 200px;
-  min-height: 110px;
-  padding: 10px;
-}
-
-li {
-  display: flex;
-  flex-direction: row;
-  align-items: flex-start;
-  margin-bottom: 5px;
-
-  label {
-    width: 100px;
-  }
-}
-</style>
