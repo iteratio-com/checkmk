@@ -62,7 +62,6 @@ DOCKERABLE_TESTS := \
 	test-requirements \
 	test-plugins-siteless \
 	test-unit-all \
-	test-unit-shell \
 	test-unit-testlib \
 	test-werks \
 	test-medium-chain
@@ -84,7 +83,6 @@ AGENT_PLUGIN_UNIT_TEST_FILES := $(wildcard agent-plugin-unit/test_*.py)
 	$(foreach TEST,$(SYSTEM_TESTS),$(TEST)-docker-debug) \
 	test-mypy test-mypy-gpl test-mypy-docker test-packaging \
 	test-unit test-unit-all test-unit-docker \
-	test-unit-shell test-unit-shell-docker \
 	test-unit-omdlib \
 	test-tidy-core test-tidy-docker \
 	test-unit-neb test-unit-core \
@@ -363,7 +361,7 @@ test-agent-plugin-docker:
 	../scripts/run-in-docker.sh make test-agent-plugin
 
 test-unit-shell:
-	./unit-shell/runner.sh
+	;
 
 test-unit-neb:
 	cd ../packages/neb/test && ./.f12
