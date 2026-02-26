@@ -6,6 +6,7 @@ import configparser
 import json
 import os
 import pwd
+import shlex
 import socket
 import subprocess
 import sys
@@ -296,7 +297,7 @@ def run_podman_command(
     try:
         cmd = ["podman", *args]
         if run_as_user and os.geteuid() == 0:
-            cmd = ["runuser", "-u", run_as_user, "--", "podman", *args]
+            cmd = ["su", "-", "--", run_as_user, "-c", shlex.join(cmd)]
 
         result = subprocess.run(
             cmd,
