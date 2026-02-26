@@ -7,6 +7,7 @@
       "Skill(gerrit)",
       "Skill(jenkins)",
       "Skill(owners)",
+      "Skill(jira-plan-ticket)",
 
       "Bash(bazel:*)",
       "Bash(make:*)",
@@ -37,7 +38,8 @@
       "Bash(jq:*)",
 
       "Bash(gerrit-change-log:*)",
-      "Bash(jenkins_build_data.py:*)"
+      "Bash(jenkins_build_data.py:*)",
+      "Bash(.venv/bin/python3 .claude/skills/jira-plan-ticket/fetch_jira_context.py:*)"
     ],
     "deny": ["Bash(git remote:*)", "Bash(git config:*)"],
     "ask": ["Bash(find *--exec*)"]
