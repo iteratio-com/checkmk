@@ -5,7 +5,9 @@
 
 
 from collections.abc import Mapping, Sequence
-from typing import Literal, Never, NotRequired, TypedDict
+from typing import Literal, Never, NotRequired, Protocol, TypedDict
+
+from cmk.agent_based.v2 import CheckPlugin
 
 # Watch out! Matching the 'logwatch_rules' ruleset against labels will not
 # work as expected, if logfiles are grouped!
@@ -40,3 +42,27 @@ StateMap = Mapping[Literal["c_to", "w_to", "o_to", "._to"], Literal["C", "W", "O
 class ParameterLogwatchRules(TypedDict):
     reclassify_patterns: list[tuple[Literal["C", "W", "O", "I"], str, str]]
     reclassify_states: NotRequired[StateMap]
+
+
+class LogwatchConfigP(Protocol):
+    def logwatch_rules_all(
+        self, *, host_name: str, plugin: CheckPlugin, logfile: str
+    ) -> Sequence[ParameterLogwatchRules]: ...
+
+    def logwatch_ec_all(self, host_name: str) -> Sequence[ParameterLogwatchEc]: ...
+
+
+# This is obviously bad practice.
+# But I rather have an isolated global state here then in cmk.base.config :-/
+_g_state_config: LogwatchConfigP | None = None
+
+
+def set_global_state(config: LogwatchConfigP) -> None:
+    global _g_state_config
+    _g_state_config = config
+
+
+def get_global_state() -> LogwatchConfigP:
+    if _g_state_config is None:
+        raise RuntimeError("global state not initialised")
+    return _g_state_config

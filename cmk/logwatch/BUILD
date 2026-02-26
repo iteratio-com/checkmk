@@ -5,5 +5,7 @@ py_library(
     srcs = ["config.py"],
     imports = ["../.."],
     visibility = ["//cmk:__subpackages__"],
-    deps = [],
+    deps = [
+        "//packages/cmk-plugin-apis:agent_based",
+    ],
 )

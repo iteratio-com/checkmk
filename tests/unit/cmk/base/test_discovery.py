@@ -16,7 +16,7 @@ from typing import NamedTuple
 import pytest
 from pytest import MonkeyPatch
 
-from cmk.agent_based.v2 import AgentSection, SimpleSNMPSection
+from cmk.agent_based.v2 import AgentSection, CheckPlugin, SimpleSNMPSection
 from cmk.base import config
 from cmk.base.app import make_app
 from cmk.base.checkers import (
@@ -88,6 +88,8 @@ from cmk.fetchers import (
 )
 from cmk.fetchers.filecache import FileCacheOptions
 from cmk.helper_interface import SourceType
+from cmk.logwatch import config as logwatch_config
+from cmk.logwatch.config import ParameterLogwatchEc, ParameterLogwatchRules
 from cmk.plugins.collection.agent_based.df_section import agent_section_df
 from cmk.plugins.collection.agent_based.kernel import agent_section_kernel
 from cmk.plugins.collection.agent_based.labels import agent_section_labels
@@ -1496,6 +1498,16 @@ class _EmptyDiscoveryConfig(ABCDiscoveryConfig):
         return [] if rule_set_type == "all" else {}
 
 
+class _LogwatchConfigDummy:
+    def logwatch_rules_all(
+        self, *, host_name: str, plugin: CheckPlugin, logfile: str
+    ) -> Sequence[ParameterLogwatchRules]:
+        return ()
+
+    def logwatch_ec_all(self, host_name: str) -> Sequence[ParameterLogwatchEc]:
+        return ()
+
+
 @pytest.mark.usefixtures("patch_omd_site")
 def test_commandline_discovery(
     monkeypatch: MonkeyPatch,
@@ -1508,7 +1520,7 @@ def test_commandline_discovery(
     config_cache = ts.apply(monkeypatch)
 
     # damn you logwatch!!
-    config._globally_cache_config_cache(config_cache)
+    logwatch_config.set_global_state(_LogwatchConfigDummy())
 
     file_cache_options = FileCacheOptions()
     parser = CMKParser(

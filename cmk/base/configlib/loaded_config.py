@@ -43,6 +43,7 @@ class LoadedConfigFragment:
     folder_attributes: Mapping[str, FolderAttributesForBase]
     discovery_rules: Mapping[RuleSetName, Sequence[RuleSpec]]
     checkgroup_parameters: Mapping[str, Sequence[RuleSpec[Mapping[str, object]]]]
+    logwatch_rules: Sequence[RuleSpec[object]]
     static_checks: Mapping[
         str, list[RuleSpec[list[object]]]
     ]  # a.k.a. "enforced_services". Keep the name for consistency

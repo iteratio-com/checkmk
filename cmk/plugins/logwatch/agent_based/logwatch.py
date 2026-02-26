@@ -43,8 +43,8 @@ from cmk.agent_based.v2 import (
     Service,
     State,
 )
-from cmk.base.configlib.logwatch import RulesetAccess
 from cmk.logwatch.config import (
+    get_global_state,
     NEVER_DISCOVER_SERVICE_LABELS,
     ParameterLogwatchRules,
 )
@@ -116,7 +116,7 @@ def _discovery_make_groups(
     params: Sequence[logwatch.ParameterLogwatchGroups],
     section: logwatch.Section,
 ) -> tuple[Sequence[_Group], Iterable[str]]:
-    log_filter = logwatch.LogFileFilter(RulesetAccess().logwatch_ec_all(params[0]["host_name"]))
+    log_filter = logwatch.LogFileFilter(get_global_state().logwatch_ec_all(params[0]["host_name"]))
     not_forwarded_logs = {
         item for item in logwatch.discoverable_items(section) if not log_filter.is_forwarded(item)
     }
@@ -142,7 +142,7 @@ def check_logwatch_node(
 ) -> CheckResult:
     """fall back to the cluster case with node=None"""
     host_name = params["host_name"]
-    rules_params = RulesetAccess().logwatch_rules_all(
+    rules_params = get_global_state().logwatch_rules_all(
         host_name=host_name, plugin=check_plugin_logwatch, logfile=item
     )
     yield from check_logwatch(item, rules_params, {None: section}, host_name)
@@ -154,7 +154,7 @@ def check_logwatch_cluster(
     section: Mapping[str, logwatch.Section | None],
 ) -> CheckResult:
     host_name = params["host_name"]
-    rules_params = RulesetAccess().logwatch_rules_all(
+    rules_params = get_global_state().logwatch_rules_all(
         host_name=host_name, plugin=check_plugin_logwatch, logfile=item
     )
     yield from check_logwatch(
@@ -304,7 +304,7 @@ def check_logwatch_groups_node(
     section: logwatch.Section,
 ) -> CheckResult:
     """fall back to the cluster case with node=None"""
-    params_rules = RulesetAccess().logwatch_rules_all(
+    params_rules = get_global_state().logwatch_rules_all(
         host_name=params["host_name"],
         plugin=check_plugin_logwatch_groups,
         logfile=item,
@@ -317,7 +317,7 @@ def check_logwatch_groups_cluster(
     params: DiscoveredGroupParams,
     section: Mapping[str, logwatch.Section | None],
 ) -> CheckResult:
-    params_rules = RulesetAccess().logwatch_rules_all(
+    params_rules = get_global_state().logwatch_rules_all(
         host_name=params["host_name"],
         plugin=check_plugin_logwatch_groups,
         logfile=item,

@@ -99,6 +99,7 @@ py_library(
         "//cmk/gui:cmk_gui",
         "//cmk/inventory:cmk_inventory",
         "//cmk/legacy_checks:cmk_legacy_checks",
+        "//cmk/logwatch:config",
         "//cmk/notification_plugins:cmk_notification_plugins",
         "//cmk/piggyback:backend",
         "//cmk/piggyback:hub",

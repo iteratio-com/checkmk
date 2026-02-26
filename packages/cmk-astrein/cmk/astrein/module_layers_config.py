@@ -206,13 +206,12 @@ _PLUGIN_FAMILIES_WITH_KNOWN_API_VIOLATIONS = {
     ),
     "jolokia": ("cmk.utils.paths",),
     "logwatch": (
-        "cmk.base.configlib.logwatch",
-        "cmk.ccc.hostaddress",
-        "cmk.ccc.debug",
+        "cmk.logwatch",
         "cmk.ec.event",
         "cmk.ec.syslog",
-        "cmk.logwatch.config",
         "cmk.utils.paths",
+        "cmk.ccc.debug",
+        "cmk.ccc.hostaddress",
     ),
     "metric_backend_omd": ("cmk.metric_backend",),
     "otel": (
@@ -1066,6 +1065,9 @@ COMPONENTS: Mapping[Component, ImportCheckerProtocol] = {
         *PACKAGE_CCC,
     ),
     Component("cmk.inventory_ui"): _allow(),
+    Component("cmk.logwatch"): _allow(
+        *PACKAGE_PLUGIN_APIS,
+    ),
     Component("cmk.notification_plugins"): _allow(
         *PACKAGE_CCC,
         "cmk.utils",
@@ -1350,6 +1352,7 @@ COMPONENTS: Mapping[Component, ImportCheckerProtocol] = {
         "cmk.fetchers",
         "cmk.gui",
         "cmk.helper_interface",
+        "cmk.logwatch.config",
         "cmk.piggyback",
         "cmk.server_side_calls_backend",
         "cmk.utils",

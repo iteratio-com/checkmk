@@ -11,6 +11,7 @@ EMPTY_CONFIG = LoadedConfigFragment(
     experimental={},
     discovery_rules={},
     checkgroup_parameters={},
+    logwatch_rules=(),
     static_checks={},
     service_rule_groups=set(),
     service_descriptions={},

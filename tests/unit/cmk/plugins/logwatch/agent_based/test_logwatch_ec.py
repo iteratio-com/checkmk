@@ -9,7 +9,7 @@
 
 
 import datetime
-from collections.abc import Mapping, Sequence
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Literal
 
@@ -18,6 +18,7 @@ import pytest
 import cmk.ec.export as ec
 import cmk.utils.paths
 from cmk.agent_based.v2 import (
+    CheckPlugin,
     CheckResult,
     DiscoveryResult,
     Metric,
@@ -26,16 +27,11 @@ from cmk.agent_based.v2 import (
     State,
     StringTable,
 )
-from cmk.base import config
-from cmk.base.app import make_app
-from cmk.base.configlib.logwatch import RulesetAccess
 from cmk.ccc.hostaddress import HostName
-from cmk.ccc.version import edition
-from cmk.logwatch.config import ParameterLogwatchEc
+from cmk.logwatch.config import ParameterLogwatchEc, ParameterLogwatchRules, set_global_state
 from cmk.plugins.logwatch.agent_based import commons as logwatch_
 from cmk.plugins.logwatch.agent_based import logwatch_ec
 from cmk.plugins.logwatch.agent_based.logwatch_section import parse_logwatch
-from tests.unit.cmk.base.empty_config import EMPTY_CONFIG
 
 _STRING_TABLE_NO_MESSAGES = [
     ["[[[log1]]]"],
@@ -102,15 +98,17 @@ DEFAULT_TEST_PARAMETERS = ParameterLogwatchEc(
 )
 
 
-def _patch_config_cache(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(
-        config,
-        config.access_globally_cached_config_cache.__name__,
-        lambda: config.ConfigCache(
-            EMPTY_CONFIG,
-            make_app(edition(cmk.utils.paths.omd_root)).get_builtin_host_labels,
-        ),
-    )
+class _LogwatchConfigDummy:
+    def __init__(self, ec_rules: Sequence[ParameterLogwatchEc] = ()):
+        self._ec_rules = ec_rules
+
+    def logwatch_rules_all(
+        self, *, host_name: str, plugin: CheckPlugin, logfile: str
+    ) -> Sequence[ParameterLogwatchRules]:
+        return ()
+
+    def logwatch_ec_all(self, host_name: str) -> Sequence[ParameterLogwatchEc]:
+        return self._ec_rules
 
 
 @pytest.mark.parametrize(
@@ -119,23 +117,7 @@ def _patch_config_cache(monkeypatch: pytest.MonkeyPatch) -> None:
         (_STRING_TABLE_NO_MESSAGES, [], []),
         (
             _STRING_TABLE_NO_MESSAGES,
-            [{"separate_checks": True}],
-            [
-                Service(item="log1", parameters={"expected_logfiles": ["log1"]}),
-                Service(item="log2", parameters={"expected_logfiles": ["log2"]}),
-                Service(item="log4", parameters={"expected_logfiles": ["log4"]}),
-                Service(item="log5", parameters={"expected_logfiles": ["log5"]}),
-            ],
-        ),
-        (_STRING_TABLE_NO_MESSAGES, [{"restrict_logfiles": [".*"]}], []),
-        (
-            _STRING_TABLE_NO_MESSAGES,
-            [
-                {
-                    "restrict_logfiles": [".*"],
-                    "separate_checks": True,
-                }
-            ],
+            [ParameterLogwatchEc(host_name="irrelevant", service_level=10, separate_checks=True)],
             [
                 Service(item="log1", parameters={"expected_logfiles": ["log1"]}),
                 Service(item="log2", parameters={"expected_logfiles": ["log2"]}),
@@ -146,35 +128,65 @@ def _patch_config_cache(monkeypatch: pytest.MonkeyPatch) -> None:
         (
             _STRING_TABLE_NO_MESSAGES,
             [
-                {
-                    "restrict_logfiles": [".*"],
-                    "separate_checks": False,
-                }
+                ParameterLogwatchEc(
+                    host_name="irrelevant", service_level=10, restrict_logfiles=[".*"]
+                )
             ],
             [],
         ),
         (
             _STRING_TABLE_NO_MESSAGES,
             [
-                {
-                    "restrict_logfiles": [".*"],
-                }
+                ParameterLogwatchEc(
+                    host_name="irrelevant",
+                    service_level=10,
+                    restrict_logfiles=[".*"],
+                    separate_checks=True,
+                ),
+            ],
+            [
+                Service(item="log1", parameters={"expected_logfiles": ["log1"]}),
+                Service(item="log2", parameters={"expected_logfiles": ["log2"]}),
+                Service(item="log4", parameters={"expected_logfiles": ["log4"]}),
+                Service(item="log5", parameters={"expected_logfiles": ["log5"]}),
+            ],
+        ),
+        (
+            _STRING_TABLE_NO_MESSAGES,
+            [
+                ParameterLogwatchEc(
+                    host_name="irrelevant",
+                    service_level=10,
+                    restrict_logfiles=[".*"],
+                    separate_checks=False,
+                ),
             ],
             [],
         ),
         (
             _STRING_TABLE_NO_MESSAGES,
             [
-                {
-                    "restrict_logfiles": ["log1"],
-                    "separate_checks": True,
-                    "method": "pass me on!",
-                    "facility": "pass me on!",
-                    "monitor_logfilelist": "pass me on!",
-                    "monitor_logfile_access_state": "pass me on!",
-                    "logwatch_reclassify": "pass me on!",
-                    "some_other_key": "I should be discarded!",
-                }
+                ParameterLogwatchEc(
+                    host_name="irrelevant", service_level=10, restrict_logfiles=[".*"]
+                ),
+            ],
+            [],
+        ),
+        (
+            _STRING_TABLE_NO_MESSAGES,
+            [
+                ParameterLogwatchEc(
+                    host_name="irrelevant",
+                    service_level=10,
+                    restrict_logfiles=["log1"],
+                    separate_checks=True,
+                    method="pass me on!",
+                    facility=0,
+                    monitor_logfilelist=False,
+                    monitor_logfile_access_state=0,
+                    logwatch_reclassify=False,
+                    some_other_key="I should be discarded!",  # type: ignore[typeddict-unknown-key]
+                ),
             ],
             [
                 Service(
@@ -182,10 +194,10 @@ def _patch_config_cache(monkeypatch: pytest.MonkeyPatch) -> None:
                     parameters={
                         "expected_logfiles": ["log1"],
                         "method": "pass me on!",
-                        "facility": "pass me on!",
-                        "monitor_logfilelist": "pass me on!",
-                        "monitor_logfile_access_state": "pass me on!",
-                        "logwatch_reclassify": "pass me on!",
+                        "facility": 0,
+                        "monitor_logfilelist": False,
+                        "monitor_logfile_access_state": 0,
+                        "logwatch_reclassify": False,
                     },
                 ),
             ],
@@ -193,19 +205,13 @@ def _patch_config_cache(monkeypatch: pytest.MonkeyPatch) -> None:
     ],
 )
 def test_logwatch_ec_inventory_single(
-    monkeypatch: pytest.MonkeyPatch,
     info: StringTable,
-    fwd_rule: Mapping[str, object],
+    fwd_rule: Sequence[ParameterLogwatchEc],
     expected_result: DiscoveryResult,
 ) -> None:
     parsed = parse_logwatch(info)
 
-    _patch_config_cache(monkeypatch)
-    monkeypatch.setattr(
-        RulesetAccess,
-        RulesetAccess.logwatch_ec_all.__name__,
-        lambda self, _host: fwd_rule,
-    )
+    set_global_state(_LogwatchConfigDummy(fwd_rule))
     actual_result = sorted(
         logwatch_ec.discover_single(parsed, {"host_name": "test-host"}), key=lambda s: s.item or ""
     )
@@ -216,17 +222,28 @@ def test_logwatch_ec_inventory_single(
     "info, fwd_rule, expected_result",
     [
         (_STRING_TABLE_NO_MESSAGES, [], []),
-        (_STRING_TABLE_NO_MESSAGES, [{"separate_checks": True}], []),
         (
             _STRING_TABLE_NO_MESSAGES,
-            [{"separate_checks": False}],
+            [ParameterLogwatchEc(host_name="irrelevant", service_level=10, separate_checks=True)],
+            [],
+        ),
+        (
+            _STRING_TABLE_NO_MESSAGES,
+            [ParameterLogwatchEc(host_name="irrelevant", service_level=10, separate_checks=False)],
             [
                 Service(parameters={"expected_logfiles": ["log1", "log2", "log4", "log5"]}),
             ],
         ),
         (
             _STRING_TABLE_NO_MESSAGES,
-            [{"restrict_logfiles": [".*[12]"], "separate_checks": False}],
+            [
+                ParameterLogwatchEc(
+                    host_name="irrelevant",
+                    service_level=10,
+                    restrict_logfiles=[".*[12]"],
+                    separate_checks=False,
+                )
+            ],
             [
                 Service(parameters={"expected_logfiles": ["log1", "log2"]}),
             ],
@@ -234,19 +251,13 @@ def test_logwatch_ec_inventory_single(
     ],
 )
 def test_logwatch_ec_inventory_groups(
-    monkeypatch: pytest.MonkeyPatch,
     info: StringTable,
-    fwd_rule: Mapping[str, object],
+    fwd_rule: Sequence[ParameterLogwatchEc],
     expected_result: DiscoveryResult,
 ) -> None:
     parsed = parse_logwatch(info)
 
-    _patch_config_cache(monkeypatch)
-    monkeypatch.setattr(
-        RulesetAccess,
-        RulesetAccess.logwatch_ec_all.__name__,
-        lambda self, _host: fwd_rule,
-    )
+    set_global_state(_LogwatchConfigDummy(fwd_rule))
     actual_result = list(logwatch_ec.discover_group(parsed, {"host_name": "test-host"}))
     assert actual_result == expected_result
 
@@ -298,9 +309,8 @@ def test_check_logwatch_ec_common_single_node(
     params: ParameterLogwatchEc,
     parsed: logwatch_.ClusterSection,
     expected_result: CheckResult,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _patch_config_cache(monkeypatch)
+    set_global_state(_LogwatchConfigDummy())
     assert (
         list(
             logwatch_ec.check_logwatch_ec_common(
@@ -331,8 +341,8 @@ def test_check_logwatch_ec_common_single_node_item_missing() -> None:
     )
 
 
-def test_check_logwatch_ec_common_single_node_log_missing(monkeypatch: pytest.MonkeyPatch) -> None:
-    _patch_config_cache(monkeypatch)
+def test_check_logwatch_ec_common_single_node_log_missing() -> None:
+    set_global_state(_LogwatchConfigDummy())
     actual_result = list(
         logwatch_ec.check_logwatch_ec_common(
             "log3",
@@ -402,9 +412,8 @@ def test_check_logwatch_ec_common_single_node_log_missing(monkeypatch: pytest.Mo
 def test_check_logwatch_ec_common_multiple_nodes_grouped(
     cluster_section: logwatch_.ClusterSection,
     expected_result: CheckResult,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _patch_config_cache(monkeypatch)
+    set_global_state(_LogwatchConfigDummy())
     assert (
         list(
             logwatch_ec.check_logwatch_ec_common(
@@ -538,10 +547,8 @@ def test_check_logwatch_ec_common_multiple_nodes_item_completely_missing() -> No
     )
 
 
-def test_check_logwatch_ec_common_multiple_nodes_item_partially_missing(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    _patch_config_cache(monkeypatch)
+def test_check_logwatch_ec_common_multiple_nodes_item_partially_missing() -> None:
+    set_global_state(_LogwatchConfigDummy())
     assert list(
         logwatch_ec.check_logwatch_ec_common(
             "log1",
@@ -560,10 +567,8 @@ def test_check_logwatch_ec_common_multiple_nodes_item_partially_missing(
     ]
 
 
-def test_check_logwatch_ec_common_multiple_nodes_logfile_missing(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    _patch_config_cache(monkeypatch)
+def test_check_logwatch_ec_common_multiple_nodes_logfile_missing() -> None:
+    set_global_state(_LogwatchConfigDummy())
     assert list(
         logwatch_ec.check_logwatch_ec_common(
             "log3",
@@ -592,7 +597,7 @@ def test_check_logwatch_ec_common_multiple_nodes_logfile_missing(
 
 
 def test_check_logwatch_ec_common_spool(monkeypatch: pytest.MonkeyPatch) -> None:
-    _patch_config_cache(monkeypatch)
+    set_global_state(_LogwatchConfigDummy())
     monkeypatch.setattr(logwatch_ec, "_MAX_SPOOL_SIZE", 32)
     assert list(
         logwatch_ec.check_logwatch_ec_common(
@@ -863,7 +868,7 @@ def test_check_logwatch_ec_common_batch_stored(monkeypatch: pytest.MonkeyPatch) 
 
     Failing to do so leads to messages being processed multiple times.
     """
-    _patch_config_cache(monkeypatch)
+    set_global_state(_LogwatchConfigDummy())
 
     value_store: dict = {}
 

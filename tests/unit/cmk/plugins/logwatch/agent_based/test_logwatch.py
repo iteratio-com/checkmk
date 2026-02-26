@@ -5,33 +5,17 @@
 
 
 import pathlib
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 
 import pytest
 from pytest_mock import MockerFixture
 
-from cmk.agent_based.v2 import Result, Service, State
-from cmk.base import config
-from cmk.base.app import make_app
-from cmk.base.configlib.logwatch import RulesetAccess
-from cmk.ccc.version import edition
+from cmk.agent_based.v2 import CheckPlugin, Result, Service, State
+from cmk.logwatch.config import ParameterLogwatchEc, ParameterLogwatchRules, set_global_state
 from cmk.plugins.logwatch.agent_based import commons as logwatch_
 from cmk.plugins.logwatch.agent_based import logwatch
-from cmk.utils import paths
-from tests.unit.cmk.base.empty_config import EMPTY_CONFIG
 
 TEST_DISCO_PARAMS = [logwatch_.ParameterLogwatchGroups(host_name="test-host", grouping_patterns=[])]
-
-
-def _patch_config_cache(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(
-        config,
-        config.access_globally_cached_config_cache.__name__,
-        lambda: config.ConfigCache(
-            EMPTY_CONFIG,
-            make_app(edition(paths.omd_root)).get_builtin_host_labels,
-        ),
-    )
 
 
 @pytest.mark.parametrize(
@@ -120,13 +104,21 @@ SECTION1 = logwatch_.Section(
 )
 
 
-def test_discovery_single(monkeypatch: pytest.MonkeyPatch) -> None:
-    _patch_config_cache(monkeypatch)
-    monkeypatch.setattr(
-        RulesetAccess,
-        RulesetAccess.logwatch_ec_all.__name__,
-        lambda self, _host: [],
-    )
+class _LogwatchConfigDummy:
+    def __init__(self, ec_all: Sequence[ParameterLogwatchEc] = ()) -> None:
+        self._ec_all = ec_all
+
+    def logwatch_rules_all(
+        self, *, host_name: str, plugin: CheckPlugin, logfile: str
+    ) -> Sequence[ParameterLogwatchRules]:
+        return ()
+
+    def logwatch_ec_all(self, host_name: str) -> Sequence[ParameterLogwatchEc]:
+        return self._ec_all
+
+
+def test_discovery_single() -> None:
+    set_global_state(_LogwatchConfigDummy())
     assert sorted(
         logwatch.discover_logwatch_single(TEST_DISCO_PARAMS, SECTION1),
         key=lambda s: s.item or "",
@@ -183,14 +175,7 @@ def test_check_single(
     monkeypatch: pytest.MonkeyPatch, log_name: str, expected_result: Iterable[Result]
 ) -> None:
     monkeypatch.setattr(logwatch, "get_value_store", lambda: {})
-    monkeypatch.setattr(
-        config,
-        config.access_globally_cached_config_cache.__name__,
-        lambda: config.ConfigCache(
-            EMPTY_CONFIG,
-            make_app(edition(paths.omd_root)).get_builtin_host_labels,
-        ),
-    )
+    set_global_state(_LogwatchConfigDummy())
     monkeypatch.setattr(
         logwatch_,
         logwatch_.compile_reclassify_params.__name__,
@@ -245,7 +230,7 @@ def test_check_logwatch_groups_node(
     expected_result: Iterable[Result],
 ) -> None:
     monkeypatch.setattr(logwatch, "get_value_store", lambda: {})
-    _patch_config_cache(monkeypatch)
+    set_global_state(_LogwatchConfigDummy())
     monkeypatch.setattr(
         logwatch_,
         logwatch_.compile_reclassify_params.__name__,
@@ -309,12 +294,17 @@ SECTION2 = logwatch_.Section(
 )
 
 
-def test_logwatch_discover_single_restrict(monkeypatch: pytest.MonkeyPatch) -> None:
-    _patch_config_cache(monkeypatch)
-    monkeypatch.setattr(
-        RulesetAccess,
-        RulesetAccess.logwatch_ec_all.__name__,
-        lambda self, _host: [{"restrict_logfiles": [".*2"]}],
+def test_logwatch_discover_single_restrict() -> None:
+    set_global_state(
+        _LogwatchConfigDummy(
+            ec_all=[
+                ParameterLogwatchEc(
+                    host_name="irrelevant",
+                    service_level=10,
+                    restrict_logfiles=[".*2"],
+                )
+            ]
+        )
     )
     assert sorted(
         logwatch.discover_logwatch_single(TEST_DISCO_PARAMS, SECTION2),
@@ -336,12 +326,7 @@ def test_logwatch_discover_single_groups(monkeypatch: pytest.MonkeyPatch) -> Non
         )
     ]
 
-    _patch_config_cache(monkeypatch)
-    monkeypatch.setattr(
-        RulesetAccess,
-        RulesetAccess.logwatch_ec_all.__name__,
-        lambda self, _host: [],
-    )
+    set_global_state(_LogwatchConfigDummy())
 
     assert list(logwatch.discover_logwatch_single(params, SECTION2)) == [
         Service(item="log1"),
@@ -359,12 +344,7 @@ def test_logwatch_discover_groups(monkeypatch: pytest.MonkeyPatch) -> None:
         )
     ]
 
-    _patch_config_cache(monkeypatch)
-    monkeypatch.setattr(
-        RulesetAccess,
-        RulesetAccess.logwatch_ec_all.__name__,
-        lambda self, _host: [],
-    )
+    set_global_state(_LogwatchConfigDummy())
 
     assert list(logwatch.discover_logwatch_groups(params, SECTION2)) == [
         Service(

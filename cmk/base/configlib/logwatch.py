@@ -17,9 +17,8 @@
 from collections.abc import Mapping, Sequence
 
 from cmk.agent_based.v2 import CheckPlugin
-from cmk.base.configlib.servicename import (
-    make_final_service_name_config,
-)
+from cmk.base.configlib.loaded_config import LoadedConfigFragment
+from cmk.base.configlib.servicename import make_final_service_name_config, PassiveServiceNameConfig
 from cmk.ccc.hostaddress import HostName
 from cmk.checkengine.plugins import (
     CheckPluginName,
@@ -29,11 +28,22 @@ from cmk.logwatch.config import (
     NEVER_DISCOVER_SERVICE_LABELS,
     ParameterLogwatchEc,
     ParameterLogwatchRules,
+    set_global_state,
 )
+from cmk.utils.labels import LabelManager
+from cmk.utils.rulesets.ruleset_matcher import RulesetMatcher
 
 
-class RulesetAccess:
-    """Namespace to get an overview of logwatch rulesets / configuration
+def set_global_logwatch_config(
+    loaded_config: LoadedConfigFragment,
+    matcher: RulesetMatcher,
+    label_manager: LabelManager,
+) -> None:
+    set_global_state(_LogwatchConfig(loaded_config, matcher, label_manager))
+
+
+class _LogwatchConfig:
+    """Implementing logwatch rulesets / configuration
 
     Logwatch uses more configuration parameters that just its rulesets.
     It also uses the current host name, and the "effective service level".
@@ -91,24 +101,23 @@ class RulesetAccess:
       (currently the options in EC are only 'group everything' or 'group nothing').
     """
 
-    def __init__(self) -> None:
-        # from cmk.base.config import logwatch_rule will NOT work!
-        # this import is only local so that we can move this class in
-        # the next step without chaning it in *any* way (for better review)
-        # This is a temporary solution.
-        import cmk.base.config
-
-        cc = cmk.base.config.access_globally_cached_config_cache()
-        self._label_manager = cc.label_manager
-        self._matcher = cc.ruleset_matcher
-        self._service_name_config = cc.make_passive_service_name_config(
-            make_final_service_name_config(
-                cc._loaded_config,
-                cc.ruleset_matcher,
-            )
+    def __init__(
+        self,
+        loaded_config: LoadedConfigFragment,
+        matcher: RulesetMatcher,
+        label_manager: LabelManager,
+    ) -> None:
+        self._label_manager = label_manager
+        self._matcher = matcher
+        self._service_name_config = PassiveServiceNameConfig(
+            make_final_service_name_config(loaded_config, matcher),
+            user_defined_service_names=loaded_config.service_descriptions,
+            use_new_names_for=loaded_config.use_new_descriptions_for,
+            labels_of_host=label_manager.labels_of_host,
         )
-        self._logwatch_rules = cmk.base.config.logwatch_rules
-        self._logwatch_ec_rules = cmk.base.config.checkgroup_parameters.get("logwatch_ec", [])
+
+        self._logwatch_rules = loaded_config.logwatch_rules
+        self._logwatch_ec_rules = loaded_config.checkgroup_parameters.get("logwatch_ec", [])
 
     # This is only wishful typing -- but lets assume this is what we get.
     def logwatch_rules_all(

@@ -37,12 +37,12 @@ from cmk.agent_based.v2 import (
     Service,
     State,
 )
-from cmk.base.configlib.logwatch import RulesetAccess
 from cmk.ccc.hostaddress import HostName
 from cmk.ec.event import create_event_from_syslog_message
 from cmk.ec.syslog import forward_to_unix_socket, SyslogMessage
 from cmk.logwatch.config import (
     CommonLogwatchEc,
+    get_global_state,
     NEVER_DISCOVER_SERVICE_LABELS,
     ParameterLogwatchEc,
 )
@@ -68,7 +68,7 @@ CHECK_DEFAULT_PARAMETERS: logwatch.PreDictLogwatchEc = {
 
 def discover_group(section: logwatch.Section, params: Mapping[str, str]) -> DiscoveryResult:
     yield from discover_logwatch_ec_common(
-        section, RulesetAccess().logwatch_ec_all(params["host_name"]), "groups"
+        section, get_global_state().logwatch_ec_all(params["host_name"]), "groups"
     )
 
 
@@ -112,7 +112,7 @@ check_plugin_logwatch_ec = CheckPlugin(
 
 def discover_single(section: logwatch.Section, params: Mapping[str, str]) -> DiscoveryResult:
     yield from discover_logwatch_ec_common(
-        section, RulesetAccess().logwatch_ec_all(params["host_name"]), "single"
+        section, get_global_state().logwatch_ec_all(params["host_name"]), "single"
     )
 
 
@@ -354,7 +354,7 @@ def check_logwatch_ec_common(
         lines = _filter_accumulated_lines(parsed, logfile, seen_batches)
 
         # Determine logwatch patterns specifically for this logfile
-        rules_for_this_file = RulesetAccess().logwatch_rules_all(
+        rules_for_this_file = get_global_state().logwatch_rules_all(
             host_name=host_name, plugin=plugin, logfile=logfile
         )
         logfile_reclassify_settings = (

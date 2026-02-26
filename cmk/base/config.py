@@ -52,6 +52,7 @@ from cmk.base.configlib.checkengine import CheckingConfig
 from cmk.base.configlib.fetchers import make_tcp_fetcher_config
 from cmk.base.configlib.labels import LabelConfig
 from cmk.base.configlib.loaded_config import LoadedConfigFragment
+from cmk.base.configlib.logwatch import set_global_logwatch_config
 from cmk.base.configlib.piggyback import (
     guess_piggybacked_hosts_time_settings,
     make_piggyback_time_settings,
@@ -651,6 +652,7 @@ def _perform_post_config_loading_actions(
         folder_attributes=folder_attributes,
         discovery_rules=discovery_settings,
         checkgroup_parameters=checkgroup_parameters,
+        logwatch_rules=logwatch_rules,
         static_checks=static_checks,
         service_rule_groups=service_rule_groups,
         service_descriptions=service_descriptions,
@@ -723,7 +725,13 @@ def _perform_post_config_loading_actions(
     config_cache = ConfigCache(loaded_config, get_builtin_host_labels).initialize(
         get_builtin_host_labels
     )
-    _globally_cache_config_cache(config_cache)
+
+    set_global_logwatch_config(
+        loaded_config,
+        config_cache.ruleset_matcher,
+        config_cache.label_manager,
+    )
+
     return LoadingResult(
         loaded_config=loaded_config,
         config_cache=config_cache,
@@ -3701,16 +3709,6 @@ class EnforcedServicesTable:
             None if raw_item is None else str(raw_item),
             TimespecificParameterSet.from_parameters({} if raw_params is None else raw_params),
         )
-
-
-def access_globally_cached_config_cache() -> ConfigCache:
-    """Get the global config cache"""
-    return cache_manager.obtain_cache("config_cache")["cache"]
-
-
-def _globally_cache_config_cache(config_cache: ConfigCache) -> None:
-    """Create a new ConfigCache and set it in the cache manager"""
-    cache_manager.obtain_cache("config_cache")["cache"] = config_cache
 
 
 _RELAY_LABEL_KEY = "cmk/relay"

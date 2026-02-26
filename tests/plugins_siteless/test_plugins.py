@@ -5,12 +5,13 @@
 
 import os
 import shutil
-from collections.abc import Iterator, Mapping
+from collections.abc import Iterator, Mapping, Sequence
 from pathlib import Path
 
 import pytest
 
 from cmk.agent_based.v1.value_store import set_value_store_manager
+from cmk.agent_based.v2 import CheckPlugin
 from cmk.base import config
 from cmk.base.app import make_app
 from cmk.base.checkers import (
@@ -25,6 +26,7 @@ from cmk.checkengine.checking import execute_checkmk_checks
 from cmk.checkengine.exitspec import ExitSpec
 from cmk.checkengine.inventory import HWSWInventoryParameters
 from cmk.helper_interface import FetcherType, SourceInfo, SourceType
+from cmk.logwatch.config import ParameterLogwatchEc, ParameterLogwatchRules, set_global_state
 from cmk.utils import paths
 from cmk.utils.everythingtype import EVERYTHING
 from cmk.utils.timeperiod import TimeperiodName
@@ -71,6 +73,16 @@ class _AllValueStoresStoreMocker(value_store.AllValueStoresStore):
         pass
 
 
+class _LogwatchConfigMocker:
+    def logwatch_rules_all(
+        self, *, host_name: str, plugin: CheckPlugin, logfile: str
+    ) -> Sequence[ParameterLogwatchRules]:
+        return ()
+
+    def logwatch_ec_all(self, host_name: str) -> Sequence[ParameterLogwatchEc]:
+        return ()
+
+
 @pytest.mark.medium_test_chain
 @pytest.mark.parametrize("agent_data_filename", get_agent_data_filenames())
 def test_checks_executor(
@@ -91,7 +103,7 @@ def test_checks_executor(
     )
 
     # make sure logwatch doesn't crash
-    config._globally_cache_config_cache(config_cache)
+    set_global_state(_LogwatchConfigMocker())
 
     discovered_services = discover_services(
         HOSTNAME,
