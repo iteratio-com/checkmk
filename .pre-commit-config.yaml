@@ -118,17 +118,16 @@ repos:
             verbose: true
           - id: buildifier_format
             name: Format bazel files
-            entry: scripts/run-buildifier
-            language: script
+            entry: bazel run //bazel/tools:buildifier
+            language: system
             types: ["bazel", "file", "non-executable", "text"]
             verbose: true
             require_serial: true
             pass_filenames: false
           - id: buildifier_lint
             name: Lint bazel files
-            entry: scripts/run-buildifier
-            args: ["--lint=warn"]
-            language: script
+            entry: bazel run //bazel/tools:buildifier -- --lint=warn
+            language: system
             types: ["bazel", "file", "non-executable", "text"]
             verbose: true
             require_serial: true
