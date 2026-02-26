@@ -24,19 +24,5 @@ if [ ! -f "$VENV_MYPY_PATH" ]; then
     fi
 fi
 
-# Filter out non-free/packages/* files — their isolated package trees
-# cannot be resolved by mypy running from the repo root. These packages
-# have their own pyproject.toml and run scripts for type checking.
-declare -a FILES
-for arg in "$@"; do
-    if [[ "$arg" != non-free/packages/* ]]; then
-        FILES+=("$arg")
-    fi
-done
-
-if [ ${#FILES[@]} -eq 0 ]; then
-    exit 0
-fi
-
 # shellcheck disable=SC2086
-exec "$REPO_PATH/scripts/run-uvenv" mypy ${JUNIT_XML} "${FILES[@]}"
+exec "$REPO_PATH/scripts/run-uvenv" mypy ${JUNIT_XML} "$@"
