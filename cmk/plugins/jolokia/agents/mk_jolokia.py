@@ -324,12 +324,12 @@ class JolokiaInstance:
         if instance:
             err_msg += " for %s" % instance
 
-        required_keys = set(("protocol", "server", "port", "suburi", "timeout"))
+        required_keys = {"protocol", "server", "port", "suburi", "timeout"}
         auth_mode = config.get("mode")
         if auth_mode in ("digest", "basic", "basic_preemtive"):
-            required_keys |= set(("user", PASSWORD_OPTION))
+            required_keys |= {"user", PASSWORD_OPTION}
         elif auth_mode == "https":
-            required_keys |= set(("client_cert", "client_key"))
+            required_keys |= {"client_cert", "client_key"}
         if config.get("service_url") is not None and config.get("service_user") is not None:
             required_keys.add("service_password")
         missing_keys = required_keys - set(config.keys())
@@ -346,7 +346,7 @@ class JolokiaInstance:
             try:
                 config[key] = type_(val)
             except ValueError:
-                raise ValueError(err_msg % ("Invalid %s %r" % (key, val)))
+                raise ValueError(err_msg % (f"Invalid {key} {val!r}"))
 
         if config.get("server") == "use fqdn":
             config["server"] = socket.getfqdn()
@@ -609,9 +609,7 @@ def _get_queries(do_search, inst, itemspec, title, path, mbean):  # type: ignore
     except IndexError:
         return []
 
-    return [
-        ("%s/%s" % (urllib.parse.quote(mbean_exp), path), path, itemspec) for mbean_exp in paths
-    ]
+    return [(f"{urllib.parse.quote(mbean_exp)}/{path}", path, itemspec) for mbean_exp in paths]
 
 
 def _process_queries(inst, queries):
@@ -716,7 +714,7 @@ def yield_configured_instances(custom_config=None):
     individual_configs = custom_config.pop("instances", [{}])
     for cfg in individual_configs:
         keys = set(cfg.keys()) | set(custom_config.keys())
-        conf_dict = dict((k, cfg.get(k, custom_config.get(k))) for k in keys)
+        conf_dict = {k: cfg.get(k, custom_config.get(k)) for k in keys}
         if VERBOSE:
             sys.stderr.write("DEBUG: configuration: %r\n" % conf_dict)
         yield conf_dict
