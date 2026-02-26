@@ -4,7 +4,7 @@
 # conditions defined in the file COPYING, which is part of this source code package.
 
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict
 
 from cmk.gui import site_config
 from cmk.gui.config import active_config
@@ -14,6 +14,7 @@ from cmk.gui.logged_in import LoggedInUser, user
 from cmk.gui.main_menu import MainMenuRegistry
 from cmk.gui.main_menu_types import ConfigurableMainMenuItem, MainMenuItem, MainMenuLinkItem
 from cmk.gui.utils.urls import makeuri, makeuri_contextless
+from cmk.shared_typing.changes import ChangesProps
 from cmk.shared_typing.main_menu import (
     ColorEnum,
     NavItemBadge,
@@ -24,13 +25,6 @@ from cmk.shared_typing.main_menu import (
     NavItemVueApp,
     NavVueAppIdEnum,
 )
-
-
-@dataclass(frozen=True, kw_only=True)
-class ChangesMenuItem:
-    activate_changes_url: str
-    user_has_activate_foreign: bool
-    user_name: str
 
 
 def _hide_menu() -> bool:
@@ -46,7 +40,7 @@ def _get_changes_app(request: Request) -> NavItemVueApp:
     return NavItemVueApp(
         id=NavVueAppIdEnum.cmk_activate_changes,
         data=asdict(
-            ChangesMenuItem(
+            ChangesProps(
                 activate_changes_url=makeuri(
                     request,
                     addvars=[("mode", "changelog")],
