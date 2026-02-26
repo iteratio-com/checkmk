@@ -40,6 +40,7 @@ py_library(
         "cmk/werks/meisterwerk.py",
         "cmk/werks/models.py",
         "cmk/werks/parse.py",
+        "cmk/werks/schemas/__init__.py",
         "cmk/werks/schemas/evaluations.py",
         "cmk/werks/schemas/requests.py",
         "cmk/werks/schemas/responses.py",
