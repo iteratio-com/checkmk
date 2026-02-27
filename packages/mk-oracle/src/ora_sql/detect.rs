@@ -49,3 +49,41 @@ pub fn find_sids_by_processes(match_string: Option<&str>) -> Result<HashSet<Stri
 
     Ok(result)
 }
+
+#[cfg(windows)]
+fn dump_local_instances() -> String {
+    use crate::platform::get_local_instances;
+
+    let instances = get_local_instances().unwrap_or_else(|e| {
+        log::error!("{:?}", e);
+        vec![]
+    });
+    let rows = instances
+        .iter()
+        .map(|i| {
+            format!(
+                "'{:16}': home={:60} base={:60}",
+                i.name,
+                i.home.display().to_string(),
+                i.base.display().to_string()
+            )
+        })
+        .collect::<Vec<String>>()
+        .join("\n");
+    format!("{}\nTotal instances found: {}\n", rows, instances.len())
+}
+
+pub fn dump_detected_sids() -> Result<String> {
+    #[cfg(windows)]
+    return Ok(dump_local_instances());
+    #[cfg(not(windows))]
+    return find_sids_by_processes(None)
+        .map(|list| {
+            log::info!("Found SIDs: {:?}", list);
+            list.iter().cloned().collect::<Vec<_>>().join("\n")
+        })
+        .or_else(|e| {
+            log::info!("Error while detecting SIDs: {:?}", e);
+            anyhow::bail!(e)
+        });
+}

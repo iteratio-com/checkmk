@@ -27,28 +27,16 @@ use crate::config::connection::{add_tns_admin_to_env, setup_wallet_environment};
 use crate::config::defines::defaults::SECTION_SEPARATOR;
 use crate::config::ora_sql::CustomInstance;
 use crate::config::section::names;
-use crate::ora_sql::detect::find_sids_by_processes;
+use crate::ora_sql::detect::dump_detected_sids;
 use crate::ora_sql::spots::{make_spot_work_results, SpotWorks};
-use crate::platform::get_local_instances;
 use anyhow::{Context, Result};
 use std::sync::{Arc, Mutex};
 
 impl OracleConfig {
     pub async fn exec(&self, environment: &Env) -> Result<String> {
         if let Some(ora_sql) = self.ora_sql() {
-            if environment.detect_only() {
-                return Ok(dump_local_instances());
-            }
             if environment.detect_sids() {
-                return find_sids_by_processes(None)
-                    .map(|list| {
-                        log::info!("Found SIDs: {:?}", list);
-                        list.iter().cloned().collect::<Vec<_>>().join("\n")
-                    })
-                    .or_else(|e| {
-                        log::info!("No SIDs found");
-                        anyhow::bail!(e)
-                    });
+                return dump_detected_sids();
             }
             if environment.find_runtime() {
                 let use_host_client: UseHostClient = ora_sql.options().use_host_client().clone();
@@ -90,26 +78,6 @@ impl OracleConfig {
             anyhow::bail!("No Config")
         }
     }
-}
-
-fn dump_local_instances() -> String {
-    let instances = get_local_instances().unwrap_or_else(|e| {
-        log::error!("{:?}", e);
-        vec![]
-    });
-    let rows = instances
-        .iter()
-        .map(|i| {
-            format!(
-                "'{:16}': home={:60} base={:60}",
-                i.name,
-                i.home.display().to_string(),
-                i.base.display().to_string()
-            )
-        })
-        .collect::<Vec<String>>()
-        .join("\n");
-    format!("{}\nTotal instances found: {}\n", rows, instances.len())
 }
 
 /// Generate data as defined by config
