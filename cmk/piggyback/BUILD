@@ -10,6 +10,7 @@ py_library(
     ],
     deps = [
         "//packages/cmk-ccc:hostaddress",
+        "//packages/cmk-ccc:inotify",
     ],
 )
 

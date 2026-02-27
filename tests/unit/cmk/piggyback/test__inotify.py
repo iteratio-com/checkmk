@@ -9,7 +9,7 @@ from unittest.mock import ANY
 
 import pytest
 
-from cmk.piggyback.backend._inotify import Cookie, Event, INotify, Masks, Watchee
+from cmk.ccc.inotify import Cookie, Event, INotify, Masks, Watchee
 
 
 @pytest.mark.skip(reason="CMK-26458")

@@ -27,6 +27,14 @@ py_library(
 )
 
 py_library(
+    name = "inotify",
+    srcs = ["cmk/ccc/inotify.py"],
+    imports = ["."],
+    visibility = ["//visibility:public"],
+    deps = ["_init"],
+)
+
+py_library(
     name = "resulttype",
     srcs = ["cmk/ccc/resulttype.py"],
     imports = ["."],
@@ -244,6 +252,7 @@ _ALL = [
     "exceptions",
     "hostaddress",
     "i18n",
+    "inotify",
     "observer",
     "plugin-registry",
     "profile",

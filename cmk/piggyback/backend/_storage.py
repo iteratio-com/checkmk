@@ -19,8 +19,8 @@ from pathlib import Path
 from typing import Self
 
 from cmk.ccc.hostaddress import HostAddress, HostName
+from cmk.ccc.inotify import Event, INotify, Masks
 
-from ._inotify import Event, INotify, Masks
 from ._paths import payload_dir, source_status_dir
 
 logger = logging.getLogger(__name__)

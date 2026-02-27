@@ -9,8 +9,6 @@ features that we want (type annotations).
 
 This is quite stripped down to only provide what we currently need,
 rather than being a comprehensive interface to what the kernel offers.
-
-As this is currently only needed for the piggyback hub, we put it here.
 """
 
 import enum
@@ -96,6 +94,9 @@ class _EventParser:
     def drop(self, wd: int) -> None:
         self._wd_map.pop(wd)
 
+    def watch_descriptors(self) -> Iterator[tuple[int, Path]]:
+        yield from self._wd_map.items()
+
     def iterate_parsed_events(self, data: bytes) -> Iterator[Event]:
         offset = 0
         while offset < len(data):
@@ -164,7 +165,7 @@ class INotify:
     def __exit__(self, _exc_type: object, _exc_val: object, _exc_tb: object) -> Literal[False]:
         """Accepts exception arguments for context manager protocol; currently unused."""
         try:
-            for wd, path in list(self._parser._wd_map.items()):
+            for wd, path in list(self._parser.watch_descriptors()):
                 try:
                     self.rm_watch(Watchee(wd, path))
                 except OSError:
@@ -174,6 +175,10 @@ class INotify:
             if not self._fileio.closed:
                 self._fileio.close()
         return False  # don't swallow exceptions.
+
+    def fileno(self) -> int:
+        """Return the inotify file descriptor for integration with external poll loops."""
+        return self._fileio.fileno()
 
     def add_watch(self, path: Path, mask: Masks) -> Watchee:
         watch_descriptor = self._libc.add_watch(self._fileio.fileno(), fsencode(path), mask)
@@ -204,6 +209,15 @@ class INotify:
         ):
             data = self._read_bytes()
         return list(self._parser.iterate_parsed_events(data))
+
+    def read_nowait(self) -> Sequence[Event]:
+        """Non-blocking read of available events.
+
+        Returns immediately with whatever events are currently available.
+        Intended for use when the caller already knows the fd is readable
+        (e.g. after an external poll loop signals readiness).
+        """
+        return list(self._parser.iterate_parsed_events(self._read_bytes()))
 
     def _read_bytes(self) -> bytes:
         readable = c_int()
