@@ -53,6 +53,7 @@ RUN apt-get install -y --fix-missing \
     jq \
     libc6-dbg \
     libcurl4-openssl-dev \
+    libenchant-2-dev \
     libevent-dev \
     libffi-dev \
     libfreeradius-dev \
