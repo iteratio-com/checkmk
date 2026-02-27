@@ -44,7 +44,10 @@ def load_all_plugins(
 ) -> plugins.AgentBasedPlugins:
     with tracer.span("discover_plugins"):
         discovered_plugins: DiscoveredPlugins[_ABPlugins] = discover_all_plugins(
-            PluginGroup.AGENT_BASED, v2.entry_point_prefixes(), raise_errors=raise_errors
+            PluginGroup.AGENT_BASED,
+            v2.entry_point_prefixes(),
+            skip_wrong_types=False,
+            raise_errors=raise_errors,
         )
         # HACK for migrating plugins: also search in legacy check modules.
         # This is for convenience of the reviewer of a plugin migration only:
@@ -55,6 +58,7 @@ def load_all_plugins(
             more_discovered_plugins = discover_plugins_from_modules(
                 v2.entry_point_prefixes(),
                 not_yet_moved_plugins,
+                skip_wrong_types=False,
                 raise_errors=raise_errors,
             )
             discovered_plugins = DiscoveredPlugins(
