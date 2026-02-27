@@ -7,8 +7,7 @@
 # mypy: disable-error-code="import-untyped"
 # mypy: disable-error-code="no-untyped-call"
 
-import os
-from collections.abc import Sequence
+from pathlib import Path
 
 import pytest
 import vcr
@@ -16,28 +15,23 @@ import vcr
 from cmk.plugins.innovaphone.special_agent import agent_innovaphone
 
 
-@pytest.mark.parametrize(
-    "args, expected_stdout",
-    [
-        (
-            [
-                "192.168.178.10",
-                "--user",
-                "USER",
-                "--password",
-                "PASSWORD",
-            ],
-            "<<<innovaphone_cpu>>>\nCPU 21\n<<<innovaphone_mem>>>\nMEM 5\n<<<innovaphone_temp>>>\nTEMP 35\n<<<innovaphone_channels>>>\nPRI1 Up Up 8 30\nPRI2 Up Up 12 30\n<<<innovaphone_licenses>>>\n",
-        )
-    ],
-)
-def test_agent_innovaphone_main(
-    args: Sequence[str], expected_stdout: str, capsys: pytest.CaptureFixture[str]
-) -> None:
-    filepath = "%s/innovaphone_vcrtrace.yaml" % os.path.dirname(__file__)
-    with vcr.use_cassette(
-        filepath,
-        record_mode="none",
-    ):
-        agent_innovaphone.main(args)
-        assert expected_stdout == capsys.readouterr().out
+def test_agent_innovaphone_vcrtrace(capsys: pytest.CaptureFixture[str]) -> None:
+    cassette_path = Path(__file__).parent / "innovaphone_vcrtrace.yaml"
+    with vcr.use_cassette(cassette_path, record_mode="none"):
+        agent_innovaphone.main(["192.168.178.10", "--user", "USER", "--password", "PASSWORD"])
+
+    value = capsys.readouterr().out
+    expected = """\
+<<<innovaphone_cpu>>>
+CPU 21
+<<<innovaphone_mem>>>
+MEM 5
+<<<innovaphone_temp>>>
+TEMP 35
+<<<innovaphone_channels>>>
+PRI1 Up Up 8 30
+PRI2 Up Up 12 30
+<<<innovaphone_licenses>>>
+"""
+
+    assert value == expected
