@@ -175,7 +175,7 @@ def parse_ip_addresses(string_table: Sequence[StringByteTable]) -> Section:
     ]
 
 
-def host_label_ip_addresses(section: Section) -> HostLabelGenerator:
+def host_labels_if_snmp(section: Section) -> HostLabelGenerator:
     """
     Host label function
     Labels:
@@ -194,7 +194,7 @@ def host_label_ip_addresses(section: Section) -> HostLabelGenerator:
 snmp_section_ip_address = SNMPSection(
     name="ip_addresses",
     parse_function=parse_ip_addresses,
-    host_label_function=host_label_ip_addresses,
+    host_label_function=host_labels_if_snmp,
     fetch=[
         SNMPTree(
             base=".1.3.6.1.2.1.4.20.1",  #  IP-MIB::ipAddrEntry
