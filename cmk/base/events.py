@@ -502,6 +502,19 @@ def get_readable_rel_date(timestamp: Any) -> str:
 
 # While the rest of the world increasingly embraces lambdas and folds, the
 # Python world moves backwards in time. :-P So let's introduce this helper...
+def _safe_call_matcher(
+    matcher: Matcher,
+    rule: EventRule,
+    context: EnrichedEventContext | EventContext,
+    analyse: bool,
+    all_timeperiods: TimeperiodSpecs,
+) -> str | None:
+    try:
+        return matcher(rule, context, analyse, all_timeperiods)
+    except Exception:
+        return f"Error in matcher: {traceback.format_exc()}"
+
+
 def apply_matchers(
     matchers: Iterable[Matcher],
     rule: EventRule,
@@ -509,14 +522,15 @@ def apply_matchers(
     analyse: bool,
     all_timeperiods: TimeperiodSpecs,
 ) -> str | None:
-    for matcher in matchers:
-        try:
-            result = matcher(rule, context, analyse, all_timeperiods)
-        except Exception:
-            return f"Error in matcher: {traceback.format_exc()}"
-        if result is not None:
-            return result
-    return None
+    return next(
+        (
+            result
+            for matcher in matchers
+            if (result := _safe_call_matcher(matcher, rule, context, analyse, all_timeperiods))
+            is not None
+        ),
+        None,
+    )
 
 
 def event_match_rule(
