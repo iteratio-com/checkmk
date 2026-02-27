@@ -1696,7 +1696,7 @@ def rbn_match_host_event(
         state = context["HOSTSTATE"]
         last_state = context["PREVIOUSHOSTHARDSTATE"]
         event_map = {"UP": "r", "DOWN": "d", "UNREACHABLE": "u"}
-        return rbn_match_event(context, state, last_state, event_map, allowed_events)
+        return _rbn_match_event(context, state, last_state, event_map, allowed_events)
     return None
 
 
@@ -1716,11 +1716,11 @@ def rbn_match_service_event(
         state = context["SERVICESTATE"]
         last_state = context["PREVIOUSSERVICEHARDSTATE"]
         event_map = {"OK": "r", "WARNING": "w", "CRITICAL": "c", "UNKNOWN": "u"}
-        return rbn_match_event(context, state, last_state, event_map, allowed_events)
+        return _rbn_match_event(context, state, last_state, event_map, allowed_events)
     return None
 
 
-def rbn_match_event(
+def _rbn_match_event(
     context: EventContext,
     state: str,
     last_state: str,
@@ -1813,9 +1813,9 @@ def rbn_rule_contacts(
                     )
                     continue
 
-            reason = rbn_match_contact_macros(
+            reason = _rbn_match_contact_macros(
                 rule, contactname, contact
-            ) or rbn_match_contact_groups(rule, contactname, contact)
+            ) or _rbn_match_contact_groups(rule, contactname, contact)
 
             if reason:
                 logger.info("   - skipping contact %s: %s", contactname, reason)
@@ -1832,7 +1832,7 @@ def rbn_rule_contacts(
     return frozenset(all_enabled)  # has to be hashable
 
 
-def rbn_match_contact_macros(
+def _rbn_match_contact_macros(
     rule: EventRule, contactname: ContactName, contact: Contact
 ) -> str | None:
     if "contact_match_macros" in rule:
@@ -1852,7 +1852,7 @@ def rbn_match_contact_macros(
     return None
 
 
-def rbn_match_contact_groups(
+def _rbn_match_contact_groups(
     rule: EventRule, contactname: ContactName, contact: Contact
 ) -> str | None:
     if "contact_match_groups" in rule:
