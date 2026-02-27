@@ -11,7 +11,7 @@ import pytest
 from pytest import MonkeyPatch
 
 from cmk.base import notify
-from cmk.events.event_context import EnrichedEventContext, EventContext
+from cmk.events.event_context import EnrichedEventContext, EventContext, HostName
 from cmk.utils.http_proxy_config import EnvironmentProxyConfig
 from cmk.utils.notify_types import (
     Contact,
@@ -479,4 +479,440 @@ def test_rbn_match_event_console(
             _all_timeperiods={},
         )
         == expected
+    )
+
+
+def _make_rule() -> EventRule:
+    return {
+        "rule_id": NotificationRuleID("test"),
+        "allow_disable": False,
+        "contact_all": False,
+        "contact_all_with_email": False,
+        "contact_object": False,
+        "description": "Test rule",
+        "disabled": False,
+        "notify_plugin": ("mail", None),
+    }
+
+
+@pytest.mark.parametrize(
+    "rule, expected",
+    [
+        pytest.param(_make_rule(), None, id="no disabled key → passes"),
+        pytest.param(_make_rule() | {"disabled": False}, None, id="disabled=False → passes"),
+        pytest.param(
+            _make_rule() | {"disabled": True}, "This rule is disabled", id="disabled=True → blocked"
+        ),
+    ],
+)
+def test_rbn_match_rule_disabled(rule: EventRule, expected: str | None) -> None:
+    assert notify.rbn_match_rule_disabled(rule, {}, False, {}) == expected
+
+
+@pytest.mark.parametrize(
+    "rule, context, expected",
+    [
+        pytest.param(_make_rule(), {"WHAT": "HOST"}, None, id="no match_escalation → passes"),
+        pytest.param(
+            _make_rule() | {"match_escalation": (1, 5)},
+            {"WHAT": "HOST", "HOSTNOTIFICATIONNUMBER": "3"},
+            None,
+            id="HOST number in range → passes",
+        ),
+        pytest.param(
+            _make_rule() | {"match_escalation": (1, 5)},
+            {"WHAT": "HOST", "HOSTNOTIFICATIONNUMBER": "6"},
+            "The notification number 6 does not lie in range 1 ... 5",
+            id="HOST number out of range → blocked",
+        ),
+        pytest.param(
+            _make_rule() | {"match_escalation": (1, 5)},
+            {"WHAT": "SERVICE", "SERVICENOTIFICATIONNUMBER": "3"},
+            None,
+            id="SERVICE number in range → passes",
+        ),
+        pytest.param(
+            _make_rule() | {"match_escalation": (1, 5)},
+            {"WHAT": "SERVICE", "SERVICENOTIFICATIONNUMBER": "7"},
+            "The notification number 7 does not lie in range 1 ... 5",
+            id="SERVICE number out of range → blocked",
+        ),
+        pytest.param(
+            _make_rule() | {"match_escalation": (1, 5)},
+            {"WHAT": "HOST"},
+            None,
+            id="HOST with no HOSTNOTIFICATIONNUMBER defaults to 1 → passes",
+        ),
+    ],
+)
+def test_rbn_match_escalation(rule: EventRule, context: EventContext, expected: str | None) -> None:
+    assert notify.rbn_match_escalation(rule, context, False, {}) == expected
+
+
+@pytest.mark.parametrize(
+    "rule, context, expected",
+    [
+        pytest.param(
+            _make_rule(), {"WHAT": "HOST"}, None, id="no match_escalation_throttle → passes"
+        ),
+        pytest.param(
+            _make_rule() | {"match_escalation_throttle": (10, 5)},
+            {"WHAT": "HOST", "HOSTSTATE": "UP", "HOSTNOTIFICATIONNUMBER": "15"},
+            None,
+            id="HOST recovery (UP) → never throttled",
+        ),
+        pytest.param(
+            _make_rule() | {"match_escalation_throttle": (10, 5)},
+            {"WHAT": "SERVICE", "SERVICESTATE": "OK", "SERVICENOTIFICATIONNUMBER": "15"},
+            None,
+            id="SERVICE recovery (OK) → never throttled",
+        ),
+        pytest.param(
+            _make_rule() | {"match_escalation_throttle": (10, 5)},
+            {"WHAT": "HOST", "HOSTSTATE": "DOWN", "HOSTNOTIFICATIONNUMBER": "10"},
+            None,
+            id="HOST at from_number boundary → passes",
+        ),
+        pytest.param(
+            _make_rule() | {"match_escalation_throttle": (10, 5)},
+            {"WHAT": "HOST", "HOSTSTATE": "DOWN", "HOSTNOTIFICATIONNUMBER": "15"},
+            None,
+            id="HOST at from_number + rate → passes",
+        ),
+        pytest.param(
+            _make_rule() | {"match_escalation_throttle": (10, 5)},
+            {"WHAT": "HOST", "HOSTSTATE": "DOWN", "HOSTNOTIFICATIONNUMBER": "12"},
+            "This notification is being skipped due to throttling. The next number will be 15",
+            id="HOST notification throttled → blocked",
+        ),
+        pytest.param(
+            _make_rule() | {"match_escalation_throttle": (10, 5)},
+            {"WHAT": "SERVICE", "SERVICESTATE": "CRITICAL", "SERVICENOTIFICATIONNUMBER": "13"},
+            "This notification is being skipped due to throttling. The next number will be 15",
+            id="SERVICE notification throttled → blocked",
+        ),
+    ],
+)
+def test_rbn_match_escalation_throttle(
+    rule: EventRule, context: EventContext, expected: str | None
+) -> None:
+    assert notify.rbn_match_escalation_throttle(rule, context, False, {}) == expected
+
+
+@pytest.mark.parametrize(
+    "rule, context, expected",
+    [
+        pytest.param(_make_rule(), {"WHAT": "HOST"}, None, id="no match_host_event → passes"),
+        pytest.param(
+            _make_rule() | {"match_host_event": ["dr"]},
+            {
+                "WHAT": "SERVICE",
+                "NOTIFICATIONTYPE": "PROBLEM",
+                "SERVICESTATE": "CRITICAL",
+                "PREVIOUSSERVICEHARDSTATE": "OK",
+            },
+            "This is a service notification, but the rule just matches host events",
+            id="SERVICE notification, rule only matches HOST → blocked",
+        ),
+        pytest.param(
+            _make_rule() | {"match_host_event": ["dr"], "match_service_event": ["?c"]},
+            {
+                "WHAT": "SERVICE",
+                "NOTIFICATIONTYPE": "PROBLEM",
+                "SERVICESTATE": "CRITICAL",
+                "PREVIOUSSERVICEHARDSTATE": "OK",
+            },
+            None,
+            id="SERVICE notification, rule matches both → passes (delegated to service event)",
+        ),
+        pytest.param(
+            _make_rule() | {"match_host_event": ["dr"]},
+            {"WHAT": "SERVICE", "EC_ID": "ec1", "NOTIFICATIONTYPE": "PROBLEM"},
+            None,
+            id="EC notification, rule matches HOST → passes (handled by EC matcher)",
+        ),
+        pytest.param(
+            _make_rule() | {"match_host_event": ["dr"]},
+            {
+                "WHAT": "HOST",
+                "NOTIFICATIONTYPE": "RECOVERY",
+                "HOSTSTATE": "UP",
+                "PREVIOUSHOSTHARDSTATE": "DOWN",
+            },
+            None,
+            id="HOST recovery DOWN→UP with 'dr' allowed → passes",
+        ),
+        pytest.param(
+            _make_rule() | {"match_host_event": ["dr"]},
+            {
+                "WHAT": "HOST",
+                "NOTIFICATIONTYPE": "RECOVERY",
+                "HOSTSTATE": "UP",
+                "PREVIOUSHOSTHARDSTATE": "UNREACHABLE",
+            },
+            "Event type 'ur' not handled by this rule. Allowed are: dr",
+            id="HOST recovery UNREACHABLE→UP, only 'dr' allowed → blocked",
+        ),
+    ],
+)
+def test_rbn_match_host_event(rule: EventRule, context: EventContext, expected: str | None) -> None:
+    assert notify.rbn_match_host_event(rule, context, False, {}) == expected
+
+
+@pytest.mark.parametrize(
+    "rule, context, expected",
+    [
+        pytest.param(_make_rule(), {"WHAT": "SERVICE"}, None, id="no match_service_event → passes"),
+        pytest.param(
+            _make_rule() | {"match_service_event": ["?c"]},
+            {
+                "WHAT": "HOST",
+                "NOTIFICATIONTYPE": "PROBLEM",
+                "HOSTSTATE": "DOWN",
+                "PREVIOUSHOSTHARDSTATE": "UP",
+            },
+            "This is a host notification, but the rule just matches service events",
+            id="HOST notification, rule only matches SERVICE → blocked",
+        ),
+        pytest.param(
+            _make_rule() | {"match_service_event": ["?c"], "match_host_event": ["dr"]},
+            {
+                "WHAT": "HOST",
+                "NOTIFICATIONTYPE": "PROBLEM",
+                "HOSTSTATE": "DOWN",
+                "PREVIOUSHOSTHARDSTATE": "UP",
+            },
+            None,
+            id="HOST notification, rule matches both → passes (delegated to host event)",
+        ),
+        pytest.param(
+            _make_rule() | {"match_service_event": ["?c"]},
+            {
+                "WHAT": "SERVICE",
+                "NOTIFICATIONTYPE": "PROBLEM",
+                "SERVICESTATE": "CRITICAL",
+                "PREVIOUSSERVICEHARDSTATE": "OK",
+            },
+            None,
+            id="SERVICE critical with '?c' allowed → passes",
+        ),
+        pytest.param(
+            _make_rule() | {"match_service_event": ["?c"]},
+            {
+                "WHAT": "SERVICE",
+                "NOTIFICATIONTYPE": "PROBLEM",
+                "SERVICESTATE": "WARNING",
+                "PREVIOUSSERVICEHARDSTATE": "OK",
+            },
+            "Event type 'rw' not handled by this rule. Allowed are: ?c",
+            id="SERVICE warning, only '?c' allowed → blocked",
+        ),
+    ],
+)
+def test_rbn_match_service_event(
+    rule: EventRule, context: EventContext, expected: str | None
+) -> None:
+    assert notify.rbn_match_service_event(rule, context, False, {}) == expected
+
+
+@pytest.mark.parametrize(
+    "rule, context, expected",
+    [
+        pytest.param(_make_rule(), {}, None, id="no match_notification_comment → passes"),
+        pytest.param(
+            _make_rule() | {"match_notification_comment": "^maintenance"},
+            {"NOTIFICATIONCOMMENT": "maintenance window start"},
+            None,
+            id="comment matches regex → passes",
+        ),
+        pytest.param(
+            _make_rule() | {"match_notification_comment": "^maintenance"},
+            {"NOTIFICATIONCOMMENT": "urgent alert"},
+            "The beginning of the notification comment 'urgent alert' is not matched by the regex '^maintenance'",
+            id="comment does not match regex → blocked",
+        ),
+        pytest.param(
+            _make_rule() | {"match_notification_comment": "^maintenance"},
+            {},
+            "The beginning of the notification comment '' is not matched by the regex '^maintenance'",
+            id="no NOTIFICATIONCOMMENT in context (empty string) → blocked",
+        ),
+    ],
+)
+def test_rbn_match_notification_comment(
+    rule: EventRule, context: EventContext, expected: str | None
+) -> None:
+    assert notify.rbn_match_notification_comment(rule, context, False, {}) == expected
+
+
+@pytest.mark.parametrize(
+    "rule, context, analyse, is_active, expected",
+    [
+        pytest.param(_make_rule(), {}, False, True, None, id="analyse=False → always passes"),
+        pytest.param(
+            _make_rule(),
+            {"MICROTIME": "1234567890000000"},
+            True,
+            True,
+            None,
+            id="no match_timeperiod → passes",
+        ),
+        pytest.param(
+            _make_rule() | {"match_timeperiod": "24X7"},
+            {"MICROTIME": "1234567890000000"},
+            True,
+            True,
+            None,
+            id="24X7 timeperiod → always passes",
+        ),
+        pytest.param(
+            _make_rule() | {"match_timeperiod": "work_hours"},
+            {"MICROTIME": "1234567890000000"},
+            True,
+            True,
+            None,
+            id="timeperiod active → passes",
+        ),
+        pytest.param(
+            _make_rule() | {"match_timeperiod": "work_hours"},
+            {"MICROTIME": "1234567890000000"},
+            True,
+            False,
+            "The notification does not match the timeperiod 'work_hours'",
+            id="timeperiod not active → blocked",
+        ),
+    ],
+)
+def test_rbn_match_timeperiod(
+    rule: EventRule,
+    context: EventContext,
+    analyse: bool,
+    is_active: bool,
+    expected: str | None,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(notify, "is_timeperiod_active", lambda **kwargs: is_active)
+    assert notify.rbn_match_timeperiod(rule, context, analyse, {}) == expected
+
+
+@pytest.mark.parametrize(
+    "rule, contactname, contact, expected",
+    [
+        pytest.param(
+            _make_rule(), "user1", Contact({}), None, id="no contact_match_macros → passes"
+        ),
+        pytest.param(
+            _make_rule() | {"contact_match_macros": [("alias", "ops")]},
+            "user1",
+            Contact({"_alias": "ops"}),  # type: ignore[typeddict-unknown-key]
+            None,
+            id="macro value matches regex → passes",
+        ),
+        pytest.param(
+            _make_rule() | {"contact_match_macros": [("alias", "ops")]},
+            "user1",
+            Contact({"_alias": "dev"}),  # type: ignore[typeddict-unknown-key]
+            "value 'dev' for macro 'alias' does not match 'ops$'. His macros are: alias=dev",
+            id="macro value does not match regex → blocked",
+        ),
+        pytest.param(
+            _make_rule() | {"contact_match_macros": [("alias", "ops")]},
+            "user1",
+            Contact({}),
+            "value '' for macro 'alias' does not match 'ops$'. His macros are: ",
+            id="macro absent (empty string) → blocked",
+        ),
+    ],
+)
+def test__rbn_match_contact_macros(
+    rule: EventRule,
+    contactname: str,
+    contact: Contact,
+    expected: str | None,
+) -> None:
+    assert notify._rbn_match_contact_macros(rule, contactname, contact) == expected
+
+
+@pytest.mark.parametrize(
+    "rule, contactname, contact, expected",
+    [
+        pytest.param(
+            _make_rule(), "user1", Contact({}), None, id="no contact_match_groups → passes"
+        ),
+        pytest.param(
+            _make_rule() | {"contact_match_groups": ["ops"]},
+            "user1",
+            Contact({"contactgroups": ["ops", "all"]}),
+            None,
+            id="contact in required group → passes",
+        ),
+        pytest.param(
+            _make_rule() | {"contact_match_groups": ["ops"]},
+            "user1",
+            Contact({"contactgroups": ["dev", "all"]}),
+            "he/she is not member of the contact group ops (his groups are dev, all)",
+            id="contact not in required group → blocked",
+        ),
+        pytest.param(
+            _make_rule() | {"contact_match_groups": ["ops"]},
+            "user1",
+            Contact({}),
+            None,
+            id="contact has no contactgroups → passes (warning logged, no restriction applied)",
+        ),
+    ],
+)
+def test__rbn_match_contact_groups(
+    rule: EventRule,
+    contactname: str,
+    contact: Contact,
+    expected: str | None,
+) -> None:
+    assert notify._rbn_match_contact_groups(rule, contactname, contact) == expected
+
+
+def test__rbn_match_rule_disabled_rule() -> None:
+    assert (
+        notify._rbn_match_rule(
+            _make_rule() | {"disabled": True},
+            EnrichedEventContext({}),
+            {},
+            define_servicegroups={},
+            analyse=False,
+            timeperiods_active={},
+        )
+        == "This rule is disabled"
+    )
+
+
+def test__rbn_match_rule_passes_minimal() -> None:
+    # WHAT and HOSTNAME are required because event_match_rule always accesses these:
+    # - context["WHAT"] via _event_match_servicegroups (unconditionally)
+    # - context["HOSTNAME"] via event_match_exclude_hosts (unconditionally)
+    assert (
+        notify._rbn_match_rule(
+            _make_rule(),
+            EnrichedEventContext({"WHAT": "HOST", "HOSTNAME": HostName("testhost")}),
+            {},
+            define_servicegroups={},
+            analyse=False,
+            timeperiods_active={},
+        )
+        is None
+    )
+
+
+def test__rbn_match_rule_escalation_blocked() -> None:
+    assert (
+        notify._rbn_match_rule(
+            _make_rule() | {"match_escalation": (1, 5)},
+            EnrichedEventContext(
+                {"WHAT": "HOST", "HOSTNAME": HostName("testhost"), "HOSTNOTIFICATIONNUMBER": "10"}
+            ),
+            {},
+            define_servicegroups={},
+            analyse=False,
+            timeperiods_active={},
+        )
+        == "The notification number 10 does not lie in range 1 ... 5"
     )
