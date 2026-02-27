@@ -1225,7 +1225,7 @@ def test_event_match_servicelabels(
 def test_event_match_servicegroups_fixed(
     rule: EventRule, context: EventContext, expected_none: bool
 ) -> None:
-    result = event_match_servicegroups_fixed(rule, context, {}, {}, False)
+    result = event_match_servicegroups_fixed({})(rule, context, False, {})
     assert (result is None) == expected_none
 
 
@@ -1264,7 +1264,7 @@ def test_event_match_servicegroups_fixed(
 def test_event_match_servicegroups_regex(
     rule: EventRule, context: EventContext, expected_none: bool
 ) -> None:
-    result = event_match_servicegroups_regex(rule, context, {}, {}, False)
+    result = event_match_servicegroups_regex({})(rule, context, False, {})
     assert (result is None) == expected_none
 
 
@@ -1309,7 +1309,7 @@ def test_event_match_servicegroups_regex(
 def test_event_match_exclude_servicegroups_fixed(
     rule: EventRule, context: EventContext, expected_none: bool
 ) -> None:
-    result = event_match_exclude_servicegroups_fixed(rule, context, {}, {}, False)
+    result = event_match_exclude_servicegroups_fixed({})(rule, context, False, {})
     assert (result is None) == expected_none
 
 
@@ -1359,7 +1359,7 @@ _SG_ALIASES: Mapping[str, str] = {"webservers": "Web Servers", "db": "Database S
 def test_event_match_exclude_servicegroups_regex(
     rule: EventRule, context: EventContext, expected_none: bool
 ) -> None:
-    result = event_match_exclude_servicegroups_regex(rule, context, _SG_ALIASES)
+    result = event_match_exclude_servicegroups_regex(_SG_ALIASES)(rule, context, False, {})
     assert (result is None) == expected_none
 
 
@@ -1413,5 +1413,6 @@ def test_event_match_timeperiod(
     analyse: bool,
     expected_none: bool,
 ) -> None:
-    result = event_match_timeperiod(rule, analyse, timeperiods_active)
+    matcher = event_match_timeperiod(timeperiods_active)
+    result = matcher(rule, {}, analyse, {})
     assert (result is None) == expected_none

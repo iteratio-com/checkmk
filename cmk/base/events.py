@@ -541,78 +541,16 @@ def event_match_rule(
     analyse: bool,
     timeperiods_active: CoreTimeperiodsActive,
 ) -> str | None:
-    def match_servicegroups_fixed(
-        rule: EventRule,
-        context: EventContext,
-        analyse: bool,
-        all_timeperiods: TimeperiodSpecs,
-    ) -> str | None:
-        return event_match_servicegroups_fixed(
-            rule,
-            context,
-            define_servicegroups=define_servicegroups,
-            _all_timeperiods=all_timeperiods,
-            _analyse=analyse,
-        )
-
-    def match_exclude_servicegroups_fixed(
-        rule: EventRule,
-        context: EventContext,
-        analyse: bool,
-        all_timeperiods: TimeperiodSpecs,
-    ) -> str | None:
-        return event_match_exclude_servicegroups_fixed(
-            rule,
-            context,
-            define_servicegroups=define_servicegroups,
-            _all_timeperiods=all_timeperiods,
-            _analyse=analyse,
-        )
-
-    def match_servicegroups_regex(
-        rule: EventRule,
-        context: EventContext,
-        analyse: bool,
-        all_timeperiods: TimeperiodSpecs,
-    ) -> str | None:
-        return event_match_servicegroups_regex(
-            rule,
-            context,
-            define_servicegroups=define_servicegroups,
-            _all_timeperiods=all_timeperiods,
-            _analyse=analyse,
-        )
-
-    def match_exclude_servicegroups_regex(
-        rule: EventRule,
-        context: EventContext,
-        _analyse: bool,
-        _all_timeperiods: TimeperiodSpecs,
-    ) -> str | None:
-        return event_match_exclude_servicegroups_regex(
-            rule,
-            context,
-            define_servicegroups=define_servicegroups,
-        )
-
-    def match_timeperiod(
-        rule: EventRule,
-        _context: EventContext,
-        analyse: bool,
-        _all_timeperiods: TimeperiodSpecs,
-    ) -> str | None:
-        return event_match_timeperiod(rule, analyse, timeperiods_active)
-
     return apply_matchers(
         [
             event_match_site,
             event_match_folder,
             event_match_hosttags,
             event_match_hostgroups,
-            match_servicegroups_fixed,
-            match_exclude_servicegroups_fixed,
-            match_servicegroups_regex,
-            match_exclude_servicegroups_regex,
+            event_match_servicegroups_fixed(define_servicegroups),
+            event_match_exclude_servicegroups_fixed(define_servicegroups),
+            event_match_servicegroups_regex(define_servicegroups),
+            event_match_exclude_servicegroups_regex(define_servicegroups),
             event_match_contacts,
             event_match_contactgroups,
             event_match_hosts,
@@ -621,7 +559,7 @@ def event_match_rule(
             event_match_exclude_services,
             event_match_plugin_output,
             event_match_checktype,
-            match_timeperiod,
+            event_match_timeperiod(timeperiods_active),
             event_match_servicelevel,
             event_match_hostlabels,
             event_match_servicelabels,
@@ -704,27 +642,35 @@ def event_match_hosttags(
 
 
 def event_match_servicegroups_fixed(
-    rule: EventRule,
-    context: EventContext,
     define_servicegroups: Mapping[str, str],
-    _all_timeperiods: TimeperiodSpecs,
-    _analyse: bool,
-) -> str | None:
-    return _event_match_servicegroups(
-        rule, context, define_servicegroups=define_servicegroups, is_regex=False
-    )
+) -> Matcher:
+    def match(
+        rule: EventRule,
+        context: EventContext,
+        _analyse: bool,
+        _all_timeperiods: TimeperiodSpecs,
+    ) -> str | None:
+        return _event_match_servicegroups(
+            rule, context, define_servicegroups=define_servicegroups, is_regex=False
+        )
+
+    return match
 
 
 def event_match_servicegroups_regex(
-    rule: EventRule,
-    context: EventContext,
     define_servicegroups: Mapping[str, str],
-    _all_timeperiods: TimeperiodSpecs,
-    _analyse: bool,
-) -> str | None:
-    return _event_match_servicegroups(
-        rule, context, define_servicegroups=define_servicegroups, is_regex=True
-    )
+) -> Matcher:
+    def match(
+        rule: EventRule,
+        context: EventContext,
+        _analyse: bool,
+        _all_timeperiods: TimeperiodSpecs,
+    ) -> str | None:
+        return _event_match_servicegroups(
+            rule, context, define_servicegroups=define_servicegroups, is_regex=True
+        )
+
+    return match
 
 
 def _event_match_servicegroups(
@@ -797,25 +743,35 @@ def _event_match_servicegroups(
 
 
 def event_match_exclude_servicegroups_fixed(
-    rule: EventRule,
-    context: EventContext,
     define_servicegroups: Mapping[str, str],
-    _all_timeperiods: TimeperiodSpecs,
-    _analyse: bool,
-) -> str | None:
-    return _event_match_exclude_servicegroups(
-        rule, context, define_servicegroups=define_servicegroups, is_regex=False
-    )
+) -> Matcher:
+    def match(
+        rule: EventRule,
+        context: EventContext,
+        _analyse: bool,
+        _all_timeperiods: TimeperiodSpecs,
+    ) -> str | None:
+        return _event_match_exclude_servicegroups(
+            rule, context, define_servicegroups=define_servicegroups, is_regex=False
+        )
+
+    return match
 
 
 def event_match_exclude_servicegroups_regex(
-    rule: EventRule,
-    context: EventContext,
     define_servicegroups: Mapping[str, str],
-) -> str | None:
-    return _event_match_exclude_servicegroups(
-        rule, context, define_servicegroups=define_servicegroups, is_regex=True
-    )
+) -> Matcher:
+    def match(
+        rule: EventRule,
+        context: EventContext,
+        _analyse: bool,
+        _all_timeperiods: TimeperiodSpecs,
+    ) -> str | None:
+        return _event_match_exclude_servicegroups(
+            rule, context, define_servicegroups=define_servicegroups, is_regex=True
+        )
+
+    return match
 
 
 def _event_match_exclude_servicegroups(
@@ -1053,26 +1009,32 @@ def event_match_checktype(
 
 
 def event_match_timeperiod(
-    rule: EventRule,
-    analyse: bool,
     timeperiods_active: CoreTimeperiodsActive,
-) -> str | None:
-    # don't test on notification tests, in that case this is done within
-    # notify.rbn_match_timeperiod
-    if analyse:
-        return None
+) -> Matcher:
+    def match(
+        rule: EventRule,
+        _context: EventContext,
+        analyse: bool,
+        _all_timeperiods: TimeperiodSpecs,
+    ) -> str | None:
+        # don't test on notification tests, in that case this is done within
+        # notify.rbn_match_timeperiod
+        if analyse:
+            return None
 
-    if "match_timeperiod" not in rule:
-        return None
+        if "match_timeperiod" not in rule:
+            return None
 
-    timeperiod = rule["match_timeperiod"]
-    if timeperiod == "24X7":
-        return None
+        timeperiod = rule["match_timeperiod"]
+        if timeperiod == "24X7":
+            return None
 
-    if timeperiods_active.get(timeperiod, True):
-        return None
+        if timeperiods_active.get(timeperiod, True):
+            return None
 
-    return "The timeperiod '%s' is currently not active." % timeperiod
+        return "The timeperiod '%s' is currently not active." % timeperiod
+
+    return match
 
 
 def event_match_servicelevel(
