@@ -17,7 +17,7 @@ from cmk.base.events import (
     event_match_hosttags,
     raw_context_from_string,
 )
-from cmk.events.event_context import EnrichedEventContext, EventContext
+from cmk.events.event_context import EnrichedEventContext, EventContext, HostName
 from cmk.utils.http_proxy_config import (
     EnvironmentProxyConfig,
     HTTPProxySpec,
@@ -33,6 +33,7 @@ from cmk.utils.notify_types import (
 )
 from cmk.utils.rulesets.ruleset_matcher import TagConditionNE
 from cmk.utils.tags import TagGroupID, TagID
+from cmk.utils.timeperiod import builtin_timeperiods
 
 HTTP_PROXY: Final = EnvironmentProxyConfig()
 
@@ -505,8 +506,9 @@ def test_add_to_event_context_proxy(
     assert context == expected
 
 
-def test_apply_matchers_catches_errors() -> None:
-    rule = EventRule(
+@pytest.fixture
+def basic_event_rule() -> EventRule:
+    return EventRule(
         rule_id=NotificationRuleID("1"),
         allow_disable=False,
         contact_all=False,
@@ -517,6 +519,86 @@ def test_apply_matchers_catches_errors() -> None:
         notify_plugin=("mail", NotificationParameterID("parameter_id")),
     )
 
+
+def test_apply_matchers_returns_none_on_empty_matchers(basic_event_rule: EventRule) -> None:
+    assert (
+        apply_matchers([], basic_event_rule, context={}, analyse=False, all_timeperiods={}) is None
+    )
+
+
+def test_apply_matchers_returns_none_when_all_pass(basic_event_rule: EventRule) -> None:
+    assert (
+        apply_matchers(
+            [lambda *args, **kw: None, lambda *args, **kw: None],
+            basic_event_rule,
+            context={},
+            analyse=False,
+            all_timeperiods={},
+        )
+        is None
+    )
+
+
+def test_apply_matchers_returns_first_non_none_result(basic_event_rule: EventRule) -> None:
+    result = apply_matchers(
+        [
+            lambda *args, **kw: None,
+            lambda *args, **kw: "reason one",
+            lambda *args, **kw: "reason two",
+        ],
+        basic_event_rule,
+        context={},
+        analyse=False,
+        all_timeperiods={},
+    )
+    assert result == "reason one"
+
+
+def test_apply_matchers_stops_at_first_failure(basic_event_rule: EventRule) -> None:
+    called: list[str] = []
+
+    def first_matcher(
+        rule: EventRule, context: EventContext, analyse: bool, all_timeperiods: object
+    ) -> str:
+        called.append("first")
+        return "failed"
+
+    def second_matcher(
+        rule: EventRule, context: EventContext, analyse: bool, all_timeperiods: object
+    ) -> None:
+        called.append("second")
+
+    apply_matchers(
+        [first_matcher, second_matcher],
+        basic_event_rule,
+        context={},
+        analyse=False,
+        all_timeperiods={},
+    )
+    assert called == ["first"]
+
+
+def test_apply_matchers_passes_arguments_to_matchers(basic_event_rule: EventRule) -> None:
+    received: list[object] = []
+    ctx: EventContext = {"HOSTNAME": HostName("myhost")}
+    periods = builtin_timeperiods()
+
+    def capturing_matcher(
+        rule: EventRule, context: EventContext, analyse: bool, all_timeperiods: object
+    ) -> None:
+        received.extend([rule, context, analyse, all_timeperiods])
+
+    apply_matchers(
+        [capturing_matcher],
+        basic_event_rule,
+        context=ctx,
+        analyse=True,
+        all_timeperiods=periods,
+    )
+    assert received == [basic_event_rule, ctx, True, periods]
+
+
+def test_apply_matchers_catches_errors(basic_event_rule: EventRule) -> None:
     def raise_error() -> None:
         raise ValueError("This is a test")
 
@@ -524,7 +606,7 @@ def test_apply_matchers_catches_errors() -> None:
         [
             lambda *args, **kw: raise_error(),
         ],
-        rule,
+        basic_event_rule,
         context={},
         analyse=False,
         all_timeperiods={},
