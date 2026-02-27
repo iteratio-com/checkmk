@@ -17,9 +17,7 @@ from cmk.gui.form_specs import DefaultValue
 from cmk.gui.form_specs.unstable import (
     Catalog,
     CommentTextArea,
-    DictionaryExtended,
     LegacyValueSpec,
-    ListOfStrings,
     not_empty,
     TopicElement,
 )
@@ -33,6 +31,7 @@ from cmk.gui.valuespec import Migrate as ValueSpecMigrate
 from cmk.gui.watolib.notification_parameter._base import NotificationParameter
 from cmk.gui.watolib.rulespec_groups import RulespecGroupMonitoringConfigurationNotifications
 from cmk.gui.watolib.users import notification_script_choices, notification_script_title
+from cmk.rulesets.internal.form_specs import DictionaryExtended, ListOfStrings
 from cmk.rulesets.v1 import Help, Title
 from cmk.rulesets.v1.form_specs import DictElement, Dictionary, FieldSize, String
 from cmk.rulesets.v1.rule_specs import NotificationParameters, Topic

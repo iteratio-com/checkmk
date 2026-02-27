@@ -10,7 +10,6 @@ from typing import Literal
 
 from cmk.ccc.exceptions import MKGeneralException
 from cmk.gui.form_specs.unstable import not_empty
-from cmk.gui.form_specs.unstable.legacy_converter import SimplePassword
 from cmk.gui.i18n import _
 from cmk.gui.valuespec import (
     Alternative,
@@ -24,6 +23,7 @@ from cmk.gui.valuespec import (
     ValueSpec,
     ValueSpecHelp,
 )
+from cmk.rulesets.internal.form_specs import SimplePassword
 from cmk.rulesets.v1 import form_specs, Title
 
 

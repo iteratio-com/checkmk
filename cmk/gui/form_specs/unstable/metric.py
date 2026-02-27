@@ -2,9 +2,10 @@
 # Copyright (C) 2024 Checkmk GmbH - License: GNU General Public License v2
 # This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 # conditions defined in the file COPYING, which is part of this source code package.
+
 from dataclasses import dataclass
 
-from cmk.gui.form_specs.unstable.string_autocompleter import StringAutocompleter
+from cmk.rulesets.internal.form_specs import StringAutocompleter
 
 
 @dataclass(frozen=True, kw_only=True)

@@ -13,7 +13,6 @@ from cmk.gui.form_specs import (
     VisitorOptions,
 )
 from cmk.gui.form_specs.unstable import Catalog, CommentTextArea, Topic, TopicElement
-from cmk.gui.form_specs.unstable.legacy_converter import SimplePassword
 from cmk.gui.form_specs.unstable.validators import not_empty
 from cmk.gui.logged_in import LoggedInUser
 from cmk.gui.watolib.passwords import (
@@ -22,6 +21,7 @@ from cmk.gui.watolib.passwords import (
     save_password,
     sorted_contact_group_choices,
 )
+from cmk.rulesets.internal.form_specs import SimplePassword
 from cmk.rulesets.v1 import Help, Label, Message, Title
 from cmk.rulesets.v1.form_specs import (
     CascadingSingleChoice,

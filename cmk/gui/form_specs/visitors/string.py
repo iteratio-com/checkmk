@@ -5,10 +5,10 @@
 
 # mypy: disable-error-code="unreachable"
 
-from typing import override
+from typing import cast, override
 
-from cmk.gui.form_specs.unstable import StringAutocompleter
 from cmk.gui.i18n import _
+from cmk.rulesets.internal.form_specs import StringAutocompleter
 from cmk.rulesets.v1.form_specs import FieldSize
 from cmk.shared_typing import vue_formspec_components as shared_type_defs
 
@@ -62,7 +62,9 @@ class StringVisitor(FormSpecVisitor[StringAutocompleter, _ParsedValueModel, _Fal
                 validators=build_vue_validators(self._validators()),
                 input_hint=compute_input_hint(self.form_spec.prefill),
                 field_size=field_size_translator(self.form_spec.field_size),
-                autocompleter=self.form_spec.autocompleter,
+                autocompleter=cast(
+                    shared_type_defs.Autocompleter | None, self.form_spec.autocompleter
+                ),
             ),
             (
                 parsed_value.fallback_value

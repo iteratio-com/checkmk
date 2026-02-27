@@ -17,9 +17,7 @@ from cmk.gui.form_specs.unstable import (
     CascadingSingleChoiceExtended,
     CommentTextArea,
     ConditionChoices,
-    DictionaryExtended,
     Labels,
-    ListOfStrings,
     ListUniqueSelection,
     not_empty,
     SingleChoiceEditable,
@@ -89,7 +87,10 @@ from cmk.gui.watolib.timeperiods import load_timeperiods
 from cmk.gui.watolib.user_scripts import load_notification_scripts, NotificationUserScripts
 from cmk.gui.watolib.users import notification_script_choices
 from cmk.rulesets.internal.form_specs import (
+    DictionaryExtended,
     ListExtended,
+    ListOfStrings,
+    ListOfStringsLayout,
     MultipleChoiceElementExtended,
     MultipleChoiceExtended,
     MultipleChoiceExtendedLayout,
@@ -132,7 +133,6 @@ from cmk.shared_typing.vue_formspec_components import (
     CascadingSingleChoiceLayout,
     Condition,
     ConditionGroup,
-    ListOfStringsLayout,
 )
 from cmk.utils.notify_types import HostEventType, ServiceEventType
 from cmk.utils.tags import AuxTag, TagGroup

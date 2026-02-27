@@ -6,7 +6,7 @@
 import pytest
 
 from cmk.gui.form_specs import get_visitor, RawDiskData, RawFrontendData, VisitorOptions
-from cmk.gui.form_specs.unstable import ListOfStrings
+from cmk.rulesets.internal.form_specs import ListOfStrings
 from cmk.rulesets.v1.form_specs import String
 
 

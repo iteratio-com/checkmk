@@ -14,7 +14,7 @@ import pytest
 import cmk.gui.watolib.configuration_entity.configuration_entity
 from cmk.ccc.user import UserId
 from cmk.gui.form_specs import RawFrontendData
-from cmk.gui.form_specs.unstable import DictionaryExtended, not_empty
+from cmk.gui.form_specs.unstable import not_empty
 from cmk.gui.logged_in import user
 from cmk.gui.permissions import declare_permission, permission_registry
 from cmk.gui.valuespec import Dictionary as ValueSpecDictionary
@@ -24,6 +24,7 @@ from cmk.gui.watolib.notification_parameter import (
     NotificationParameterRegistry,
     save_notification_parameter,
 )
+from cmk.rulesets.internal.form_specs import DictionaryExtended
 from cmk.rulesets.v1 import Title
 from cmk.rulesets.v1.form_specs import (
     DefaultValue,

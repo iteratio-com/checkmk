@@ -11,7 +11,6 @@ from typing import Any, Literal
 
 from marshmallow import ValidationError
 
-import cmk.fields.validators
 import cmk.utils.tags
 from cmk import fields
 from cmk.ccc.hostaddress import HostName
@@ -24,7 +23,6 @@ from cmk.gui.form_specs.generators.host_address import create_host_address
 from cmk.gui.form_specs.generators.setup_site_choice import create_setup_site_choice
 from cmk.gui.form_specs.generators.snmp_credentials import create_snmp_credentials
 from cmk.gui.form_specs.unstable import labels as fs_labels
-from cmk.gui.form_specs.unstable import ListOfStrings as FSListOfStrings
 from cmk.gui.form_specs.unstable import OptionalChoice
 from cmk.gui.form_specs.unstable.legacy_converter import (
     TransformDataForLegacyFormatOrRecomposeFunction,
@@ -86,6 +84,7 @@ from cmk.gui.watolib.host_attributes import (
 from cmk.gui.watolib.hosts_and_folders import Host
 from cmk.gui.watolib.tags import TagConfigFile
 from cmk.gui.watolib.translation import HostnameTranslation
+from cmk.rulesets.internal.form_specs import ListOfStrings as FSListOfStrings
 from cmk.rulesets.internal.form_specs import (
     SingleChoiceElementExtended,
     SingleChoiceExtended,

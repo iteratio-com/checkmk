@@ -8,8 +8,8 @@ import pytest
 
 from cmk.ccc.user import UserId
 from cmk.gui.form_specs import get_visitor, RawDiskData, RawFrontendData, VisitorOptions
-from cmk.gui.form_specs.unstable.legacy_converter import SimplePassword
 from cmk.gui.utils.encrypter import Encrypter
+from cmk.rulesets.internal.form_specs import SimplePassword
 
 
 def test_simple_password_encrypts_disk_password(

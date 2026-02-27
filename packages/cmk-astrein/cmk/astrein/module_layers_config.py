@@ -1296,6 +1296,7 @@ COMPONENTS: Mapping[Component, ImportCheckerProtocol] = {
         *PACKAGE_PLUGIN_APIS,
         "cmk.fields",
         "cmk.gui",
+        "cmk.shared_typing.vue_formspec_components",
     ),
     Component("cmk.werks"): _allow(
         *PACKAGE_CCC,

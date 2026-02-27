@@ -2,18 +2,18 @@
 # Copyright (C) 2024 Checkmk GmbH - License: GNU General Public License v2
 # This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 # conditions defined in the file COPYING, which is part of this source code package.
+
 import ast
 from collections.abc import Mapping, Sequence
 from typing import override
 
-from cmk.gui.form_specs.unstable.dictionary_extended import (
+from cmk.gui.i18n import _
+from cmk.rulesets.internal.form_specs import (
     DictGroupExtended,
     DictionaryExtended,
 )
-from cmk.gui.i18n import _
 from cmk.rulesets.v1.form_specs._composed import NoGroup
 from cmk.shared_typing import vue_formspec_components as shared_type_defs
-from cmk.shared_typing.vue_formspec_components import DictionaryGroupLayout
 
 from ._base import FormSpecVisitor
 from ._registry import get_visitor
@@ -140,9 +140,9 @@ class DictionaryVisitor(FormSpecVisitor[DictionaryExtended, _ParsedValueModel, _
 
             else:
                 layout = (
-                    dict_element.group.layout
+                    shared_type_defs.DictionaryGroupLayout(dict_element.group.layout.value)
                     if isinstance(dict_element.group, DictGroupExtended)
-                    else DictionaryGroupLayout.horizontal
+                    else shared_type_defs.DictionaryGroupLayout.horizontal
                 )
                 group = shared_type_defs.DictionaryGroup(
                     title=localize(dict_element.group.title),

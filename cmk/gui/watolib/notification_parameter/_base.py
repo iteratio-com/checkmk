@@ -6,8 +6,8 @@
 from collections.abc import Callable
 from dataclasses import dataclass
 
-from cmk.gui.form_specs.unstable.dictionary_extended import DictionaryExtended
 from cmk.gui.valuespec import Dictionary as ValueSpecDictionary
+from cmk.rulesets.internal.form_specs import DictionaryExtended
 from cmk.rulesets.v1.form_specs import Dictionary
 
 

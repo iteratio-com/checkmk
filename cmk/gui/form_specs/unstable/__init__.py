@@ -9,55 +9,39 @@ from .catalog import Catalog, Topic, TopicElement, TopicGroup
 from .comment_text_area import CommentTextArea
 from .condition_choices import ConditionChoices
 from .date_picker import DatePicker
-from .dictionary_extended import DictionaryExtended
 from .labels import Labels, Source, World
 from .legacy_valuespec import LegacyValueSpec
-from .list_of_strings import ListOfStrings
 from .list_unique_selection import ListUniqueSelection
 from .metric import MetricExtended
 from .optional_choice import OptionalChoice
 from .passwordstore_password import PasswordStorePassword
 from .single_choice_editable import SingleChoiceEditable
-from .string_autocompleter import (
-    Autocompleter,
-    AutocompleterData,
-    AutocompleterParams,
-    FetchMethod,
-    StringAutocompleter,
-)
 from .time_picker import TimePicker
 from .time_specific import TimeSpecific
 from .two_column_dictionary import TwoColumnDictionary
 from .validators import not_empty
 
 __all__ = [
+    "BinaryConditionChoices",
     "CascadingSingleChoiceExtended",
     "Catalog",
-    "TopicElement",
-    "TopicGroup",
     "CommentTextArea",
     "ConditionChoices",
-    "BinaryConditionChoices",
     "DatePicker",
-    "DictionaryExtended",
     "Labels",
     "LegacyValueSpec",
-    "ListOfStrings",
     "ListUniqueSelection",
     "MetricExtended",
     "not_empty",
-    "PasswordStorePassword",
     "OptionalChoice",
+    "PasswordStorePassword",
     "SingleChoiceEditable",
     "Source",
-    "Autocompleter",
-    "AutocompleterData",
-    "AutocompleterParams",
-    "FetchMethod",
-    "StringAutocompleter",
     "TimePicker",
     "TimeSpecific",
-    "TwoColumnDictionary",
     "Topic",
+    "TopicElement",
+    "TopicGroup",
+    "TwoColumnDictionary",
     "World",
 ]

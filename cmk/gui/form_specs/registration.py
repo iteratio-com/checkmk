@@ -13,20 +13,16 @@ from cmk.gui.form_specs.unstable import (
     CommentTextArea,
     ConditionChoices,
     DatePicker,
-    DictionaryExtended,
     Labels,
     LegacyValueSpec,
-    ListOfStrings,
     ListUniqueSelection,
     MetricExtended,
     OptionalChoice,
     SingleChoiceEditable,
-    StringAutocompleter,
     TimePicker,
     TimeSpecific,
 )
 from cmk.gui.form_specs.unstable.legacy_converter import (
-    SimplePassword,
     TransformDataForLegacyFormatOrRecomposeFunction,
     Tuple,
 )
@@ -61,11 +57,15 @@ from cmk.gui.form_specs.visitors.recomposers import (
     recompose_user_selection,
 )
 from cmk.rulesets.internal.form_specs import (
+    DictionaryExtended,
     InternalProxy,
     ListExtended,
+    ListOfStrings,
     MultipleChoiceExtended,
     OAuth2Connection,
+    SimplePassword,
     SingleChoiceExtended,
+    StringAutocompleter,
     UserSelection,
 )
 from cmk.rulesets.v1.form_specs import (

@@ -43,9 +43,6 @@ from cmk.gui.form_specs.unstable import (
     ConditionChoices,
     not_empty,
 )
-from cmk.gui.form_specs.unstable import (
-    ListOfStrings as ListOfStringsAPI,
-)
 from cmk.gui.form_specs.unstable.catalog import Catalog, Locked, Topic, TopicElement
 from cmk.gui.form_specs.unstable.time_specific import TimeSpecific
 from cmk.gui.form_specs.unstable.validators import HostAddressList
@@ -65,6 +62,9 @@ from cmk.gui.watolib.check_mk_automations import (
 )
 from cmk.gui.watolib.configuration_bundle_store import is_locked_by_quick_setup
 from cmk.gui.watolib.predefined_conditions import PredefinedConditionStore
+from cmk.rulesets.internal.form_specs import (
+    ListOfStrings as ListOfStringsAPI,
+)
 from cmk.rulesets.internal.form_specs import (
     SingleChoiceElementExtended as SingleChoiceElementExtendedAPI,
 )

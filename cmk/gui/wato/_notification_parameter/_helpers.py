@@ -7,8 +7,8 @@ import socket
 from typing import Any
 
 from cmk.ccc.site import url_prefix
-from cmk.gui.form_specs.unstable.dictionary_extended import DictGroupExtended
 from cmk.gui.i18n import _
+from cmk.rulesets.internal.form_specs import DictGroupExtended, DictionaryGroupLayout
 from cmk.rulesets.v1 import Help, Title
 from cmk.rulesets.v1.form_specs import (
     CascadingSingleChoice,
@@ -20,7 +20,6 @@ from cmk.rulesets.v1.form_specs import (
     String,
 )
 from cmk.rulesets.v1.form_specs.validators import Url, UrlProtocol
-from cmk.shared_typing.vue_formspec_components import DictionaryGroupLayout
 
 
 def notification_macro_help() -> str:

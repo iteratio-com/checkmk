@@ -6,7 +6,7 @@
 from collections.abc import Callable, Sequence
 from typing import TypeVar
 
-from cmk.gui.form_specs.unstable import StringAutocompleter
+from cmk.rulesets.internal.form_specs import StringAutocompleter
 from cmk.rulesets.v1 import Help, Title
 from cmk.rulesets.v1.form_specs import DefaultValue, InputHint
 from cmk.shared_typing.vue_formspec_components import (

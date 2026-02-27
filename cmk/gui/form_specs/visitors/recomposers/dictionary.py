@@ -2,10 +2,11 @@
 # Copyright (C) 2023 Checkmk GmbH - License: GNU General Public License v2
 # This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 # conditions defined in the file COPYING, which is part of this source code package.
+
 from typing import Any
 
 from cmk.ccc.exceptions import MKGeneralException
-from cmk.gui.form_specs.unstable.dictionary_extended import DictionaryExtended
+from cmk.rulesets.internal.form_specs import DictionaryExtended
 from cmk.rulesets.v1.form_specs import Dictionary, FormSpec
 
 

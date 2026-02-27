@@ -8,8 +8,12 @@ from collections.abc import Mapping
 from typing import Any
 
 from cmk.ccc.version import Edition, edition
-from cmk.gui.form_specs.unstable.dictionary_extended import DictGroupExtended, DictionaryExtended
 from cmk.gui.http import request
+from cmk.rulesets.internal.form_specs import (
+    DictGroupExtended,
+    DictionaryExtended,
+    DictionaryGroupLayout,
+)
 from cmk.rulesets.v1 import Help, Label, Title
 from cmk.rulesets.v1.form_specs import (
     DefaultValue,
@@ -26,7 +30,6 @@ from cmk.rulesets.v1.form_specs import (
     String,
 )
 from cmk.rulesets.v1.form_specs.validators import EmailAddress as ValidateEmailAddress
-from cmk.shared_typing.vue_formspec_components import DictionaryGroupLayout
 from cmk.utils import paths
 
 from ._helpers import _get_url_prefix_setting

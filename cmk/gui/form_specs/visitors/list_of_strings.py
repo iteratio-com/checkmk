@@ -7,7 +7,7 @@ from collections.abc import Sequence
 from typing import override
 
 from cmk.ccc.i18n import _
-from cmk.gui.form_specs.unstable import ListOfStrings
+from cmk.rulesets.internal.form_specs import ListOfStrings
 from cmk.shared_typing import vue_formspec_components as shared_type_defs
 
 from ._base import FormSpecVisitor

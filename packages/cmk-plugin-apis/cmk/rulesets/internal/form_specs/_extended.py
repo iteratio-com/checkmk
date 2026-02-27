@@ -10,12 +10,22 @@ from typing import Any, Generic, override, Protocol, runtime_checkable, TypeVar
 from cmk.rulesets.v1 import Label, Message, Title
 from cmk.rulesets.v1.form_specs import (
     DefaultValue,
+    DictGroup,
+    Dictionary,
+    FieldSize,
     FormSpec,
     InputHint,
     InvalidElementValidator,
     List,
     MultipleChoiceElement,
+    Prefill,
 )
+
+# Note: We use Protocols here instead of importing from cmk.shared_typing
+# to avoid module layer violations. These Protocols are compatible with
+# the dataclasses defined in cmk.shared_typing.vue_formspec_components.
+# When using StringAutocompleter, pass an Autocompleter instance from
+# cmk.shared_typing.vue_formspec_components.
 
 
 class AutocompleterParams(Protocol):
@@ -51,6 +61,17 @@ class Autocompleter(Protocol):
     def data(self) -> AutocompleterData: ...
     @property
     def fetch_method(self) -> FetchMethod | None: ...
+
+
+class DictionaryGroupLayout(str, Enum):
+    horizontal = "horizontal"
+    vertical = "vertical"
+    two_columns = "two_columns"
+
+
+class ListOfStringsLayout(str, Enum):
+    horizontal = "horizontal"
+    vertical = "vertical"
 
 
 T = TypeVar("T")
@@ -115,3 +136,58 @@ class MultipleChoiceExtended(FormSpec[Sequence[str]]):
             available_names = {elem.name for elem in self.elements}
             if invalid := set(self.prefill.value) - available_names:
                 raise ValueError(f"Invalid prefill element(s): {', '.join(invalid)}")
+
+
+@dataclass(frozen=True, kw_only=True)
+class DictionaryExtended(Dictionary):
+    # Usage of default_checked is advised against: if you want an optional
+    # element prefilled with options, reconsider and flip your approach. If
+    # something should be the default, it should not need configuration. Add
+    # complexity (stray from the default) by checking boxes, not unchecking
+    # them. Another approach would be to use a cascading single choice with your
+    # default preselected.
+    default_checked: list[str] | None = None
+
+    @override
+    def __post_init__(self) -> None:
+        for checked in self.default_checked or []:
+            if checked not in self.elements:
+                raise ValueError(f"Default checked element '{checked}' is not in elements")
+
+
+@dataclass(frozen=True, kw_only=True)
+class DictGroupExtended(DictGroup):
+    """Specification for a group of dictionary elements that are more closely related thematically
+    than the other elements. A group is identified by its title and help text.
+    """
+
+    layout: DictionaryGroupLayout = DictionaryGroupLayout.horizontal
+
+
+@dataclass(frozen=True, kw_only=True)
+class ListOfStrings(FormSpec[Sequence[str]]):
+    string_spec: FormSpec[str]
+    layout: ListOfStringsLayout = ListOfStringsLayout.horizontal
+    prefill: DefaultValue[Sequence[str]] = DefaultValue([])
+
+
+@dataclass(frozen=True, kw_only=True)
+class SimplePassword(FormSpec[str]):
+    """A simple password field FormSpec.
+
+    This is a basic password input that doesn't integrate with the password store.
+    For password store integration, use the appropriate GUI-specific form spec.
+    """
+
+    pass
+
+
+@dataclass(frozen=True, kw_only=True)
+class StringAutocompleter(FormSpec[str]):
+    """A string input with autocomplete support."""
+
+    label: Label | None = None
+    macro_support: bool = False
+    prefill: Prefill[str] = InputHint("")
+    field_size: FieldSize = FieldSize.MEDIUM
+    autocompleter: Autocompleter | None = None

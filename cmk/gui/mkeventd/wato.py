@@ -49,7 +49,6 @@ from cmk.gui.config import active_config, Config
 from cmk.gui.customer import customer_api, SCOPE_GLOBAL
 from cmk.gui.exceptions import MKUserError
 from cmk.gui.form_specs.generators.host_address import HostAddressValidator
-from cmk.gui.form_specs.unstable import DictionaryExtended
 from cmk.gui.htmllib.generator import HTMLWriter
 from cmk.gui.htmllib.html import html
 from cmk.gui.htmllib.type_defs import RequireConfirmation
@@ -194,6 +193,7 @@ from cmk.gui.watolib.translation import HostnameTranslation
 from cmk.gui.watolib.utils import site_neutral_path
 from cmk.livestatus_client import ECCreate, ECResetCounters, ECSwitchMode, LivestatusClient
 from cmk.rulesets.internal.form_specs import (
+    DictionaryExtended,
     SingleChoiceElementExtended,
     SingleChoiceExtended,
 )

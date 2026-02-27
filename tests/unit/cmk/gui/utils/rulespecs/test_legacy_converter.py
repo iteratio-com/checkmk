@@ -20,12 +20,6 @@ from cmk.ccc.version import Edition
 from cmk.gui import inventory as legacy_inventory_groups
 from cmk.gui import wato as legacy_wato
 from cmk.gui.exceptions import MKUserError
-from cmk.gui.form_specs.unstable import (
-    Autocompleter,
-    AutocompleterData,
-    AutocompleterParams,
-    StringAutocompleter,
-)
 from cmk.gui.form_specs.unstable.legacy_converter import Tuple
 from cmk.gui.i18n import _, translate_to_current_language
 from cmk.gui.utils.autocompleter_config import AutocompleterConfig, ContextAutocompleterConfig
@@ -44,8 +38,13 @@ from cmk.gui.watolib import rulespec_groups as legacy_rulespec_groups
 from cmk.gui.watolib import rulespecs as legacy_rulespecs
 from cmk.gui.watolib import timeperiods as legacy_timeperiods
 from cmk.gui.watolib.password_store import IndividualOrStoredPassword
-from cmk.rulesets.internal.form_specs import OAuth2Connection
+from cmk.rulesets.internal.form_specs import OAuth2Connection, StringAutocompleter
 from cmk.rulesets.v1.form_specs import FormSpec
+from cmk.shared_typing.vue_formspec_components import (
+    Autocompleter,
+    AutocompleterData,
+    AutocompleterParams,
+)
 from cmk.utils.rulesets.definition import RuleGroup
 
 

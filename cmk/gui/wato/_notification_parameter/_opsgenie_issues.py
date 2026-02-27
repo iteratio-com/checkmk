@@ -4,7 +4,7 @@
 # conditions defined in the file COPYING, which is part of this source code package.
 
 
-from cmk.gui.form_specs.unstable import ListOfStrings
+from cmk.rulesets.internal.form_specs import ListOfStrings, ListOfStringsLayout
 from cmk.rulesets.v1 import Help, Label, Message, Title
 from cmk.rulesets.v1.form_specs import (
     DefaultValue,
@@ -24,7 +24,6 @@ from cmk.rulesets.v1.form_specs import (
     String,
 )
 from cmk.rulesets.v1.form_specs.validators import LengthInRange, MatchRegex
-from cmk.shared_typing.vue_formspec_components import ListOfStringsLayout
 
 from ._helpers import notification_macro_help_fs
 

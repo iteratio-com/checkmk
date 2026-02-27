@@ -5,29 +5,51 @@
 
 
 from ._extended import (
+    Autocompleter,
+    AutocompleterData,
+    AutocompleterParams,
+    DictGroupExtended,
+    DictionaryExtended,
+    DictionaryGroupLayout,
+    FetchMethod,
     ListExtended,
+    ListOfStrings,
+    ListOfStringsLayout,
     MultipleChoiceElementExtended,
     MultipleChoiceExtended,
     MultipleChoiceExtendedLayout,
+    SimplePassword,
     SingleChoiceElementExtended,
     SingleChoiceExtended,
+    StringAutocompleter,
 )
 from ._migrations import migrate_to_internal_proxy
 from ._preconfigured import InternalProxy, InternalProxySchema, OAuth2Connection
 from ._user_selection import LegacyFilter, UserSelection, UserSelectionFilter
 
 __all__ = [
+    "Autocompleter",
+    "AutocompleterData",
+    "AutocompleterParams",
+    "DictGroupExtended",
+    "DictionaryExtended",
+    "DictionaryGroupLayout",
+    "FetchMethod",
     "InternalProxy",
     "InternalProxySchema",
     "LegacyFilter",
     "ListExtended",
+    "ListOfStrings",
+    "ListOfStringsLayout",
     "migrate_to_internal_proxy",
     "MultipleChoiceElementExtended",
     "MultipleChoiceExtended",
     "MultipleChoiceExtendedLayout",
     "OAuth2Connection",
+    "SimplePassword",
     "SingleChoiceElementExtended",
     "SingleChoiceExtended",
+    "StringAutocompleter",
     "UserSelection",
     "UserSelectionFilter",
 ]
