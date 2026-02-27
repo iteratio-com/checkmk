@@ -14,7 +14,27 @@ from cmk.base.events import (
     _update_enriched_context_from_notify_host_file,
     add_to_event_context,
     apply_matchers,
+    CoreTimeperiodsActive,
+    event_match_checktype,
+    event_match_contactgroups,
+    event_match_contacts,
+    event_match_exclude_hosts,
+    event_match_exclude_servicegroups_fixed,
+    event_match_exclude_servicegroups_regex,
+    event_match_exclude_services,
+    event_match_folder,
+    event_match_hostgroups,
+    event_match_hostlabels,
+    event_match_hosts,
     event_match_hosttags,
+    event_match_plugin_output,
+    event_match_servicegroups_fixed,
+    event_match_servicegroups_regex,
+    event_match_servicelabels,
+    event_match_servicelevel,
+    event_match_services,
+    event_match_site,
+    event_match_timeperiod,
     raw_context_from_string,
 )
 from cmk.events.event_context import EnrichedEventContext, EventContext, HostName
@@ -614,3 +634,784 @@ def test_apply_matchers_catches_errors(basic_event_rule: EventRule) -> None:
 
     assert isinstance(why_not, str)
     assert "ValueError: This is a test" in why_not
+
+
+# =============================================================================
+# Individual event_match_* function tests
+# =============================================================================
+
+
+def _make_rule() -> EventRule:
+    return {
+        "rule_id": NotificationRuleID("1"),
+        "allow_disable": False,
+        "contact_all": False,
+        "contact_all_with_email": False,
+        "contact_object": False,
+        "description": "Test rule",
+        "disabled": False,
+        "notify_plugin": ("mail", NotificationParameterID("parameter_id")),
+    }
+
+
+# -- event_match_site ----------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "rule, context, expected_none",
+    [
+        pytest.param(_make_rule(), {"OMD_SITE": "site_a"}, True, id="no condition"),
+        pytest.param(
+            _make_rule() | {"match_site": ["site_a", "site_b"]},
+            {"OMD_SITE": "site_a"},
+            True,
+            id="site in allowed list",
+        ),
+        pytest.param(
+            _make_rule() | {"match_site": ["site_a"]},
+            {"OMD_SITE": "site_b"},
+            False,
+            id="site not in allowed list",
+        ),
+    ],
+)
+def test_event_match_site(rule: EventRule, context: EventContext, expected_none: bool) -> None:
+    result = event_match_site(rule, context, False, {})
+    assert (result is None) == expected_none
+
+
+# -- event_match_folder --------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "rule, context, expected_none",
+    [
+        pytest.param(_make_rule(), {"HOSTTAGS": "/wato/subfolder"}, True, id="no condition"),
+        pytest.param(
+            _make_rule() | {"match_folder": ""},
+            {"HOSTTAGS": "/wato/subfolder"},
+            True,
+            id="root folder always matches",
+        ),
+        pytest.param(
+            _make_rule() | {"match_folder": "subfolder"},
+            {"HOSTTAGS": "/wato/subfolder"},
+            True,
+            id="host in exact folder",
+        ),
+        pytest.param(
+            _make_rule() | {"match_folder": "subfolder"},
+            {"HOSTTAGS": "/wato/subfolder/nested"},
+            True,
+            id="host in nested subfolder matches parent",
+        ),
+        pytest.param(
+            _make_rule() | {"match_folder": "subfolder"},
+            {"HOSTTAGS": "/wato/other"},
+            False,
+            id="host in different folder",
+        ),
+        pytest.param(
+            _make_rule() | {"match_folder": "subfolder"},
+            {"HOSTTAGS": "some_tag"},
+            False,
+            id="host not managed in Setup",
+        ),
+    ],
+)
+def test_event_match_folder(rule: EventRule, context: EventContext, expected_none: bool) -> None:
+    result = event_match_folder(rule, context, False, {})
+    assert (result is None) == expected_none
+
+
+# -- event_match_hostgroups ----------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "rule, context, expected_none",
+    [
+        pytest.param(_make_rule(), {"HOSTGROUPNAMES": "web,db"}, True, id="no condition"),
+        pytest.param(
+            _make_rule() | {"match_hostgroups": ["web"]},
+            {"HOSTGROUPNAMES": "web,db"},
+            True,
+            id="host in required group",
+        ),
+        pytest.param(
+            _make_rule() | {"match_hostgroups": ["ops"]},
+            {"HOSTGROUPNAMES": "web,db"},
+            False,
+            id="host not in required group",
+        ),
+        pytest.param(
+            _make_rule() | {"match_hostgroups": ["web"]},
+            {},
+            False,
+            id="no group info in context",
+        ),
+        pytest.param(
+            _make_rule() | {"match_hostgroups": ["web"]},
+            {"HOSTGROUPNAMES": ""},
+            False,
+            id="host in no group",
+        ),
+    ],
+)
+def test_event_match_hostgroups(
+    rule: EventRule, context: EventContext, expected_none: bool
+) -> None:
+    result = event_match_hostgroups(rule, context, False, {})
+    assert (result is None) == expected_none
+
+
+# -- event_match_contacts ------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "rule, context, expected_none",
+    [
+        pytest.param(_make_rule(), {"CONTACTS": "alice,bob"}, True, id="no condition"),
+        pytest.param(
+            _make_rule() | {"match_contacts": ["alice"]},
+            {"CONTACTS": "alice,bob"},
+            True,
+            id="required contact present",
+        ),
+        pytest.param(
+            _make_rule() | {"match_contacts": ["alice"]},
+            {"CONTACTS": ""},
+            False,
+            id="object has no contacts",
+        ),
+        pytest.param(
+            _make_rule() | {"match_contacts": ["charlie"]},
+            {"CONTACTS": "alice,bob"},
+            False,
+            id="required contact absent",
+        ),
+    ],
+)
+def test_event_match_contacts(rule: EventRule, context: EventContext, expected_none: bool) -> None:
+    result = event_match_contacts(rule, context, False, {})
+    assert (result is None) == expected_none
+
+
+# -- event_match_contactgroups -------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "rule, context, expected_none",
+    [
+        pytest.param(
+            _make_rule(),
+            {"WHAT": "HOST", "HOSTCONTACTGROUPNAMES": "ops"},
+            True,
+            id="no condition",
+        ),
+        pytest.param(
+            _make_rule() | {"match_contactgroups": ["ops"]},
+            {"WHAT": "HOST", "HOSTCONTACTGROUPNAMES": "ops,web"},
+            True,
+            id="host in required contact group",
+        ),
+        pytest.param(
+            _make_rule() | {"match_contactgroups": ["ops"]},
+            {"WHAT": "SERVICE", "SERVICECONTACTGROUPNAMES": "ops,web"},
+            True,
+            id="service in required contact group",
+        ),
+        pytest.param(
+            _make_rule() | {"match_contactgroups": ["ops"]},
+            {"WHAT": "HOST"},
+            True,
+            id="no group info returns None, not an error",
+        ),
+        pytest.param(
+            _make_rule() | {"match_contactgroups": ["ops"]},
+            {"WHAT": "HOST", "HOSTCONTACTGROUPNAMES": ""},
+            False,
+            id="host in no group",
+        ),
+        pytest.param(
+            _make_rule() | {"match_contactgroups": ["ops"]},
+            {"WHAT": "HOST", "HOSTCONTACTGROUPNAMES": "web,db"},
+            False,
+            id="host not in required contact group",
+        ),
+    ],
+)
+def test_event_match_contactgroups(
+    rule: EventRule, context: EventContext, expected_none: bool
+) -> None:
+    result = event_match_contactgroups(rule, context, False, {})
+    assert (result is None) == expected_none
+
+
+# -- event_match_hosts ---------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "rule, context, expected_none",
+    [
+        pytest.param(_make_rule(), {"HOSTNAME": "myhost"}, True, id="no condition"),
+        pytest.param(
+            _make_rule() | {"match_hosts": ["myhost", "otherhost"]},
+            {"HOSTNAME": "myhost"},
+            True,
+            id="host in allowed list",
+        ),
+        pytest.param(
+            _make_rule() | {"match_hosts": ["otherhost"]},
+            {"HOSTNAME": "myhost"},
+            False,
+            id="host not in allowed list",
+        ),
+    ],
+)
+def test_event_match_hosts(rule: EventRule, context: EventContext, expected_none: bool) -> None:
+    result = event_match_hosts(rule, context, False, {})
+    assert (result is None) == expected_none
+
+
+# -- event_match_exclude_hosts -------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "rule, context, expected_none",
+    [
+        pytest.param(_make_rule(), {"HOSTNAME": "myhost"}, True, id="no condition"),
+        pytest.param(
+            _make_rule() | {"match_exclude_hosts": ["otherhost"]},
+            {"HOSTNAME": "myhost"},
+            True,
+            id="host not in excluded list",
+        ),
+        pytest.param(
+            _make_rule() | {"match_exclude_hosts": ["myhost"]},
+            {"HOSTNAME": "myhost"},
+            False,
+            id="host in excluded list",
+        ),
+    ],
+)
+def test_event_match_exclude_hosts(
+    rule: EventRule, context: EventContext, expected_none: bool
+) -> None:
+    result = event_match_exclude_hosts(rule, context, False, {})
+    assert (result is None) == expected_none
+
+
+# -- event_match_services ------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "rule, context, expected_none",
+    [
+        pytest.param(
+            _make_rule(),
+            {"WHAT": "SERVICE", "SERVICEDESC": "CPU load"},
+            True,
+            id="no condition",
+        ),
+        pytest.param(
+            _make_rule() | {"match_services": ["CPU load"]},
+            {"WHAT": "SERVICE", "SERVICEDESC": "CPU load"},
+            True,
+            id="service matches",
+        ),
+        pytest.param(
+            _make_rule() | {"match_services": ["Memory"]},
+            {"WHAT": "SERVICE", "SERVICEDESC": "CPU load"},
+            False,
+            id="service does not match",
+        ),
+        pytest.param(
+            _make_rule() | {"match_services": ["CPU load"]},
+            {"WHAT": "HOST", "SERVICEDESC": ""},
+            False,
+            id="host notification with service rule",
+        ),
+    ],
+)
+def test_event_match_services(rule: EventRule, context: EventContext, expected_none: bool) -> None:
+    result = event_match_services(rule, context, False, {})
+    assert (result is None) == expected_none
+
+
+# -- event_match_exclude_services ----------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "rule, context, expected_none",
+    [
+        pytest.param(
+            _make_rule(),
+            {"WHAT": "SERVICE", "SERVICEDESC": "CPU load"},
+            True,
+            id="no condition",
+        ),
+        pytest.param(
+            _make_rule(),
+            {"WHAT": "HOST"},
+            True,
+            id="host notification always passes",
+        ),
+        pytest.param(
+            _make_rule() | {"match_exclude_services": ["CPU load"]},
+            {"WHAT": "SERVICE", "SERVICEDESC": "CPU load"},
+            False,
+            id="service in excluded list",
+        ),
+        pytest.param(
+            _make_rule() | {"match_exclude_services": ["Memory"]},
+            {"WHAT": "SERVICE", "SERVICEDESC": "CPU load"},
+            True,
+            id="service not in excluded list",
+        ),
+    ],
+)
+def test_event_match_exclude_services(
+    rule: EventRule, context: EventContext, expected_none: bool
+) -> None:
+    result = event_match_exclude_services(rule, context, False, {})
+    assert (result is None) == expected_none
+
+
+# -- event_match_plugin_output -------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "rule, context, expected_none",
+    [
+        pytest.param(
+            _make_rule(),
+            {"WHAT": "SERVICE", "SERVICEOUTPUT": "CRIT - high load"},
+            True,
+            id="no condition",
+        ),
+        pytest.param(
+            _make_rule() | {"match_plugin_output": "high load"},
+            {"WHAT": "SERVICE", "SERVICEOUTPUT": "CRIT - high load"},
+            True,
+            id="pattern matches service output",
+        ),
+        pytest.param(
+            _make_rule() | {"match_plugin_output": "high load"},
+            {"WHAT": "HOST", "HOSTOUTPUT": "CRIT - high load"},
+            True,
+            id="pattern matches host output",
+        ),
+        pytest.param(
+            _make_rule() | {"match_plugin_output": "memory"},
+            {"WHAT": "SERVICE", "SERVICEOUTPUT": "CRIT - high load"},
+            False,
+            id="pattern does not match",
+        ),
+    ],
+)
+def test_event_match_plugin_output(
+    rule: EventRule, context: EventContext, expected_none: bool
+) -> None:
+    result = event_match_plugin_output(rule, context, False, {})
+    assert (result is None) == expected_none
+
+
+# -- event_match_checktype -----------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "rule, context, expected_none",
+    [
+        pytest.param(
+            _make_rule(),
+            {"WHAT": "SERVICE", "SERVICECHECKCOMMAND": "check_mk-cpu_loads"},
+            True,
+            id="no condition",
+        ),
+        pytest.param(
+            _make_rule() | {"match_checktype": ["cpu_loads"]},
+            {"WHAT": "HOST", "SERVICECHECKCOMMAND": ""},
+            False,
+            id="host notification with check type rule",
+        ),
+        pytest.param(
+            _make_rule() | {"match_checktype": ["cpu_loads"]},
+            {"WHAT": "SERVICE", "SERVICECHECKCOMMAND": "active_check-http"},
+            False,
+            id="not a check_mk service",
+        ),
+        pytest.param(
+            _make_rule() | {"match_checktype": ["cpu_loads"]},
+            {"WHAT": "SERVICE", "SERVICECHECKCOMMAND": "check_mk-cpu_loads"},
+            True,
+            id="plugin in allowed list",
+        ),
+        pytest.param(
+            _make_rule() | {"match_checktype": ["memory"]},
+            {"WHAT": "SERVICE", "SERVICECHECKCOMMAND": "check_mk-cpu_loads"},
+            False,
+            id="plugin not in allowed list",
+        ),
+    ],
+)
+def test_event_match_checktype(rule: EventRule, context: EventContext, expected_none: bool) -> None:
+    result = event_match_checktype(rule, context, False, {})
+    assert (result is None) == expected_none
+
+
+# -- event_match_servicelevel --------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "rule, context, expected_none",
+    [
+        pytest.param(
+            _make_rule(),
+            {"WHAT": "SERVICE", "SVC_SL": "50"},
+            True,
+            id="no condition",
+        ),
+        pytest.param(
+            _make_rule() | {"match_sl": (0, 100)},
+            {"WHAT": "SERVICE", "SVC_SL": "50"},
+            True,
+            id="service level in range",
+        ),
+        pytest.param(
+            _make_rule() | {"match_sl": (60, 100)},
+            {"WHAT": "SERVICE", "SVC_SL": "50"},
+            False,
+            id="service level below range",
+        ),
+        pytest.param(
+            _make_rule() | {"match_sl": (0, 40)},
+            {"WHAT": "SERVICE", "SVC_SL": "50"},
+            False,
+            id="service level above range",
+        ),
+        pytest.param(
+            _make_rule() | {"match_sl": (0, 100)},
+            {"WHAT": "HOST", "HOST_SL": "75"},
+            True,
+            id="host service level in range",
+        ),
+    ],
+)
+def test_event_match_servicelevel(
+    rule: EventRule, context: EventContext, expected_none: bool
+) -> None:
+    result = event_match_servicelevel(rule, context, False, {})
+    assert (result is None) == expected_none
+
+
+# -- event_match_hostlabels ----------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "rule, context, expected_none",
+    [
+        pytest.param(_make_rule(), {"HOSTLABEL_os": "linux"}, True, id="no condition"),
+        pytest.param(
+            _make_rule() | {"match_hostlabels": {"os": "linux"}},
+            {"HOSTLABEL_os": "linux", "HOSTLABEL_env": "prod"},
+            True,
+            id="required label present",
+        ),
+        pytest.param(
+            _make_rule() | {"match_hostlabels": {"os": "windows"}},
+            {"HOSTLABEL_os": "linux"},
+            False,
+            id="label value does not match",
+        ),
+        pytest.param(
+            _make_rule() | {"match_hostlabels": {"os": "linux"}},
+            {},
+            False,
+            id="required label absent from context",
+        ),
+    ],
+)
+def test_event_match_hostlabels(
+    rule: EventRule, context: EventContext, expected_none: bool
+) -> None:
+    result = event_match_hostlabels(rule, context, False, {})
+    assert (result is None) == expected_none
+
+
+# -- event_match_servicelabels -------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "rule, context, expected_none",
+    [
+        pytest.param(_make_rule(), {"SERVICELABEL_tier": "frontend"}, True, id="no condition"),
+        pytest.param(
+            _make_rule() | {"match_servicelabels": {"tier": "frontend"}},
+            {"SERVICELABEL_tier": "frontend", "SERVICELABEL_env": "prod"},
+            True,
+            id="required label present",
+        ),
+        pytest.param(
+            _make_rule() | {"match_servicelabels": {"tier": "backend"}},
+            {"SERVICELABEL_tier": "frontend"},
+            False,
+            id="label value does not match",
+        ),
+        pytest.param(
+            _make_rule() | {"match_servicelabels": {"tier": "frontend"}},
+            {},
+            False,
+            id="required label absent from context",
+        ),
+    ],
+)
+def test_event_match_servicelabels(
+    rule: EventRule, context: EventContext, expected_none: bool
+) -> None:
+    result = event_match_servicelabels(rule, context, False, {})
+    assert (result is None) == expected_none
+
+
+# -- event_match_servicegroups_fixed -------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "rule, context, expected_none",
+    [
+        pytest.param(
+            _make_rule(),
+            {"WHAT": "SERVICE", "SERVICEGROUPNAMES": "web"},
+            True,
+            id="no condition",
+        ),
+        pytest.param(
+            _make_rule(),
+            {"WHAT": "HOST"},
+            True,
+            id="host notification without required groups",
+        ),
+        pytest.param(
+            _make_rule() | {"match_servicegroups": ["web"]},
+            {"WHAT": "HOST"},
+            False,
+            id="host notification with required groups",
+        ),
+        pytest.param(
+            _make_rule() | {"match_servicegroups": ["web"]},
+            {"WHAT": "SERVICE", "SERVICEGROUPNAMES": "web,db"},
+            True,
+            id="service in required group",
+        ),
+        pytest.param(
+            _make_rule() | {"match_servicegroups": ["ops"]},
+            {"WHAT": "SERVICE", "SERVICEGROUPNAMES": "web,db"},
+            False,
+            id="service not in required group",
+        ),
+        pytest.param(
+            _make_rule() | {"match_servicegroups": ["web"]},
+            {"WHAT": "SERVICE"},
+            False,
+            id="no service group info in context",
+        ),
+        pytest.param(
+            _make_rule() | {"match_servicegroups": ["web"]},
+            {"WHAT": "SERVICE", "SERVICEGROUPNAMES": ""},
+            False,
+            id="service in no group",
+        ),
+    ],
+)
+def test_event_match_servicegroups_fixed(
+    rule: EventRule, context: EventContext, expected_none: bool
+) -> None:
+    result = event_match_servicegroups_fixed(rule, context, {}, {}, False)
+    assert (result is None) == expected_none
+
+
+# -- event_match_servicegroups_regex -------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "rule, context, expected_none",
+    [
+        pytest.param(
+            _make_rule(),
+            {"WHAT": "SERVICE", "SERVICEGROUPNAMES": "webservers"},
+            True,
+            id="no condition",
+        ),
+        pytest.param(
+            _make_rule() | {"match_servicegroups_regex": (None, ["web.*"])},
+            {"WHAT": "SERVICE", "SERVICEGROUPNAMES": "webservers,db"},
+            True,
+            id="group name matches regex",
+        ),
+        pytest.param(
+            _make_rule() | {"match_servicegroups_regex": (None, ["ops.*"])},
+            {"WHAT": "SERVICE", "SERVICEGROUPNAMES": "webservers,db"},
+            False,
+            id="group name does not match regex",
+        ),
+        pytest.param(
+            _make_rule() | {"match_servicegroups_regex": (None, ["web.*"])},
+            {"WHAT": "HOST"},
+            False,
+            id="host notification with required groups",
+        ),
+    ],
+)
+def test_event_match_servicegroups_regex(
+    rule: EventRule, context: EventContext, expected_none: bool
+) -> None:
+    result = event_match_servicegroups_regex(rule, context, {}, {}, False)
+    assert (result is None) == expected_none
+
+
+# -- event_match_exclude_servicegroups_fixed -----------------------------------
+
+
+@pytest.mark.parametrize(
+    "rule, context, expected_none",
+    [
+        pytest.param(
+            _make_rule(),
+            {"WHAT": "SERVICE", "SERVICEGROUPNAMES": "web"},
+            True,
+            id="no condition",
+        ),
+        pytest.param(
+            _make_rule() | {"match_exclude_servicegroups": ["web"]},
+            {"WHAT": "HOST"},
+            True,
+            id="host notification always passes",
+        ),
+        pytest.param(
+            _make_rule() | {"match_exclude_servicegroups": ["web"]},
+            {"WHAT": "SERVICE", "SERVICEGROUPNAMES": "web,db"},
+            False,
+            id="service in excluded group",
+        ),
+        pytest.param(
+            _make_rule() | {"match_exclude_servicegroups": ["ops"]},
+            {"WHAT": "SERVICE", "SERVICEGROUPNAMES": "web,db"},
+            True,
+            id="service not in excluded group",
+        ),
+        pytest.param(
+            _make_rule() | {"match_exclude_servicegroups": ["web"]},
+            {"WHAT": "SERVICE", "SERVICEGROUPNAMES": ""},
+            True,
+            id="service in no group cannot be excluded",
+        ),
+    ],
+)
+def test_event_match_exclude_servicegroups_fixed(
+    rule: EventRule, context: EventContext, expected_none: bool
+) -> None:
+    result = event_match_exclude_servicegroups_fixed(rule, context, {}, {}, False)
+    assert (result is None) == expected_none
+
+
+# -- event_match_exclude_servicegroups_regex -----------------------------------
+
+# define_servicegroups aliases are required: the regex-exclude path evaluates
+# define_servicegroups[sg] for every group in context to build the error message,
+# even when the pattern does not match.
+_SG_ALIASES: Mapping[str, str] = {"webservers": "Web Servers", "db": "Database Servers"}
+
+
+@pytest.mark.parametrize(
+    "rule, context, expected_none",
+    [
+        pytest.param(
+            _make_rule(),
+            {"WHAT": "SERVICE", "SERVICEGROUPNAMES": "webservers"},
+            True,
+            id="no condition",
+        ),
+        pytest.param(
+            _make_rule() | {"match_exclude_servicegroups_regex": (None, ["web.*"])},
+            {"WHAT": "HOST"},
+            True,
+            id="host notification always passes",
+        ),
+        pytest.param(
+            _make_rule() | {"match_exclude_servicegroups_regex": (None, ["web.*"])},
+            {"WHAT": "SERVICE", "SERVICEGROUPNAMES": "webservers,db"},
+            False,
+            id="group name matches exclusion regex",
+        ),
+        pytest.param(
+            _make_rule() | {"match_exclude_servicegroups_regex": (None, ["ops.*"])},
+            {"WHAT": "SERVICE", "SERVICEGROUPNAMES": "webservers,db"},
+            True,
+            id="group name does not match exclusion regex",
+        ),
+        pytest.param(
+            _make_rule() | {"match_exclude_servicegroups_regex": (None, ["web.*"])},
+            {"WHAT": "SERVICE", "SERVICEGROUPNAMES": ""},
+            True,
+            id="service in no group cannot be excluded",
+        ),
+    ],
+)
+def test_event_match_exclude_servicegroups_regex(
+    rule: EventRule, context: EventContext, expected_none: bool
+) -> None:
+    result = event_match_exclude_servicegroups_regex(rule, context, _SG_ALIASES)
+    assert (result is None) == expected_none
+
+
+# -- event_match_timeperiod ----------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "rule, timeperiods_active, analyse, expected_none",
+    [
+        pytest.param(_make_rule(), {}, False, True, id="no condition"),
+        pytest.param(
+            _make_rule() | {"match_timeperiod": "business_hours"},
+            {},
+            True,
+            True,
+            id="analyse=True skips check",
+        ),
+        pytest.param(
+            _make_rule() | {"match_timeperiod": "24X7"},
+            {},
+            False,
+            True,
+            id="24X7 always active",
+        ),
+        pytest.param(
+            _make_rule() | {"match_timeperiod": "business_hours"},
+            {"business_hours": True},
+            False,
+            True,
+            id="timeperiod is active",
+        ),
+        pytest.param(
+            _make_rule() | {"match_timeperiod": "business_hours"},
+            {"business_hours": False},
+            False,
+            False,
+            id="timeperiod is not active",
+        ),
+        pytest.param(
+            _make_rule() | {"match_timeperiod": "business_hours"},
+            {},
+            False,
+            True,
+            id="unknown timeperiod defaults to active",
+        ),
+    ],
+)
+def test_event_match_timeperiod(
+    rule: EventRule,
+    timeperiods_active: CoreTimeperiodsActive,
+    analyse: bool,
+    expected_none: bool,
+) -> None:
+    result = event_match_timeperiod(rule, analyse, timeperiods_active)
+    assert (result is None) == expected_none
