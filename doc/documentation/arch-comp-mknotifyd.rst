@@ -39,19 +39,19 @@ sites through asynchronous socket IO.
 Internal structure
 ------------------
 
-You can get a good overview by looking at the `run_notifyd` function in
-`enterprise/cmk/cee/mknotifyd` which contains the main loop. From there you
-can dig into the individual functions.
+You can get a good overview by looking at the ``run_notifyd`` function in
+``non-free/packages/cmk-mknotifyd/cmk/mknotifyd/main.py`` which contains
+the main loop. From there you can dig into the individual modules.
 
 Code
 ----
 
 The entry point to the program can be found in the Checkmk git in
-`enterprise/bin/mknotifyd` and the code of this component is located in
-`enterprise/cmk/cee/mknotifyd`.
+``non-free/packages/cmk-mknotifyd/mknotifyd`` and the code of this component
+is located in ``non-free/packages/cmk-mknotifyd/cmk/mknotifyd/``.
 
-The mknotifyd has it's dedicated configuration which is located in
-`$OMD_ROOT/etc/mknotify.d`.
+The mknotifyd has its dedicated configuration which is located in
+``$OMD_ROOT/etc/mknotify.d``.
 
 Logs
 ----
