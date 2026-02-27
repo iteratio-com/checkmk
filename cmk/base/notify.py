@@ -96,6 +96,7 @@ from cmk.utils.log import console
 from cmk.utils.macros import replace_macros_in_str
 from cmk.utils.notify import find_wato_folder
 from cmk.utils.notify_types import (
+    ConditionEventConsoleAlertsType,
     Contact,
     ContactName,
     EventRule,
@@ -1905,6 +1906,54 @@ def rbn_match_notification_comment(
     return None
 
 
+def _rbn_match_ec_rule_id(
+    options: ConditionEventConsoleAlertsType, context: EventContext
+) -> str | None:
+    if "match_rule_id" in options and context["EC_RULE_ID"] not in options["match_rule_id"]:
+        return "EC Event has rule ID '{}', but '{}' is required".format(
+            context["EC_RULE_ID"],
+            options["match_rule_id"],
+        )
+    return None
+
+
+def _rbn_match_ec_priority(
+    options: ConditionEventConsoleAlertsType, context: EventContext
+) -> str | None:
+    if "match_priority" in options:
+        prio_from, prio_to = options["match_priority"]
+        if prio_from > prio_to:
+            prio_to, prio_from = prio_from, prio_to
+            p = int(context["EC_PRIORITY"])
+            if p < prio_from or p > prio_to:
+                return f"Event has priority {p}, but matched range is {prio_from} .. {prio_to}"
+    return None
+
+
+def _rbn_match_ec_facility(
+    options: ConditionEventConsoleAlertsType, context: EventContext
+) -> str | None:
+    if "match_facility" in options:
+        if options["match_facility"] != int(context["EC_FACILITY"]):
+            return "Wrong syslog facility {}, required is {}".format(
+                context["EC_FACILITY"],
+                options["match_facility"],
+            )
+    return None
+
+
+def _rbn_match_ec_comment(
+    options: ConditionEventConsoleAlertsType, context: EventContext
+) -> str | None:
+    if "match_comment" in options:
+        if not regex(options["match_comment"]).search(context["EC_COMMENT"]):
+            return "The event comment '{}' does not match the regular expression '{}'".format(
+                context["EC_COMMENT"],
+                options["match_comment"],
+            )
+    return None
+
+
 def rbn_match_event_console(
     rule: EventRule,
     context: EventContext,
@@ -1945,47 +1994,13 @@ def rbn_match_event_console(
     if not is_ec_notification and match_only_ec_events:
         return "Notification has not been created by the Event Console."
 
-    if match_ec:
-        if match_ec_options and is_ec_notification:
-            # Match Event Console rule ID
-            if (
-                "match_rule_id" in match_ec_options
-                and context["EC_RULE_ID"] not in match_ec_options["match_rule_id"]
-            ):
-                return "EC Event has rule ID '{}', but '{}' is required".format(
-                    context["EC_RULE_ID"],
-                    match_ec_options["match_rule_id"],
-                )
-
-            # Match syslog priority of event
-            if "match_priority" in match_ec_options:
-                prio_from, prio_to = match_ec_options["match_priority"]
-                if prio_from > prio_to:
-                    prio_to, prio_from = prio_from, prio_to
-                    p = int(context["EC_PRIORITY"])
-                    if p < prio_from or p > prio_to:
-                        return (
-                            f"Event has priority {p}, but matched range is {prio_from} .. {prio_to}"
-                        )
-
-            # Match syslog facility of event
-            if "match_facility" in match_ec_options:
-                if match_ec_options["match_facility"] != int(context["EC_FACILITY"]):
-                    return "Wrong syslog facility {}, required is {}".format(
-                        context["EC_FACILITY"],
-                        match_ec_options["match_facility"],
-                    )
-
-            # Match event comment
-            if "match_comment" in match_ec_options:
-                r = regex(match_ec_options["match_comment"])
-                if not r.search(context["EC_COMMENT"]):
-                    return (
-                        "The event comment '{}' does not match the regular expression '{}'".format(
-                            context["EC_COMMENT"],
-                            match_ec_options["match_comment"],
-                        )
-                    )
+    if match_ec and match_ec_options and is_ec_notification:
+        return (
+            _rbn_match_ec_rule_id(match_ec_options, context)
+            or _rbn_match_ec_priority(match_ec_options, context)
+            or _rbn_match_ec_facility(match_ec_options, context)
+            or _rbn_match_ec_comment(match_ec_options, context)
+        )
     return None
 
 
