@@ -357,7 +357,7 @@ def find_packages() -> Iterable[object]:
         for package_path in (repo_path() / packages_path).iterdir():
             if not package_path.is_dir():
                 continue
-            if not (package_path / "requirements.in").exists():
+            if not list(package_path.glob("requirements.in*")):
                 # No python package
                 continue
             yield pytest.param(package_path, id=package_path.relative_to(repo_path()).as_posix())
@@ -369,7 +369,9 @@ def test_package_declared_all_python_deps(package_path: Path) -> None:
         pytest.skip("cmk-core-helpers needs netsnmp which does not come from pypi")
     venv_libs = get_requirements_libs(repo_path())
     imported_libs = {d.normalized_name for d in get_imported_libs(package_path)}
-    required_packages = set(parse_requirements_file(package_path / "requirements.in"))
+    required_packages = {
+        p for file in package_path.glob("requirements.in*") for p in parse_requirements_file(file)
+    }
 
     required_import_names = chain.from_iterable(
         import_names
