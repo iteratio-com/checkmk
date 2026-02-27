@@ -1552,6 +1552,28 @@ def _rbn_get_bulk_params(
     return None
 
 
+def _rbn_event_match_rule(
+    define_servicegroups: Mapping[str, str],
+    timeperiods_active: _CoreTimeperiodsActive,
+) -> events.Matcher:
+    def match(
+        rule: EventRule,
+        context: EnrichedEventContext | EventContext,
+        analyse: bool,
+        all_timeperiods: TimeperiodSpecs,
+    ) -> str | None:
+        return events.event_match_rule(
+            rule,
+            context,
+            define_servicegroups=define_servicegroups,
+            all_timeperiods=all_timeperiods,
+            analyse=analyse,
+            timeperiods_active=timeperiods_active,
+        )
+
+    return match
+
+
 def _rbn_match_rule(
     rule: EventRule,
     enriched_context: EnrichedEventContext,
@@ -1564,16 +1586,9 @@ def _rbn_match_rule(
     return events.apply_matchers(
         [
             rbn_match_rule_disabled,
-            lambda rule, context, analyse, all_timeperiods: events.event_match_rule(
-                rule,
-                context,
-                define_servicegroups=define_servicegroups,
-                all_timeperiods=all_timeperiods,
-                analyse=analyse,
-                timeperiods_active=timeperiods_active,
-            ),
+            _rbn_event_match_rule(define_servicegroups, timeperiods_active),
             rbn_match_escalation,
-            rbn_match_escalation_throtte,
+            rbn_match_escalation_throttle,
             rbn_match_host_event,
             rbn_match_service_event,
             rbn_match_notification_comment,
@@ -1651,7 +1666,7 @@ def rbn_match_escalation(
     return None
 
 
-def rbn_match_escalation_throtte(
+def rbn_match_escalation_throttle(
     rule: EventRule,
     context: EventContext,
     _analyse: bool,
