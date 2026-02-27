@@ -4,7 +4,6 @@ apispec
 apispec-oneofschema
 azure-identity
 azure-storage-blob
-clickhouse-connect
 cryptography
 docstring-parser
 exchangelib
