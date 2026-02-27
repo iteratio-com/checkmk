@@ -3,12 +3,15 @@
 # This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 # conditions defined in the file COPYING, which is part of this source code package.
 
+# INFO: these flags are for the vcr package which isn't typed.
+# mypy: disable-error-code="import-untyped"
+# mypy: disable-error-code="no-untyped-call"
 
 import os
 from collections.abc import Sequence
 
 import pytest
-import vcr  # type: ignore[import-untyped,unused-ignore]
+import vcr
 
 from cmk.plugins.innovaphone.special_agent import agent_innovaphone
 
@@ -32,7 +35,7 @@ def test_agent_innovaphone_main(
     args: Sequence[str], expected_stdout: str, capsys: pytest.CaptureFixture[str]
 ) -> None:
     filepath = "%s/innovaphone_vcrtrace.yaml" % os.path.dirname(__file__)
-    with vcr.use_cassette(  # type: ignore[no-untyped-call,unused-ignore]
+    with vcr.use_cassette(
         filepath,
         record_mode="none",
     ):
