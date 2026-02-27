@@ -229,8 +229,17 @@ py_library(
             "**/nonfree/**/cloud/**",
             "**/nonfree/**/ultimate/**",
             "**/nonfree/**/ultimatemt/**",
+            "nonfree/pro/robotmk/**",
         ],
-    ) + ["//cmk/plugins:cmk_plugins_robotmk_nonfree_srcs"],
+    ) + [
+        "//cmk/plugins:cmk_plugins_robotmk_nonfree_srcs",
+    ] + select({
+        "@//:gpl+nonfree_repo": [
+            "//cmk/nonfree/pro/robotmk:core_bakelets",
+            "//cmk/nonfree/pro/robotmk:gui",
+        ],
+        "@//:gpl_repo": [],
+    }),
     imports = [".."],
     visibility = ["//:__subpackages__"],
     deps = [
@@ -241,6 +250,8 @@ py_library(
         "//cmk/utils:cmk_utils_pro",
     ] + select({
         "@//:gpl+nonfree_repo": [
+            "//cmk/nonfree/pro/robotmk",
+            "//cmk/nonfree/pro/robotmk:bakery",
             "//non-free/packages/cmc-protocols:py_config_proto",
             "//non-free/packages/cmc-protocols:py_cycletime_proto",
             "//non-free/packages/cmc-protocols:py_state_proto",
@@ -359,6 +370,8 @@ py_wheel(
             ":cmk_ultimate",
             "//cmk/core_client:cmk_core_client_cloud",
             "//cmk/core_client:cmk_core_client_pro",
+            "//cmk/nonfree/pro/robotmk",
+            "//cmk/nonfree/pro/robotmk:bakery",
             "//cmk/plugins:checkman_cloud",
             "//cmk/plugins:cmk_plugins_cloud",
             "//cmk/utils:cmk_utils_cloud",
@@ -378,6 +391,8 @@ py_wheel(
             ":cmk_community",
             ":cmk_pro",
             "//cmk/core_client:cmk_core_client_pro",
+            "//cmk/nonfree/pro/robotmk",
+            "//cmk/nonfree/pro/robotmk:bakery",
             "//cmk/plugins:checkman_pro",
             "//cmk/plugins:cmk_plugins_pro",
             "//cmk/utils:cmk_utils_pro",
@@ -391,6 +406,8 @@ py_wheel(
             ":cmk_ultimate",
             "//cmk/core_client:cmk_core_client_pro",
             "//cmk/core_client:cmk_core_client_ultimate",
+            "//cmk/nonfree/pro/robotmk",
+            "//cmk/nonfree/pro/robotmk:bakery",
             "//cmk/plugins:checkman_ultimate",
             "//cmk/plugins:cmk_plugins_ultimate",
             "//cmk/utils:cmk_utils_pro",
@@ -407,6 +424,8 @@ py_wheel(
             "//cmk/core_client:cmk_core_client_pro",
             "//cmk/core_client:cmk_core_client_ultimate",
             "//cmk/core_client:cmk_core_client_ultimatemt",
+            "//cmk/nonfree/pro/robotmk",
+            "//cmk/nonfree/pro/robotmk:bakery",
             "//cmk/plugins:checkman_ultimatemt",
             "//cmk/plugins:cmk_plugins_ultimatemt",
             "//cmk/utils:cmk_utils_pro",
@@ -507,7 +526,7 @@ sh_library(
         "@//:gpl+nonfree_repo": [
             "gui/nonfree/pro/dcd/.f12",
             "nonfree/pro/dcd/.f12",
-            "nonfree/pro/robotmk/.f12",
+            "//cmk/nonfree/pro/robotmk:.f12",
             "//cmk/utils:nonfree/pro/dcd/.f12",
         ],
         "@//:gpl_repo": [],

@@ -95,11 +95,7 @@ filegroup(
 )
 
 # Robotmk nonfree files import from cmk.nonfree.pro.robotmk.* - their sources are added
-# directly to cmk_pro so type checking happens with cmk.nonfree available.
-#
-# We accept this hack to be able to extract thousands of files from the monolithic cmk_cmk
-# target now, which enables way faster lint and test runs. The next step is to extract all
-# families to packages/cmk-plugins, which then results in the current target state.
+# directly to cmk_pro so type checking happens with the nonfree packages available.
 filegroup(
     name = "cmk_plugins_robotmk_nonfree_srcs",
     srcs = glob(
@@ -158,7 +154,14 @@ py_library(
     deps = [
         ":cmk_plugins",
         ":cmk_plugins_community",
-    ],
+        requirement("robotframework"),
+    ] + select({
+        "@//:gpl+nonfree_repo": [
+            "//cmk/nonfree/pro/robotmk",
+            "//cmk/nonfree/pro/robotmk:bakery",
+        ],
+        "@//:gpl_repo": [],
+    }),
 )
 
 py_library(

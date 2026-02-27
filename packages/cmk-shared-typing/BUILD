@@ -208,7 +208,11 @@ py_library(
         ":generated_py_files_special_dataclasses",
     ],
     imports = ["."],
-    visibility = ["//cmk:__pkg__"],
+    visibility = [
+        "//cmk:__pkg__",
+        "//cmk/nonfree:__subpackages__",
+        "//packages/cmk-plugin-apis:__pkg__",
+    ],
 )
 
 write_file(
