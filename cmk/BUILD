@@ -229,6 +229,10 @@ py_library(
             "**/nonfree/**/cloud/**",
             "**/nonfree/**/ultimate/**",
             "**/nonfree/**/ultimatemt/**",
+            "nonfree/pro/bakery/**",
+            "nonfree/pro/dcd/**",
+            "nonfree/pro/liveproxy/**",
+            "nonfree/pro/notification_plugins/**",
             "nonfree/pro/robotmk/**",
         ],
     ) + [
@@ -250,6 +254,10 @@ py_library(
         "//cmk/utils:cmk_utils_pro",
     ] + select({
         "@//:gpl+nonfree_repo": [
+            "//cmk/nonfree/pro/bakery",
+            "//cmk/nonfree/pro/dcd",
+            "//cmk/nonfree/pro/liveproxy",
+            "//cmk/nonfree/pro/notification_plugins",
             "//cmk/nonfree/pro/robotmk",
             "//cmk/nonfree/pro/robotmk:bakery",
             "//non-free/packages/cmc-protocols:py_config_proto",
@@ -270,7 +278,14 @@ py_library(
     srcs = glob(
         include = ["**/nonfree/**/ultimate/**/*.py"],
         allow_empty = True,
-    ) + ["//cmk/plugins:cmk_plugins_otel_nonfree_srcs"],
+    ) + [
+        "//cmk/plugins:cmk_plugins_otel_nonfree_srcs",
+    ] + select({
+        "@//:gpl+nonfree_repo": [
+            "//cmk/nonfree/pro/dcd:connectors_ultimate",
+        ],
+        "@//:gpl_repo": [],
+    }),
     imports = [".."],
     visibility = ["//:__subpackages__"],
     deps = [
@@ -370,6 +385,10 @@ py_wheel(
             ":cmk_ultimate",
             "//cmk/core_client:cmk_core_client_cloud",
             "//cmk/core_client:cmk_core_client_pro",
+            "//cmk/nonfree/pro/bakery",
+            "//cmk/nonfree/pro/dcd",
+            "//cmk/nonfree/pro/liveproxy",
+            "//cmk/nonfree/pro/notification_plugins",
             "//cmk/nonfree/pro/robotmk",
             "//cmk/nonfree/pro/robotmk:bakery",
             "//cmk/plugins:checkman_cloud",
@@ -391,6 +410,10 @@ py_wheel(
             ":cmk_community",
             ":cmk_pro",
             "//cmk/core_client:cmk_core_client_pro",
+            "//cmk/nonfree/pro/bakery",
+            "//cmk/nonfree/pro/dcd",
+            "//cmk/nonfree/pro/liveproxy",
+            "//cmk/nonfree/pro/notification_plugins",
             "//cmk/nonfree/pro/robotmk",
             "//cmk/nonfree/pro/robotmk:bakery",
             "//cmk/plugins:checkman_pro",
@@ -406,6 +429,10 @@ py_wheel(
             ":cmk_ultimate",
             "//cmk/core_client:cmk_core_client_pro",
             "//cmk/core_client:cmk_core_client_ultimate",
+            "//cmk/nonfree/pro/bakery",
+            "//cmk/nonfree/pro/dcd",
+            "//cmk/nonfree/pro/liveproxy",
+            "//cmk/nonfree/pro/notification_plugins",
             "//cmk/nonfree/pro/robotmk",
             "//cmk/nonfree/pro/robotmk:bakery",
             "//cmk/plugins:checkman_ultimate",
@@ -424,6 +451,10 @@ py_wheel(
             "//cmk/core_client:cmk_core_client_pro",
             "//cmk/core_client:cmk_core_client_ultimate",
             "//cmk/core_client:cmk_core_client_ultimatemt",
+            "//cmk/nonfree/pro/bakery",
+            "//cmk/nonfree/pro/dcd",
+            "//cmk/nonfree/pro/liveproxy",
+            "//cmk/nonfree/pro/notification_plugins",
             "//cmk/nonfree/pro/robotmk",
             "//cmk/nonfree/pro/robotmk:bakery",
             "//cmk/plugins:checkman_ultimatemt",
@@ -525,7 +556,7 @@ sh_library(
     ] + select({
         "@//:gpl+nonfree_repo": [
             "gui/nonfree/pro/dcd/.f12",
-            "nonfree/pro/dcd/.f12",
+            "//cmk/nonfree/pro/dcd:.f12",
             "//cmk/nonfree/pro/robotmk:.f12",
             "//cmk/utils:nonfree/pro/dcd/.f12",
         ],
