@@ -3,72 +3,67 @@
 # This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 # conditions defined in the file COPYING, which is part of this source code package.
 
-from collections.abc import Iterable, Mapping
+from collections.abc import Mapping
 from typing import Any
 
-from cmk.agent_based.legacy.v0_unstable import LegacyCheckDefinition
-from cmk.agent_based.v2 import SNMPTree, StringTable
+from cmk.agent_based.v1 import check_levels as check_levels_v1
+from cmk.agent_based.v2 import (
+    CheckPlugin,
+    CheckResult,
+    DiscoveryResult,
+    Result,
+    Service,
+    SimpleSNMPSection,
+    SNMPTree,
+    State,
+    StringTable,
+)
 from cmk.plugins.ibm.lib import DETECT_IBM_IMM
 
-check_info = {}
 
-
-def discover_ibm_imm_fan(info: StringTable) -> Iterable[tuple[str, dict[str, Any]]]:
-    for descr, speed_text in info:
+def discover_ibm_imm_fan(section: StringTable) -> DiscoveryResult:
+    for descr, speed_text in section:
         if speed_text.lower() != "offline":
-            yield descr, {}
+            yield Service(item=descr)
 
 
-def check_ibm_imm_fan(
-    item: str, params: Mapping[str, Any], info: StringTable
-) -> Iterable[tuple[int, str]]:
-    for descr, speed_text in info:
+def check_ibm_imm_fan(item: str, params: Mapping[str, Any], section: StringTable) -> CheckResult:
+    for descr, speed_text in section:
         if descr == item:
             if speed_text.lower() in ["offline", "unavailable"]:
-                yield 2, "is %s" % speed_text.lower()
+                yield Result(state=State.CRIT, summary=f"is {speed_text.lower()}")
                 return
 
             # speed_text can be "34 %", or "34%", or "34 % of maximum"
             # or simply a text without quotes..
             rpm_perc = int(speed_text.strip().replace('["%]', " ").replace("%", " ").split(" ")[0])
-            yield 0, "%d%% of max RPM" % rpm_perc
 
-            warn_lower, crit_lower = params["levels_lower"]
-            warn, crit = params.get("levels", (None, None))
-
-            if warn_lower:
-                if rpm_perc < crit_lower:
-                    state = 2
-                elif rpm_perc < warn_lower:
-                    state = 1
-                else:
-                    state = 0
-                if state > 0:
-                    yield state, "too low (warn/crit below %d%%/%d%%)" % (warn_lower, crit_lower)
-
-            if warn:
-                if rpm_perc >= crit:
-                    state = 2
-                elif rpm_perc >= warn:
-                    state = 1
-                else:
-                    state = 0
-                if state > 0:
-                    yield state, "too high (warn/crit at %d%%/%d%%)" % (warn, crit)
+            yield from check_levels_v1(
+                value=rpm_perc,
+                levels_upper=params["levels"],
+                levels_lower=params["levels_lower"],
+                label="% of max RPM",
+                render_func=lambda v: f"{v:.0f}%",
+            )
 
 
 def parse_ibm_imm_fan(string_table: StringTable) -> StringTable:
     return string_table
 
 
-check_info["ibm_imm_fan"] = LegacyCheckDefinition(
+snmp_section_ibm_imm_fan = SimpleSNMPSection(
     name="ibm_imm_fan",
-    parse_function=parse_ibm_imm_fan,
     detect=DETECT_IBM_IMM,
     fetch=SNMPTree(
         base=".1.3.6.1.4.1.2.3.51.3.1.3.2.1",
         oids=["2", "3"],
     ),
+    parse_function=parse_ibm_imm_fan,
+)
+
+
+check_plugin_ibm_imm_fan = CheckPlugin(
+    name="ibm_imm_fan",
     service_name="Fan %s",
     discovery_function=discover_ibm_imm_fan,
     check_function=check_ibm_imm_fan,
