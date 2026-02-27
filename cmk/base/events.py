@@ -541,38 +541,78 @@ def event_match_rule(
     analyse: bool,
     timeperiods_active: CoreTimeperiodsActive,
 ) -> str | None:
+    def match_servicegroups_fixed(
+        rule: EventRule,
+        context: EventContext,
+        analyse: bool,
+        all_timeperiods: TimeperiodSpecs,
+    ) -> str | None:
+        return event_match_servicegroups_fixed(
+            rule,
+            context,
+            define_servicegroups=define_servicegroups,
+            _all_timeperiods=all_timeperiods,
+            _analyse=analyse,
+        )
+
+    def match_exclude_servicegroups_fixed(
+        rule: EventRule,
+        context: EventContext,
+        analyse: bool,
+        all_timeperiods: TimeperiodSpecs,
+    ) -> str | None:
+        return event_match_exclude_servicegroups_fixed(
+            rule,
+            context,
+            define_servicegroups=define_servicegroups,
+            _all_timeperiods=all_timeperiods,
+            _analyse=analyse,
+        )
+
+    def match_servicegroups_regex(
+        rule: EventRule,
+        context: EventContext,
+        analyse: bool,
+        all_timeperiods: TimeperiodSpecs,
+    ) -> str | None:
+        return event_match_servicegroups_regex(
+            rule,
+            context,
+            define_servicegroups=define_servicegroups,
+            _all_timeperiods=all_timeperiods,
+            _analyse=analyse,
+        )
+
+    def match_exclude_servicegroups_regex(
+        rule: EventRule,
+        context: EventContext,
+        _analyse: bool,
+        _all_timeperiods: TimeperiodSpecs,
+    ) -> str | None:
+        return event_match_exclude_servicegroups_regex(
+            rule,
+            context,
+            define_servicegroups=define_servicegroups,
+        )
+
+    def match_timeperiod(
+        rule: EventRule,
+        _context: EventContext,
+        analyse: bool,
+        _all_timeperiods: TimeperiodSpecs,
+    ) -> str | None:
+        return event_match_timeperiod(rule, analyse, timeperiods_active)
+
     return apply_matchers(
         [
             event_match_site,
             event_match_folder,
             event_match_hosttags,
             event_match_hostgroups,
-            lambda rule, context, analyse, all_timeperiods: event_match_servicegroups_fixed(
-                rule,
-                context,
-                define_servicegroups=define_servicegroups,
-                _all_timeperiods=all_timeperiods,
-                _analyse=analyse,
-            ),
-            lambda rule, context, analyse, all_timeperiods: event_match_exclude_servicegroups_fixed(
-                rule,
-                context,
-                define_servicegroups=define_servicegroups,
-                _all_timeperiods=all_timeperiods,
-                _analyse=analyse,
-            ),
-            lambda rule, context, analyse, all_timeperiods: event_match_servicegroups_regex(
-                rule,
-                context,
-                define_servicegroups=define_servicegroups,
-                _all_timeperiods=all_timeperiods,
-                _analyse=analyse,
-            ),
-            lambda rule, context, analyse, all_timeperiods: event_match_exclude_servicegroups_regex(
-                rule,
-                context,
-                define_servicegroups=define_servicegroups,
-            ),
+            match_servicegroups_fixed,
+            match_exclude_servicegroups_fixed,
+            match_servicegroups_regex,
+            match_exclude_servicegroups_regex,
             event_match_contacts,
             event_match_contactgroups,
             event_match_hosts,
@@ -581,9 +621,7 @@ def event_match_rule(
             event_match_exclude_services,
             event_match_plugin_output,
             event_match_checktype,
-            lambda rule, context, analyse, all_timeperiods: event_match_timeperiod(
-                rule, analyse, timeperiods_active
-            ),
+            match_timeperiod,
             event_match_servicelevel,
             event_match_hostlabels,
             event_match_servicelabels,
