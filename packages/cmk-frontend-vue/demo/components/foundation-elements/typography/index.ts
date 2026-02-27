@@ -5,10 +5,12 @@
  */
 import { type Folder, Page } from '@demo/_demo/types/page'
 
+import DemoCmkHeading from './DemoCmkHeading.vue'
+import DemoCmkParagraph from './DemoCmkParagraph.vue'
 import DemoI18n from './DemoI18n.vue'
-import DemoTypography from './DemoTypography.vue'
 
 export const pages: Array<Folder | Page> = [
-  new Page('typography', DemoTypography),
+  new Page('CmkHeading', DemoCmkHeading),
+  new Page('CmkParagraph', DemoCmkParagraph),
   new Page('i18n', DemoI18n)
 ]

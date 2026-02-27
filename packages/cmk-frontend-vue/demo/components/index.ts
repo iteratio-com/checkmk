@@ -38,8 +38,9 @@ import DemoCmkKeyboardKey from './foundation-elements/DemoCmkKeyboardKey.vue'
 import DemoCmkLabelRequired from './foundation-elements/DemoCmkLabelRequired.vue'
 import DemoCmkSpace from './foundation-elements/DemoCmkSpace.vue'
 import DemoCmkZebra from './foundation-elements/DemoCmkZebra.vue'
+import DemoCmkHeading from './foundation-elements/typography/DemoCmkHeading.vue'
+import DemoCmkParagraph from './foundation-elements/typography/DemoCmkParagraph.vue'
 import DemoI18n from './foundation-elements/typography/DemoI18n.vue'
-import DemoTypography from './foundation-elements/typography/DemoTypography.vue'
 import DemoCmkLinkCard from './navigation/DemoCmkLinkCard.vue'
 import DemoCmkAlertBox from './system-feedback/DemoCmkAlertBox.vue'
 import DemoCmkCopyButton from './system-feedback/DemoCmkCopyButton.vue'
@@ -91,7 +92,8 @@ const foundationElementsPages = [
   new Page('CmkIcon', DemoCmkIcon),
   new Page('CmkIconEmblem', DemoCmkIconEmblem),
   new Page('CmkMultitoneIcon', DemoCmkMultitoneIcon),
-  new Page('Typography', DemoTypography),
+  new Page('CmkHeading', DemoCmkHeading),
+  new Page('CmkParagraph', DemoCmkParagraph),
   new Page('i18n', DemoI18n),
   new Page('CmkHtml', DemoCmkHtml),
   new Page('CmkIndent', DemoCmkIndent),

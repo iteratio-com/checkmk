@@ -1,20 +1,78 @@
 <!--
-Copyright (C) 2025 Checkmk GmbH - License: GNU General Public License v2
+Copyright (C) 2026 Checkmk GmbH - License: GNU General Public License v2
 This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 conditions defined in the file COPYING, which is part of this source code package.
 -->
 <script setup lang="ts">
+import {
+  DemoDetailPageAccessibility,
+  DemoDetailPageCodeExample,
+  DemoDetailPageComponent,
+  DemoDetailPageHeader,
+  DemoDetailPageLayout,
+  DemoPropertiesPanel,
+  type Options,
+  type PanelConfig,
+  createPanelState
+} from '@demo/_demo/components/detail-page'
+import { ref } from 'vue'
+
 import CmkLabel from '@/components/CmkLabel.vue'
 import CmkInput from '@/components/user-input/CmkInput.vue'
 import CmkLabelRequired from '@/components/user-input/CmkLabelRequired.vue'
 
 defineProps<{ screenshotMode: boolean }>()
-</script>
+
+const codeExampleCmkLabelRequired = `<script setup lang="ts">
+${'import'} CmkLabel from '@/components/CmkLabel.vue'
+${'import'} CmkInput from '@/components/user-input/CmkInput.vue'
+${'import'} CmkLabelRequired from '@/components/user-input/CmkLabelRequired.vue'
+<${'/'}script>
 
 <template>
   <CmkLabel>
-    Choose a name
-    <CmkLabelRequired />
+    Username
+    <CmkLabelRequired space="before" />
   </CmkLabel>
-  <CmkInput type="text" field-size="MEDIUM" />
+  <CmkInput type="text" required />
+</template>`
+
+const panelConfig = {
+  show: { type: 'boolean', title: 'Show Required Label', initialState: true },
+  space: {
+    type: 'list',
+    title: 'space',
+    options: [
+      { title: 'null', name: '' },
+      { title: 'Before', name: 'before' },
+      { title: 'After', name: 'after' },
+      { title: 'Both', name: 'both' }
+    ] satisfies Options<'' | 'before' | 'after' | 'both'>[],
+    initialState: '' as '' | 'before' | 'after' | 'both'
+  }
+} satisfies PanelConfig
+
+const propState = ref(createPanelState(panelConfig))
+</script>
+
+<template>
+  <DemoDetailPageLayout>
+    <DemoDetailPageHeader>CmkLabelRequired</DemoDetailPageHeader>
+
+    <DemoDetailPageComponent>
+      <CmkLabel>
+        Example Field Name
+        <CmkLabelRequired :show="propState.show" :space="propState.space || null" />
+      </CmkLabel>
+      <CmkInput type="text" field-size="MEDIUM" />
+
+      <template #properties>
+        <DemoPropertiesPanel v-model="propState" :config="panelConfig" />
+      </template>
+    </DemoDetailPageComponent>
+
+    <DemoDetailPageCodeExample :code="codeExampleCmkLabelRequired" />
+
+    <DemoDetailPageAccessibility :data="[]" />
+  </DemoDetailPageLayout>
 </template>

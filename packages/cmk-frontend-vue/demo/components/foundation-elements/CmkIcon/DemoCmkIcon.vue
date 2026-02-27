@@ -1,64 +1,101 @@
 <!--
-Copyright (C) 2024 Checkmk GmbH - License: GNU General Public License v2
+Copyright (C) 2026 Checkmk GmbH - License: GNU General Public License v2
 This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 conditions defined in the file COPYING, which is part of this source code package.
 -->
-
 <script setup lang="ts">
-import { type Ref, ref } from 'vue'
+import {
+  DemoDetailPageAccessibility,
+  DemoDetailPageCodeExample,
+  DemoDetailPageComponent,
+  DemoDetailPageDeveloperPlayground,
+  DemoDetailPageHeader,
+  DemoDetailPageLayout,
+  DemoPropertiesPanel,
+  type PanelConfig,
+  createPanelState
+} from '@demo/_demo/components/detail-page'
+import { ref } from 'vue'
 
-import type { IconSizeNames, SimpleIcons } from '@/components/CmkIcon'
-import { type CmkIconVariants } from '@/components/CmkIcon'
+import type { CmkIconVariants, IconSizeNames, SimpleIcons } from '@/components/CmkIcon'
 import CmkIcon from '@/components/CmkIcon'
+
+import DemoCmkIconDev from './DemoCmkIconDev.vue'
 
 defineProps<{ screenshotMode: boolean }>()
 
-const sizes: IconSizeNames[] = ['xsmall', 'small', 'medium', 'large', 'xlarge', 'xxlarge']
-const variants: CmkIconVariants['variant'][] = ['plain', 'inline']
-const title = 'Some title that is shown in a tooltip on hovering the icon'
-const iconName = ref<SimpleIcons>('continue')
-const sizeRef: Ref<IconSizeNames> = ref('large')
-const rotate = ref(90)
+const codeExampleCmkIcon = `<script setup lang="ts">
+${'import'} CmkIcon from '@/components/CmkIcon'
+<${'/'}script>
+
+<template>
+  <CmkIcon
+    name="main-help"
+    size="large"
+    variant="inline"
+    title="Get Help"
+  />
+</template>`
+
+const panelConfig = {
+  name: { type: 'string', title: 'Icon Name', initialState: 'main-help' },
+  variant: {
+    type: 'list',
+    title: 'Variant',
+    options: [
+      { title: 'Plain', name: 'plain' },
+      { title: 'Inline (with margin)', name: 'inline' }
+    ],
+    initialState: 'plain'
+  },
+  size: {
+    type: 'list',
+    title: 'Size',
+    options: [
+      { title: 'XX-Small', name: 'xxsmall' },
+      { title: 'X-Small', name: 'xsmall' },
+      { title: 'Small', name: 'small' },
+      { title: 'Medium', name: 'medium' },
+      { title: 'Large', name: 'large' },
+      { title: 'X-Large', name: 'xlarge' },
+      { title: 'XX-Large', name: 'xxlarge' },
+      { title: 'XXX-Large', name: 'xxxlarge' }
+    ],
+    initialState: 'xxlarge'
+  },
+  colored: { type: 'boolean', title: 'Colored', initialState: false },
+  title: { type: 'string', title: 'Title (Tooltip/Alt)', initialState: 'Help Icon' },
+  rotate: { type: 'number', title: 'Rotation (Degrees)', initialState: 0 }
+} satisfies PanelConfig
+
+const propState = ref(createPanelState(panelConfig))
 </script>
 
 <template>
-  <ul>
-    <li v-for="variant in variants" :key="variant || 'dflt'">
-      <b>variant "{{ variant }}"</b>
-      <ul>
-        <li v-for="size in sizes" :key="size || 'dflt'" class="demo-cmk-icon__element-entry">
-          size "{{ size }}":
-          <CmkIcon name="main-help" :variant="variant" :size="size" :title="title" />
-        </li>
-      </ul>
-    </li>
-  </ul>
-  <div>
-    <b>Dynamic CmkIcon by properties</b>
-    <div>e.g."main-help""</div>
-    <div>icon name: <input v-model="iconName" /></div>
-    <div>size: <input v-model="sizeRef" /> ({{ sizes }})</div>
-    <div>rotate (in degrees): <input v-model="rotate" /></div>
-    <div>icon: <CmkIcon :name="iconName" :size="sizeRef" :rotate="rotate" /></div>
-  </div>
+  <DemoDetailPageLayout>
+    <DemoDetailPageHeader>CmkIcon</DemoDetailPageHeader>
+
+    <DemoDetailPageComponent>
+      <CmkIcon
+        :name="propState.name as SimpleIcons"
+        :variant="propState.variant as CmkIconVariants['variant']"
+        :size="propState.size as IconSizeNames"
+        :colored="propState.colored"
+        :title="propState.title"
+        :rotate="propState.rotate"
+      />
+
+      <template #properties>
+        <DemoPropertiesPanel v-model="propState" :config="panelConfig" />
+      </template>
+    </DemoDetailPageComponent>
+
+    <DemoDetailPageCodeExample :code="codeExampleCmkIcon" />
+
+    <DemoDetailPageAccessibility :data="[]" />
+
+    <DemoDetailPageDeveloperPlayground>
+      <DemoCmkIconDev :screenshot-mode="screenshotMode" />
+    </DemoDetailPageDeveloperPlayground>
+  </DemoDetailPageLayout>
 </template>
-
-<style scoped>
-ul {
-  list-style-type: none;
-  margin-bottom: 40px;
-  padding: 0;
-}
-
-li {
-  margin: 1em;
-
-  &.demo-cmk-icon__element-entry {
-    display: flex;
-  }
-}
-
-input {
-  margin: 5px 10px;
-}
-</style>

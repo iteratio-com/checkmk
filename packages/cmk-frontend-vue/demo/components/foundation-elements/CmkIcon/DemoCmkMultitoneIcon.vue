@@ -1,15 +1,23 @@
 <!--
-Copyright (C) 2025 Checkmk GmbH - License: GNU General Public License v2
+Copyright (C) 2026 Checkmk GmbH - License: GNU General Public License v2
 This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 conditions defined in the file COPYING, which is part of this source code package.
 -->
-
 <script setup lang="ts">
+import {
+  DemoDetailPageAccessibility,
+  DemoDetailPageCodeExample,
+  DemoDetailPageComponent,
+  DemoDetailPageHeader,
+  DemoDetailPageLayout,
+  DemoPropertiesPanel,
+  type Options,
+  type PanelConfig,
+  createPanelState
+} from '@demo/_demo/components/detail-page'
 import { ref } from 'vue'
 
-import CmkDropdown from '@/components/CmkDropdown'
 import CmkMultitoneIcon from '@/components/CmkIcon/CmkMultitoneIcon.vue'
-import { oneColorIcons, twoColorIcons } from '@/components/CmkIcon/icons.constants'
 import type {
   CmkMultitoneIconColor,
   CmkMultitoneIconNames,
@@ -18,119 +26,113 @@ import type {
 
 defineProps<{ screenshotMode: boolean }>()
 
-const icon = ref<CmkMultitoneIconNames>('services')
+const codeExampleCmkMultitoneIcon = `<script setup lang="ts">
+${'import'} CmkMultitoneIcon from '@/components/CmkIcon/CmkMultitoneIcon.vue'
+<${'/'}script>
 
-const iconSuggestions = [
-  ...oneColorIcons.map((name) => ({ name, title: name })),
-  ...twoColorIcons.map((name) => ({ name, title: name }))
-]
+<template>
+  <CmkMultitoneIcon
+    name="services"
+    primary-color="success"
+    secondary-color="warning"
+    size="large"
+    title="Service Status"
+  />
+</template>`
 
-const size = ref<IconSizeNames>('xxlarge')
-const sizeSuggestions = [
-  { name: 'xsmall', title: 'xsmall' },
-  { name: 'small', title: 'small' },
-  { name: 'medium', title: 'medium' },
-  { name: 'large', title: 'large' },
-  { name: 'xlarge', title: 'xlarge' },
-  { name: 'xxlarge', title: 'xxlarge' },
-  { name: 'xxxlarge', title: 'xxxlarge' }
-]
+const toneOptions = [
+  { name: 'success', title: 'Success (Green)' },
+  { name: 'danger', title: 'Danger (Red)' },
+  { name: 'warning', title: 'Warning (Yellow)' },
+  { name: 'info', title: 'Info (Blue)' },
+  { name: 'hosts', title: 'Hosts (Cyan)' },
+  { name: 'services', title: 'Services (Orange)' },
+  { name: 'specialAgents', title: 'Special Agents (Purple)' },
+  { name: 'users', title: 'Users (Pink)' },
+  { name: 'customization', title: 'Customization (Brown)' },
+  { name: 'others', title: 'Others (Grey)' }
+] satisfies Options<CmkMultitoneIconColor>[]
 
-const primaryTone = ref<CmkMultitoneIconColor>('success')
-const secondaryTone = ref<CmkMultitoneIconColor>('success')
-const toneSuggestions = [
-  { name: 'customization', title: 'customization' },
-  { name: 'danger', title: 'danger' },
-  { name: 'hosts', title: 'hosts' },
-  { name: 'info', title: 'info' },
-  { name: 'others', title: 'others' },
-  { name: 'services', title: 'services' },
-  { name: 'specialAgents', title: 'specialAgents' },
-  { name: 'success', title: 'success' },
-  { name: 'users', title: 'users' },
-  { name: 'warning', title: 'warning' }
-]
+const panelConfig = {
+  name: {
+    type: 'list',
+    title: 'Icon Name',
+    options: [
+      { title: 'Services', name: 'services' },
+      { title: 'Monitoring', name: 'monitoring' },
+      { title: 'Setup', name: 'setup' },
+      { title: 'User', name: 'user' },
+      { title: 'Success', name: 'success' },
+      { title: 'Error', name: 'error' },
+      { title: 'Warning', name: 'warning' },
+      { title: 'Aggregation (two-color)', name: 'aggr' }
+    ] satisfies Options<CmkMultitoneIconNames>[],
+    initialState: 'services' as CmkMultitoneIconNames
+  },
+  size: {
+    type: 'list',
+    title: 'Size',
+    options: [
+      { title: 'XX-Small', name: 'xxsmall' },
+      { title: 'X-Small', name: 'xsmall' },
+      { title: 'Small', name: 'small' },
+      { title: 'Medium', name: 'medium' },
+      { title: 'Large', name: 'large' },
+      { title: 'X-Large', name: 'xlarge' },
+      { title: 'XX-Large', name: 'xxlarge' },
+      { title: 'XXX-Large', name: 'xxxlarge' }
+    ] satisfies Options<IconSizeNames>[],
+    initialState: 'xxlarge' as const
+  },
+  primaryColor: {
+    type: 'list',
+    title: 'Primary Color',
+    options: toneOptions,
+    initialState: 'success' as const
+  },
+  secondaryColor: {
+    type: 'list',
+    title: 'Secondary Color',
+    options: toneOptions,
+    initialState: 'warning' as const
+  },
+  rotate: {
+    type: 'number',
+    title: 'Rotation',
+    initialState: 0,
+    help: 'Enter a rotation value in degrees (e.g., 45, 90, 180) to rotate the icon.'
+  },
+  title: {
+    type: 'string',
+    title: 'Title Attribute',
+    initialState: 'Demo Multitone Icon'
+  }
+} satisfies PanelConfig
+
+const propState = ref(createPanelState(panelConfig))
 </script>
 
 <template>
-  <div>
-    <label>Icon:</label>
-    <CmkDropdown
-      v-model:selected-option="icon as string"
-      :options="{
-        type: 'fixed',
-        suggestions: iconSuggestions
-      }"
-      component-id="icon"
-      label="Icon to render"
-    />
-  </div>
-  <div>
-    <label>Size:</label>
-    <CmkDropdown
-      v-model:selected-option="size as string"
-      :options="{
-        type: 'fixed',
-        suggestions: sizeSuggestions
-      }"
-      component-id="size"
-      label="Icon size"
-    />
-  </div>
-  <div>
-    <label>Primary color:</label>
-    <CmkDropdown
-      v-model:selected-option="primaryTone as string"
-      :options="{
-        type: 'fixed',
+  <DemoDetailPageLayout>
+    <DemoDetailPageHeader>CmkMultitoneIcon</DemoDetailPageHeader>
 
-        suggestions: toneSuggestions
-      }"
-      component-id="primary-tone"
-      label="Primary icon color"
-    />
-  </div>
+    <DemoDetailPageComponent>
+      <CmkMultitoneIcon
+        :name="propState.name"
+        :primary-color="propState.primaryColor"
+        :secondary-color="propState.secondaryColor"
+        :size="propState.size"
+        :rotate="propState.rotate"
+        :title="propState.title"
+      />
 
-  <div>
-    <label>Secondary color:</label>
-    <CmkDropdown
-      v-model:selected-option="secondaryTone as string"
-      :options="{
-        type: 'fixed',
+      <template #properties>
+        <DemoPropertiesPanel v-model="propState" :config="panelConfig" />
+      </template>
+    </DemoDetailPageComponent>
 
-        suggestions: toneSuggestions
-      }"
-      component-id="secondary-tone"
-      label="Secondary icon color"
-    />
-  </div>
+    <DemoDetailPageCodeExample :code="codeExampleCmkMultitoneIcon" />
 
-  <div class="demo-cmk-multitone-icon">
-    <CmkMultitoneIcon
-      :name="icon"
-      :primary-color="primaryTone"
-      :secondary-color="secondaryTone"
-      :size="size"
-    ></CmkMultitoneIcon>
-  </div>
+    <DemoDetailPageAccessibility :data="[]" />
+  </DemoDetailPageLayout>
 </template>
-
-<style scoped>
-.demo-cmk-multitone-icon {
-  width: 100%;
-  height: auto;
-  display: flex;
-  justify-content: center;
-  padding: 40px 0 0;
-  box-sizing: border-box;
-}
-
-div:has(> label) {
-  padding: 8px 0;
-}
-
-label {
-  width: 200px;
-  display: inline-block;
-}
-</style>

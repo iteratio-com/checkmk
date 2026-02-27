@@ -1,17 +1,25 @@
 <!--
-Copyright (C) 2025 Checkmk GmbH - License: GNU General Public License v2
+Copyright (C) 2026 Checkmk GmbH - License: GNU General Public License v2
 This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 conditions defined in the file COPYING, which is part of this source code package.
 -->
 <script setup lang="ts">
-import { ref } from 'vue'
+import {
+  DemoDetailPageAccessibility,
+  DemoDetailPageCodeExample,
+  DemoDetailPageComponent,
+  DemoDetailPageHeader,
+  DemoDetailPageLayout,
+  DemoPropertiesPanel,
+  type PanelConfig,
+  createPanelState
+} from '@demo/_demo/components/detail-page'
+import { ref, watch } from 'vue'
 
 import usei18n from '@/lib/i18n'
 
-import CmkButton from '@/components/CmkButton.vue'
-import CmkDropdown from '@/components/CmkDropdown'
+import CmkSpace from '@/components/CmkSpace.vue'
 import CmkParagraph from '@/components/typography/CmkParagraph.vue'
-import CmkInput from '@/components/user-input/CmkInput.vue'
 
 import translatedStringFromTS from './_ts_file_using_i18n'
 
@@ -19,56 +27,108 @@ defineProps<{ screenshotMode: boolean }>()
 
 const { _t, _tn, switchLanguage, translationLoading } = usei18n()
 
-const appleCount = ref('0')
-const name = ref<string>('Alice')
+const a11yDataI18n = [
+  {
+    keys: ['HTML Lang Attribute'],
+    description:
+      'When switching languages dynamically, ensure the root `<html>` element’s `lang` attribute is updated (e.g., `lang="de"`). This is critical for screen readers to load the correct pronunciation dictionary.'
+  }
+]
+
+const codeExampleI18n = `<script setup lang="ts">
+import usei18n from '@/lib/i18n'
+${'import'} CmkParagraph from '@/components/typography/CmkParagraph.vue'
+
+const { _t, _tn } = usei18n()
+<${'/'}script>
+
+<template>
+  <CmkParagraph>{{ _t('Hello %{name}!', { name: 'Alice' }) }}</CmkParagraph>
+</template>`
+
+const panelConfig = {
+  language: {
+    type: 'list',
+    title: 'Active Language',
+    options: [
+      { title: 'English', name: 'en' },
+      { title: 'German', name: 'de' },
+      { title: 'French', name: 'fr' }
+    ],
+    initialState: 'en'
+  },
+  name: {
+    type: 'string',
+    title: 'Name',
+    initialState: 'Alice',
+    help: 'Enter a name to see interpolation in action.'
+  },
+  appleCount: {
+    type: 'list',
+    title: 'Apple Count',
+    options: [
+      { title: '0 Apples', name: '0' },
+      { title: '1 Apple', name: '1' },
+      { title: '3 Apples', name: '3' }
+    ],
+    help: 'Select the number of apples to see pluralization in action.',
+    initialState: '0'
+  }
+} satisfies PanelConfig
+
+const propState = ref(createPanelState(panelConfig))
+
+watch(
+  () => propState.value.language,
+  (newLang) => {
+    if (newLang) {
+      void switchLanguage(String(newLang))
+    }
+  },
+  { immediate: true }
+)
 </script>
 
 <template>
-  <label>
-    <CmkButton @click="switchLanguage('en')">{{ _t('English') }}</CmkButton>
-  </label>
-  <label>
-    <CmkButton @click="switchLanguage('de')">{{ _t('German') }}</CmkButton>
-  </label>
-  <label>
-    <CmkButton @click="switchLanguage('fr')">{{ _t('French') }}</CmkButton>
-  </label>
+  <DemoDetailPageLayout>
+    <DemoDetailPageHeader>I18n</DemoDetailPageHeader>
 
-  <br />
-  <label>
-    {{ translationLoading ? _t('Loading translations...') : _t('Translations loaded') }}
-  </label>
-  <br />
-  <label>
-    {{ _t('Your name') }}
-    <CmkInput v-model="name" />
-  </label>
-  <br />
-  <label>
-    {{ _t('Number of apples') }}
-    <CmkDropdown
-      v-model:selected-option="appleCount"
-      :options="{
-        type: 'fixed',
-        suggestions: [
-          { title: '0', name: '0' },
-          { title: '1', name: '1' },
-          { title: '3', name: '3' }
-        ]
-      }"
-      label=""
-    />
-  </label>
-  <br />
-  <br />
-  <CmkParagraph> {{ _t('Hello %{name}!', { name }) }}</CmkParagraph>
-  <CmkParagraph>
-    {{
-      _tn('There is %{ n } apple', 'There are %{ n } apples', parseInt(appleCount), {
-        n: appleCount
-      })
-    }}</CmkParagraph
-  >
-  <br />
-  <CmkParagraph>{{ translatedStringFromTS }}</CmkParagraph>
+    <DemoDetailPageComponent>
+      <div style="display: flex; flex-direction: column">
+        <CmkParagraph>
+          <strong>Status: </strong>
+          {{ translationLoading ? _t('Loading translations...') : _t('Translations loaded') }}
+        </CmkParagraph>
+
+        <CmkSpace size="small" direction="vertical" />
+
+        <CmkParagraph>
+          <strong>Interpolation: </strong>
+          {{ _t('Hello %{name}!', { name: propState.name }) }}
+        </CmkParagraph>
+        <CmkSpace size="small" direction="vertical" />
+        <CmkParagraph>
+          <strong>Pluralization: </strong>
+          {{
+            _tn('There is %{ n } apple', 'There are %{ n } apples', Number(propState.appleCount), {
+              n: propState.appleCount ?? 0
+            })
+          }}
+        </CmkParagraph>
+        <CmkSpace size="small" direction="vertical" />
+        <CmkParagraph>
+          <strong>From TS File: </strong>
+          {{ translatedStringFromTS }}
+        </CmkParagraph>
+      </div>
+
+      <template #properties>
+        <DemoPropertiesPanel v-model="propState" :config="panelConfig" />
+      </template>
+    </DemoDetailPageComponent>
+
+    <DemoDetailPageCodeExample :code="codeExampleI18n" />
+
+    <DemoDetailPageAccessibility :data="a11yDataI18n" />
+  </DemoDetailPageLayout>
 </template>
