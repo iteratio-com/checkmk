@@ -262,10 +262,12 @@ py_library(
         "//cmk/piggyback:hub",
         "//cmk/plugins:cmk_plugins",
         "//cmk/plugins:cmk_plugins_logwatch",
+        "//cmk/post_rename_site:cmk_post_rename_site",
         "//cmk/product_usage:cmk_product_usage",
         "//cmk/rrd:cmk_rrd",
         "//cmk/server_side_calls_backend:cmk_server_side_calls_backend",
         "//cmk/special_agents:cmk_special_agents",
+        "//cmk/update_config:cmk_update_config",
         "//cmk/utils:cmk_utils",
         "//packages/cmk-plugins:aws",  # legacy checks + quicksetup
         "//packages/cmk-plugins:graylog",  # via legacy_checks.
