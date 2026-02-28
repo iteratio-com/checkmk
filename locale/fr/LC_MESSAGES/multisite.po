@@ -3024,9 +3024,8 @@ msgstr "Mises à jour de l'APT"
 msgid "APT normal and security updates (Linux)"
 msgstr "APT normal et mises à jour de sécurité (Linux)"
 
-#, fuzzy
-msgid "ASCII Email parameters"
-msgstr "Paramètres du modèle"
+msgid "ARM 64-bit only"
+msgstr ""
 
 #, fuzzy
 msgid "ASCII email"
@@ -4249,6 +4248,10 @@ msgstr "Ajouter une nouvelle configuration utilisateur"
 
 msgid "Add Prefix"
 msgstr "Ajouter un préfixe"
+
+#, fuzzy
+msgid "Add Prometheus configuration"
+msgstr "Ajouter une configuration d'état"
 
 #, fuzzy
 msgid "Add Prometheus scraper configuration"
@@ -5528,10 +5531,6 @@ msgid ""
 "registration."
 msgstr ""
 
-#, fuzzy
-msgid "Agent Receiver port"
-msgstr "Port récepteur de l'agent"
-
 msgid "Agent TCP connect timeout"
 msgstr "Délai de connexion TCP de l'agent"
 
@@ -5641,6 +5640,10 @@ msgstr "Plugins de l'agent : Expression régulière pour exclure les plugins"
 #, fuzzy
 msgid "Agent plug-ins: versions"
 msgstr "Plugins d'agent : versions"
+
+#, fuzzy
+msgid "Agent receiver port"
+msgstr "Port récepteur de l'agent"
 
 msgid "Agent registration"
 msgstr "Enregistrement des agents"
@@ -6361,6 +6364,12 @@ msgstr "Tous les protocoles"
 
 msgid "All queues listed here will be skipped."
 msgstr "Toutes les files d'attente énumérées ici seront ignorées."
+
+#, fuzzy
+msgid "All related configuration of the Prometheus scraper Quick Setup."
+msgstr ""
+"Indiquez un, plusieurs ou tous les sites sur lesquels cette connexion doit "
+"être exécutée."
 
 #, fuzzy
 msgid ""
@@ -7473,10 +7482,6 @@ msgstr "Groupes cibles de l'équilibreur de charge d'application"
 msgid "Application load balancers"
 msgstr "Équilibreurs de charge d'applications"
 
-#, fuzzy
-msgid "Application monitoring"
-msgstr "Recherche dans le monitoring"
-
 msgid "Application name"
 msgstr "Nom de l'application"
 
@@ -7646,6 +7651,9 @@ msgstr "Avril"
 
 msgid "Architecture"
 msgstr "Architecture"
+
+msgid "Architecture of the systems where the agent will be deployed"
+msgstr ""
 
 msgid "Archive"
 msgstr "Archive"
@@ -9725,6 +9733,10 @@ msgid "Azure subscription"
 msgstr "Abonnements actuels"
 
 #, fuzzy
+msgid "Azure subscription id"
+msgstr "Abonnements actuels"
+
+#, fuzzy
 msgid "Azure subscription name"
 msgstr "Abonnement"
 
@@ -11437,13 +11449,13 @@ msgstr ""
 
 #, fuzzy
 msgid ""
-"By default, the file system checks (<tt>df</tt>, <tt>hr_fs</tt> and others) "
-"will create a single service for each file system. By defining grouping "
-"patterns, you can handle groups of file systems like one file system. For "
-"each group, you can define one or several include and exclude patterns. The "
-"file systems matching one of the include patterns will be monitored like one "
-"big file system in a single service. The file systems matching one of the "
-"exclude patterns will be excluded from the group and monitored individually."
+"By default, the file system checks will create a single service for each "
+"file system. By defining grouping patterns, you can handle groups of file "
+"systems like one file system. For each group, you can define one or several "
+"include and exclude patterns. The file systems matching one of the include "
+"patterns will be monitored like one big file system in a single service. The "
+"file systems matching one of the exclude patterns will be excluded from the "
+"group and monitored individually."
 msgstr ""
 "Par défaut, les contrôles de systèmes de fichiers (<tt>df</tt>, <tt>hr_fs</"
 "tt> et autres) créeront un seul service pour chaque système de fichiers. En "
@@ -14425,6 +14437,11 @@ msgstr ""
 "ainsi que les éléments des services créés sur le nœud pour chaque conteneur."
 
 msgid ""
+"Choose which identifier is used for the piggybacked host name of monitored "
+"containers."
+msgstr ""
+
+msgid ""
 "Choose, whether you want to use the parent host information for the NetBIOS "
 "server name, or if you want to specify one."
 msgstr ""
@@ -14710,6 +14727,11 @@ msgstr ""
 msgid ""
 "Click the \"Add OpenTelemetry configuration\" button to start setting up "
 "your first OpenTelemetry configuration."
+msgstr ""
+
+msgid ""
+"Click the \"Add Prometheus scraper configuration\" button to start setting "
+"up your first Prometheus scraper configuration."
 msgstr ""
 
 msgid ""
@@ -17854,10 +17876,6 @@ msgstr "Créer un rapport stocké"
 msgid "Create the following interface groups"
 msgstr "Créez les groupes d'interface suivants"
 
-#, fuzzy
-msgid "Create the rule in the configured folder"
-msgstr "Créer une nouvelle configuration d'arborescence d'hôtes virtuels"
-
 msgid "Create topic"
 msgstr "Créer un sujet"
 
@@ -18724,10 +18742,6 @@ msgstr "Personnaliser les %s et les utiliser"
 
 msgid "Customize GUI design"
 msgstr "Personnaliser la conception de l'interface graphique"
-
-#, fuzzy
-msgid "Customize Linux agent controller deployment"
-msgstr "Déploiement du contrôleur d'agent"
 
 #, fuzzy
 msgid "Customize agent package (Linux)"
@@ -23550,6 +23564,16 @@ msgid "E.g. 'project = my_project and result = \"waiting for something\"'"
 msgstr ""
 "Par exemple, 'projet = mon_projet et résultat = \"attente de quelque chose\"'"
 
+msgid ""
+"E.g., if you register the agent controller at multiple sites, only the first "
+"site will be used for agent updates."
+msgstr ""
+
+msgid ""
+"E.g., if you register the agent controller at multiple sites, only the last "
+"site will be used for agent updates."
+msgstr ""
+
 msgid "EC2 instances may take a few minutes to show up."
 msgstr ""
 
@@ -25097,12 +25121,23 @@ msgstr ""
 msgid "Enter a plugin output to define what to filter for."
 msgstr ""
 
+#, fuzzy
+msgid "Enter a valid IP address or hostname."
+msgstr "Adresse IP de l'hôte"
+
+msgid "Enter a valid port number (example: 1234)."
+msgstr ""
+
 msgid "Enter address"
 msgstr "Entrez l'adresse"
 
 #, fuzzy
 msgid "Enter alias (optional)"
 msgstr "ID externe (facultatif)"
+
+#, fuzzy
+msgid "Enter credentials for basic authentication."
+msgstr "Informations d'identification pour l'authentification HTTP de base"
 
 msgid "Enter group"
 msgstr "Entrer le groupe"
@@ -36738,10 +36773,6 @@ msgstr "Niveaux supérieurs de sortie de 5 volts"
 msgid "Incident"
 msgstr "Incident"
 
-#, fuzzy
-msgid "Include ARM version"
-msgstr "Ignorer la version"
-
 msgid "Include Pattern"
 msgstr "Inclure le motif"
 
@@ -36823,10 +36854,6 @@ msgstr "Inclure le temps non surveillé"
 
 msgid "Include vanished clustered services during removal"
 msgstr "Inclure les services en grappe disparus lors de la suppression"
-
-#, fuzzy
-msgid "Include x86 version"
-msgstr "Ignorer la version"
 
 msgid "Inclusion patterns"
 msgstr "Modèles d'inclusion"
@@ -39767,6 +39794,10 @@ msgid "Legacy check plug-ins (outdated, ignored)"
 msgstr "Plugins basés sur les agents (Contrôles, Inventaire)"
 
 #, fuzzy
+msgid "Legacy email (ASCII) parameters"
+msgstr "Paramètres du modèle"
+
+#, fuzzy
 msgid "Legacy inventory plug-ins (outdated, ignored)"
 msgstr "Anciens plugins d'inventaire"
 
@@ -41808,6 +41839,26 @@ msgstr "Déconnexion"
 msgid "Logs"
 msgstr "Bûches"
 
+#, fuzzy
+msgid "Logs refused by the Event console"
+msgstr "Accès à la console d'événements"
+
+msgid "Logs refused by the receiver (GRPC receiver)"
+msgstr ""
+
+msgid "Logs refused by the receiver (HTTP receiver)"
+msgstr ""
+
+msgid "Logs successfully received (GRPC receiver)"
+msgstr ""
+
+msgid "Logs successfully received (HTTP receiver)"
+msgstr ""
+
+#, fuzzy
+msgid "Logs successfully sent to Event console"
+msgstr "Accès à la console d'événements"
+
 msgid "Logswitches"
 msgstr "Commutateurs logiques"
 
@@ -42921,6 +42972,14 @@ msgid ""
 msgstr ""
 "Laisser le noyau envoyer manuellement une notification à un hôte ou à un "
 "service afin de tester si les notifications sont correctement configurées"
+
+msgid ""
+"Manually register the agent updater either on agent controller registration "
+"with <tt>cmk-agent-ctl register [args] --automatic-updates</tt>, or with "
+"<tt>cmk-update-agent register</tt>. Since the registration is handled "
+"manually by the user, any existing agent updater registration will be "
+"overwritten."
+msgstr ""
 
 #, python-format
 msgid "Manually set to %s by %s"
@@ -44604,6 +44663,19 @@ msgid "Metrics path must start with a '/'."
 msgstr "La connexion n'est pas autorisée sur ce site."
 
 #, fuzzy
+msgid "Metrics refused by data storage"
+msgstr "La valeur doit être une chaîne de caractères"
+
+msgid "Metrics refused by the receiver (GRPC receiver)"
+msgstr ""
+
+msgid "Metrics refused by the receiver (HTTP receiver)"
+msgstr ""
+
+msgid "Metrics refused by the receiver (Prometheus scraper)"
+msgstr ""
+
+#, fuzzy
 msgid "Metrics related to sizing, e.g. number of helpers, hosts, services"
 msgstr ""
 "Performance Données relatives au dimensionnement, par exemple le nombre "
@@ -44612,6 +44684,19 @@ msgstr ""
 #, fuzzy
 msgid "Metrics settings"
 msgstr "Sélection des dossiers"
+
+msgid "Metrics successfully received (GRPC receiver)"
+msgstr ""
+
+msgid "Metrics successfully received (HTTP receiver)"
+msgstr ""
+
+msgid "Metrics successfully received (Prometheus scraper)"
+msgstr ""
+
+#, fuzzy
+msgid "Metrics successfully sent to data storage"
+msgstr "Temps écoulé depuis la dernière construction réussie"
 
 msgid "MiB"
 msgstr "MiB"
@@ -44886,11 +44971,6 @@ msgstr ""
 
 msgid "Missing host name"
 msgstr "Nom d'hôte manquant"
-
-msgid ""
-"Missing hostname attribute. Please configure a resource attribute (e.g., "
-"host.name) so the system can determine the hostname"
-msgstr ""
 
 msgid ""
 "Missing hostname attribute. Please configure a resource attribute (e.g., "
@@ -46326,6 +46406,10 @@ msgstr ""
 msgid "Name"
 msgstr "Nom"
 
+#, fuzzy
+msgid "Name + ID - Use the name of the container plus the container ID"
+msgstr "Nom - Utilisez le nom du conteneur"
+
 msgid "Name - Use the name of the container"
 msgstr "Nom - Utilisez le nom du conteneur"
 
@@ -47256,6 +47340,10 @@ msgid "No PNP templates using the deprecated API"
 msgstr "Pas de contrôle des plugins utilisant l'API obsolète"
 
 #, fuzzy
+msgid "No Prometheus scraper configuration yet"
+msgstr "Ajouter une configuration d'état"
+
+#, fuzzy
 msgid "No Relay configuration yet"
 msgstr "Configuration de l'hôte"
 
@@ -47830,6 +47918,12 @@ msgstr "Étiquettes de nœuds"
 msgid "Node name"
 msgstr "Nom du nœud"
 
+msgid ""
+"Node name + Name - Combine the Podman node name and the container name. If "
+"the Podman node name cannot be determined, it will use the name of the host "
+"instead"
+msgstr ""
+
 msgid "Node name: Inventorize the nodes' name"
 msgstr "Nom du noeud : Inventorier le nom des noeuds"
 
@@ -48282,6 +48376,23 @@ msgstr ""
 "Notez que depuis OpenSSH 7.6, seule la version 2 est prise en charge. Par "
 "conséquent, les versions plus récentes n'utilisent ni ne signalent plus "
 "cette variable de configuration."
+
+#, fuzzy
+msgid ""
+"Note that specifically for the check <tt>df</tt>, the pattern matches either "
+"the mount point or the combination of volume and mount point, depending on "
+"the configuration in <a href='wato.py?"
+"mode=edit_ruleset&varname=inventory_df_rules'>File system discovery</a>."
+msgstr ""
+"Vous pouvez spécifier un ou plusieurs motifs de globbing contenant <tt>*</"
+"tt>, <tt>?</tt> et <tt>[...]</tt>, par exemple <tt>/spool/tmpspace*</tt>. "
+"Les systèmes de fichiers correspondant aux motifs seront exclus du "
+"regroupement et surveillés individuellement. Notez que spécifiquement pour "
+"la vérification <tt>df</tt>, le motif correspond soit au point de montage, "
+"soit à la combinaison du volume et du point de montage, selon la "
+"configuration dans <a href='wato.py?"
+"mode=edit_ruleset&varname=inventory_df_rules'>Découverte des systèmes de "
+"fichiers</a>."
 
 msgid "Note that:"
 msgstr ""
@@ -49939,6 +50050,14 @@ msgid "On down host"
 msgstr "L'hôte en bas"
 
 #, fuzzy
+msgid "On every agent controller registration"
+msgstr "Enregistrement automatique du contrôleur d'agent"
+
+#, fuzzy
+msgid "On first agent controller registration"
+msgstr "Enregistrement automatique du contrôleur d'agent"
+
+#, fuzzy
 msgid "On host name exclusion list."
 msgstr "%s sur la liste d'exclusion."
 
@@ -50533,6 +50652,10 @@ msgid "OpenTelemetry Collector memory limit"
 msgstr "Ajouter une configuration d'état"
 
 #, fuzzy
+msgid "OpenTelemetry Quick Setup"
+msgstr "Ajouter une configuration d'état"
+
+#, fuzzy
 msgid "OpenTelemetry RED Errors"
 msgstr "Ajouter une configuration d'état"
 
@@ -50558,6 +50681,10 @@ msgstr "Options de création par ferroutage"
 
 #, fuzzy
 msgid "OpenTelemetry metric name"
+msgstr "Ajouter une configuration d'état"
+
+#, fuzzy
+msgid "OpenTelemetry quick setup"
 msgstr "Ajouter une configuration d'état"
 
 msgid "OpenVMS processes"
@@ -53067,6 +53194,10 @@ msgstr "Politique de mot de passe pour les comptes locaux"
 #, fuzzy
 msgid "Password properties"
 msgstr "Propriétés du tableau de bord"
+
+#, fuzzy
+msgid "Password should not be empty"
+msgstr "Clé d'accès"
 
 msgid "Password:"
 msgstr "Mot de passe :"
@@ -55689,6 +55820,10 @@ msgstr "Produit"
 msgid "Product usage analytics"
 msgstr ""
 
+#, fuzzy
+msgid "Product usage analytics manifest"
+msgstr "élément de rapport"
+
 msgid "Profile"
 msgstr "Profil"
 
@@ -55740,6 +55875,10 @@ msgid "Prometheus Alertmanager"
 msgstr "Alertmanager"
 
 #, fuzzy
+msgid "Prometheus Quick Setup"
+msgstr "Installation rapide"
+
+#, fuzzy
 msgid "Prometheus Scrape Targets to fetch information from (deprecated)"
 msgstr ""
 "les cibles Prometheus Scrape (y compris les exportateurs Prometheus) pour "
@@ -55750,6 +55889,10 @@ msgstr "Service personnalisé Prometheus"
 
 msgid "Prometheus custom services"
 msgstr "Services personnalisés Prometheus"
+
+#, fuzzy
+msgid "Prometheus quick setup"
+msgstr "Alertmanager"
 
 #, fuzzy
 msgid "Prometheus scraper"
@@ -57147,6 +57290,10 @@ msgstr "Découverte du compteur MSSQL"
 msgid "Redfish physical port discovery"
 msgstr "États des ports physiques à découvrir"
 
+#, fuzzy
+msgid "Redirect URI"
+msgstr "Bénéficiaire"
+
 msgid "Redirect URL (has to be https)"
 msgstr "URL de redirection (doit être https)"
 
@@ -57353,10 +57500,6 @@ msgstr "Nom de la région"
 msgid "Regions to monitor"
 msgstr "Régions à surveiller"
 
-#, fuzzy
-msgid "Register agent updater, if automatic updates are enabled"
-msgstr "Activation des mises à jour automatiques des agents"
-
 msgid "Register all hosts & download all monitoring agents"
 msgstr ""
 "Enregistrer tous les hôtes & ; télécharger tous les agents de surveillance"
@@ -57448,6 +57591,10 @@ msgstr "Modems enregistrés"
 
 msgid "Registered phones"
 msgstr "Téléphones enregistrés"
+
+#, fuzzy
+msgid "Registration"
+msgstr "Enregistrements d'applications"
 
 msgid "Registration and fallback"
 msgstr "Enregistrement et repli"
@@ -59584,6 +59731,12 @@ msgstr ""
 "La règle ne s'applique qu'aux hôtes situés directement dans ou sous ce "
 "dossier."
 
+#, fuzzy
+msgid "Rule only applies to hosts matching the label conditions."
+msgstr ""
+"La règle ne s'applique qu'aux hôtes correspondant aux conditions de "
+"l'étiquette. "
+
 msgid "Rule only applies to hosts matching the label conditions. "
 msgstr ""
 "La règle ne s'applique qu'aux hôtes correspondant aux conditions de "
@@ -59592,6 +59745,14 @@ msgstr ""
 msgid ""
 "Rule only applies to hosts that meet all of the host tag conditions listed "
 "here"
+msgstr ""
+"La règle ne s'applique qu'aux hôtes qui remplissent toutes les conditions de "
+"la balise d'hôte énumérées ici"
+
+#, fuzzy
+msgid ""
+"Rule only applies to hosts that meet all of the host tag conditions listed "
+"here."
 msgstr ""
 "La règle ne s'applique qu'aux hôtes qui remplissent toutes les conditions de "
 "la balise d'hôte énumérées ici"
@@ -60380,6 +60541,9 @@ msgid "SNMP traps not configured"
 msgstr "Les pièges SNMP ne sont pas configurés"
 
 msgid "SNMP walk download timeout"
+msgstr ""
+
+msgid "SNMP walks are not supported for hosts monitored through a relay yet. "
 msgstr ""
 
 #, python-format
@@ -61343,6 +61507,10 @@ msgstr "Sélectionner le type de port d'interface"
 
 msgid "Select metrics to send to InfluxDB"
 msgstr "Sélectionnez les métriques à envoyer à InfluxDB"
+
+#, fuzzy
+msgid "Select one site."
+msgstr "Sélectionnez le fichier"
 
 msgid ""
 "Select one user from a contact group with access to all hosts and services. "
@@ -68760,6 +68928,10 @@ msgstr "est nécessaire"
 msgid "Tenant ID must be a valid UUID."
 msgstr "La valeur doit être une chaîne de caractères"
 
+#, fuzzy
+msgid "Tenant Name"
+msgstr "Nom du ventilateur"
+
 msgid "TenantID"
 msgstr "ID du locataire"
 
@@ -69594,12 +69766,12 @@ msgstr ""
 "fichier RPM spec. Ici, vous pouvez spécifier manuellement ces balises."
 
 msgid ""
-"The Linux agent controller is available as x86 64bit (x86-64) and ARM 64-bit "
-"(aarch644) executables.\n"
+"The Linux agent controller is available as x86 64-bit (x86-64) and ARM 64-"
+"bit (aarch64) executables.\n"
 "By default, only the x86-64 version will be included in Linux agent "
 "packages.\n"
 "Here you can choose to alternatively or additionally include the ARM "
-"executable, or none at all.\n"
+"executable.\n"
 "The agent package installation scripts will automatically select the correct "
 "binary, depending on the target system's architecture and the available "
 "binaries."
@@ -80331,6 +80503,10 @@ msgstr "Titre de la colonne. Ce champ est obligatoire."
 msgid "Title of the tree"
 msgstr "Titre de l'arbre"
 
+#, fuzzy
+msgid "Title should not be empty."
+msgstr "Clé secrète"
+
 msgid "Title to show for the group"
 msgstr "Titre à afficher pour le groupe"
 
@@ -80514,6 +80690,19 @@ msgstr ""
 "règles vous montre la valeur que vous devez définir pour une règle donnée. "
 "La valeur doit être une représentation en chaîne d'une structure de données "
 "Python compatible."
+
+msgid ""
+"To start updating the agent package, the agent updater must register at a "
+"monitoring site. Additional to the classic <tt>cmk-update-agent register</"
+"tt> call, you can also decide to auto-register for agent updates after "
+"succeeded agent controller registration. However, consider the differences "
+"between agent controller and agent updater registrations: The agent "
+"controller can register at multiple sites, or overwrite existing "
+"registrations when registering for the same site again. The agent updater "
+"can only hold one registration at a time. Every new registration will "
+"overwrite the previous one, regardless of the connection details. Choose a "
+"registration strategy here."
+msgstr ""
 
 msgid "To unlock higher limits, purchase a license "
 msgstr ""
@@ -84501,6 +84690,10 @@ msgstr "ID unique"
 msgid "Unique ID %s already exists."
 msgstr "Un paquet de règles avec cet ID existe déjà."
 
+#, fuzzy
+msgid "Unique ID should not be empty."
+msgstr "Clé secrète"
+
 msgid "Unique ID used to identify the instance on the host within Checkmk."
 msgstr "ID unique utilisé pour identifier l'instance sur l'hôte dans Checkmk."
 
@@ -86122,6 +86315,10 @@ msgid "Use device's levels if present, otherwise yours"
 msgstr ""
 "Utilisez les niveaux de l'appareil s'ils sont présents, sinon les vôtres"
 
+#, fuzzy
+msgid "Use different site for authentication process"
+msgstr "Authentification du VCenter"
+
 msgid "Use double quotes, escape contained quotes with backslash"
 msgstr ""
 "Utilisez des guillemets doubles, échappez les guillemets contenus avec une "
@@ -87130,6 +87327,10 @@ msgstr "Nom d'utilisateur pour la connexion"
 
 msgid "Username is unknown"
 msgstr "Le nom d'utilisateur est inconnu"
+
+#, fuzzy
+msgid "Username should not be empty"
+msgstr "Clé secrète"
 
 msgid "Username:"
 msgstr "Nom d'utilisateur :"
@@ -89724,16 +89925,6 @@ msgstr ""
 "afficher les événements."
 
 msgid ""
-"When selected, and the <i>Automatic agent updates</i> rule is enabled for "
-"the agent package installed on the host, the necessary agent updater "
-"registration will be performed automatically after succeeded agent "
-"controller registration and automatic host creation.<br><b>Note</b>: If no "
-"agent updater is found on the host, the additional registration will be "
-"skipped without an error (but with a warning in  the log), and automatic "
-"updates will not be performed."
-msgstr ""
-
-msgid ""
 "When selecting <i>The found hosts' children</i>, the conditions (tags and "
 "host name) are used to match a host, but you will get one node created for "
 "each child of the matched host. The place holder <tt>$HOSTNAME$</tt> "
@@ -90650,6 +90841,11 @@ msgstr ""
 #, python-format
 msgid ""
 "With authentication type set to 'OAuth2' the option '%s' must be specified."
+msgstr ""
+
+msgid ""
+"With mail sending set to 'Microsoft Exchange Online' the option 'Destination "
+"email address' must be specified."
 msgstr ""
 
 msgid ""
@@ -92241,11 +92437,7 @@ msgid ""
 "You can specify one or several globbing patterns containing <tt>*</tt>, <tt>?"
 "</tt> and <tt>[...]</tt>, for example <tt>/spool/tmpspace*</tt>. The file "
 "systems matching the patterns will be grouped together and monitored as one "
-"big file system in a single service. Note that specifically for the check "
-"<tt>df</tt>, the pattern matches either the mount point or the combination "
-"of volume and mount point, depending on the configuration in <a "
-"href='wato.py?mode=edit_ruleset&varname=inventory_df_rules'>File system "
-"discovery</a>."
+"big file system in a single service. "
 msgstr ""
 "Vous pouvez spécifier un ou plusieurs motifs de globbing contenant <tt>*</"
 "tt>, <tt>?</tt> et <tt>[...]</tt>, par exemple <tt>/spool/tmpspace*</tt>. "
@@ -92256,14 +92448,12 @@ msgstr ""
 "montage, selon la configuration dans <a href='wato.py?"
 "mode=edit_ruleset&varname=inventory_df_rules'>Filesystem discovery</a>."
 
+#, fuzzy
 msgid ""
 "You can specify one or several globbing patterns containing <tt>*</tt>, <tt>?"
 "</tt> and <tt>[...]</tt>, for example <tt>/spool/tmpspace*</tt>. The "
 "filesystems matching the patterns will excluded from grouping and monitored "
-"individually. Note that specifically for the check <tt>df</tt>, the pattern "
-"matches either the mount point or the combination of volume and mount point, "
-"depending on the configuration in <a href='wato.py?"
-"mode=edit_ruleset&varname=inventory_df_rules'>Filesystem discovery</a>."
+"individually."
 msgstr ""
 "Vous pouvez spécifier un ou plusieurs motifs de globbing contenant <tt>*</"
 "tt>, <tt>?</tt> et <tt>[...]</tt>, par exemple <tt>/spool/tmpspace*</tt>. "
@@ -93088,6 +93278,11 @@ msgstr "Vous devez spécifier au moins un élément."
 #, python-format
 msgid "You must not provide more than %d characters."
 msgstr "Vous ne devez pas fournir plus de %d caractères."
+
+msgid ""
+"You must set a resource attribute (e.g., service.name) so the system can "
+"determine the hostname."
+msgstr ""
 
 msgid ""
 "You must specify a name for your Kubernetes cluster. The provided name will "
@@ -95944,6 +96139,12 @@ msgstr "envelopper"
 msgid "wrong type, expected %s"
 msgstr ""
 
+msgid "x86 64-bit only"
+msgstr ""
+
+msgid "x86 64-bit or ARM 64-bit"
+msgstr ""
+
 msgid "xinetd"
 msgstr "xinetd"
 
@@ -96785,7 +96986,7 @@ msgid "Inherited"
 msgstr "Hérité de "
 
 #, fuzzy
-msgid "Overriden"
+msgid "Overridden"
 msgstr "Vue d'ensemble"
 
 #, fuzzy
@@ -96795,6 +96996,20 @@ msgstr "Profil utilisateur par défaut"
 #, fuzzy
 msgid "Runtime filter"
 msgstr "Supprimer le filtre"
+
+#, fuzzy
+msgid "View filter"
+msgstr "Ajouter un filtre"
+
+msgid ""
+"<b>Inherited view, default or runtime filters.</b><br />\n"
+"      They apply unless:\n"
+"      <ul>\n"
+"        <li>Runtime filters are enabled to override default filters.</li>\n"
+"        <li>Widget filters override view/default/runtime filters for this "
+"widget.</li>\n"
+"      </ul>"
+msgstr ""
 
 msgid ""
 "<b>Inherited default or runtime filters.</b><br />\n"
@@ -96806,17 +97021,39 @@ msgid ""
 "    </ul>"
 msgstr ""
 
+msgid ""
+"Filters override view/default/runtime values for this widget only.<br />\n"
+"       Required runtime filters must still be set on the dashboard level."
+msgstr ""
+
+msgid ""
+"Filters override default/runtime values for this widget only.<br />\n"
+"     Required runtime filters must still be set on the dashboard level."
+msgstr ""
+
+#, fuzzy
+msgid "Applied filter"
+msgstr "Filtres appliqués :"
+
 #, fuzzy
 msgid "Applied dashboard %{n} filter"
 msgstr "Filtres appliqués :"
 
 #, fuzzy
-msgid "No dashboard %{n} filter applied"
+msgid "Applied dashboard %{n} filters"
+msgstr "Filtres appliqués :"
+
+#, fuzzy
+msgid "No %{n} filter applied"
 msgstr "Hôte Ntop"
 
 #, fuzzy
-msgid "Applied dashboard %{n} filters"
-msgstr "Filtres appliqués :"
+msgid "No %{n} filters applied"
+msgstr "Hôte Ntop"
+
+#, fuzzy
+msgid "No dashboard %{n} filter applied"
+msgstr "Hôte Ntop"
 
 #, fuzzy
 msgid "No dashboard %{n} filters applied"
@@ -96825,11 +97062,6 @@ msgstr "Hôte Ntop"
 #, fuzzy
 msgid "Widget filters"
 msgstr "Ajouter un filtre"
-
-msgid ""
-"Filters override default/runtime values for this widget only.<br />\n"
-"         Required runtime filters must still be set on the dashboard level."
-msgstr ""
 
 #, fuzzy
 msgid "See all"
@@ -97967,6 +98199,13 @@ msgid ""
 msgstr ""
 
 #, fuzzy
+msgid "Activation of changes failed"
+msgstr "Activation des changements terminée"
+
+msgid "Open the full activation page for more details."
+msgstr ""
+
+#, fuzzy
 msgid "Successfully activated 1 change"
 msgstr "Le mot de passe a été changé avec succès."
 
@@ -97999,6 +98238,18 @@ msgstr ""
 
 msgid "This may take up to 30 seconds when a site restart is required."
 msgstr ""
+
+#, fuzzy
+msgid "Pending change(s)"
+msgstr "Modifications en attente (%s)"
+
+#, fuzzy
+msgid "Activation issue(s)"
+msgstr "Activation"
+
+#, fuzzy
+msgid "Site problem(s)"
+msgstr "Problèmes de service"
 
 #, fuzzy
 msgid "Changes: (%{n})"
@@ -98070,6 +98321,10 @@ msgid "Test Checkmk agent connection"
 msgstr "Mode de connexion de l'agent Checkmk"
 
 #, fuzzy
+msgid "Install Checkmk agent (Push Mode)"
+msgstr "Agent de contrôle"
+
+#, fuzzy
 msgid "Register agent"
 msgstr "Agents enregistrés"
 
@@ -98131,6 +98386,10 @@ msgstr "Agent téléchargé"
 #, fuzzy
 msgid "Download Checkmk agent"
 msgstr "Télécharger l'agent Checkmk Vanilla"
+
+#, fuzzy
+msgid "Install & register agent"
+msgstr "Agent installé"
 
 #, fuzzy
 msgid "Test agent connection"
@@ -98377,6 +98636,10 @@ msgid "You can now close this tab."
 msgstr "Vous ne pouvez pas sauvegarder cette règle."
 
 #, fuzzy
+msgid "Copy code to clipboard"
+msgstr "Copie du secret dans le presse-papiers"
+
+#, fuzzy
 msgid "Tenant ID is required."
 msgstr "est nécessaire"
 
@@ -98401,6 +98664,9 @@ msgid ""
 "permissions."
 msgstr ""
 
+msgid "(only required if used for Check email delivery)"
+msgstr ""
+
 #, fuzzy
 msgid "Authorize the connection"
 msgstr "Ajouter une connexion"
@@ -98408,6 +98674,25 @@ msgstr "Ajouter une connexion"
 msgid ""
 "A new tab will be opened and you will need to log in to Microsoft Azure to "
 "authorize the application. The process has to be completed within 5 minutes."
+msgstr ""
+
+msgid ""
+"Since you have configured a distributed site for the redirect, the "
+"authorization process cannot be started automatically.\n"
+"              Click \"Copy authorization URL to clipboard\" and open the "
+"copied URL into a browser on the remote site to start the authorization"
+msgstr ""
+
+#, fuzzy
+msgid "Copy authorization URL to clipboard"
+msgstr "Copie du secret dans le presse-papiers"
+
+msgid ""
+"Authorization code: To be copied from the redirect authorization URL page by "
+"clicking \"Copy code to clipboard\" button"
+msgstr ""
+
+msgid "Paste the code from the redirect page here"
 msgstr ""
 
 #, fuzzy
@@ -99295,6 +99580,10 @@ msgid "Microsoft Azure"
 msgstr "Microsoft Azure"
 
 #, fuzzy
+msgid "Application monitoring"
+msgstr "Recherche dans le monitoring"
+
+#, fuzzy
 msgid "OpenTelemetry (Beta)"
 msgstr "Ajouter une configuration d'état"
 
@@ -99559,6 +99848,34 @@ msgid ""
 "You can still access it later via Help > Learning Checkmk > Welcome page"
 msgstr ""
 
+#, fuzzy
+#~ msgid "Register agent updater, if automatic updates are enabled"
+#~ msgstr "Activation des mises à jour automatiques des agents"
+
+#, fuzzy
+#~ msgid "Authorization code"
+#~ msgstr "En-tête d'autorisation"
+
+#, fuzzy
+#~ msgid "ASCII Email parameters"
+#~ msgstr "Paramètres du modèle"
+
+#, fuzzy
+#~ msgid "Create the rule in the configured folder"
+#~ msgstr "Créer une nouvelle configuration d'arborescence d'hôtes virtuels"
+
+#, fuzzy
+#~ msgid "Customize Linux agent controller deployment"
+#~ msgstr "Déploiement du contrôleur d'agent"
+
+#, fuzzy
+#~ msgid "Include ARM version"
+#~ msgstr "Ignorer la version"
+
+#, fuzzy
+#~ msgid "Include x86 version"
+#~ msgstr "Ignorer la version"
+
 #, python-format
 #~ msgid ""
 #~ "The password does not use enough character groups. You need to set a "
@@ -99597,9 +99914,6 @@ msgstr ""
 #, fuzzy
 #~ msgid "Authentication mode"
 #~ msgstr "Mode d'authentification"
-
-#~ msgid "Authorization Header"
-#~ msgstr "En-tête d'autorisation"
 
 #~ msgid "Automatically track downtimes of aggregation"
 #~ msgstr "Suivi automatique des temps d'arrêt de l'agrégation"
@@ -100006,14 +100320,6 @@ msgstr ""
 #, fuzzy
 #~ msgid "clicking here"
 #~ msgstr "Taux de blocage"
-
-#, fuzzy
-#~ msgid "No %{n} filter applied"
-#~ msgstr "Hôte Ntop"
-
-#, fuzzy
-#~ msgid "No %{n} filters applied"
-#~ msgstr "Hôte Ntop"
 
 #, fuzzy
 #~ msgid "Ask me later"
@@ -100616,10 +100922,6 @@ msgstr ""
 
 #~ msgid "Enable timespecific parameters"
 #~ msgstr "Activer les paramètres temporels"
-
-#, fuzzy
-#~ msgid "Enter authentication code"
-#~ msgstr "Authentification du VCenter"
 
 #~ msgid "Event Console Configuration"
 #~ msgstr "Configuration de la console d'événements"
@@ -101687,10 +101989,6 @@ msgstr ""
 #, fuzzy
 #~ msgid "to be defined"
 #~ msgstr "Aucune connexion définie"
-
-#, fuzzy
-#~ msgid "Widget filter"
-#~ msgstr "Ajouter un filtre"
 
 #, fuzzy
 #~ msgid "Select host name"
@@ -103679,10 +103977,6 @@ msgstr ""
 
 #~ msgid "Webhook-URL"
 #~ msgstr "Webhook-URL"
-
-#, fuzzy, python-format
-#~ msgid "Activation (%s)"
-#~ msgstr "Activation"
 
 #, python-format
 #~ msgid "Background Job %s already running"
