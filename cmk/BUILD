@@ -245,32 +245,32 @@ py_library(
         "@//:gpl_repo": [],
     }),
     imports = [".."],
+    target_compatible_with = select({
+        "@//:gpl+nonfree_repo": [],
+        "@//:gpl_repo": ["@platforms//:incompatible"],
+    }),
     visibility = ["//:__subpackages__"],
     deps = [
         ":cmk_cmk",
         ":cmk_community",
         "//cmk/core_client:cmk_core_client_pro",
+        "//cmk/nonfree/pro/bakery",
+        "//cmk/nonfree/pro/dcd",
+        "//cmk/nonfree/pro/liveproxy",
+        "//cmk/nonfree/pro/notification_plugins",
+        "//cmk/nonfree/pro/robotmk",
+        "//cmk/nonfree/pro/robotmk:bakery",
         "//cmk/plugins:cmk_plugins_pro",
         "//cmk/utils:cmk_utils_pro",
-    ] + select({
-        "@//:gpl+nonfree_repo": [
-            "//cmk/nonfree/pro/bakery",
-            "//cmk/nonfree/pro/dcd",
-            "//cmk/nonfree/pro/liveproxy",
-            "//cmk/nonfree/pro/notification_plugins",
-            "//cmk/nonfree/pro/robotmk",
-            "//cmk/nonfree/pro/robotmk:bakery",
-            "//non-free/packages/cmc-protocols:py_config_proto",
-            "//non-free/packages/cmc-protocols:py_cycletime_proto",
-            "//non-free/packages/cmc-protocols:py_state_proto",
-            "//non-free/packages/cmk-core-helpers:relay-fetcher-trigger",
-            "//non-free/packages/cmk-metric-backend",
-            "//non-free/packages/cmk-mknotifyd",
-            "//non-free/packages/cmk-otel-collector",
-            "//non-free/packages/cmk-update-agent:cmk-update-agent-py",
-        ],
-        "@//:gpl_repo": [],
-    }) + [requirement(dep) for dep in REQUIRED_EXTERNAL_DEPS],
+        "//non-free/packages/cmc-protocols:py_config_proto",
+        "//non-free/packages/cmc-protocols:py_cycletime_proto",
+        "//non-free/packages/cmc-protocols:py_state_proto",
+        "//non-free/packages/cmk-core-helpers:relay-fetcher-trigger",
+        "//non-free/packages/cmk-metric-backend",
+        "//non-free/packages/cmk-mknotifyd",
+        "//non-free/packages/cmk-otel-collector",
+        "//non-free/packages/cmk-update-agent:cmk-update-agent-py",
+    ] + [requirement(dep) for dep in REQUIRED_EXTERNAL_DEPS],
 )
 
 py_library(
@@ -279,14 +279,14 @@ py_library(
         include = ["**/nonfree/**/ultimate/**/*.py"],
         allow_empty = True,
     ) + [
+        "//cmk/nonfree/pro/dcd:connectors_ultimate",
         "//cmk/plugins:cmk_plugins_otel_nonfree_srcs",
-    ] + select({
-        "@//:gpl+nonfree_repo": [
-            "//cmk/nonfree/pro/dcd:connectors_ultimate",
-        ],
-        "@//:gpl_repo": [],
-    }),
+    ],
     imports = [".."],
+    target_compatible_with = select({
+        "@//:gpl+nonfree_repo": [],
+        "@//:gpl_repo": ["@platforms//:incompatible"],
+    }),
     visibility = ["//:__subpackages__"],
     deps = [
         ":cmk_cmk",
@@ -294,14 +294,10 @@ py_library(
         ":cmk_pro",
         "//cmk/plugins:cmk_plugins_ultimate",
         "//cmk/utils:cmk_utils_ultimate",
-    ] + select({
-        "@//:gpl+nonfree_repo": [
-            "//non-free/packages/cmc-protocols:py_config_proto",
-            "//non-free/packages/cmc-protocols:py_cycletime_proto",
-            "//non-free/packages/cmc-protocols:py_state_proto",
-        ],
-        "@//:gpl_repo": [],
-    }) + [requirement(dep) for dep in REQUIRED_EXTERNAL_DEPS],
+        "//non-free/packages/cmc-protocols:py_config_proto",
+        "//non-free/packages/cmc-protocols:py_cycletime_proto",
+        "//non-free/packages/cmc-protocols:py_state_proto",
+    ] + [requirement(dep) for dep in REQUIRED_EXTERNAL_DEPS],
 )
 
 py_library(
@@ -311,6 +307,10 @@ py_library(
         allow_empty = True,
     ),
     imports = [".."],
+    target_compatible_with = select({
+        "@//:gpl+nonfree_repo": [],
+        "@//:gpl_repo": ["@platforms//:incompatible"],
+    }),
     visibility = ["//:__subpackages__"],
     deps = [
         ":cmk_cmk",
@@ -319,19 +319,15 @@ py_library(
         ":cmk_ultimate",
         "//cmk/plugins:cmk_plugins_cloud",
         "//cmk/utils:cmk_utils_cloud",
-    ] + select({
-        "@//:gpl+nonfree_repo": [
-            "//non-free/packages/cmc-protocols:py_config_proto",
-            "//non-free/packages/cmc-protocols:py_cycletime_proto",
-            "//non-free/packages/cmc-protocols:py_state_proto",
-            "//non-free/packages/cmk-core-helpers:relay-fetcher-trigger",
-            "//non-free/packages/cmk-metric-backend",
-            "//non-free/packages/cmk-mknotifyd",
-            "//non-free/packages/cmk-otel-collector",
-            "//non-free/packages/cmk-update-agent:cmk-update-agent-py",
-        ],
-        "@//:gpl_repo": [],
-    }) + [requirement(dep) for dep in REQUIRED_EXTERNAL_DEPS],
+        "//non-free/packages/cmc-protocols:py_config_proto",
+        "//non-free/packages/cmc-protocols:py_cycletime_proto",
+        "//non-free/packages/cmc-protocols:py_state_proto",
+        "//non-free/packages/cmk-core-helpers:relay-fetcher-trigger",
+        "//non-free/packages/cmk-metric-backend",
+        "//non-free/packages/cmk-mknotifyd",
+        "//non-free/packages/cmk-otel-collector",
+        "//non-free/packages/cmk-update-agent:cmk-update-agent-py",
+    ] + [requirement(dep) for dep in REQUIRED_EXTERNAL_DEPS],
 )
 
 py_library(
@@ -341,6 +337,10 @@ py_library(
         allow_empty = True,
     ),
     imports = [".."],
+    target_compatible_with = select({
+        "@//:gpl+nonfree_repo": [],
+        "@//:gpl_repo": ["@platforms//:incompatible"],
+    }),
     visibility = ["//:__subpackages__"],
     deps = [
         ":cmk_cmk",
@@ -349,19 +349,15 @@ py_library(
         ":cmk_ultimate",
         "//cmk/plugins:cmk_plugins_ultimatemt",
         "//cmk/utils:cmk_utils_ultimatemt",
-    ] + select({
-        "@//:gpl+nonfree_repo": [
-            "//non-free/packages/cmc-protocols:py_config_proto",
-            "//non-free/packages/cmc-protocols:py_cycletime_proto",
-            "//non-free/packages/cmc-protocols:py_state_proto",
-            "//non-free/packages/cmk-core-helpers:relay-fetcher-trigger",
-            "//non-free/packages/cmk-metric-backend",
-            "//non-free/packages/cmk-mknotifyd",
-            "//non-free/packages/cmk-otel-collector",
-            "//non-free/packages/cmk-update-agent:cmk-update-agent-py",
-        ],
-        "@//:gpl_repo": [],
-    }) + [requirement(dep) for dep in REQUIRED_EXTERNAL_DEPS],
+        "//non-free/packages/cmc-protocols:py_config_proto",
+        "//non-free/packages/cmc-protocols:py_cycletime_proto",
+        "//non-free/packages/cmc-protocols:py_state_proto",
+        "//non-free/packages/cmk-core-helpers:relay-fetcher-trigger",
+        "//non-free/packages/cmk-metric-backend",
+        "//non-free/packages/cmk-mknotifyd",
+        "//non-free/packages/cmk-otel-collector",
+        "//non-free/packages/cmk-update-agent:cmk-update-agent-py",
+    ] + [requirement(dep) for dep in REQUIRED_EXTERNAL_DEPS],
 )
 
 py_wheel(
@@ -533,12 +529,32 @@ py_binary(
     srcs = ["gui/openapi/spec/spec_generator/generate_api_spec.py"],
     main = "gui/openapi/spec/spec_generator/generate_api_spec.py",
     visibility = ["//:__subpackages__"],
-    deps = [
-        ":cmk_cloud",
-        ":cmk_community",
-        ":cmk_pro",
-        ":cmk_ultimate",
-        ":cmk_ultimatemt",
+    deps = select({
+        "@cmk//edition:cloud": [
+            ":cmk_cloud",
+            ":cmk_community",
+            ":cmk_pro",
+            ":cmk_ultimate",
+        ],
+        "@cmk//edition:community": [
+            ":cmk_community",
+        ],
+        "@cmk//edition:pro": [
+            ":cmk_community",
+            ":cmk_pro",
+        ],
+        "@cmk//edition:ultimate": [
+            ":cmk_community",
+            ":cmk_pro",
+            ":cmk_ultimate",
+        ],
+        "@cmk//edition:ultimatemt": [
+            ":cmk_community",
+            ":cmk_pro",
+            ":cmk_ultimate",
+            ":cmk_ultimatemt",
+        ],
+    }) + [
         requirement("pyyaml"),
     ],
 )

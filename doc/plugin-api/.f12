@@ -15,7 +15,7 @@ test -d "${ROOT}" || exit 1
 
 echo "Updating documentation..."
 bazel_target="//doc/plugin-api:pkg_tar"
-bazel build ${bazel_target}
+bazel build --cmk_edition=ultimate ${bazel_target}
 
 echo "Updating site $SITE..."
-sudo tar --dereference -xvf "$(bazel info workspace)/$(bazel cquery --output=files ${bazel_target})" -C "$ROOT"/
+sudo tar --dereference -xvf "$(bazel info workspace)/$(bazel cquery --cmk_edition=ultimate --output=files ${bazel_target})" -C "$ROOT"/

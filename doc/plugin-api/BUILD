@@ -8,16 +8,36 @@ py_binary(
     srcs = ["@rules_sphinx//sphinx/tools:sphinx_build_wrapper.py"],
     main = "sphinx_build_wrapper.py",
     tags = ["no-mypy"],
-    deps = [
+    deps = select({
+        "@cmk//edition:cloud": [
+            "//cmk:cmk_cloud",
+            "//cmk:cmk_community",
+            "//cmk:cmk_pro",
+            "//cmk:cmk_ultimate",
+        ],
+        "@cmk//edition:community": [
+            "//cmk:cmk_community",
+        ],
+        "@cmk//edition:pro": [
+            "//cmk:cmk_community",
+            "//cmk:cmk_pro",
+        ],
+        "@cmk//edition:ultimate": [
+            "//cmk:cmk_community",
+            "//cmk:cmk_pro",
+            "//cmk:cmk_ultimate",
+        ],
+        "@cmk//edition:ultimatemt": [
+            "//cmk:cmk_community",
+            "//cmk:cmk_pro",
+            "//cmk:cmk_ultimate",
+            "//cmk:cmk_ultimatemt",
+        ],
+    }) + [
         requirement("sphinx"),
         requirement("sphinx_autodoc_typehints"),
         requirement("sphinx_rtd_theme"),
         requirement("pydantic"),
-        "//cmk:cmk_cloud",
-        "//cmk:cmk_community",
-        "//cmk:cmk_pro",
-        "//cmk:cmk_ultimate",
-        "//cmk:cmk_ultimatemt",
     ],
 )
 

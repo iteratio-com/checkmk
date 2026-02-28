@@ -194,6 +194,7 @@ STAGES:
               --test_tag_filters=-component \
               --keep_going \
               --//:use_faked_artifacts=true \
+              --cmk_edition=ultimate \
               -- //... \
               -//packages/livestatus/... \
               -//packages/neb/... \
@@ -222,6 +223,7 @@ STAGES:
             --test_tag_filters=cpp \
             --keep_going \
             --//:use_faked_artifacts=True \
+            --cmk_edition=ultimate \
             --run_under="$(which valgrind) --quiet --num-callers=30 --error-exitcode=42" \
             -- //...
         make_rc=$?

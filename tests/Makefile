@@ -310,7 +310,8 @@ test-unit:
 	bazel test --test_verbose_timeout_warnings //tests/unit:all \
 	    --test_env=TZ=$(RANDOM_TZ) \
 	    --test_arg="-m" --test_arg="not slow" \
-	    --test_arg="--numprocesses=4"
+	    --test_arg="--numprocesses=4" \
+            --cmk_edition=$(EDITION)
 
 test-unit-docker:
 	../scripts/run-in-docker.sh '\
