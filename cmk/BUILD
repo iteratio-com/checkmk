@@ -7,14 +7,6 @@ load("//bazel/rules:package_wheel.bzl", "package_wheel")
 
 exports_files(["requirements.in"])
 
-filegroup(
-    name = "miscellaneous",
-    srcs = [
-        "//cmk/gui:wsgi/applications/index.wsgi",
-        "//cmk/utils/werks/announce/templates:j2_templates",
-    ],
-)
-
 py_library(
     name = "cmkpasswd",
     srcs = ["cmkpasswd.py"],
@@ -88,7 +80,6 @@ py_library(
 py_library(
     name = "cmk_community",
     srcs = [],
-    data = ["//cmk/gui:wsgi/applications/index.wsgi"],
     imports = [".."],
     visibility = ["//:__subpackages__"],
     deps = [
@@ -514,7 +505,6 @@ py_wheel(
     }) + [
         ":cmkpasswd",
         ":message_broker_certs",
-        ":miscellaneous",
         ":product_usage_cli",
         ":validate_config",
         ":validate_plugins",

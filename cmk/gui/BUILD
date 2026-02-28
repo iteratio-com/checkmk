@@ -6,7 +6,6 @@ exports_files([
     "openapi/.f12",
     "openapi/spec/spec_generator/generate_api_spec.py",
     "wsgi/.f12",
-    "wsgi/applications/index.wsgi",
 ])
 
 filegroup(
@@ -26,7 +25,7 @@ py_library(
             "**/community/**",
             "**/nonfree/**",
         ],
-    ),
+    ) + ["wsgi/applications/index.wsgi"],
     imports = ["../.."],
     visibility = [
         "//cmk:__subpackages__",

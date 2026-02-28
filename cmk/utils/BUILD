@@ -17,6 +17,7 @@ py_library(
             "**/nonfree/**",
         ],
     ),
+    data = ["//cmk/utils/werks/announce/templates:j2_templates"],
     visibility = [
         "//cmk:__subpackages__",
         "//omd/packages/omd:__pkg__",
