@@ -12,8 +12,11 @@ py_library(
         "mocks_and_helpers.py",
     ],
     deps = [
-        "//cmk:cmk_cmk",
+        "//cmk/base:cmk_base",
+        "//cmk/checkengine:cmk_checkengine",
+        "//cmk/utils:cmk_utils",
         "//packages/cmk-livestatus-client:py_livestatus",
+        "//packages/cmk-plugin-apis:agent_based",
         "//tests:testlib",
         requirement("fakeredis"),
         requirement("pytest_metadata"),
@@ -56,7 +59,6 @@ py_test(
     deps = [
         ":__test__",
         ":conftest",
-        "//cmk:cmk_cmk",
         "//tests:testlib",
     ],
 )

@@ -4,7 +4,10 @@ py_library(
     name = "cmk_checkengine",
     srcs = glob(["**/*.py"]),
     imports = ["../.."],
-    visibility = ["//cmk:__subpackages__"],
+    visibility = [
+        "//cmk:__subpackages__",
+        "//tests:__subpackages__",
+    ],
     deps = [
         "//cmk/inventory:cmk_inventory",
         "//cmk/piggyback:backend",

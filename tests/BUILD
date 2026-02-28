@@ -18,7 +18,11 @@ py_library(
     imports = [".."],
     visibility = ["//:__subpackages__"],
     deps = [
-        "//cmk:cmk_cmk",
+        "//cmk/base:cmk_base",
+        "//cmk/checkengine:cmk_checkengine",
+        "//cmk/gui:cmk_gui",
+        "//cmk/utils:cmk_utils",
+        "//packages/cmk-relay-protocols",
         requirement("beautifulsoup4"),
         requirement("clickhouse-connect"),
         requirement("cryptography"),
@@ -66,7 +70,11 @@ py_library(
     ),
     imports = [".."],
     deps = [
-        "//cmk:cmk_cmk",
+        "//cmk/base:cmk_base",
+        "//cmk/checkengine:cmk_checkengine",
+        "//cmk/gui:cmk_gui",
+        "//cmk/utils:cmk_utils",
+        "//packages/cmk-relay-protocols",
         requirement("beautifulsoup4"),
         requirement("clickhouse-connect"),
         requirement("cryptography"),
@@ -110,7 +118,6 @@ py_library(
     imports = [".."],
     deps = [
         ":testlib",
-        "//cmk:cmk_cmk",
         requirement("pexpect"),
         requirement("pytest"),
         requirement("pyyaml"),
@@ -337,6 +344,8 @@ py_library(
         ":extension_compatibility",
         ":scripts",
         ":testlib",
+        "//cmk/post_rename_site:cmk_post_rename_site",
+        "//packages/cmk-agent-receiver",
     ],
 )
 
@@ -377,6 +386,7 @@ py_library(
     ),
     imports = [".."],
     deps = [
+        "//cmk:validate_plugins",
         requirement("pytest"),
         requirement("psycopg"),
         requirement("jira"),

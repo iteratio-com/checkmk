@@ -68,7 +68,10 @@ py_library(
         "cmk/agent_receiver/py.typed",
     ],
     imports = ["."],
-    visibility = ["//cmk:__pkg__"],
+    visibility = [
+        "//cmk:__pkg__",
+        "//tests:__subpackages__",
+    ],
     deps = [
         "//packages/cmk-ccc:version",
         "//packages/cmk-relay-protocols",
