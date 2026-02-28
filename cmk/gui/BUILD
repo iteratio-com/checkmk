@@ -141,6 +141,11 @@ py_library(
     visibility = ["//cmk:__subpackages__"],
     deps = [
         ":cmk_gui",
+        requirement("numpy"),
+        requirement("pillow"),
+        requirement("pypdf"),
+        requirement("pysaml2"),
+        requirement("roman"),
     ],
 )
 
