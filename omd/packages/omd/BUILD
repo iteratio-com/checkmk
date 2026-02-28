@@ -217,12 +217,17 @@ py_library(
     imports = ["."],
     visibility = ["//:__subpackages__"],
     deps = [
-        "//cmk:cmk_cmk",
+        "//cmk/utils:cmk_utils",
         "//packages/cmk-ccc:archive",
+        "//packages/cmk-ccc:crash-reporting",
         "//packages/cmk-ccc:exceptions",
         "//packages/cmk-ccc:resulttype",
+        "//packages/cmk-ccc:site",
+        "//packages/cmk-ccc:tty",
         "//packages/cmk-ccc:version",
+        "//packages/cmk-crypto",
         requirement("psutil"),
+        requirement("marshmallow"),
     ],
 )
 

@@ -17,6 +17,10 @@ py_library(
             "**/nonfree/**",
         ],
     ),
+    visibility = [
+        "//cmk:__subpackages__",
+        "//omd/packages/omd:__pkg__",
+    ],
     deps = [
         "//packages/cmk-ccc:config-path",
         "//packages/cmk-ccc:debug",
