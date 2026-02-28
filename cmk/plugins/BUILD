@@ -12,7 +12,7 @@ py_library(
         exclude = [
             "**/community/**",
             "**/nonfree/**",
-            "logwatch/**",  # has cmk.base dependencies, see cmk_plugins_logwatch_srcs
+            "logwatch/**",  # has cmk.base dependencies, see cmk_plugins_logwatch
         ],
     ),
     imports = ["../.."],
@@ -81,15 +81,22 @@ py_library(
     ],
 )
 
-# Logwatch has cmk.base dependencies - its sources are added directly to cmk_cmk
-# rather than being a separate py_library, so type checking happens with cmk.base available.
-#
-# We accept this hack to be able to extract thousands of files from the monolithic cmk_cmk
-# target now, which enables way faster lint and test runs. The next step is to extract all
-# families to packages/cmk-plugins, which then results in the current target state.
-filegroup(
-    name = "cmk_plugins_logwatch_srcs",
+py_library(
+    name = "cmk_plugins_logwatch",
     srcs = glob(["logwatch/**/*.py"]),
+    imports = ["../.."],
+    deps = [
+        ":cmk_plugins",
+        "//cmk/base:cmk_base",
+        "//cmk/checkengine:cmk_checkengine",
+        "//cmk/utils:cmk_utils",
+        "//packages/cmk-ccc:debug",
+        "//packages/cmk-ccc:hostaddress",
+        "//packages/cmk-ec:event",
+        "//packages/cmk-ec:syslog",
+        "//packages/cmk-plugin-apis:agent_based",
+        "//packages/cmk-plugins:lib",
+    ],
 )
 
 # Robotmk nonfree files import from cmk.nonfree.pro.robotmk.* - their sources are added

@@ -236,7 +236,7 @@ py_library(
 
 py_library(
     name = "cmk_cmk",
-    srcs = ["//cmk/plugins:cmk_plugins_logwatch_srcs"],
+    srcs = [],
     data = ["//cmk/gui:wsgi/applications/index.wsgi"],
     imports = [".."],
     visibility = ["//:__subpackages__"],
@@ -261,6 +261,7 @@ py_library(
         "//cmk/piggyback:backend",
         "//cmk/piggyback:hub",
         "//cmk/plugins:cmk_plugins",
+        "//cmk/plugins:cmk_plugins_logwatch",
         "//cmk/product_usage:cmk_product_usage",
         "//cmk/rrd:cmk_rrd",
         "//cmk/server_side_calls_backend:cmk_server_side_calls_backend",
