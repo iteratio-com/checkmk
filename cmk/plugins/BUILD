@@ -2,7 +2,7 @@ load("@aspect_rules_py//py:defs.bzl", "py_library")
 load("@cmk_requirements//:requirements.bzl", "requirement")
 
 package(default_visibility = [
-    "//cmk:__pkg__",
+    "//cmk:__subpackages__",
 ])
 
 py_library(
@@ -17,9 +17,7 @@ py_library(
     ),
     imports = ["../.."],
     visibility = [
-        "//cmk:__pkg__",
-        "//cmk/legacy_checks:__pkg__",
-        "//cmk/legacy_includes:__pkg__",
+        "//cmk:__subpackages__",
     ],
     deps = [
         "//cmk/bi:cmk_bi",

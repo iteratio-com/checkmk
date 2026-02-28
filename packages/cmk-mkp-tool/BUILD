@@ -30,7 +30,7 @@ py_library(
     data = [":py_typed"],
     imports = ["."],
     visibility = [
-        "//cmk:__pkg__",
+        "//cmk:__subpackages__",
         "//packages/cmk-ec:__pkg__",
     ],
     deps = [

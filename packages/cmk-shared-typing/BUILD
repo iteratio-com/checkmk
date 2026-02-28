@@ -87,7 +87,7 @@ run_binary(
         "--out",
         "$(execpath openapi_spec_internal.yaml)",
     ],
-    tool = "//cmk:generate_api_spec",
+    tool = "//cmk/gui:generate_api_spec",
 )
 
 openapi_typescript.openapi_typescript(
@@ -209,7 +209,7 @@ py_library(
     ],
     imports = ["."],
     visibility = [
-        "//cmk:__pkg__",
+        "//cmk:__subpackages__",
         "//cmk/nonfree:__subpackages__",
         "//packages/cmk-plugin-apis:__pkg__",
     ],

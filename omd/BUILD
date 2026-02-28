@@ -309,7 +309,7 @@ run_binary(
         "dict",
     ],
     tags = ["manual"],
-    tool = "//cmk:generate_api_spec",
+    tool = "//cmk/gui:generate_api_spec",
 )
 
 run_binary(
@@ -327,7 +327,7 @@ run_binary(
         "dict",
     ],
     tags = ["manual"],
-    tool = "//cmk:generate_api_spec",
+    tool = "//cmk/gui:generate_api_spec",
 )
 
 run_binary(
@@ -345,7 +345,7 @@ run_binary(
         "dict",
     ],
     tags = ["manual"],
-    tool = "//cmk:generate_api_spec",
+    tool = "//cmk/gui:generate_api_spec",
 )
 
 run_binary(
@@ -363,7 +363,7 @@ run_binary(
         "dict",
     ],
     tags = ["manual"],
-    tool = "//cmk:generate_api_spec",
+    tool = "//cmk/gui:generate_api_spec",
 )
 
 pkg_files(

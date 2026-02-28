@@ -1,14 +1,11 @@
-load("@aspect_rules_py//py:defs.bzl", "py_binary", "py_library", "py_pytest_main")
+load("@aspect_rules_py//py:defs.bzl", "py_library", "py_pytest_main")
 load("@bazel_skylib//rules:build_test.bzl", "build_test")
 load("@cmk_requirements//:requirements.bzl", "requirement")
 load("@rules_python//python:packaging.bzl", "py_wheel")
 load("//bazel/rules:doctest.bzl", "py_doc_test")
 load("//bazel/rules:package_wheel.bzl", "package_wheel")
 
-exports_files([
-    "requirements.in",
-    "gui/openapi/spec/spec_generator/generate_api_spec.py",
-])
+exports_files(["requirements.in"])
 
 REQUIRED_EXTERNAL_DEPS = [
     # alphabetical order
@@ -101,7 +98,7 @@ REQUIRED_EXTERNAL_DEPS = [
 filegroup(
     name = "miscellaneous",
     srcs = [
-        "gui/wsgi/applications/index.wsgi",
+        "//cmk/gui:wsgi/applications/index.wsgi",
         "//cmk/utils/werks/announce/templates:j2_templates",
     ],
 )
@@ -168,25 +165,96 @@ CMK_PACKAGES = [
 })
 
 py_library(
-    name = "cmk_cmk",
-    srcs = glob(
-        include = ["**/*.py"],
-        exclude = [
-            "**/community/**",
-            "**/nonfree/**",
-        ],
-    ) + ["//cmk/plugins:cmk_plugins_logwatch_srcs"],
-    data = ["gui/wsgi/applications/index.wsgi"],
+    name = "cmkpasswd",
+    srcs = ["cmkpasswd.py"],
     imports = [".."],
     visibility = ["//:__subpackages__"],
     deps = [
+        "//cmk/gui:cmk_gui",
+        "//cmk/utils:cmk_utils",
+        "//packages/cmk-ccc:user",
+        "//packages/cmk-ccc:version",
+        "//packages/cmk-crypto",
+    ],
+)
+
+py_library(
+    name = "message_broker_certs",
+    srcs = ["message_broker_certs.py"],
+    imports = [".."],
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//cmk/utils:cmk_utils",
+        "//packages/cmk-messaging",
+    ],
+)
+
+py_library(
+    name = "product_usage_cli",
+    srcs = ["product_usage_cli.py"],
+    imports = [".."],
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//cmk/base:cmk_base",
+        "//cmk/product_usage:cmk_product_usage",
+        "//cmk/utils:cmk_utils",
+        "//packages/cmk-ccc:version",
+    ],
+)
+
+py_library(
+    name = "validate_config",
+    srcs = ["validate_config.py"],
+    imports = [".."],
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//cmk/gui:cmk_gui",
+        "//cmk/utils:cmk_utils",
+        "//packages/cmk-ccc:tty",
+        requirement("pydantic"),
+    ],
+)
+
+py_library(
+    name = "validate_plugins",
+    srcs = ["validate_plugins.py"],
+    imports = [".."],
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//cmk/base:cmk_base",
+        "//cmk/checkengine:cmk_checkengine",
+        "//cmk/gui:cmk_gui",
+        "//cmk/server_side_calls_backend:cmk_server_side_calls_backend",
+        "//cmk/utils:cmk_utils",
+        "//packages/cmk-ccc:debug",
+        "//packages/cmk-ccc:exceptions",
+        "//packages/cmk-plugin-apis:agent_based",
+        "//packages/cmk-plugin-apis:discover_plugins",
+        "//packages/cmk-plugin-apis:rulesets",
+    ],
+)
+
+py_library(
+    name = "cmk_cmk",
+    srcs = ["//cmk/plugins:cmk_plugins_logwatch_srcs"],
+    data = ["//cmk/gui:wsgi/applications/index.wsgi"],
+    imports = [".."],
+    visibility = ["//:__subpackages__"],
+    deps = [
+        ":cmkpasswd",
+        ":message_broker_certs",
+        ":product_usage_cli",
+        ":validate_config",
+        ":validate_plugins",
         "//cmk/automations:cmk_automations",
+        "//cmk/base:cmk_base",
         "//cmk/bi:cmk_bi",
         "//cmk/checkengine:cmk_checkengine",
         "//cmk/core_client:cmk_core_client",
         "//cmk/diagnostics:cmk_diagnostics",
         "//cmk/diskspace:cmk_diskspace",
         "//cmk/fields:cmk_fields",
+        "//cmk/gui:cmk_gui",
         "//cmk/inventory:cmk_inventory",
         "//cmk/legacy_checks:cmk_legacy_checks",
         "//cmk/notification_plugins:cmk_notification_plugins",
@@ -196,6 +264,7 @@ py_library(
         "//cmk/product_usage:cmk_product_usage",
         "//cmk/rrd:cmk_rrd",
         "//cmk/server_side_calls_backend:cmk_server_side_calls_backend",
+        "//cmk/special_agents:cmk_special_agents",
         "//cmk/utils:cmk_utils",
         "//packages/cmk-plugins:aws",  # legacy checks + quicksetup
         "//packages/cmk-plugins:graylog",  # via legacy_checks.
@@ -204,11 +273,7 @@ py_library(
 
 py_library(
     name = "cmk_community",
-    srcs = glob(
-        include = ["**/community/**/*.py"],
-        allow_empty = True,
-        exclude = ["**/nonfree/**"],
-    ),
+    srcs = [],
     imports = [".."],
     visibility = ["//:__subpackages__"],
     deps = [
@@ -219,31 +284,11 @@ py_library(
 
 py_library(
     name = "cmk_pro",
-    srcs = glob(
-        include = [
-            "**/nonfree/**/pro/**/*.py",
-            "**/nonfree/**/*.py",
-        ],
-        allow_empty = True,
-        exclude = [
-            "**/nonfree/**/cloud/**",
-            "**/nonfree/**/ultimate/**",
-            "**/nonfree/**/ultimatemt/**",
-            "nonfree/pro/bakery/**",
-            "nonfree/pro/dcd/**",
-            "nonfree/pro/liveproxy/**",
-            "nonfree/pro/notification_plugins/**",
-            "nonfree/pro/robotmk/**",
-        ],
-    ) + [
+    srcs = [
+        "//cmk/nonfree/pro/robotmk:core_bakelets",
+        "//cmk/nonfree/pro/robotmk:gui",
         "//cmk/plugins:cmk_plugins_robotmk_nonfree_srcs",
-    ] + select({
-        "@//:gpl+nonfree_repo": [
-            "//cmk/nonfree/pro/robotmk:core_bakelets",
-            "//cmk/nonfree/pro/robotmk:gui",
-        ],
-        "@//:gpl_repo": [],
-    }),
+    ],
     imports = [".."],
     target_compatible_with = select({
         "@//:gpl+nonfree_repo": [],
@@ -253,7 +298,9 @@ py_library(
     deps = [
         ":cmk_cmk",
         ":cmk_community",
+        "//cmk/base:cmk_base_pro",
         "//cmk/core_client:cmk_core_client_pro",
+        "//cmk/gui:cmk_gui_pro",
         "//cmk/nonfree/pro/bakery",
         "//cmk/nonfree/pro/dcd",
         "//cmk/nonfree/pro/liveproxy",
@@ -261,6 +308,8 @@ py_library(
         "//cmk/nonfree/pro/robotmk",
         "//cmk/nonfree/pro/robotmk:bakery",
         "//cmk/plugins:cmk_plugins_pro",
+        "//cmk/post_rename_site:cmk_post_rename_site_pro",
+        "//cmk/update_config:cmk_update_config_pro",
         "//cmk/utils:cmk_utils_pro",
         "//non-free/packages/cmc-protocols:py_config_proto",
         "//non-free/packages/cmc-protocols:py_cycletime_proto",
@@ -275,10 +324,7 @@ py_library(
 
 py_library(
     name = "cmk_ultimate",
-    srcs = glob(
-        include = ["**/nonfree/**/ultimate/**/*.py"],
-        allow_empty = True,
-    ) + [
+    srcs = [
         "//cmk/nonfree/pro/dcd:connectors_ultimate",
         "//cmk/nonfree/ultimate/otel",
         "//cmk/nonfree/ultimate/otel:gui",
@@ -294,9 +340,13 @@ py_library(
         ":cmk_cmk",
         ":cmk_community",
         ":cmk_pro",
+        "//cmk/base:cmk_base_ultimate",
+        "//cmk/gui:cmk_gui_ultimate",
         "//cmk/nonfree/ultimate/metric_backend",
         "//cmk/nonfree/ultimate/otel",
         "//cmk/plugins:cmk_plugins_ultimate",
+        "//cmk/post_rename_site:cmk_post_rename_site_ultimate",
+        "//cmk/update_config:cmk_update_config_ultimate",
         "//cmk/utils:cmk_utils_ultimate",
         "//non-free/packages/cmc-protocols:py_config_proto",
         "//non-free/packages/cmc-protocols:py_cycletime_proto",
@@ -306,10 +356,7 @@ py_library(
 
 py_library(
     name = "cmk_cloud",
-    srcs = glob(
-        include = ["**/nonfree/**/cloud/**/*.py"],
-        allow_empty = True,
-    ),
+    srcs = [],
     imports = [".."],
     target_compatible_with = select({
         "@//:gpl+nonfree_repo": [],
@@ -321,6 +368,8 @@ py_library(
         ":cmk_community",
         ":cmk_pro",
         ":cmk_ultimate",
+        "//cmk/base:cmk_base_cloud",
+        "//cmk/gui:cmk_gui_cloud",
         "//cmk/plugins:cmk_plugins_cloud",
         "//cmk/utils:cmk_utils_cloud",
         "//non-free/packages/cmc-protocols:py_config_proto",
@@ -336,10 +385,7 @@ py_library(
 
 py_library(
     name = "cmk_ultimatemt",
-    srcs = glob(
-        include = ["**/nonfree/**/ultimatemt/**/*.py"],
-        allow_empty = True,
-    ),
+    srcs = [],
     imports = [".."],
     target_compatible_with = select({
         "@//:gpl+nonfree_repo": [],
@@ -351,7 +397,10 @@ py_library(
         ":cmk_community",
         ":cmk_pro",
         ":cmk_ultimate",
+        "//cmk/base:cmk_base_ultimatemt",
+        "//cmk/gui:cmk_gui_ultimatemt",
         "//cmk/plugins:cmk_plugins_ultimatemt",
+        "//cmk/update_config:cmk_update_config_ultimatemt",
         "//cmk/utils:cmk_utils_ultimatemt",
         "//non-free/packages/cmc-protocols:py_config_proto",
         "//non-free/packages/cmc-protocols:py_cycletime_proto",
@@ -383,8 +432,14 @@ py_wheel(
             ":cmk_community",
             ":cmk_pro",
             ":cmk_ultimate",
+            "//cmk/base:cmk_base_cloud",
+            "//cmk/base:cmk_base_pro",
+            "//cmk/base:cmk_base_ultimate",
             "//cmk/core_client:cmk_core_client_cloud",
             "//cmk/core_client:cmk_core_client_pro",
+            "//cmk/gui:cmk_gui_cloud",
+            "//cmk/gui:cmk_gui_pro",
+            "//cmk/gui:cmk_gui_ultimate",
             "//cmk/nonfree/pro/bakery",
             "//cmk/nonfree/pro/dcd",
             "//cmk/nonfree/pro/liveproxy",
@@ -395,6 +450,10 @@ py_wheel(
             "//cmk/nonfree/ultimate/otel",
             "//cmk/plugins:checkman_cloud",
             "//cmk/plugins:cmk_plugins_cloud",
+            "//cmk/post_rename_site:cmk_post_rename_site_pro",
+            "//cmk/post_rename_site:cmk_post_rename_site_ultimate",
+            "//cmk/update_config:cmk_update_config_pro",
+            "//cmk/update_config:cmk_update_config_ultimate",
             "//cmk/utils:cmk_utils_cloud",
             "//cmk/utils:cmk_utils_pro",
             "//non-free/packages/cmc-protocols:py_config_proto",
@@ -411,7 +470,9 @@ py_wheel(
         "@cmk//edition:pro": [
             ":cmk_community",
             ":cmk_pro",
+            "//cmk/base:cmk_base_pro",
             "//cmk/core_client:cmk_core_client_pro",
+            "//cmk/gui:cmk_gui_pro",
             "//cmk/nonfree/pro/bakery",
             "//cmk/nonfree/pro/dcd",
             "//cmk/nonfree/pro/liveproxy",
@@ -420,6 +481,8 @@ py_wheel(
             "//cmk/nonfree/pro/robotmk:bakery",
             "//cmk/plugins:checkman_pro",
             "//cmk/plugins:cmk_plugins_pro",
+            "//cmk/post_rename_site:cmk_post_rename_site_pro",
+            "//cmk/update_config:cmk_update_config_pro",
             "//cmk/utils:cmk_utils_pro",
             "//non-free/packages/cmc-protocols:py_config_proto",
             "//non-free/packages/cmc-protocols:py_cycletime_proto",
@@ -429,8 +492,12 @@ py_wheel(
             ":cmk_community",
             ":cmk_pro",
             ":cmk_ultimate",
+            "//cmk/base:cmk_base_pro",
+            "//cmk/base:cmk_base_ultimate",
             "//cmk/core_client:cmk_core_client_pro",
             "//cmk/core_client:cmk_core_client_ultimate",
+            "//cmk/gui:cmk_gui_pro",
+            "//cmk/gui:cmk_gui_ultimate",
             "//cmk/nonfree/pro/bakery",
             "//cmk/nonfree/pro/dcd",
             "//cmk/nonfree/pro/liveproxy",
@@ -441,6 +508,10 @@ py_wheel(
             "//cmk/nonfree/ultimate/otel",
             "//cmk/plugins:checkman_ultimate",
             "//cmk/plugins:cmk_plugins_ultimate",
+            "//cmk/post_rename_site:cmk_post_rename_site_pro",
+            "//cmk/post_rename_site:cmk_post_rename_site_ultimate",
+            "//cmk/update_config:cmk_update_config_pro",
+            "//cmk/update_config:cmk_update_config_ultimate",
             "//cmk/utils:cmk_utils_pro",
             "//cmk/utils:cmk_utils_ultimate",
             "//non-free/packages/cmc-protocols:py_config_proto",
@@ -452,9 +523,15 @@ py_wheel(
             ":cmk_pro",
             ":cmk_ultimate",
             ":cmk_ultimatemt",
+            "//cmk/base:cmk_base_pro",
+            "//cmk/base:cmk_base_ultimate",
+            "//cmk/base:cmk_base_ultimatemt",
             "//cmk/core_client:cmk_core_client_pro",
             "//cmk/core_client:cmk_core_client_ultimate",
             "//cmk/core_client:cmk_core_client_ultimatemt",
+            "//cmk/gui:cmk_gui_pro",
+            "//cmk/gui:cmk_gui_ultimate",
+            "//cmk/gui:cmk_gui_ultimatemt",
             "//cmk/nonfree/pro/bakery",
             "//cmk/nonfree/pro/dcd",
             "//cmk/nonfree/pro/liveproxy",
@@ -465,6 +542,11 @@ py_wheel(
             "//cmk/nonfree/ultimate/otel",
             "//cmk/plugins:checkman_ultimatemt",
             "//cmk/plugins:cmk_plugins_ultimatemt",
+            "//cmk/post_rename_site:cmk_post_rename_site_pro",
+            "//cmk/post_rename_site:cmk_post_rename_site_ultimate",
+            "//cmk/update_config:cmk_update_config_pro",
+            "//cmk/update_config:cmk_update_config_ultimate",
+            "//cmk/update_config:cmk_update_config_ultimatemt",
             "//cmk/utils:cmk_utils_pro",
             "//cmk/utils:cmk_utils_ultimate",
             "//cmk/utils:cmk_utils_ultimatemt",
@@ -474,14 +556,22 @@ py_wheel(
         ],
     }) + [
         ":cmk_cmk",
+        ":cmkpasswd",
+        ":message_broker_certs",
         ":miscellaneous",
+        ":product_usage_cli",
+        ":validate_config",
+        ":validate_plugins",
         "//cmk/automations:cmk_automations",
+        "//cmk/base:cmk_base",
         "//cmk/bi:cmk_bi",
         "//cmk/checkengine:cmk_checkengine",
+        "//cmk/config_anonymizer:cmk_config_anonymizer",
         "//cmk/core_client:cmk_core_client",
         "//cmk/diagnostics:cmk_diagnostics",
         "//cmk/diskspace:cmk_diskspace",
         "//cmk/fields:cmk_fields",
+        "//cmk/gui:cmk_gui",
         "//cmk/inventory:cmk_inventory",
         "//cmk/legacy_checks:cmk_legacy_checks",
         "//cmk/legacy_includes:cmk_legacy_includes",
@@ -490,9 +580,12 @@ py_wheel(
         "//cmk/piggyback:hub",
         "//cmk/plugins:agents",
         "//cmk/plugins:cmk_plugins",
+        "//cmk/post_rename_site:cmk_post_rename_site",
         "//cmk/product_usage:cmk_product_usage",
         "//cmk/rrd:cmk_rrd",
         "//cmk/server_side_calls_backend:cmk_server_side_calls_backend",
+        "//cmk/special_agents:cmk_special_agents",
+        "//cmk/update_config:cmk_update_config",
         "//cmk/utils:cmk_utils",
     ],
 )
@@ -534,54 +627,19 @@ py_doc_test(
     tags = ["no-mypy"],
 )
 
-py_binary(
-    name = "generate_api_spec",
-    srcs = ["gui/openapi/spec/spec_generator/generate_api_spec.py"],
-    main = "gui/openapi/spec/spec_generator/generate_api_spec.py",
-    visibility = ["//:__subpackages__"],
-    deps = select({
-        "@cmk//edition:cloud": [
-            ":cmk_cloud",
-            ":cmk_community",
-            ":cmk_pro",
-            ":cmk_ultimate",
-        ],
-        "@cmk//edition:community": [
-            ":cmk_community",
-        ],
-        "@cmk//edition:pro": [
-            ":cmk_community",
-            ":cmk_pro",
-        ],
-        "@cmk//edition:ultimate": [
-            ":cmk_community",
-            ":cmk_pro",
-            ":cmk_ultimate",
-        ],
-        "@cmk//edition:ultimatemt": [
-            ":cmk_community",
-            ":cmk_pro",
-            ":cmk_ultimate",
-            ":cmk_ultimatemt",
-        ],
-    }) + [
-        requirement("pyyaml"),
-    ],
-)
-
 sh_library(
     name = "cmk_sh",
     srcs = [
         ".f12",
-        "base/.f12",
-        "config_anonymizer/.f12",
-        "gui/.f12",
-        "gui/openapi/.f12",
-        "gui/wsgi/.f12",
+        "//cmk/base:.f12",
+        "//cmk/config_anonymizer:.f12",
+        "//cmk/gui:.f12",
+        "//cmk/gui:openapi/.f12",
+        "//cmk/gui:wsgi/.f12",
         "//cmk/plugins:shell_scripts",
     ] + select({
         "@//:gpl+nonfree_repo": [
-            "gui/nonfree/pro/dcd/.f12",
+            "//cmk/gui:nonfree_f12",
             "//cmk/nonfree/pro/dcd:.f12",
             "//cmk/nonfree/pro/robotmk:.f12",
             "//cmk/utils:nonfree/pro/dcd/.f12",
