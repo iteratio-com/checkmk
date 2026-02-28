@@ -82,6 +82,14 @@ run_binary(
         "generate",
         "--version",
         "internal",
+        "--edition",
+    ] + select({
+        "@cmk//edition:cloud": ["cloud"],
+        "@cmk//edition:community": ["community"],
+        "@cmk//edition:pro": ["pro"],
+        "@cmk//edition:ultimate": ["ultimate"],
+        "@cmk//edition:ultimatemt": ["ultimatemt"],
+    }) + [
         "--format",
         "yaml",
         "--out",
