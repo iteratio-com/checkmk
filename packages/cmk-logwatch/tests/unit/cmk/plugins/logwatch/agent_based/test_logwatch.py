@@ -63,7 +63,7 @@ def test_logwatch_groups_of_logfile(
     filename: str,
     expected: dict[str, set[logwatch.GroupingPattern]],
 ) -> None:
-    actual = logwatch._groups_of_logfile(group_patterns, filename)
+    actual = logwatch._groups_of_logfile(group_patterns, filename)  # noqa: SLF001
     assert actual == expected
 
 
@@ -77,7 +77,7 @@ def test_logwatch_groups_of_logfile_exception(
     group_patterns: list[tuple[str, logwatch.GroupingPattern]], filename: str
 ) -> None:
     with pytest.raises(RuntimeError):
-        logwatch._groups_of_logfile(group_patterns, filename)
+        logwatch._groups_of_logfile(group_patterns, filename)  # noqa: SLF001
 
 
 SECTION1 = logwatch_.Section(
@@ -390,13 +390,13 @@ def test_check_logwatch_generic_no_messages(tmp_path: Path) -> None:
             reclassify_parameters=logwatch_.ReclassifyParameters((), {}),
             loglines=[],
             found=True,
-            max_filesize=logwatch._LOGWATCH_MAX_FILESIZE,
+            max_filesize=logwatch._LOGWATCH_MAX_FILESIZE,  # noqa: SLF001
             host_name="test-host",
         )
     ) == [
         Result(state=State.OK, summary="No error messages"),
     ]
-    assert not logwatch._logmsg_file_path(tmp_path, item, "test-host").exists()
+    assert not logwatch._logmsg_file_path(tmp_path, item, "test-host").exists()  # noqa: SLF001
 
 
 @pytest.mark.usefixtures("logmsg_file_path")
@@ -415,14 +415,14 @@ def test_check_logwatch_generic_no_reclassify(tmp_path: Path) -> None:
             reclassify_parameters=logwatch_.ReclassifyParameters((), {}),
             loglines=lines,
             found=True,
-            max_filesize=logwatch._LOGWATCH_MAX_FILESIZE,
+            max_filesize=logwatch._LOGWATCH_MAX_FILESIZE,  # noqa: SLF001
             host_name="test-host",
         )
     ) == [
         Result(state=State.CRIT, summary='1 CRIT messages (Last worst: "red alert")'),
     ]
     assert (
-        logwatch._logmsg_file_path(tmp_path, item, "test-host")
+        logwatch._logmsg_file_path(tmp_path, item, "test-host")  # noqa: SLF001
         .read_text()
         .splitlines()[-len(lines) :]
         == lines
@@ -451,15 +451,14 @@ def test_check_logwatch_generic_with_reclassification(tmp_path: Path) -> None:
             ),
             loglines=lines,
             found=True,
-            max_filesize=logwatch._LOGWATCH_MAX_FILESIZE,
+            max_filesize=logwatch._LOGWATCH_MAX_FILESIZE,  # noqa: SLF001
             host_name="test-host",
         )
     ) == [
         Result(state=State.CRIT, summary='2 CRIT messages (Last worst: "red alert")'),
     ]
-    assert logwatch._logmsg_file_path(tmp_path, item, "test-host").read_text().splitlines()[
-        -len(lines) :
-    ] == [
+    path = logwatch._logmsg_file_path(tmp_path, item, "test-host")  # noqa: SLF001
+    assert path.read_text().splitlines()[-len(lines) :] == [
         "C klingons are attacking",
         "C red alert",
         ". more context",
@@ -476,13 +475,13 @@ def test_check_logwatch_generic_missing(tmp_path: Path) -> None:
             reclassify_parameters=logwatch_.ReclassifyParameters((), {}),
             loglines=[],
             found=False,
-            max_filesize=logwatch._LOGWATCH_MAX_FILESIZE,
+            max_filesize=logwatch._LOGWATCH_MAX_FILESIZE,  # noqa: SLF001
             host_name="test-host",
         )
     ) == [
         Result(state=State.UNKNOWN, summary="log not present anymore"),
     ]
-    assert not logwatch._logmsg_file_path(tmp_path, item, "test-host").exists()
+    assert not logwatch._logmsg_file_path(tmp_path, item, "test-host").exists()  # noqa: SLF001
 
 
 @pytest.mark.usefixtures("logmsg_file_path")
@@ -503,7 +502,7 @@ def test_check_logwatch_generic_reclassify_to_ok_shows_summary(tmp_path: Path) -
                 "C Second critical error",
             ],
             found=True,
-            max_filesize=logwatch._LOGWATCH_MAX_FILESIZE,
+            max_filesize=logwatch._LOGWATCH_MAX_FILESIZE,  # noqa: SLF001
             host_name="test-host",
         )
     ) == [
@@ -523,7 +522,7 @@ def test_check_logwatch_generic_multiline_logline_to_summary_details(tmp_path: P
                 "C Second critical error\nWith a second line\nand a third line",
             ],
             found=True,
-            max_filesize=logwatch._LOGWATCH_MAX_FILESIZE,
+            max_filesize=logwatch._LOGWATCH_MAX_FILESIZE,  # noqa: SLF001
             host_name="test-host",
         )
     ) == [

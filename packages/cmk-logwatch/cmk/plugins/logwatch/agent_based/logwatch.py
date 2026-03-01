@@ -26,10 +26,8 @@ from collections import Counter
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from re import Match
 from typing import IO, Literal, TypedDict
 
-# for now, we shamelessly violate the API:
 from cmk.agent_based.v2 import (
     CheckPlugin,
     CheckResult,
@@ -46,7 +44,6 @@ from cmk.logwatch.config import (
     NEVER_DISCOVER_SERVICE_LABELS,
     ParameterLogwatchRules,
 )
-from cmk.plugins.lib import eval_regex
 
 from . import commons as logwatch
 
@@ -61,6 +58,11 @@ class DiscoveredGroupParams(TypedDict):
 
 
 _LOGWATCH_MAX_FILESIZE = 500000  # do not save more than 500k of messages
+
+
+def instantiate_regex_pattern_once(pattern: str, match: str) -> str:
+    # this correctly handles \( and \) but not [^)] - sorry
+    return re.compile(r"(?<!\\)\(.*?(?<!\\)\)").sub(re.escape(match), pattern, 1)
 
 
 # New rule-stule logwatch_rules in WATO friendly consistent rule notation:
@@ -226,7 +228,7 @@ check_plugin_logwatch = CheckPlugin(
 #   '----------------------------------------------------------------------'
 
 
-def _instantiate_matched(match: Match, group_name: str, inclusion: str) -> tuple[str, str]:
+def _instantiate_matched(match: re.Match, group_name: str, inclusion: str) -> tuple[str, str]:
     num_perc_s = group_name.count("%s")
     matches = [g or "" for g in match.groups()]
 
@@ -242,7 +244,7 @@ def _instantiate_matched(match: Match, group_name: str, inclusion: str) -> tuple
         return group_name, inclusion
 
     for num, group in enumerate(matches):
-        inclusion = eval_regex.instantiate_regex_pattern_once(inclusion, group)
+        inclusion = instantiate_regex_pattern_once(inclusion, group)
         group_name = group_name.replace("%%%d" % (num + 1), group)
     return group_name % tuple(matches[:num_perc_s]), inclusion
 

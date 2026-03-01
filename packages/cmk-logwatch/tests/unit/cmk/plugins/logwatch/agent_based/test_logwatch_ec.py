@@ -13,8 +13,6 @@ from pathlib import Path
 
 import pytest
 
-import cmk.ec.export as ec
-import cmk.utils.paths
 from cmk.agent_based.v2 import (
     CheckPlugin,
     CheckResult,
@@ -26,7 +24,9 @@ from cmk.agent_based.v2 import (
     StringTable,
 )
 from cmk.ccc.hostaddress import HostName
-from cmk.ec import forwarder
+from cmk.ec import forwarder as ec_forwarder_patch_target
+from cmk.ec.forwarder import ForwardedResult, MessageForwarder
+from cmk.ec.syslog import SyslogMessage
 from cmk.logwatch.config import ParameterLogwatchEc, ParameterLogwatchRules, set_global_state
 from cmk.plugins.logwatch.agent_based import commons as logwatch_
 from cmk.plugins.logwatch.agent_based import logwatch_ec
@@ -98,11 +98,13 @@ DEFAULT_TEST_PARAMETERS = ParameterLogwatchEc(
 
 
 class _LogwatchConfigDummy:
-    def __init__(self, ec_rules: Sequence[ParameterLogwatchEc] = ()):
+    def __init__(
+        self, ec_rules: Sequence[ParameterLogwatchEc] = (), tmp_path: Path = Path("/dev/null")
+    ) -> None:
         self._ec_rules = ec_rules
-        self.base_spool_path = Path("/dev/null")
-        self.omd_root = Path("/dev/null")
-        self.msg_dir = Path("/dev/null")
+        self.base_spool_path = tmp_path / "base_spool"
+        self.omd_root = tmp_path / "omd_root"
+        self.msg_dir = tmp_path / "msg_dir"
         self.debug = False
 
     def logwatch_rules_all(
@@ -265,7 +267,7 @@ def test_logwatch_ec_inventory_groups(
     assert actual_result == expected_result
 
 
-class _FakeForwarder(forwarder.MessageForwarder):
+class _FakeForwarder(MessageForwarder):
     def __init__(self) -> None:
         pass
 
@@ -276,10 +278,10 @@ class _FakeForwarder(forwarder.MessageForwarder):
     def __call__(
         self,
         method: str | tuple,
-        messages: Sequence[ec.SyslogMessage],
+        messages: Sequence[SyslogMessage],
         timestamp: float,
-    ) -> forwarder.ForwardedResult:
-        return forwarder.ForwardedResult(num_forwarded=len(messages))
+    ) -> ForwardedResult:
+        return ForwardedResult(num_forwarded=len(messages))
 
 
 @pytest.mark.parametrize(
@@ -606,9 +608,10 @@ def test_check_logwatch_ec_common_multiple_nodes_logfile_missing() -> None:
     ]
 
 
-def test_check_logwatch_ec_common_spool(monkeypatch: pytest.MonkeyPatch) -> None:
-    set_global_state(_LogwatchConfigDummy())
-    monkeypatch.setattr(forwarder, "_MAX_SPOOL_SIZE", 32)
+def test_check_logwatch_ec_common_spool(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    config = _LogwatchConfigDummy(tmp_path=tmp_path)
+    set_global_state(config)
+    monkeypatch.setattr(ec_forwarder_patch_target, "_MAX_SPOOL_SIZE", 32)
     assert list(
         logwatch_ec.check_logwatch_ec_common(
             "log1",
@@ -621,11 +624,11 @@ def test_check_logwatch_ec_common_spool(monkeypatch: pytest.MonkeyPatch) -> None
             },
             logwatch_ec.check_plugin_logwatch_ec_single,
             value_store={},
-            message_forwarder=forwarder.MessageForwarder(
+            message_forwarder=MessageForwarder(
                 "log1",
                 HostName("test-host"),
-                base_spool_path=cmk.utils.paths.var_dir / "logwatch_spool",
-                omd_root=cmk.utils.paths.omd_root,
+                base_spool_path=config.base_spool_path,
+                omd_root=config.omd_root,
                 debug=False,
             ),
         )
@@ -633,10 +636,10 @@ def test_check_logwatch_ec_common_spool(monkeypatch: pytest.MonkeyPatch) -> None
         Result(state=State.OK, summary="Forwarded 3 messages from log1"),
         Metric("messages", 3.0),
     ]
-    assert len(list(Path(cmk.utils.paths.omd_root, "var/mkeventd/spool").iterdir())) == 3
+    assert len(list(Path(config.omd_root, "var/mkeventd/spool").iterdir())) == 3
 
 
-def test_check_logwatch_ec_common_batch_stored(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_check_logwatch_ec_common_batch_stored() -> None:
     """Multiple logfiles with different batches. All must be remembered as "seen_batches".
 
     Failing to do so leads to messages being processed multiple times.

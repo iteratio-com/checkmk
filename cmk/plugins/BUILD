@@ -12,7 +12,6 @@ py_library(
         exclude = [
             "**/community/**",
             "**/nonfree/**",
-            "logwatch/**",  # has cmk.base dependencies, see cmk_plugins_logwatch
         ],
     ),
     imports = ["../.."],
@@ -78,25 +77,6 @@ py_library(
         requirement("pyyaml"),
         requirement("requests"),
         requirement("requests-oauthlib"),
-    ],
-)
-
-py_library(
-    name = "cmk_plugins_logwatch",
-    srcs = glob(["logwatch/**/*.py"]),
-    imports = ["../.."],
-    deps = [
-        ":cmk_plugins",
-        "//cmk/base:cmk_base",
-        "//cmk/checkengine:cmk_checkengine",
-        "//cmk/utils:cmk_utils",
-        "//packages/cmk-ccc:debug",
-        "//packages/cmk-ccc:hostaddress",
-        "//packages/cmk-ec:event",
-        "//packages/cmk-ec:forwarder",
-        "//packages/cmk-ec:syslog",
-        "//packages/cmk-plugin-apis:agent_based",
-        "//packages/cmk-plugins:lib",
     ],
 )
 

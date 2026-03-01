@@ -706,6 +706,7 @@ pkg_tar(
         "//packages/cmk-frontend-vue",
         "//packages/cmk-livestatus-client:cmk_livestatus_client_pkg_tar",
         "//packages/cmk-livestatus-client:cmk_livestatus_pkg_tar",
+        "//packages/cmk-logwatch:pkg_tar",
         "//packages/cmk-messaging:pkg_tar",
         "//packages/cmk-mkp-tool:pkg_tar",
         "//packages/cmk-plugins:pkg_tar",

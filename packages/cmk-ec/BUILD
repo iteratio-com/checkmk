@@ -16,7 +16,7 @@ py_library(
     srcs = ["cmk/ec/event.py"],
     imports = ["."],
     visibility = [
-        "//cmk:__subpackages__",
+        "//visibility:public",
     ],
     deps = [
         "//packages/cmk-ccc:hostaddress",
@@ -30,7 +30,7 @@ py_library(
     srcs = ["cmk/ec/syslog.py"],
     imports = ["."],
     visibility = [
-        "//cmk:__subpackages__",
+        "//visibility:public",
     ],
 )
 
@@ -39,7 +39,7 @@ py_library(
     srcs = ["cmk/ec/forwarder.py"],
     imports = ["."],
     visibility = [
-        "//cmk:__subpackages__",
+        "//visibility:public",
     ],
     deps = [
         ":event",
