@@ -171,21 +171,6 @@ py_library(
     }),
 )
 
-# Subset of ultimate-specific form spec types that are needed by
-# //cmk/nonfree/ultimate/otel:gui (which can't depend on cmk_gui_ultimate due to cycle).
-py_library(
-    name = "cmk_gui_nonfree_ultimate_form_specs",
-    srcs = glob(
-        ["form_specs/nonfree/ultimate/unstable/**/*.py"],
-        allow_empty = True,
-    ),
-    imports = ["../.."],
-    visibility = ["//cmk:__subpackages__"],
-    deps = [
-        "//packages/cmk-plugin-apis:rulesets",
-    ],
-)
-
 py_library(
     name = "cmk_gui_ultimate",
     srcs = glob(
@@ -205,6 +190,8 @@ py_library(
     ] + select({
         "@//:gpl+nonfree_repo": [
             ":cmk_gui_pro",
+            "//cmk/gui/form_specs/nonfree/ultimate",
+            "//cmk/gui/form_specs/nonfree/ultimate:unstable",
             "//cmk/nonfree/ultimate/metric_backend",
             "//cmk/nonfree/ultimate/otel",
             "//cmk/utils:cmk_utils_pro",
