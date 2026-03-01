@@ -113,9 +113,9 @@ filegroup(
 # cmk.otel_collector.*, etc. - their sources are added directly to cmk_ultimate
 # so type checking happens with the nonfree packages available.
 #
-# We accept this hack to be able to extract thousands of files from the monolithic cmk_cmk
-# target now, which enables way faster lint and test runs. The next step is to extract all
-# families to packages/cmk-plugins, which then results in the current target state.
+# We accept this hack to be able to extract thousands of files from cmk_community.
+# The next step is to extract all families to packages/cmk-plugins, which then
+# results in the current target state.
 filegroup(
     name = "cmk_plugins_otel_nonfree_srcs",
     srcs = glob(
