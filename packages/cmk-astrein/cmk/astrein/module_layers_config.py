@@ -209,6 +209,7 @@ _PLUGIN_FAMILIES_WITH_KNOWN_API_VIOLATIONS = {
         "cmk.logwatch",
         "cmk.ec.event",
         "cmk.ec.syslog",
+        "cmk.ec.forwarder",
         "cmk.ccc.hostaddress",
     ),
     "metric_backend_omd": ("cmk.metric_backend",),

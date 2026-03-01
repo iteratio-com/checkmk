@@ -35,6 +35,20 @@ py_library(
 )
 
 py_library(
+    name = "forwarder",
+    srcs = ["cmk/ec/forwarder.py"],
+    imports = ["."],
+    visibility = [
+        "//cmk:__subpackages__",
+    ],
+    deps = [
+        ":event",
+        ":syslog",
+        "//packages/cmk-ccc:hostaddress",
+    ],
+)
+
+py_library(
     name = "cmk-ec",
     srcs = [
         "cmk/ec/__init__.py",
@@ -113,6 +127,7 @@ py_test(
     deps = [
         ":__test__",
         ":cmk-ec",
+        ":forwarder",
         requirement("pytest"),
         requirement("time-machine"),
     ],
@@ -127,6 +142,7 @@ py_wheel(
     deps = [
         ":cmk-ec",
         ":event",
+        ":forwarder",
         ":py_typed",
         ":syslog",
     ],
