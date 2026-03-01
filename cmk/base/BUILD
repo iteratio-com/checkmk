@@ -86,13 +86,34 @@ py_library(
             "**/nonfree/**/ultimate/**",
             "**/nonfree/**/ultimatemt/**",
         ],
-    ),
+    ) + select({
+        "@//:gpl+nonfree_repo": [
+            "//cmk/nonfree/pro/robotmk:core_bakelets",
+        ],
+        "@//:gpl_repo": [],
+    }),
     imports = ["../.."],
-    tags = ["no-mypy"],
     visibility = ["//cmk:__subpackages__"],
     deps = [
         ":cmk_base",
-    ],
+        "//cmk/core_client:cmk_core_client_pro",
+        "//cmk/utils:cmk_utils_pro",
+        requirement("protobuf"),
+        requirement("pydantic"),
+        requirement("pyyaml"),
+    ] + select({
+        "@//:gpl+nonfree_repo": [
+            "//cmk/nonfree/pro/bakery",
+            "//cmk/nonfree/pro/robotmk",
+            "//cmk/nonfree/pro/robotmk:bakery",
+            "//non-free/packages/cmc-protocols:py_config_proto",
+            "//non-free/packages/cmc-protocols:py_cycletime_proto",
+            "//non-free/packages/cmc-protocols:py_state_proto",
+            "//non-free/packages/cmk-core-helpers:fetcher-encoder",
+            "//non-free/packages/cmk-core-helpers:fetcher-helper",
+        ],
+        "@//:gpl_repo": [],
+    }),
 )
 
 py_library(
@@ -102,11 +123,23 @@ py_library(
         allow_empty = True,
     ),
     imports = ["../.."],
-    tags = ["no-mypy"],
     visibility = ["//cmk:__subpackages__"],
     deps = [
         ":cmk_base",
-    ],
+        ":cmk_base_pro",
+        "//cmk/utils:cmk_utils_pro",
+        "//packages/cmk-relay-protocols",
+        requirement("pydantic"),
+    ] + select({
+        "@//:gpl+nonfree_repo": [
+            "//cmk/nonfree/pro/bakery",
+            "//non-free/packages/cmk-core-helpers:fetcher-encoder",
+            "//non-free/packages/cmk-core-helpers:fetcher-helper",
+            "//non-free/packages/cmk-core-helpers:relay-fetcher-trigger",
+            "//non-free/packages/cmk-metric-backend:cmk-metric-backend-fetcher",
+        ],
+        "@//:gpl_repo": [],
+    }),
 )
 
 py_library(
@@ -116,10 +149,12 @@ py_library(
         allow_empty = True,
     ),
     imports = ["../.."],
-    tags = ["no-mypy"],
     visibility = ["//cmk:__subpackages__"],
     deps = [
         ":cmk_base",
+        ":cmk_base_pro",
+        ":cmk_base_ultimate",
+        "//cmk/utils:cmk_utils_pro",
     ],
 )
 
@@ -130,9 +165,12 @@ py_library(
         allow_empty = True,
     ),
     imports = ["../.."],
-    tags = ["no-mypy"],
     visibility = ["//cmk:__subpackages__"],
     deps = [
         ":cmk_base",
+        ":cmk_base_pro",
+        ":cmk_base_ultimate",
+        "//cmk/utils:cmk_utils_pro",
+        "//cmk/utils:cmk_utils_ultimatemt",
     ],
 )

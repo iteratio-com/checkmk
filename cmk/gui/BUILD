@@ -134,18 +134,41 @@ py_library(
             "**/nonfree/**/ultimate/**",
             "**/nonfree/**/ultimatemt/**",
         ],
-    ),
+    ) + select({
+        "@//:gpl+nonfree_repo": [
+            "//cmk/nonfree/pro/robotmk:gui",
+        ],
+        "@//:gpl_repo": [],
+    }),
     imports = ["../.."],
-    tags = ["no-mypy"],
     visibility = ["//cmk:__subpackages__"],
     deps = [
         ":cmk_gui",
+        requirement("jinja2"),
+        requirement("lxml"),
+        requirement("marshmallow"),
+        requirement("marshmallow-oneofschema"),
         requirement("numpy"),
         requirement("pillow"),
         requirement("pypdf"),
         requirement("pysaml2"),
+        requirement("python-dateutil"),
+        requirement("python-ldap"),
+        requirement("redis"),
+        requirement("reportlab"),
+        requirement("requests"),
         requirement("roman"),
-    ],
+    ] + select({
+        "@//:gpl+nonfree_repo": [
+            "//cmk/nonfree/pro/bakery",
+            "//cmk/nonfree/pro/dcd",
+            "//cmk/nonfree/pro/robotmk",
+            "//cmk/nonfree/pro/robotmk:bakery",
+            "//cmk/utils:cmk_utils_pro",
+            "//non-free/packages/cmk-mknotifyd",
+        ],
+        "@//:gpl_repo": [],
+    }),
 )
 
 py_library(
@@ -153,13 +176,28 @@ py_library(
     srcs = glob(
         include = ["**/nonfree/**/ultimate/**/*.py"],
         allow_empty = True,
-    ),
+    ) + select({
+        "@//:gpl+nonfree_repo": [
+            "//cmk/nonfree/ultimate/otel:gui",
+        ],
+        "@//:gpl_repo": [],
+    }),
     imports = ["../.."],
-    tags = ["no-mypy"],
     visibility = ["//cmk:__subpackages__"],
     deps = [
         ":cmk_gui",
-    ],
+        requirement("python-dateutil"),
+    ] + select({
+        "@//:gpl+nonfree_repo": [
+            ":cmk_gui_pro",
+            "//cmk/nonfree/ultimate/metric_backend",
+            "//cmk/nonfree/ultimate/otel",
+            "//cmk/utils:cmk_utils_pro",
+            "//non-free/packages/cmk-metric-backend",
+            "//non-free/packages/cmk-otel-collector",
+        ],
+        "@//:gpl_repo": [],
+    }),
 )
 
 py_library(
@@ -169,11 +207,23 @@ py_library(
         allow_empty = True,
     ),
     imports = ["../.."],
-    tags = ["no-mypy"],
     visibility = ["//cmk:__subpackages__"],
     deps = [
         ":cmk_gui",
-    ],
+        requirement("pyjwt"),
+        requirement("redis"),
+        requirement("requests"),
+        requirement("urllib3"),
+        requirement("werkzeug"),
+    ] + select({
+        "@//:gpl+nonfree_repo": [
+            ":cmk_gui_pro",
+            ":cmk_gui_ultimate",
+            "//cmk/utils:cmk_utils_cloud",
+            "//cmk/utils:cmk_utils_pro",
+        ],
+        "@//:gpl_repo": [],
+    }),
 )
 
 py_library(
@@ -183,11 +233,19 @@ py_library(
         allow_empty = True,
     ),
     imports = ["../.."],
-    tags = ["no-mypy"],
     visibility = ["//cmk:__subpackages__"],
     deps = [
         ":cmk_gui",
-    ],
+        requirement("python-dateutil"),
+    ] + select({
+        "@//:gpl+nonfree_repo": [
+            ":cmk_gui_pro",
+            ":cmk_gui_ultimate",
+            "//cmk/utils:cmk_utils_pro",
+            "//cmk/utils:cmk_utils_ultimatemt",
+        ],
+        "@//:gpl_repo": [],
+    }),
 )
 
 py_binary(

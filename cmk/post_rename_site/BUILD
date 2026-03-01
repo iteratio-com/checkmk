@@ -33,10 +33,10 @@ py_library(
         allow_empty = True,
     ),
     imports = ["../.."],
-    tags = ["no-mypy"],
     visibility = ["//cmk:__subpackages__"],
     deps = [
         ":cmk_post_rename_site",
+        "//cmk/gui:cmk_gui_pro",
     ],
 )
 
@@ -47,9 +47,9 @@ py_library(
         allow_empty = True,
     ),
     imports = ["../.."],
-    tags = ["no-mypy"],
     visibility = ["//cmk:__subpackages__"],
     deps = [
         ":cmk_post_rename_site",
+        "//cmk/gui:cmk_gui_ultimate",
     ],
 )

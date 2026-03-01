@@ -47,11 +47,17 @@ py_library(
         allow_empty = True,
     ),
     imports = ["../.."],
-    tags = ["no-mypy"],
     visibility = ["//cmk:__subpackages__"],
     deps = [
         ":cmk_update_config",
-    ],
+        "//cmk/gui:cmk_gui_pro",
+        "//cmk/utils:cmk_utils_pro",
+    ] + select({
+        "@//:gpl+nonfree_repo": [
+            "//cmk/nonfree/pro/robotmk",
+        ],
+        "@//:gpl_repo": [],
+    }),
 )
 
 py_library(
@@ -61,11 +67,17 @@ py_library(
         allow_empty = True,
     ),
     imports = ["../.."],
-    tags = ["no-mypy"],
     visibility = ["//cmk:__subpackages__"],
     deps = [
         ":cmk_update_config",
-    ],
+        "//cmk/gui:cmk_gui_pro",
+        "//cmk/gui:cmk_gui_ultimate",
+    ] + select({
+        "@//:gpl+nonfree_repo": [
+            "//non-free/packages/cmk-metric-backend",
+        ],
+        "@//:gpl_repo": [],
+    }),
 )
 
 py_library(
@@ -75,7 +87,6 @@ py_library(
         allow_empty = True,
     ),
     imports = ["../.."],
-    tags = ["no-mypy"],
     visibility = ["//cmk:__subpackages__"],
     deps = [
         ":cmk_update_config",
