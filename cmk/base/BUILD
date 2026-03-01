@@ -73,6 +73,32 @@ py_library(
     ],
 )
 
+# Subset of cmk.base.nonfree.bakery modules that are needed by
+# core_bakelets (which can't depend on cmk_base_pro due to cycle).
+py_library(
+    name = "cmk_base_nonfree_bakery",
+    srcs = [
+        "nonfree/bakery/artifacts.py",
+        "nonfree/bakery/common_config.py",
+        "nonfree/bakery/constants.py",
+        "nonfree/bakery/plugins.py",
+    ],
+    imports = ["../.."],
+    target_compatible_with = select({
+        "@//:gpl+nonfree_repo": [],
+        "@//:gpl_repo": ["@platforms//:incompatible"],
+    }),
+    visibility = ["//cmk:__subpackages__"],
+    deps = [
+        ":cmk_base",
+        "//cmk/nonfree/pro/bakery",
+        "//cmk/utils:cmk_utils",
+        "//packages/cmk-ccc:debug",
+        "//packages/cmk-plugin-apis:bakery",
+        requirement("pydantic"),
+    ],
+)
+
 py_library(
     name = "cmk_base_pro",
     srcs = glob(

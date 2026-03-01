@@ -101,22 +101,31 @@ py_library(
 
 # Robotmk nonfree files import from cmk.nonfree.pro.robotmk.* - their sources are added
 # directly to cmk_pro so type checking happens with the nonfree packages available.
-filegroup(
+py_library(
     name = "cmk_plugins_robotmk_nonfree_srcs",
     srcs = glob(
         ["robotmk/**/nonfree/**/*.py"],
         allow_empty = True,
     ),
+    imports = ["../.."],
+    target_compatible_with = select({
+        "@//:gpl+nonfree_repo": [],
+        "@//:gpl_repo": ["@platforms//:incompatible"],
+    }),
+    deps = [
+        "//cmk/nonfree/pro/robotmk",
+        "//cmk/nonfree/pro/robotmk:bakery",
+        "//packages/cmk-plugin-apis:agent_based",
+        "//packages/cmk-plugin-apis:graphing",
+        "//packages/cmk-plugin-apis:rulesets",
+        requirement("robotframework"),
+    ],
 )
 
 # Otel and custom_query_metric_backend nonfree files import from cmk.metric_backend.*,
 # cmk.otel_collector.*, etc. - their sources are added directly to cmk_ultimate
 # so type checking happens with the nonfree packages available.
-#
-# We accept this hack to be able to extract thousands of files from cmk_community.
-# The next step is to extract all families to packages/cmk-plugins, which then
-# results in the current target state.
-filegroup(
+py_library(
     name = "cmk_plugins_otel_nonfree_srcs",
     srcs = glob(
         [
@@ -125,6 +134,25 @@ filegroup(
         ],
         allow_empty = True,
     ),
+    imports = ["../.."],
+    target_compatible_with = select({
+        "@//:gpl+nonfree_repo": [],
+        "@//:gpl_repo": ["@platforms//:incompatible"],
+    }),
+    deps = [
+        "//cmk/gui:cmk_gui_ultimate",
+        "//cmk/utils:cmk_utils",
+        "//non-free/packages/cmk-metric-backend",
+        "//non-free/packages/cmk-metric-backend:cmk-metric-backend-fetcher",
+        "//non-free/packages/cmk-otel-collector",
+        "//packages/cmk-plugin-apis:agent_based",
+        "//packages/cmk-plugin-apis:graphing",
+        "//packages/cmk-plugin-apis:rulesets",
+        "//packages/cmk-plugin-apis:server_side_calls",
+        "//packages/cmk-shared-typing:cmk_shared_typing_py",
+        requirement("opentelemetry-proto"),
+        requirement("protobuf"),
+    ],
 )
 
 py_library(
