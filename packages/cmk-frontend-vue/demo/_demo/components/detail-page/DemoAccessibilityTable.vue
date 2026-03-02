@@ -22,13 +22,18 @@ defineProps<{
       <CmkHeading type="h4">Key</CmkHeading>
       <CmkHeading type="h4">Description</CmkHeading>
     </div>
-    <div v-for="item in data" :key="item.key" class="demo-accessibility-table__table-row">
-      <div class="demo-accessibility-table__table-cell">
-        <span class="demo-accessibility-table__key-pill">{{ item.key }}</span>
+    <template v-if="data.length > 0">
+      <div v-for="item in data" :key="item.key" class="demo-accessibility-table__table-row">
+        <div class="demo-accessibility-table__table-cell">
+          <span class="demo-accessibility-table__key-pill">{{ item.key }}</span>
+        </div>
+        <div class="demo-accessibility-table__table-cell">
+          {{ item.description }}
+        </div>
       </div>
-      <div class="demo-accessibility-table__table-cell">
-        {{ item.description }}
-      </div>
+    </template>
+    <div v-else class="demo-accessibility-table__empty-message">
+      No keyboard accessibility available for this component
     </div>
   </div>
 </template>
@@ -73,5 +78,12 @@ defineProps<{
   padding: 4px 8px;
   color: var(--demo-cta-banner-title-color);
   display: inline-block;
+}
+
+.demo-accessibility-table__empty-message {
+  padding: 12px 16px;
+  color: var(--demo-elements-text-color);
+  text-align: center;
+  font-style: italic;
 }
 </style>

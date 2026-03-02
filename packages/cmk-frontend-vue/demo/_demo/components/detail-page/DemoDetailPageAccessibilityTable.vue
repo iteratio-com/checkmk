@@ -16,9 +16,9 @@ defineProps<{
 </script>
 
 <template>
-  <div v-if="data?.length" class="demo-detail-page-accessibility-table__section">
-    <CmkHeading type="h2">Accessibility</CmkHeading>
-    <AccessibilityTable :data="data" />
+  <div class="demo-detail-page-accessibility-table__section">
+    <CmkHeading type="h2">Keyboard Accessibility</CmkHeading>
+    <AccessibilityTable :data="data ?? []" />
   </div>
 </template>
 
