@@ -187,8 +187,6 @@ STAGES:
       COMMAND: |
           set +e
           bazel test \
-              --jobs=4 \
-              --local_resources=cpu=4 \
               --test_verbose_timeout_warnings \
               --test_env=TZ="America/Chicago" \
               --test_tag_filters=-component \
@@ -216,8 +214,6 @@ STAGES:
       COMMAND: |
         set +e
         bazel test \
-            --jobs=4 \
-            --local_resources=cpu=4 \
             --test_verbose_timeout_warnings \
             --test_env=TZ="America/Chicago" \
             --test_tag_filters=cpp \
@@ -445,8 +441,6 @@ STAGES:
           set +e
           bazel \
              build \
-             --jobs=4 \
-             --local_resources=cpu=4 \
              --keep_going \
              --aspects=//bazel/tools:aspects.bzl%mypy_aspect \
              --output_groups=mypy \
