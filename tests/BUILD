@@ -30,6 +30,7 @@ py_library(
         requirement("docker"),
         requirement("dockerpty"),
         requirement("fastapi"),
+        requirement("flask"),
         requirement("pexpect"),
         requirement("playwright"),
         requirement("psutil"),
@@ -37,6 +38,7 @@ py_library(
         requirement("pyyaml"),
         requirement("pytest"),
         requirement("pytest-check"),
+        requirement("pytest-mock"),
         requirement("requests"),
     ] + select({
         "//:gpl+nonfree_repo": ["//cmk:cmk_cloud"],

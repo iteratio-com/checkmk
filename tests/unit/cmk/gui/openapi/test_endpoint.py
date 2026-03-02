@@ -29,8 +29,8 @@ from cmk.gui.openapi.restful_objects.decorators import Endpoint, WrappedEndpoint
 from cmk.gui.openapi.restful_objects.registry import endpoint_registry
 from cmk.gui.openapi.utils import ProblemException, RestAPIResponseGeneralException
 from cmk.utils.local_secrets import SiteInternalSecret
+from tests.testlib.unit.gui.web_test_app import SetConfig, WebTestAppForCMK
 from tests.testlib.unit.rest_api_client import ClientRegistry, RestApiClient
-from tests.unit.cmk.web_test_app import SetConfig, WebTestAppForCMK
 
 TEST_TARGZ_FILE = "H4sIAAAAAAAAA+3OQQrCMBCF4aw9RbyAJDVNzxNooIXgyBjR4xvppuBCN0UK/7eYxzCzeNN8qs9qNuWaGMM7/dC7dS58b3yI3RDbDJ1pe/BnY922tRb3W01qrSlZLklHueaqounj79t9p6ZcitiHaBmPh3+XAQAAAAAAAAAAAAAAAAD87AUCVDjzACgAAA=="
 
@@ -253,7 +253,7 @@ def test_openapi_endpoint_decorator_catches_status_code_exceptions(
     assert response.json["ext"]["exc_type"] == "RestAPIResponseException"
     exc = response.json["ext"]["details"]["rest_api_exception"]
     assert exc["description"] == "Unexpected status code returned: 418"
-    assert exc["detail"] == "Endpoint tests.unit.cmk.gui.openapi.test_endpoint.test"
+    assert exc["detail"] == "Endpoint gui.openapi.test_endpoint.test"
     assert set(exc["ext"]["The following status codes are allowed for this endpoint"]) == {406, 204}
 
 

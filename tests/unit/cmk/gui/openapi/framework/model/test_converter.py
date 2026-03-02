@@ -31,7 +31,7 @@ from cmk.gui.watolib.host_attributes import HostAttributes
 from cmk.gui.watolib.hosts_and_folders import folder_tree
 from cmk.livestatus_client.testing import MockLiveStatusConnection
 from cmk.utils.tags import TagGroup, TagGroupID, TagID
-from tests.unit.cmk.gui.users import create_and_destroy_user
+from tests.testlib.unit.gui.users import create_and_destroy_user
 
 
 def test_validators_dont_run_on_json_dump() -> None:

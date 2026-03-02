@@ -15,8 +15,9 @@ from pytest import param
 from cmk.gui.bi._config import ModeBIEditRule
 from cmk.gui.bi._valuespecs import _convert_bi_rule_from_vs, _convert_bi_rule_to_vs
 from cmk.gui.exceptions import MKUserError
-from tests.unit.cmk.bi.bi_mocks import MockBIAggregationPack
-from tests.unit.cmk.bi.bi_test_data import sample_config
+
+from . import bi_test_data as sample_config
+from .bi_mocks import MockBIAggregationPack
 
 
 # This test covers the outermost TransformValuespec

@@ -83,6 +83,229 @@ py_test(
 )
 
 py_test(
+    name = "cmk_gui",
+    # https://bazel.build/reference/be/common-definitions#test.size
+    size = "large",
+    srcs = ["__test__.py"] + glob(
+        include = ["cmk/gui/**/*.py"],
+        exclude = [
+            "**/nonfree/**",
+            "**/community/**",
+        ],
+    ),
+    args = [
+        "--config-file=$(location @//:pyproject.toml)",
+        "--import-mode=importlib",
+        "--random-order-bucket=global",
+        "--dist=loadfile",
+        "--numprocesses=4",
+    ],
+    data = ["@//:pyproject.toml"],
+    main = ":__test__.py",
+    visibility = ["//tests:__subpackages__"],
+    deps = [
+        ":__test__",
+        ":conftest",
+        requirement("apispec-oneofschema"),
+        requirement("beautifulsoup4"),
+        requirement("fakeredis"),
+        requirement("fastapi"),
+        requirement("flask"),
+        requirement("marshmallow"),
+        requirement("marshmallow-oneofschema"),
+        requirement("openapi-spec-validator"),
+        requirement("opentelemetry-sdk"),
+        requirement("polyfactory"),
+        requirement("pytest-mock"),
+        requirement("pytest-asyncio"),
+        requirement("pytest-random-order"),
+        requirement("python-dateutil"),
+        requirement("python-ldap"),
+        requirement("pyyaml"),
+        requirement("responses"),
+        requirement("time-machine"),
+        requirement("werkzeug"),
+        "//cmk/bi:cmk_bi",
+        "//cmk/gui:cmk_gui",
+        "//omd/packages/omd:omdlib",
+        "//tests/testlib/unit:unit_free",
+    ],
+)
+
+py_test(
+    name = "cmk_gui_pro",
+    srcs = ["__test__.py"] + glob(
+        include = ["cmk/gui/**/nonfree/**/pro/**/*.py"],
+        allow_empty = True,
+    ),
+    args = [
+        "--config-file=$(location @//:pyproject.toml)",
+        "--import-mode=importlib",
+        "--random-order-bucket=global",
+        "--dist=loadfile",
+        "--numprocesses=4",
+    ],
+    data = ["@//:pyproject.toml"] + glob(
+        include = [
+            "**/saml2/**/*.xml",
+            "**/saml2/**/*.pem",
+        ],
+        allow_empty = True,
+    ),
+    main = ":__test__.py",
+    target_compatible_with = select({
+        "@//:gpl+nonfree_repo": [],
+        "@//:gpl_repo": ["@platforms//:incompatible"],
+    }),
+    visibility = ["//tests:__subpackages__"],
+    deps = [
+        ":__test__",
+        "//cmk/utils:cmk_utils",
+        "//tests/testlib/unit:unit_free",
+        "//tests/unit:cmk_gui",
+        requirement("fakeredis"),
+        requirement("lxml"),
+        requirement("numpy"),
+        requirement("pypdf"),
+        requirement("pytest-asyncio"),
+        requirement("pysaml2"),
+        requirement("pytest"),
+        requirement("pytest-random-order"),
+        requirement("pytest-mock"),
+        requirement("responses"),
+        requirement("time-machine"),
+        requirement("werkzeug"),
+    ] + select({
+        "@//:gpl+nonfree_repo": [
+            "//cmk/gui:cmk_gui_pro",
+            "//tests/testlib/unit:unit_nonfree",
+        ],
+        "@//:gpl_repo": [],
+    }),
+)
+
+py_test(
+    name = "cmk_gui_cloud",
+    srcs = [
+        "__test__.py",
+    ] + glob(
+        include = ["cmk/gui/**/nonfree/**/cloud/**/*.py"],
+        allow_empty = True,
+    ),
+    args = [
+        "--config-file=$(location @//:pyproject.toml)",
+        "--import-mode=importlib",
+        "--random-order-bucket=global",
+        "--dist=loadfile",
+        "--numprocesses=4",
+    ],
+    data = ["@//:pyproject.toml"],
+    main = ":__test__.py",
+    target_compatible_with = select({
+        "@//:gpl+nonfree_repo": [],
+        "@//:gpl_repo": ["@platforms//:incompatible"],
+    }),
+    visibility = ["//tests:__subpackages__"],
+    deps = [
+        ":__test__",
+        ":conftest",
+        "//cmk/gui:cmk_gui",
+        "//packages/cmk-ccc:site",
+        "//packages/cmk-ccc:user",
+        "//packages/cmk-ccc:version",
+        "//tests/unit:cmk_gui",
+        requirement("pytest"),
+        requirement("pytest-mock"),
+        requirement("pytest-asyncio"),
+        requirement("pytest-random-order"),
+        requirement("requests"),
+        requirement("responses"),
+        requirement("werkzeug"),
+    ] + select({
+        "@//:gpl+nonfree_repo": [
+            "//cmk/gui:cmk_gui_cloud",
+        ],
+        "@//:gpl_repo": [],
+    }),
+)
+
+py_test(
+    name = "cmk_gui_ultimate",
+    srcs = ["__test__.py"] + glob(
+        include = ["cmk/gui/**/nonfree/**/ultimate/**/*.py"],
+        allow_empty = True,
+    ),
+    args = [
+        "--config-file=$(location @//:pyproject.toml)",
+        "--import-mode=importlib",
+        "--random-order-bucket=global",
+        "--dist=loadfile",
+        "--numprocesses=4",
+    ],
+    data = ["@//:pyproject.toml"],
+    main = ":__test__.py",
+    target_compatible_with = select({
+        "@//:gpl+nonfree_repo": [],
+        "@//:gpl_repo": ["@platforms//:incompatible"],
+    }),
+    visibility = ["//tests:__subpackages__"],
+    deps = [
+        ":__test__",
+        ":conftest",
+        "//cmk/gui:cmk_gui",
+        "//packages/cmk-ccc:hostaddress",
+        "//packages/cmk-ccc:site",
+        "//tests/testlib/unit:unit_free",
+        "//tests/unit:cmk_gui",
+        requirement("python-dateutil"),
+        requirement("pytest"),
+        requirement("pytest-asyncio"),
+        requirement("pytest-random-order"),
+    ] + select({
+        "@//:gpl+nonfree_repo": [
+            "//cmk/gui:cmk_gui_ultimate",
+        ],
+        "@//:gpl_repo": [],
+    }),
+)
+
+py_test(
+    name = "cmk_gui_ultimatemt",
+    srcs = ["__test__.py"] + glob(
+        include = ["cmk/gui/**/nonfree/**/ultimatemt/**/*.py"],
+        allow_empty = True,
+    ),
+    args = [
+        "--config-file=$(location @//:pyproject.toml)",
+        "--import-mode=importlib",
+        "--random-order-bucket=global",
+        "--dist=loadfile",
+        "--numprocesses=4",
+    ],
+    data = ["@//:pyproject.toml"],
+    main = ":__test__.py",
+    target_compatible_with = select({
+        "@//:gpl+nonfree_repo": [],
+        "@//:gpl_repo": ["@platforms//:incompatible"],
+    }),
+    visibility = ["//tests:__subpackages__"],
+    deps = [
+        ":__test__",
+        ":conftest",
+        "//tests/testlib/unit:unit_free",
+        "//tests/unit:cmk_gui",
+        requirement("pytest"),
+        requirement("pytest-asyncio"),
+        requirement("pytest-random-order"),
+    ] + select({
+        "@//:gpl+nonfree_repo": [
+            "//cmk/gui:cmk_gui_ultimatemt",
+        ],
+        "@//:gpl_repo": [],
+    }),
+)
+
+py_test(
     name = "repo",
     # https://bazel.build/reference/be/common-definitions#test.size
     size = "large",
@@ -90,6 +313,7 @@ py_test(
         include = ["**/*.py"],
         exclude = [
             "omdlib/**/*.py",
+            "cmk/gui/**/*.py",
         ],
     ),
     args = [

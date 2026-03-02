@@ -10,8 +10,8 @@ from pytest_mock import MockerFixture
 
 import cmk.ccc.version as cmk_version
 from cmk.utils import paths
+from tests.testlib.unit.gui.web_test_app import WebTestAppForCMK
 from tests.testlib.unit.rest_api_client import ClientRegistry
-from tests.unit.cmk.web_test_app import WebTestAppForCMK
 
 
 @pytest.mark.skipif(

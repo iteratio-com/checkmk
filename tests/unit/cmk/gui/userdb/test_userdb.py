@@ -51,7 +51,7 @@ from cmk.gui.valuespec import Dictionary
 from tests.testlib.common.repo import is_ultimatemt_repo
 
 if TYPE_CHECKING:
-    from tests.unit.cmk.web_test_app import SetConfig, SingleRequest, WebTestAppForCMK
+    from tests.testlib.unit.gui.web_test_app import SetConfig, SingleRequest, WebTestAppForCMK
 
 
 @pytest.fixture(name="user_id")

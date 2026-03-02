@@ -18,8 +18,8 @@ from cmk.gui.fields import FOLDER_PATTERN, FolderField
 from cmk.gui.fields.utils import BaseSchema
 from cmk.gui.watolib.predefined_conditions import PredefinedConditionStore
 from cmk.utils import paths
+from tests.testlib.unit.gui.web_test_app import WebTestAppForCMK
 from tests.testlib.unit.rest_api_client import ClientRegistry
-from tests.unit.cmk.web_test_app import WebTestAppForCMK
 
 
 @pytest.mark.parametrize(

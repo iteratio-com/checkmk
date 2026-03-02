@@ -18,9 +18,8 @@ import cmk.utils.log
 from cmk.ccc.user import UserId
 from cmk.gui import hooks, http, main_modules
 from cmk.gui.utils.script_helpers import session_wsgi_app
-from tests.unit.cmk.web_test_app import (
-    WebTestAppForCMK,
-)
+
+from .web_test_app import WebTestAppForCMK
 
 
 def create_flask_app() -> Iterator[Flask]:
