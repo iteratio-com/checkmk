@@ -174,7 +174,9 @@ py_library(
 py_library(
     name = "cmk_gui_ultimate",
     srcs = glob(
-        include = ["**/nonfree/**/ultimate/**/*.py"],
+        include = [
+            "**/nonfree/**/ultimate/**/*.py",
+        ],
         allow_empty = True,
     ) + select({
         "@//:gpl+nonfree_repo": [
