@@ -284,3 +284,26 @@ py_binary(
         requirement("pyyaml"),
     ],
 )
+
+# Variant of generate_api_spec that always includes at least pro edition
+# modules. Used to generate the internal OpenAPI spec for TypeScript types
+# consumed by cmk-frontend-vue, which ships the same bundle for all editions.
+# Limited to community + pro to avoid pulling in ultimate deps that are not
+# available in all nonfree edition checkouts (e.g. pro builds strip ultimate/).
+py_binary(
+    name = "generate_api_spec_all_editions",
+    srcs = ["openapi/spec/spec_generator/generate_api_spec.py"],
+    main = "openapi/spec/spec_generator/generate_api_spec.py",
+    visibility = ["//:__subpackages__"],
+    deps = select({
+        "@//:gpl+nonfree_repo": [
+            "//cmk:cmk_community",
+            "//cmk:cmk_pro",
+        ],
+        "@//:gpl_repo": [
+            "//cmk:cmk_community",
+        ],
+    }) + [
+        requirement("pyyaml"),
+    ],
+)

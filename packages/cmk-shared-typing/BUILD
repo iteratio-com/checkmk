@@ -83,19 +83,20 @@ run_binary(
         "--version",
         "internal",
         "--edition",
+        # Use the highest edition whose source code is available in all nonfree
+        # checkouts (pro). The generated TypeScript types are consumed by
+        # cmk-frontend-vue which ships the same bundle for all editions.
+        # We cannot use ultimatemt here because pro builds strip ultimate/ dirs.
     ] + select({
-        "@cmk//edition:cloud": ["cloud"],
-        "@cmk//edition:community": ["community"],
-        "@cmk//edition:pro": ["pro"],
-        "@cmk//edition:ultimate": ["ultimate"],
-        "@cmk//edition:ultimatemt": ["ultimatemt"],
+        "@//:gpl+nonfree_repo": ["pro"],
+        "@//:gpl_repo": ["community"],
     }) + [
         "--format",
         "yaml",
         "--out",
         "$(execpath openapi_spec_internal.yaml)",
     ],
-    tool = "//cmk/gui:generate_api_spec",
+    tool = "//cmk/gui:generate_api_spec_all_editions",
 )
 
 openapi_typescript.openapi_typescript(
