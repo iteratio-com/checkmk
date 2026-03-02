@@ -24,6 +24,7 @@ from cmk.gui.main_menu import any_show_more_items, main_menu_registry
 from cmk.gui.main_menu_types import ConfigurableMainMenuItem, MainMenuItem, MainMenuLinkItem
 from cmk.gui.pages import AjaxPage, PageContext, PageResult
 from cmk.gui.search_menu import get_unified_search_props
+from cmk.gui.user_sites import activation_sites
 from cmk.gui.utils.roles import UserPermissions
 from cmk.gui.watolib.activate_changes import ActivateChanges
 from cmk.gui.werks import may_acknowledge, num_unacknowledged_incompatible_werks
@@ -242,7 +243,7 @@ class PageAjaxSidebarChangesMenu(AjaxPage):
     def page(self, ctx: PageContext) -> PageResult:
         return {
             "number_of_pending_changes": ActivateChanges.get_number_of_pending_changes(
-                sites=list(ctx.config.sites),
+                sites=list(activation_sites(ctx.config.sites)),
                 count_limit=10,
             )
         }
