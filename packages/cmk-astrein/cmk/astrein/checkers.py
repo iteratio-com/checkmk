@@ -6,11 +6,19 @@
 
 from cmk.astrein.checker_localization import LocalizationChecker
 from cmk.astrein.checker_module_layers import ModuleLayersChecker
+from cmk.astrein.checker_simple_patterns import (
+    ABCMetaMetaclassChecker,
+    HTMLDebugChecker,
+    PillowImportChecker,
+)
 from cmk.astrein.framework import ASTVisitorChecker
 
 
 def all_checkers() -> dict[str, type[ASTVisitorChecker]]:
     return {
+        "abcmeta-metaclass": ABCMetaMetaclassChecker,
+        "html-debug": HTMLDebugChecker,
         "localization": LocalizationChecker,
         "module-layers": ModuleLayersChecker,
+        "pillow-import": PillowImportChecker,
     }
