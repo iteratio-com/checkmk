@@ -111,12 +111,12 @@ class TestHostLabels:
 @pytest.fixture
 def params() -> CheckParams:
     return CheckParams(
-        state_admin_change=1,
-        state_disabled=0,
-        state_not_connected=0,
-        state_not_full_duplex=1,
-        state_op_change=1,
-        state_speed_change=1,
+        state_admin_change=State.WARN.value,
+        state_disabled=State.OK.value,
+        state_not_connected=State.OK.value,
+        state_not_full_duplex=State.WARN.value,
+        state_op_change=State.WARN.value,
+        state_speed_change=State.WARN.value,
     )
 
 
