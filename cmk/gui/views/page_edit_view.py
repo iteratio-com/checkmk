@@ -162,6 +162,7 @@ def view_editor_general_properties(ds_name: str) -> Dictionary:
                         maxvalue=1000,
                     ),
                     otherlabel=_("Set custom row limit"),
+                    default_value=0,
                 ),
             ),
             (
