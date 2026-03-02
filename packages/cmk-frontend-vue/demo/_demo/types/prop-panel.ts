@@ -5,6 +5,8 @@
  */
 import type { Suggestion } from '@/components/CmkSuggestions'
 
+export type Options<T> = { title: string; name: NonNullable<T> }
+
 export interface BoolPropDef {
   type: 'boolean'
   title: string
@@ -17,14 +19,14 @@ export interface StringPropDef {
   initialState: string
 }
 
-export interface ListPropDef {
+export interface ListPropDef<T extends string = string> {
   type: 'list'
   title: string
   options: Suggestion[]
-  initialState: string
+  initialState: T
 }
 
-export type PropDef = BoolPropDef | StringPropDef | ListPropDef
+export type PropDef = BoolPropDef | StringPropDef | ListPropDef<string>
 
 export type PanelConfig = Record<string, PropDef>
 
@@ -34,8 +36,8 @@ type InferStateFromDef<T extends PropDef> = T extends BoolPropDef
   ? boolean
   : T extends StringPropDef
     ? string
-    : T extends ListPropDef
-      ? string | null
+    : T extends ListPropDef<infer U>
+      ? U | null
       : never
 
 export type InferPanelState<T extends PanelConfig> = {
