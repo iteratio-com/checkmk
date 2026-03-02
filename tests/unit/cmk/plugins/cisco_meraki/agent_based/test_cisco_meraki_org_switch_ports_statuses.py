@@ -233,7 +233,6 @@ class TestCheckSpeed:
 
         assert value == expected
 
-    @pytest.mark.xfail(reason="CMK-31968", strict=True)
     def test_with_speed_now_unknown(self, params: CheckParams) -> None:
         section = self._build_section(speed="")
 

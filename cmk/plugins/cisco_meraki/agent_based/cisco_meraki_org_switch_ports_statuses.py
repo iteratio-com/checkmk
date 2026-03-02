@@ -132,6 +132,11 @@ class SwitchPortsStatus(BaseModel, frozen=True):
 
     @computed_field
     @property
+    def speed_summary(self) -> str:
+        return self.speed if self.speed else "unknown"
+
+    @computed_field
+    @property
     def speed_as_int(self) -> int | None:
         raw_value, unit = self.speed.split()  # "10 Gbps" => ("10", "Gbps")
         value = float(raw_value.replace(",", "."))  # handle comma decimal point
@@ -203,7 +208,7 @@ def discover_switch_ports_statuses(params: DiscoveryParams, section: Section) ->
                 parameters={
                     "admin_state": port.admin_state,
                     "operational_state": port.oper_state,
-                    "speed": port.speed,
+                    "speed": port.speed_summary,
                 },
             )
 
@@ -242,7 +247,7 @@ def check_switch_ports_statuses(item: str, params: CheckParams, section: Section
 
     prior_admin_state = params.get("admin_state", "unknown")
     prior_oper_state = params.get("operational_state", "unknown")
-    prior_speed = params.get("speed")
+    prior_speed = params.get("speed", "unknown")
 
     if port.admin_state == "down":
         yield Result(
@@ -287,12 +292,15 @@ def check_switch_ports_statuses(item: str, params: CheckParams, section: Section
     if port.oper_state in {"down", "unknown"}:
         return
 
-    yield Result(state=State.OK, summary=f"Speed: {port.speed}")
+    yield Result(
+        state=State.OK if port.speed else State.UNKNOWN,
+        summary=f"Speed: {port.speed_summary}",
+    )
 
-    if _state_has_changed(port.speed, prior_speed):
+    if _state_has_changed(port.speed_summary, prior_speed):
         yield Result(
             state=State(params["state_speed_change"]),
-            summary=f"changed {prior_speed} -> {port.speed}",
+            summary=f"changed {prior_speed} -> {port.speed_summary}",
         )
 
     if port.traffic_in_kbps:
