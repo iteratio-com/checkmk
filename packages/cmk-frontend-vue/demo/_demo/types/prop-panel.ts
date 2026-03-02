@@ -11,12 +11,14 @@ export interface BoolPropDef {
   type: 'boolean'
   title: string
   initialState: boolean
+  help?: string
 }
 
 export interface StringPropDef {
   type: 'string'
   title: string
   initialState: string
+  help?: string
 }
 
 export interface ListPropDef<T extends string = string> {
@@ -24,6 +26,7 @@ export interface ListPropDef<T extends string = string> {
   title: string
   options: Suggestion[]
   initialState: T
+  help?: string
 }
 
 export type PropDef = BoolPropDef | StringPropDef | ListPropDef<string>

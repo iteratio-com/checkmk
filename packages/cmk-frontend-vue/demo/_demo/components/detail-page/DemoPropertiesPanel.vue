@@ -7,6 +7,7 @@ conditions defined in the file COPYING, which is part of this source code packag
 import type { ListPropDef, PanelConfig, PanelState } from '@demo/_demo/types/prop-panel.ts'
 
 import CmkDropdown from '@/components/CmkDropdown'
+import CmkHelpText from '@/components/CmkHelpText.vue'
 import CmkLabel from '@/components/CmkLabel.vue'
 import CmkSpace from '@/components/CmkSpace.vue'
 import CmkSwitch from '@/components/CmkSwitch.vue'
@@ -28,7 +29,11 @@ const state = defineModel<PanelState>({ required: true })
       :key="key"
       class="demo-properties-panel__prop-control"
     >
-      <CmkLabel :for="`ctrl-${key}`">{{ def.title }}</CmkLabel>
+      <div class="demo-properties-panel__label-container">
+        <CmkLabel :for="`ctrl-${key}`">{{ def.title }}</CmkLabel>
+        <CmkSpace v-if="def.help" size="small" />
+        <CmkHelpText v-if="def.help" :help="def.help" />
+      </div>
       <CmkSwitch
         v-if="def.type === 'boolean'"
         :id="`ctrl-${key}`"
