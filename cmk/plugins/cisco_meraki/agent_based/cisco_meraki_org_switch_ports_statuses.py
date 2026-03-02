@@ -35,9 +35,7 @@ from cmk.agent_based.v2 import (
 )
 from cmk.plugins.cisco_meraki.lib.type_defs import PossiblyMissing
 
-# NOTE: this was hardcoded in the original implementation.
-# TODO: find out why this is required.
-_PORT_TYPE: Final = 6
+_ETHERNET_INTERFACE_PORT_TYPE: Final = 6
 
 
 type Section = Mapping[str, SwitchPortsStatus]
@@ -102,7 +100,7 @@ class SwitchPortsStatus(BaseModel, frozen=True):
 
     @property
     def port_type(self) -> int:
-        return _PORT_TYPE
+        return _ETHERNET_INTERFACE_PORT_TYPE
 
     @computed_field
     @property
