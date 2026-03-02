@@ -233,6 +233,18 @@ class TestCheckSpeed:
 
         assert value == expected
 
+    @pytest.mark.xfail(reason="CMK-31968", strict=True)
+    def test_with_speed_now_unknown(self, params: CheckParams) -> None:
+        section = self._build_section(speed="")
+
+        value = list(check_switch_ports_statuses("1", params, section))[4:6]
+        expected = [
+            Result(state=State.UNKNOWN, summary="Speed: unknown"),
+            Result(state=State.WARN, summary="changed 10 Gbps -> unknown"),
+        ]
+
+        assert value == expected
+
 
 class TestCheckOtherResults:
     @pytest.fixture
@@ -383,6 +395,13 @@ class TestInventoryMerakiInterfaces:
         )
 
         assert value == expected
+
+    @pytest.mark.xfail(reason="CMK-31968", strict=True)
+    def test_speed_not_included_in_columns_when_missing(self) -> None:
+        section = self._build_section({"speed": ""})
+        row, *_ = inventorize_meraki_interfaces(section)
+        assert isinstance(row, TableRow)
+        assert "speed" not in row.inventory_columns
 
 
 class TestInventoryCDPCache:
