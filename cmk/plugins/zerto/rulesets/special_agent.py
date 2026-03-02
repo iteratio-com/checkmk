@@ -3,10 +3,17 @@
 # This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 # conditions defined in the file COPYING, which is part of this source code package.
 
+# mypy: disable-error-code="no-untyped-def"
+
+from typing import Literal
+
 from cmk.rulesets.v1 import Help, Title
 from cmk.rulesets.v1.form_specs import (
+    CascadingSingleChoice,
+    CascadingSingleChoiceElement,
     DictElement,
     Dictionary,
+    FixedValue,
     migrate_to_password,
     Password,
     SingleChoice,
@@ -51,8 +58,78 @@ def _form_spec_special_agents_zerto() -> Dictionary:
                     migrate=migrate_to_password,
                 ),
             ),
+            "cert_verification": DictElement(
+                required=True,
+                parameter_form=CascadingSingleChoice(
+                    title=Title("TLS certificate validation"),
+                    elements=[
+                        CascadingSingleChoiceElement(
+                            name="secure",
+                            title=Title("Verify the server certificate"),
+                            parameter_form=Dictionary(
+                                elements={
+                                    "verify": DictElement(
+                                        required=True,
+                                        parameter_form=FixedValue(value=True),
+                                    ),
+                                    "cert_server_name": DictElement(
+                                        required=False,
+                                        parameter_form=String(
+                                            title=Title("TLS certificate hostname"),
+                                            custom_validate=(
+                                                validators.LengthInRange(min_value=1),
+                                            ),
+                                            help_text=Help(
+                                                "The special agent will use this hostname for the TLS certificate validation. If omitted, the Checkmk host name of the host will be used"
+                                            ),
+                                        ),
+                                    ),
+                                }
+                            ),
+                        ),
+                        CascadingSingleChoiceElement(
+                            name="insecure",
+                            title=Title("Do not verify the server certificate (unsafe)"),
+                            parameter_form=Dictionary(
+                                elements={
+                                    "verify": DictElement(
+                                        required=True,
+                                        parameter_form=FixedValue(
+                                            value=False,
+                                        ),
+                                    ),
+                                },
+                            ),
+                        ),
+                    ],
+                ),
+            ),
         },
+        migrate=_migrate_to_cert_flag,
     )
+
+
+def _migrate_to_cert_flag(
+    value: object,
+) -> dict[
+    str,
+    dict[
+        str,
+        Literal["windows", "vcenter"]
+        | str
+        | tuple[
+            Literal["cmk_postprocessed"],
+            Literal["explicit_password", "stored_password"],
+            tuple[str, str],
+        ]
+        | tuple[Literal["secure", "insecure"], dict[str, bool | str]],
+    ],
+]:
+    assert isinstance(value, dict)
+    if value.get("cert_verification") is None:
+        value["cert_verification"] = ("insecure", {"verify": False})
+
+    return value
 
 
 rule_spec_special_agent_zerto = SpecialAgent(

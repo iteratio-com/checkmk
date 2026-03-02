@@ -15,7 +15,11 @@ from cmk.server_side_calls.v1 import HostConfig, IPv4Config, Secret, SpecialAgen
     ["params", "expected_args"],
     [
         pytest.param(
-            {"username": "usr", "password": Secret(1)},
+            {
+                "username": "usr",
+                "password": Secret(1),
+                "cert_verification": ("secure", {"verify": True, "cert_server_name": ""}),
+            },
             [
                 "--authentication",
                 "windows",
@@ -24,6 +28,45 @@ from cmk.server_side_calls.v1 import HostConfig, IPv4Config, Secret, SpecialAgen
                 "--password-id",
                 Secret(1),
                 "address",
+                "--cert-server-name",
+                "testhost",
+            ],
+        ),
+        pytest.param(
+            {
+                "username": "usr",
+                "password": Secret(1),
+                "cert_verification": ("insecure", {"verify": False}),
+            },
+            [
+                "--authentication",
+                "windows",
+                "--username",
+                "usr",
+                "--password-id",
+                Secret(1),
+                "address",
+                "--disable-cert-verification",
+                "--cert-server-name",
+                "testhost",
+            ],
+        ),
+        pytest.param(
+            {
+                "username": "usr",
+                "password": Secret(1),
+                "cert_verification": ("secure", {"verify": True, "cert_server_name": "temphost"}),
+            },
+            [
+                "--authentication",
+                "windows",
+                "--username",
+                "usr",
+                "--password-id",
+                Secret(1),
+                "address",
+                "--cert-server-name",
+                "temphost",
             ],
         ),
     ],
