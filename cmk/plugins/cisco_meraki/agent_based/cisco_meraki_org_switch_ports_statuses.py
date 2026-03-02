@@ -98,10 +98,6 @@ class SwitchPortsStatus(BaseModel, frozen=True):
     spanning_tree: PossiblyMissing[SpanningTree] = Field(default=None, alias="spanningTree")
     traffic_in_kbps: PossiblyMissing[UsageInKbps] = Field(default=None, alias="trafficInKbps")
 
-    @property
-    def port_type(self) -> int:
-        return _ETHERNET_INTERFACE_PORT_TYPE
-
     @computed_field
     @property
     def admin_status(self) -> int:
@@ -376,7 +372,7 @@ def inventorize_meraki_interfaces(section: Section) -> InventoryResult:
                 "admin_status": port.admin_status,
                 **({"oper_status": port.oper_status} if port.oper_status else {}),
                 **({"speed": port.speed_as_int} if port.speed_as_int else {}),
-                "port_type": port.port_type,
+                "port_type": _ETHERNET_INTERFACE_PORT_TYPE,
             },
         )
 
