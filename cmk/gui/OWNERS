@@ -4,6 +4,7 @@ per-file availability.py=file:/component_owners/availability_and_sla/OWNERS_DEFI
 per-file login.py=file:/component_owners/user_management_and_authentication/OWNERS_DEFINITION
 per-file search_menu.py=file:/component_owners/global_search/OWNERS_DEFINITION
 per-file pages.py=file:/component_owners/ui_framework/OWNERS_DEFINITION
+per-file product_usage_analytics_popup.py=file:/component_owners/product_usage_analytics/OWNERS_DEFINITION
 
 # Please
 #  - don't add individual owners here but provide a reference to an OWNERS_DEFINITION file instead
