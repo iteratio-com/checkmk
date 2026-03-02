@@ -55,11 +55,11 @@ test_registration_fails() {
     set +e
     output=$(
         set -euo pipefail
-        printf '%s' "testpass" | main --relay-name "test-relay" \
+        main --relay-name "test-relay" \
             --initial-tag-version "1.0.0" \
             --target-server "server.example.com" \
             --target-site-name "mysite" \
-            --user "testuser" \
+            --token "testtoken" \
             2>&1
     )
     local exit_code=$?
@@ -77,7 +77,7 @@ test_registration_fails() {
     assertTrue "podman run with cmk-relay register should have been called" $?
 
     # Verify the arguments to podman run for registration
-    grep -q "podman run --rm -v relay:/opt/check-mk-relay/workdir:Z localhost/checkmk_relay:checkmk_sync cmk-relay register --server server.example.com --site mysite --relay-alias test-relay --trust-cert --force --user testuser --password testpass" "$PODMAN_CALLS_FILE"
+    grep -q "podman run --rm -v relay:/opt/check-mk-relay/workdir:Z localhost/checkmk_relay:checkmk_sync cmk-relay register --server server.example.com --site mysite --relay-alias test-relay --trust-cert --force --token testtoken" "$PODMAN_CALLS_FILE"
     assertTrue "podman run should have been called with correct registration arguments" $?
 }
 
@@ -95,11 +95,11 @@ test_registration_localhost_uses_host_containers_internal() {
     set +e
     output=$(
         set -euo pipefail
-        printf '%s' "testpass" | main --relay-name "test-relay" \
+        main --relay-name "test-relay" \
             --initial-tag-version "1.0.0" \
             --target-server "localhost" \
             --target-site-name "mysite" \
-            --user "testuser" \
+            --token "testtoken" \
             2>&1
     )
     local exit_code=$?
@@ -109,7 +109,7 @@ test_registration_localhost_uses_host_containers_internal() {
     assertEquals "main should succeed" 0 "$exit_code"
 
     # Verify that localhost was replaced with host.containers.internal
-    grep -q "podman run --rm -v relay:/opt/check-mk-relay/workdir:Z localhost/checkmk_relay:checkmk_sync cmk-relay register --server host.containers.internal --site mysite --relay-alias test-relay --trust-cert --force --user testuser --password testpass" "$PODMAN_CALLS_FILE"
+    grep -q "podman run --rm -v relay:/opt/check-mk-relay/workdir:Z localhost/checkmk_relay:checkmk_sync cmk-relay register --server host.containers.internal --site mysite --relay-alias test-relay --trust-cert --force --token testtoken" "$PODMAN_CALLS_FILE"
     assertTrue "podman run should use host.containers.internal instead of localhost" $?
 }
 
@@ -127,11 +127,11 @@ test_registration_127_0_0_1_uses_host_containers_internal() {
     set +e
     output=$(
         set -euo pipefail
-        printf '%s' "testpass" | main --relay-name "test-relay" \
+        main --relay-name "test-relay" \
             --initial-tag-version "1.0.0" \
             --target-server "127.0.0.1" \
             --target-site-name "mysite" \
-            --user "testuser" \
+            --token "testtoken" \
             2>&1
     )
     local exit_code=$?
@@ -141,7 +141,7 @@ test_registration_127_0_0_1_uses_host_containers_internal() {
     assertEquals "main should succeed" 0 "$exit_code"
 
     # Verify that 127.0.0.1 was replaced with host.containers.internal
-    grep -q "podman run --rm -v relay:/opt/check-mk-relay/workdir:Z localhost/checkmk_relay:checkmk_sync cmk-relay register --server host.containers.internal --site mysite --relay-alias test-relay --trust-cert --force --user testuser --password testpass" "$PODMAN_CALLS_FILE"
+    grep -q "podman run --rm -v relay:/opt/check-mk-relay/workdir:Z localhost/checkmk_relay:checkmk_sync cmk-relay register --server host.containers.internal --site mysite --relay-alias test-relay --trust-cert --force --token testtoken" "$PODMAN_CALLS_FILE"
     assertTrue "podman run should use host.containers.internal instead of 127.0.0.1" $?
 }
 
@@ -159,11 +159,11 @@ test_registration_127_0_1_1_uses_host_containers_internal() {
     set +e
     output=$(
         set -euo pipefail
-        printf '%s' "testpass" | main --relay-name "test-relay" \
+        main --relay-name "test-relay" \
             --initial-tag-version "1.0.0" \
             --target-server "127.0.1.1" \
             --target-site-name "mysite" \
-            --user "testuser" \
+            --token "testtoken" \
             2>&1
     )
     local exit_code=$?
@@ -173,7 +173,7 @@ test_registration_127_0_1_1_uses_host_containers_internal() {
     assertEquals "main should succeed" 0 "$exit_code"
 
     # Verify that 127.0.1.1 was replaced with host.containers.internal
-    grep -q "podman run --rm -v relay:/opt/check-mk-relay/workdir:Z localhost/checkmk_relay:checkmk_sync cmk-relay register --server host.containers.internal --site mysite --relay-alias test-relay --trust-cert --force --user testuser --password testpass" "$PODMAN_CALLS_FILE"
+    grep -q "podman run --rm -v relay:/opt/check-mk-relay/workdir:Z localhost/checkmk_relay:checkmk_sync cmk-relay register --server host.containers.internal --site mysite --relay-alias test-relay --trust-cert --force --token testtoken" "$PODMAN_CALLS_FILE"
     assertTrue "podman run should use host.containers.internal instead of 127.0.1.1" $?
 }
 
@@ -191,11 +191,11 @@ test_registration_ipv6_localhost_uses_host_containers_internal() {
     set +e
     output=$(
         set -euo pipefail
-        printf '%s' "testpass" | main --relay-name "test-relay" \
+        main --relay-name "test-relay" \
             --initial-tag-version "1.0.0" \
             --target-server "::1" \
             --target-site-name "mysite" \
-            --user "testuser" \
+            --token "testtoken" \
             2>&1
     )
     local exit_code=$?
@@ -205,7 +205,7 @@ test_registration_ipv6_localhost_uses_host_containers_internal() {
     assertEquals "main should succeed" 0 "$exit_code"
 
     # Verify that ::1 was replaced with host.containers.internal
-    grep -q "podman run --rm -v relay:/opt/check-mk-relay/workdir:Z localhost/checkmk_relay:checkmk_sync cmk-relay register --server host.containers.internal --site mysite --relay-alias test-relay --trust-cert --force --user testuser --password testpass" "$PODMAN_CALLS_FILE"
+    grep -q "podman run --rm -v relay:/opt/check-mk-relay/workdir:Z localhost/checkmk_relay:checkmk_sync cmk-relay register --server host.containers.internal --site mysite --relay-alias test-relay --trust-cert --force --token testtoken" "$PODMAN_CALLS_FILE"
     assertTrue "podman run should use host.containers.internal instead of ::1" $?
 }
 
@@ -332,11 +332,11 @@ test_registration_unresolvable_address_fails() {
     set +e
     output=$(
         set -euo pipefail
-        printf '%s' "testpass" | main --relay-name "test-relay" \
+        main --relay-name "test-relay" \
             --initial-tag-version "1.0.0" \
             --target-server "unresolvable.invalid" \
             --target-site-name "mysite" \
-            --user "testuser" \
+            --token "testtoken" \
             2>&1
     )
     local exit_code=$?
