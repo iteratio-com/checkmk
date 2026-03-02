@@ -183,7 +183,7 @@ _PLUGIN_FAMILIES_WITH_KNOWN_API_VIOLATIONS = {
         "cmk.metric_backend",
         "cmk.utils.macros",
         "cmk.utils.paths",
-        "cmk.gui.form_specs.nonfree.ultimate.unstable.metric_backend_custom_query",
+        "cmk.nonfree.ultimate.metric_backend.gui._metric_backend_custom_query",
     ),
     "datadog": (
         "cmk.ccc.store",
@@ -1205,6 +1205,7 @@ COMPONENTS: Mapping[Component, ImportCheckerProtocol] = {
         "cmk.ccc",
         "cmk.fields",
         "cmk.gui",
+        "cmk.shared_typing",
         "cmk.utils",
     ),
     Component("cmk.nonfree.pro.bakery"): _allow(
@@ -1291,12 +1292,6 @@ COMPONENTS: Mapping[Component, ImportCheckerProtocol] = {
     ),
     Component("cmk.trace"): _allow(),
     **CMK_UTILS_DEPENDENCIES,
-    Component("cmk.nonfree.ultimate.metric_backend.gui"): _allow(
-        *PACKAGE_METRIC_BACKEND,
-        "cmk.ccc",
-        "cmk.gui",
-        "cmk.utils",
-    ),
     Component("cmk.nonfree.ultimate.otel.dcd"): _allow(
         *PACKAGE_METRIC_BACKEND,
         "cmk.ccc",

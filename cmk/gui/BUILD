@@ -192,8 +192,6 @@ py_library(
     ] + select({
         "@//:gpl+nonfree_repo": [
             ":cmk_gui_pro",
-            "//cmk/gui/form_specs/nonfree/ultimate",
-            "//cmk/gui/form_specs/nonfree/ultimate:unstable",
             "//cmk/nonfree/ultimate/metric_backend",
             "//cmk/nonfree/ultimate/otel",
             "//cmk/utils:cmk_utils_pro",
