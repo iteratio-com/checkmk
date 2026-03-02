@@ -28,28 +28,27 @@ const selectedValue = ref<string | null>(null)
 
 const a11yDataCmkDropdown = [
   {
-    key: 'Enter',
+    keys: ['Enter', 'Space'],
     description: 'Selects the currently highlighted suggestion and triggers the update.'
   },
   {
-    key: 'Tab',
+    keys: ['Tab'],
     description:
-      'Selects the currently highlighted suggestion (functions identically to the Enter key in this component).'
+      'Moves focus to the dropdown from the previous focusable element, or selects the currently highlighted suggestion when the dropdown is open.'
   },
   {
-    key: 'Escape',
+    keys: [['Shift', 'Tab']],
+    description: 'Moves focus to the dropdown from the next focusable element in reverse order.'
+  },
+  {
+    keys: ['Escape'],
     description:
       'Closes the suggestions dropdown or removes focus from the filter input without making a selection.'
   },
   {
-    key: 'ArrowDown',
+    keys: ['ArrowDown', 'ArrowUp'],
     description:
       'Moves the active highlight to the next selectable suggestion in the list, scrolling it into view if necessary.'
-  },
-  {
-    key: 'ArrowUp',
-    description:
-      'Moves the active highlight to the previous selectable suggestion in the list, scrolling it into view if necessary.'
   }
 ]
 

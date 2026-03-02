@@ -4,16 +4,23 @@ This file is part of Checkmk (https://checkmk.com). It is subject to the terms a
 conditions defined in the file COPYING, which is part of this source code package.
 -->
 <script setup lang="ts">
+import { computed } from 'vue'
+
 import CmkHeading from '@/components/typography/CmkHeading.vue'
 
 export interface AccessibilityItem {
-  key: string
+  keys: (string | string[])[]
   description: string
 }
 
-defineProps<{
-  data: AccessibilityItem[]
-}>()
+const props = defineProps<{ data: AccessibilityItem[] }>()
+
+const normalizedData = computed(() =>
+  props.data.map(({ keys, description }) => ({
+    description,
+    keys: keys.map((k) => (Array.isArray(k) ? k : [k]))
+  }))
+)
 </script>
 
 <template>
@@ -22,10 +29,25 @@ defineProps<{
       <CmkHeading type="h4">Key</CmkHeading>
       <CmkHeading type="h4">Description</CmkHeading>
     </div>
-    <template v-if="data.length > 0">
-      <div v-for="item in data" :key="item.key" class="demo-accessibility-table__table-row">
+    <template v-if="normalizedData.length">
+      <div
+        v-for="item in normalizedData"
+        :key="item.description"
+        class="demo-accessibility-table__table-row"
+      >
         <div class="demo-accessibility-table__table-cell">
-          <span class="demo-accessibility-table__key-pill">{{ item.key }}</span>
+          <span
+            v-for="(group, groupIdx) in item.keys"
+            :key="`${groupIdx}-${group.join('+')}`"
+            class="demo-accessibility-table__key-group"
+          >
+            <template v-for="(keyName, keyIdx) in group" :key="`${keyIdx}-${keyName}`">
+              <span class="demo-accessibility-table__key-pill">{{ keyName }}</span>
+              <span v-if="keyIdx < group.length - 1" class="demo-accessibility-table__key-separator"
+                >+</span
+              >
+            </template>
+          </span>
         </div>
         <div class="demo-accessibility-table__table-cell">
           {{ item.description }}
@@ -70,6 +92,17 @@ defineProps<{
   padding: 12px 16px;
   display: flex;
   align-items: center;
+  gap: var(--spacing-half);
+}
+
+.demo-accessibility-table__key-group {
+  display: inline-flex;
+  align-items: center;
+}
+
+.demo-accessibility-table__key-separator {
+  margin: 0 6px;
+  color: var(--demo-elements-text-color);
 }
 
 .demo-accessibility-table__key-pill {
