@@ -73,32 +73,6 @@ py_library(
     ],
 )
 
-# Subset of cmk.base.nonfree.bakery modules that are needed by
-# core_bakelets (which can't depend on cmk_base_pro due to cycle).
-py_library(
-    name = "cmk_base_nonfree_bakery",
-    srcs = [
-        "nonfree/bakery/artifacts.py",
-        "nonfree/bakery/common_config.py",
-        "nonfree/bakery/constants.py",
-        "nonfree/bakery/plugins.py",
-    ],
-    imports = ["../.."],
-    target_compatible_with = select({
-        "@//:gpl+nonfree_repo": [],
-        "@//:gpl_repo": ["@platforms//:incompatible"],
-    }),
-    visibility = ["//cmk:__subpackages__"],
-    deps = [
-        ":cmk_base",
-        "//cmk/nonfree/pro/bakery",
-        "//cmk/utils:cmk_utils",
-        "//packages/cmk-ccc:debug",
-        "//packages/cmk-plugin-apis:bakery",
-        requirement("pydantic"),
-    ],
-)
-
 py_library(
     name = "cmk_base_pro",
     srcs = glob(
@@ -129,6 +103,10 @@ py_library(
         requirement("pyyaml"),
     ] + select({
         "@//:gpl+nonfree_repo": [
+            "//cmk/base/nonfree",
+            "//cmk/base/nonfree:cap",
+            "//cmk/base/nonfree/bakery:core",
+            "//cmk/base/nonfree/bakery:nonfree_bakery",
             "//cmk/nonfree/pro/bakery",
             "//cmk/nonfree/pro/robotmk",
             "//cmk/nonfree/pro/robotmk:bakery",
@@ -158,6 +136,8 @@ py_library(
         requirement("pydantic"),
     ] + select({
         "@//:gpl+nonfree_repo": [
+            "//cmk/base/nonfree:nonfree_ultimate",
+            "//cmk/base/nonfree/bakery:core_bakelets_ultimate",
             "//cmk/nonfree/pro/bakery",
             "//non-free/packages/cmk-core-helpers:fetcher-encoder",
             "//non-free/packages/cmk-core-helpers:fetcher-helper",
@@ -181,7 +161,12 @@ py_library(
         ":cmk_base_pro",
         ":cmk_base_ultimate",
         "//cmk/utils:cmk_utils_pro",
-    ],
+    ] + select({
+        "@//:gpl+nonfree_repo": [
+            "//cmk/base/nonfree:nonfree_cloud",
+        ],
+        "@//:gpl_repo": [],
+    }),
 )
 
 py_library(
@@ -198,5 +183,10 @@ py_library(
         ":cmk_base_ultimate",
         "//cmk/utils:cmk_utils_pro",
         "//cmk/utils:cmk_utils_ultimatemt",
-    ],
+    ] + select({
+        "@//:gpl+nonfree_repo": [
+            "//cmk/base/nonfree:nonfree_ultimatemt",
+        ],
+        "@//:gpl_repo": [],
+    }),
 )
