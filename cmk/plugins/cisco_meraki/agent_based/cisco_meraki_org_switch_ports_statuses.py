@@ -40,7 +40,7 @@ from cmk.plugins.cisco_meraki.lib.type_defs import PossiblyMissing
 _PORT_TYPE: Final = 6
 
 
-type Section = Mapping[str, SwitchPortStatus]
+type Section = Mapping[str, SwitchPortsStatus]
 
 Status = Literal["up", "down", "unknown"]
 
@@ -81,7 +81,7 @@ class UsageInKbps(BaseModel, frozen=True):
     total: float
 
 
-class SwitchPortStatus(BaseModel, frozen=True):
+class SwitchPortsStatus(BaseModel, frozen=True):
     client_count: int = Field(alias="clientCount")
     duplex: str
     enabled: bool
@@ -167,7 +167,7 @@ def parse_switch_ports_statuses(string_table: StringTable) -> Section:
     # https://developer.cisco.com/meraki/api-v1/get-organization-switch-ports-statuses-by-switch/
     match string_table:
         case [[payload]] if payload:
-            statuses = (SwitchPortStatus.model_validate(data) for data in json.loads(payload))
+            statuses = (SwitchPortsStatus.model_validate(data) for data in json.loads(payload))
             return {str(switch_port.port_id): switch_port for switch_port in statuses}
         case _:
             return {}

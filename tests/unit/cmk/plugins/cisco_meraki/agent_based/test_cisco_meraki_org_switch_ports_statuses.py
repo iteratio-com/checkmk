@@ -9,7 +9,7 @@ import pytest
 from polyfactory.factories import TypedDictFactory
 
 from cmk.agent_based.v2 import HostLabel, Metric, Result, State, StringTable, TableRow
-from cmk.plugins.cisco_meraki.agent_based.cisco_meraki_org_switch_port_statuses import (
+from cmk.plugins.cisco_meraki.agent_based.cisco_meraki_org_switch_ports_statuses import (
     check_switch_ports_statuses,
     CheckParams,
     discover_switch_ports_statuses,
@@ -21,20 +21,20 @@ from cmk.plugins.cisco_meraki.agent_based.cisco_meraki_org_switch_port_statuses 
     parse_switch_ports_statuses,
     Section,
 )
-from cmk.plugins.cisco_meraki.lib.schema import RawSwitchPortStatus
+from cmk.plugins.cisco_meraki.lib.schema import RawSwitchPortsStatus
 
 
-class _RawSwitchPortStatusFactory(TypedDictFactory[RawSwitchPortStatus]):
+class _RawSwitchPortsStatusFactory(TypedDictFactory[RawSwitchPortsStatus]):
     __check_model__ = False
 
 
 def test_parsing_multiple_switch_ports() -> None:
-    switch_port_status = [
-        _RawSwitchPortStatusFactory.build(),
-        _RawSwitchPortStatusFactory.build(),
-        _RawSwitchPortStatusFactory.build(),
+    switch_ports_status = [
+        _RawSwitchPortsStatusFactory.build(),
+        _RawSwitchPortsStatusFactory.build(),
+        _RawSwitchPortsStatusFactory.build(),
     ]
-    string_table = [[f"{json.dumps(switch_port_status)}"]]
+    string_table = [[f"{json.dumps(switch_ports_status)}"]]
     section = parse_switch_ports_statuses(string_table)
     assert len(section) == 3
 
@@ -55,12 +55,12 @@ class TestDiscovery:
         assert not any(discover_switch_ports_statuses(params, section))
 
     def test_discover_switch_ports_statuses_up(self, params: DiscoveryParams) -> None:
-        switch_port_status = _RawSwitchPortStatusFactory.build(
+        switch_ports_status = _RawSwitchPortsStatusFactory.build(
             enabled=True,
             status="connected",
             speed="10 Gbps",
         )
-        string_table = [[f"[{json.dumps(switch_port_status)}]"]]
+        string_table = [[f"[{json.dumps(switch_ports_status)}]"]]
         section = parse_switch_ports_statuses(string_table)
         service, *_ = discover_switch_ports_statuses(params, section)
 
@@ -71,12 +71,12 @@ class TestDiscovery:
         }
 
     def test_discover_switch_ports_statuses_down(self, params: DiscoveryParams) -> None:
-        switch_port_status = _RawSwitchPortStatusFactory.build(
+        switch_ports_status = _RawSwitchPortsStatusFactory.build(
             enabled=False,
             status="disconnected",
             speed="0 Gbps",
         )
-        string_table = [[f"[{json.dumps(switch_port_status)}]"]]
+        string_table = [[f"[{json.dumps(switch_ports_status)}]"]]
         section = parse_switch_ports_statuses(string_table)
         service, *_ = discover_switch_ports_statuses(params, section)
 
@@ -89,8 +89,10 @@ class TestDiscovery:
 
 class TestHostLabels:
     def _build_section(self, *, with_lldp: bool) -> Section:
-        switch_port_status = _RawSwitchPortStatusFactory.build(**{} if with_lldp else {"lldp": {}})
-        string_table = [[f"[{json.dumps(switch_port_status)}]"]]
+        switch_ports_status = _RawSwitchPortsStatusFactory.build(
+            **{} if with_lldp else {"lldp": {}}
+        )
+        string_table = [[f"[{json.dumps(switch_ports_status)}]"]]
         return parse_switch_ports_statuses(string_table)
 
     def test_without_lldp(self) -> None:
@@ -133,8 +135,8 @@ class TestAdminStatus:
         return params
 
     def _build_section(self, *, enabled: bool) -> Section:
-        switch_port_status = _RawSwitchPortStatusFactory.build(portId="1", enabled=enabled)
-        string_table = [[f"[{json.dumps(switch_port_status)}]"]]
+        switch_ports_status = _RawSwitchPortsStatusFactory.build(portId="1", enabled=enabled)
+        string_table = [[f"[{json.dumps(switch_ports_status)}]"]]
         return parse_switch_ports_statuses(string_table)
 
     def test_disabled(self, params: CheckParams) -> None:
@@ -166,12 +168,12 @@ class TestCheckOperationalStatus:
         return params
 
     def _build_section(self, *, status: str) -> Section:
-        switch_port_status = _RawSwitchPortStatusFactory.build(
+        switch_ports_status = _RawSwitchPortsStatusFactory.build(
             portId="1",
             enabled=True,
             status=status,
         )
-        string_table = [[f"[{json.dumps(switch_port_status)}]"]]
+        string_table = [[f"[{json.dumps(switch_ports_status)}]"]]
         return parse_switch_ports_statuses(string_table)
 
     def test_disconnected(self, params: CheckParams) -> None:
@@ -203,13 +205,13 @@ class TestCheckSpeed:
         return params
 
     def _build_section(self, *, speed: str) -> Section:
-        switch_port_status = _RawSwitchPortStatusFactory.build(
+        switch_ports_status = _RawSwitchPortsStatusFactory.build(
             portId="1",
             enabled=True,
             status="connected",
             speed=speed,
         )
-        string_table = [[f"[{json.dumps(switch_port_status)}]"]]
+        string_table = [[f"[{json.dumps(switch_ports_status)}]"]]
         return parse_switch_ports_statuses(string_table)
 
     def test_no_speed_change(self, params: CheckParams) -> None:
@@ -243,7 +245,7 @@ class TestCheckOtherResults:
     def _build_section(self, data: dict[str, object]) -> Section:
         defaults = {"portId": "1", "enabled": True, "status": "connected", "speed": "10 Gbps"}
         payload = {**defaults, **data}
-        status_ = _RawSwitchPortStatusFactory.build(**payload)
+        status_ = _RawSwitchPortsStatusFactory.build(**payload)
         string_table = [[f"[{json.dumps(status_)}]"]]
         return parse_switch_ports_statuses(string_table)
 
@@ -341,7 +343,7 @@ class TestInventoryMerakiInterfaces:
     def _build_section(self, data: dict[str, object]) -> Section:
         defaults = {"portId": "1", "enabled": True, "speed": "10 Gbps"}
         payload = {**defaults, **data}
-        status_ = _RawSwitchPortStatusFactory.build(**payload)
+        status_ = _RawSwitchPortsStatusFactory.build(**payload)
         string_table = [[f"[{json.dumps(status_)}]"]]
         return parse_switch_ports_statuses(string_table)
 
@@ -387,7 +389,7 @@ class TestInventoryCDPCache:
     def _build_section(self, data: dict[str, object]) -> Section:
         defaults = {"portId": "1", "cdp": data}
         payload = {**defaults, **data}
-        status_ = _RawSwitchPortStatusFactory.build(**payload)
+        status_ = _RawSwitchPortsStatusFactory.build(**payload)
         string_table = [[f"[{json.dumps(status_)}]"]]
         return parse_switch_ports_statuses(string_table)
 
@@ -465,7 +467,7 @@ class TestInventoryLLDPCache:
     def _build_section(self, data: dict[str, object]) -> Section:
         defaults = {"portId": "1", "lldp": data}
         payload = {**defaults, **data}
-        status_ = _RawSwitchPortStatusFactory.build(**payload)
+        status_ = _RawSwitchPortsStatusFactory.build(**payload)
         string_table = [[f"[{json.dumps(status_)}]"]]
         return parse_switch_ports_statuses(string_table)
 
