@@ -334,7 +334,7 @@ class TestCheckOtherResults:
         section = self._build_section({"securePort": {"enabled": True}})
 
         value = list(check_switch_ports_statuses("1", params, section))[14]
-        expected = Result(state=State.UNKNOWN, summary="Secure port: enabled")
+        expected = Result(state=State.OK, summary="Secure port: enabled")
 
         assert value == expected
 

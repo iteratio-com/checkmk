@@ -335,9 +335,8 @@ def check_switch_ports_statuses(item: str, params: CheckParams, section: Section
         if error not in {"Port disconnected", "Port disabled"}:
             yield Result(state=State.CRIT, notice=f"{error}")
 
-    # TODO: find out why this was set to unknown.
     if port.secure_port and port.secure_port.enabled:
-        yield Result(state=State.UNKNOWN, summary="Secure port: enabled")
+        yield Result(state=State.OK, summary="Secure port: enabled")
 
 
 check_plugin_cisco_meraki_org_switch_ports_statuses = CheckPlugin(
