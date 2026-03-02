@@ -16,7 +16,7 @@ from . import diagnostics, localize
 from .automations.automations import Automation, Automations
 from .automations.check_mk import automations_common
 from .base_app import CheckmkBaseApp
-from .core.factory import create_core
+from .core.nagios.factory import create_core
 from .modes.check_mk import general_options, modes_common
 from .modes.modes import Mode, Modes
 
