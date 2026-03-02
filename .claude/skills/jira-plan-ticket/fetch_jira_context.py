@@ -185,7 +185,7 @@ def download_attachments(
             else:
                 other_files[filename] = local_path
         except Exception as e:
-            print(f"Warning: Failed to download attachment {filename}: {e}", file=sys.stderr)
+            sys.stderr.write(f"Warning: Failed to download attachment {filename}: {e}\n")
     return images, other_files
 
 
@@ -326,36 +326,35 @@ def format_linked_issue(client: JIRA, key: str, link_desc: str) -> str:
 
 def main() -> None:
     if len(sys.argv) != 2:
-        print("Usage: fetch_jira_context.py <TICKET_KEY>", file=sys.stderr)
+        sys.stderr.write("Usage: fetch_jira_context.py <TICKET_KEY>\n")
         sys.exit(1)
 
     key = sys.argv[1].upper()
     if not key.startswith(PROJECT_PREFIX):
-        print(
+        sys.stderr.write(
             f"Error: Only CMK- tickets are supported (limited to the CMK project"
-            f" to avoid interfering with sensitive customer data), got: {key}",
-            file=sys.stderr,
+            f" to avoid interfering with sensitive customer data), got: {key}\n"
         )
         sys.exit(1)
 
     token = os.environ.get("JIRA_PAT")
     if not token:
-        print("Error: JIRA_PAT environment variable is not set.", file=sys.stderr)
+        sys.stderr.write("Error: JIRA_PAT environment variable is not set.\n")
         sys.exit(1)
 
     try:
         client = connect(token)
     except Exception as e:
-        print(f"Error: Failed to connect to Jira: {e}", file=sys.stderr)
+        sys.stderr.write(f"Error: Failed to connect to Jira: {e}\n")
         sys.exit(1)
 
     try:
         issue = client.issue(key)
     except JIRAError as e:
         if e.status_code == 404:
-            print(f"Error: Ticket {key} not found.", file=sys.stderr)
+            sys.stderr.write(f"Error: Ticket {key} not found.\n")
         else:
-            print(f"Error: Failed to fetch {key}: {e.status_code} {e.text}", file=sys.stderr)
+            sys.stderr.write(f"Error: Failed to fetch {key}: {e.status_code} {e.text}\n")
         sys.exit(1)
 
     # Create temp directory for attachments (persists for Claude Code to read)
@@ -428,7 +427,7 @@ def main() -> None:
                 parts.append(results[linked_key])
                 parts.append("")
 
-    print("\n".join(parts))
+    sys.stdout.write("\n".join(parts) + "\n")
 
 
 if __name__ == "__main__":

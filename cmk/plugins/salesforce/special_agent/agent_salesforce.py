@@ -59,7 +59,7 @@ def get_content() -> dict[str, list[str]] | None:
     if opt_debug:
         for line in content:
             try:
-                pprint.pprint(json.loads(line))
+                sys.stdout.write(pprint.pformat(json.loads(line)) + "\n")
             except Exception:
                 sys.stdout.write(line + "\n")
         return None

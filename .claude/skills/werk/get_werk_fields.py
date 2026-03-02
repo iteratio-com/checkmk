@@ -24,4 +24,4 @@ result["edition_components"] = {
     for ed, comps in getattr(werks_config, "edition_components", {}).items()
 }
 
-print(json.dumps(result, indent=2))
+sys.stdout.write(json.dumps(result, indent=2) + "\n")
