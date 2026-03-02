@@ -30,7 +30,6 @@ import type {
   Site,
   SitesAndChanges
 } from './ChangesInterfaces'
-import ChangesStatusBar from './components/ChangesStatusBar.vue'
 import DefaultPopup from './components/DefaultPopup.vue'
 import ChangesActivating from './components/activation/ChangesActivating.vue'
 import ChangesActivationResult from './components/activation/ChangesActivationResult.vue'
@@ -69,9 +68,7 @@ const userCanActivateForeignRef = computed(() => props.user_has_activate_foreign
 const {
   hasSitesWithChangesOrErrors,
   siteSelectionIsDisabled,
-  allSitesWithChangesAreNotSelectable,
-  sitesWithStatusProblems,
-  sitesWithActivationIssues
+  allSitesWithChangesAreNotSelectable
 } = useSiteStatus(sitesRef, pendingChangesRef, userCanActivateForeignRef)
 
 const activationPollStartTime = ref<number | null>(null)
@@ -415,29 +412,21 @@ onMounted(async () => {
       >
       </ChangesActivationResult>
 
-      <ChangesActivationResult
-        v-if="sitesWithWarningsOrErrors && !activateChangesInProgress"
-        class="cmk-div-activation-result-container"
-        type="warning"
-        :title="_t('Problems detected during activation')"
-        :info="_t('Some things may not be monitored properly.')"
-      >
-      </ChangesActivationResult>
-
-      <ChangesStatusBar
-        v-if="!activateChangesInProgress"
-        :activate-changes-url="props.activate_changes_url"
-        :pending-changes="sitesAndChanges.pendingChanges.length"
-        :activation-issues="sitesWithActivationIssues.length"
-        :site-problems="sitesWithStatusProblems.length"
-      />
-
       <div
         v-if="
           recentlyActivatedSites.length > 0 || sitesWithWarningsOrErrors || weHavePendingChanges
         "
         class="cmk-div-sites-and-pending-changes-container"
       >
+        <ChangesActivationResult
+          v-if="sitesWithWarningsOrErrors && !activateChangesInProgress"
+          class="cmk-div-activation-result-container"
+          type="warning"
+          :title="_t('Problems detected during activation')"
+          :info="_t('Some things may not be monitored properly.')"
+        >
+        </ChangesActivationResult>
+
         <SiteStatusList
           v-if="hasSitesWithChangesOrErrors"
           v-model="selectedSites"
