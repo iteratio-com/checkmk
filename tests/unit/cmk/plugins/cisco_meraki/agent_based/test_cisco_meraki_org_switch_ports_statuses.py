@@ -395,7 +395,6 @@ class TestInventoryMerakiInterfaces:
 
         assert value == expected
 
-    @pytest.mark.xfail(reason="CMK-31968", strict=True)
     def test_speed_not_included_in_columns_when_missing(self) -> None:
         section = self._build_section({"speed": ""})
         row, *_ = inventorize_meraki_interfaces(section)

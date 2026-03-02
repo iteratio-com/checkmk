@@ -138,8 +138,12 @@ class SwitchPortsStatus(BaseModel, frozen=True):
     @computed_field
     @property
     def speed_as_int(self) -> int | None:
+        if not self.speed:
+            return None
+
         raw_value, unit = self.speed.split()  # "10 Gbps" => ("10", "Gbps")
         value = float(raw_value.replace(",", "."))  # handle comma decimal point
+
         match unit.lower()[0]:
             case "k":  # kilobit per second
                 return int(value + 1e3)
