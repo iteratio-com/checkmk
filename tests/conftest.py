@@ -43,14 +43,14 @@ except Exception:
 from tests.testlib.common.repo import (  # noqa: E402
     current_base_branch_name,
 )
-from tests.testlib.pytest_helpers.timeouts import (  # noqa: E402
-    MonitorTimeout,
-    SessionTimeoutError,
-)
-from tests.testlib.utils import (  # noqa: E402
+from tests.testlib.common.utils2 import (  # noqa: E402
     is_containerized,
     run,
     verbose_called_process_error,
+)
+from tests.testlib.pytest_helpers.timeouts import (  # noqa: E402
+    MonitorTimeout,
+    SessionTimeoutError,
 )
 from tests.testlib.version import (  # noqa: E402
     CMKEdition,

@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from tests.testlib.utils import run
+from tests.testlib.common.utils2 import run
 
 logger = logging.getLogger(__name__)
 

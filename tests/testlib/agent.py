@@ -23,14 +23,14 @@ from typing import Any, assert_never, Literal
 from cmk.ccc.hostaddress import HostName
 from tests.testlib.common.repo import repo_path
 from tests.testlib.common.utils import wait_until
-from tests.testlib.site import Site
-from tests.testlib.utils import (
+from tests.testlib.common.utils2 import (
     daemon,
     DaemonTerminationMode,
     execute,
     is_containerized,
     run,
 )
+from tests.testlib.site import Site
 
 logger = logging.getLogger(__name__)
 

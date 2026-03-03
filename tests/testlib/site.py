@@ -47,12 +47,7 @@ from cmk.crypto.password import Password
 from cmk.crypto.secrets import Secret
 from tests.testlib.common.repo import current_branch_name, repo_path
 from tests.testlib.common.utils import wait_until
-from tests.testlib.nonfree.cloud.utils import (  # type: ignore[import-untyped, unused-ignore, import-not-found]
-    create_cse_initial_config,
-    cse_openid_oauth_provider,
-)
-from tests.testlib.openapi_session import AgentReceiverApiSession, CMKOpenApiSession
-from tests.testlib.utils import (
+from tests.testlib.common.utils2 import (
     check_output,
     execute,
     get_processes_by_cmdline,
@@ -67,6 +62,11 @@ from tests.testlib.utils import (
     spawn_expect_process,
     write_file,
 )
+from tests.testlib.nonfree.cloud.utils import (  # type: ignore[import-untyped, unused-ignore, import-not-found]
+    create_cse_initial_config,
+    cse_openid_oauth_provider,
+)
+from tests.testlib.openapi_session import AgentReceiverApiSession, CMKOpenApiSession
 from tests.testlib.version import (
     CMKPackageInfo,
     CMKPackageInfoOld,

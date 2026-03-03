@@ -27,7 +27,7 @@ from tests.gui_e2e.testlib.playwright.pom.sidebar.widget_wizard_sidebar import (
     VisualizationType,
     WidgetType,
 )
-from tests.testlib.utils import is_cleanup_enabled
+from tests.testlib.common.utils2 import is_cleanup_enabled
 
 
 @pytest.fixture(scope="function")

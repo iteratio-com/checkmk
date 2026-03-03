@@ -32,7 +32,7 @@ from cmk.inventory.structured_data import (
     make_meta,
     SDRawTree,
 )
-from tests.unit.cmk.base.empty_config import EMPTY_CONFIG
+from tests.testlib.common.empty_config import EMPTY_CONFIG
 
 
 def _make_diagnostics_dump() -> diagnostics.DiagnosticsDump:

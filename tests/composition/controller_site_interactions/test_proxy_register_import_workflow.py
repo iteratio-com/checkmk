@@ -10,8 +10,8 @@ import pytest
 
 from cmk.ccc.hostaddress import HostName
 from tests.testlib.agent import wait_until_host_has_services, wait_until_host_receives_data
+from tests.testlib.common.utils2 import run
 from tests.testlib.site import Site
-from tests.testlib.utils import run
 
 logger = logging.getLogger(__name__)
 

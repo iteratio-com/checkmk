@@ -26,8 +26,8 @@ from tests.gui_e2e.testlib.playwright.pom.monitor.hosts_dashboard_old import (
     WindowsHostsDashboard,
 )
 from tests.gui_e2e.testlib.playwright.pom.tactical_overview_snapin import TacticalOverviewSnapin
+from tests.testlib.common.utils2 import is_cleanup_enabled
 from tests.testlib.site import Site
-from tests.testlib.utils import is_cleanup_enabled
 
 logger = logging.getLogger(__name__)
 

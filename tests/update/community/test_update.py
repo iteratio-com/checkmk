@@ -7,8 +7,8 @@ import os
 
 import pytest
 
+from tests.testlib.common.utils2 import get_services_with_status
 from tests.testlib.site import Site
-from tests.testlib.utils import get_services_with_status
 from tests.testlib.version import TypeCMKEdition, TypeCMKEditionOld
 from tests.update.helpers import (
     bulk_discover_and_schedule,

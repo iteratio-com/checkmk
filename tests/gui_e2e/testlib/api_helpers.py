@@ -13,8 +13,8 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 
 from tests.gui_e2e.testlib.host_details import HostDetails
+from tests.testlib.common.utils2 import is_cleanup_enabled
 from tests.testlib.site import Site
-from tests.testlib.utils import is_cleanup_enabled
 
 logger = logging.getLogger(__name__)
 LOCALHOST_IPV4 = "127.0.0.1"

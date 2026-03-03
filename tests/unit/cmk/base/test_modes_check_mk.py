@@ -26,8 +26,8 @@ from cmk.fetchers import (
     PlainFetcherTrigger,
 )
 from cmk.utils.tags import TagGroupID, TagID
+from tests.testlib.common.empty_config import EMPTY_CONFIG
 from tests.testlib.unit.base_configuration_scenario import Scenario
-from tests.unit.cmk.base.empty_config import EMPTY_CONFIG
 
 
 class _MockFetcherTrigger(PlainFetcherTrigger):

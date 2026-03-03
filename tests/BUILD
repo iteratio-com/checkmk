@@ -23,6 +23,7 @@ py_library(
         "//cmk/gui:cmk_gui",
         "//cmk/utils:cmk_utils",
         "//packages/cmk-relay-protocols",
+        "//tests/testlib/common",
         requirement("beautifulsoup4"),
         requirement("clickhouse-connect"),
         requirement("cryptography"),
@@ -75,6 +76,7 @@ py_library(
         "//cmk/gui:cmk_gui",
         "//cmk/utils:cmk_utils",
         "//packages/cmk-relay-protocols",
+        "//tests/testlib/common",
         requirement("beautifulsoup4"),
         requirement("clickhouse-connect"),
         requirement("cryptography"),
@@ -101,23 +103,20 @@ py_library(
     srcs = ["__init__.py"] + glob(
         include = [
             "testlib/unit/**/*.py",
-            "testlib/common/**/*.py",
         ],
     ),
     data = glob(
         include = [
             "testlib/unit/**",
-            "testlib/common/**",
         ],
         allow_empty = True,
         exclude = [
-            "testlib/unit/**/*.py",
-            "testlib/common/**/*.py",
+            "**/*.py",
         ],
     ),
     imports = [".."],
     deps = [
-        ":testlib",
+        "//tests/testlib/common",
         requirement("pexpect"),
         requirement("pytest"),
         requirement("pyyaml"),

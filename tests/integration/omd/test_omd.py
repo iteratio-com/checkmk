@@ -10,8 +10,8 @@ import tempfile
 from pathlib import Path
 
 from tests.testlib.common.utils import wait_until
+from tests.testlib.common.utils2 import run
 from tests.testlib.site import Site, SiteFactory
-from tests.testlib.utils import run
 from tests.testlib.version import CMKPackageInfo, edition_from_env, version_from_env
 
 

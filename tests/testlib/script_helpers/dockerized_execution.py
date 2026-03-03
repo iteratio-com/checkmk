@@ -33,8 +33,8 @@ import dockerpty  # type: ignore[import-untyped,unused-ignore]
 import requests
 
 from tests.testlib.common.repo import git_commit_id, git_essential_directories, repo_path
+from tests.testlib.common.utils2 import get_cmk_download_credentials, is_cleanup_enabled
 from tests.testlib.package_manager import DISTRO_CODES
-from tests.testlib.utils import get_cmk_download_credentials, is_cleanup_enabled
 from tests.testlib.version import CMKPackageInfo, CMKVersion, package_hash_path
 
 _DOCKER_REGISTRY = "artifacts.lan.tribe29.com:4000"

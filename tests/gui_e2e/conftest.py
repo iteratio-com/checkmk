@@ -28,6 +28,7 @@ from tests.gui_e2e.testlib.playwright.pom.setup.fixtures import notification_use
 from tests.gui_e2e.testlib.playwright.pom.setup.hosts import AddHost, SetupHost
 from tests.gui_e2e.testlib.playwright.pom.setup.licensing import Licensing
 from tests.testlib.common.repo import repo_path
+from tests.testlib.common.utils2 import is_cleanup_enabled, run
 from tests.testlib.emails import EmailManager
 from tests.testlib.pytest_helpers.calls import exit_pytest_on_exceptions
 from tests.testlib.site import (
@@ -36,7 +37,6 @@ from tests.testlib.site import (
     Site,
     SiteFactory,
 )
-from tests.testlib.utils import is_cleanup_enabled, run
 
 logger = logging.getLogger(__name__)
 

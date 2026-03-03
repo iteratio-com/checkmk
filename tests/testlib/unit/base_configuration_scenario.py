@@ -26,8 +26,8 @@ from cmk.checkengine.discovery import AutochecksMemoizer
 from cmk.checkengine.plugins import AutocheckEntry
 from cmk.utils.rulesets.ruleset_matcher import RuleSpec
 from cmk.utils.tags import TagGroupID, TagID
-from tests.testlib.empty_config import EMPTY_CONFIG
-from tests.testlib.utils import get_standard_linux_agent_output
+from tests.testlib.common.empty_config import EMPTY_CONFIG
+from tests.testlib.common.utils2 import get_standard_linux_agent_output
 
 
 class _AutochecksMocker(AutochecksMemoizer):

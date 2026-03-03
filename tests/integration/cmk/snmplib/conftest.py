@@ -36,8 +36,8 @@ from cmk.snmplib import SNMPBackendEnum
 from cmk.utils import log
 from tests.testlib.common.repo import repo_path
 from tests.testlib.common.utils import wait_until
+from tests.testlib.common.utils2 import is_containerized
 from tests.testlib.site import Site
-from tests.testlib.utils import is_containerized
 
 TIMEOUT_AFTER = 120  # seconds
 logger = logging.getLogger(__name__)

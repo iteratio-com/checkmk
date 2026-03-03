@@ -21,8 +21,8 @@ from typing import Final
 
 import pytest
 
+from tests.testlib.common.utils2 import logger, run
 from tests.testlib.site import Site
-from tests.testlib.utils import logger, run
 from tests.testlib.version import CMKVersion, get_min_version
 
 

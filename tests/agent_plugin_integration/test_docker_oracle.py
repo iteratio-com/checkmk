@@ -24,13 +24,13 @@ import pytest
 
 from tests.testlib.common.repo import repo_path
 from tests.testlib.common.utils import wait_until
+from tests.testlib.common.utils2 import is_cleanup_enabled
 from tests.testlib.docker import (
     CheckmkApp,
     copy_to_container,
     get_container_ip,
     resolve_image_alias,
 )
-from tests.testlib.utils import is_cleanup_enabled
 
 logger = logging.getLogger()
 

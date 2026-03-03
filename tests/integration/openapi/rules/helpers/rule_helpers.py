@@ -22,8 +22,8 @@ from tests.integration.openapi.rules.helpers.rule_configs import (
     DEFAULT_LEVELS,
     DEFAULT_PERIOD,
 )
+from tests.testlib.common.utils2 import is_cleanup_enabled
 from tests.testlib.site import Site
-from tests.testlib.utils import is_cleanup_enabled
 
 logger = logging.getLogger(__name__)
 

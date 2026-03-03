@@ -36,8 +36,8 @@ from tests.gui_e2e.testlib.playwright.pom.setup.predictive_level_helpers import 
 )
 from tests.gui_e2e.testlib.playwright.pom.setup.ruleset import Ruleset
 from tests.testlib.common.repo import repo_path
+from tests.testlib.common.utils2 import is_cleanup_enabled, makedirs
 from tests.testlib.site import Site
-from tests.testlib.utils import is_cleanup_enabled, makedirs
 
 logger = logging.getLogger(__name__)
 

@@ -15,7 +15,7 @@ from subprocess import CalledProcessError
 
 import pytest
 
-from tests.testlib.utils import verbose_called_process_error
+from tests.testlib.common.utils2 import verbose_called_process_error
 
 
 @contextmanager

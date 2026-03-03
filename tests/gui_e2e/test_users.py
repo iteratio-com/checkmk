@@ -16,8 +16,8 @@ from tests.gui_e2e.testlib.playwright.pom.setup.edit_role import EditRole, RoleD
 from tests.gui_e2e.testlib.playwright.pom.setup.roles_and_permissions import RolesAndPermissions
 from tests.gui_e2e.testlib.playwright.pom.setup.user import AddUser, EditUser, UserData
 from tests.gui_e2e.testlib.playwright.pom.setup.users import Users
+from tests.testlib.common.utils2 import is_cleanup_enabled
 from tests.testlib.site import Site
-from tests.testlib.utils import is_cleanup_enabled
 
 logger = logging.getLogger(__name__)
 

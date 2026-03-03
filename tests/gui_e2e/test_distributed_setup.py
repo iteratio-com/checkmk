@@ -20,9 +20,9 @@ from tests.gui_e2e.testlib.playwright.pom.setup.distributed_monitoring import (
     DistributedMonitoring,
 )
 from tests.gui_e2e.testlib.playwright.pom.setup.hosts import HostProperties
+from tests.testlib.common.utils2 import is_cleanup_enabled
 from tests.testlib.pytest_helpers.calls import exit_pytest_on_exceptions
 from tests.testlib.site import Site, SiteFactory
-from tests.testlib.utils import is_cleanup_enabled
 
 
 @contextmanager

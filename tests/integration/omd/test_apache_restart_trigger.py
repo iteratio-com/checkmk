@@ -8,8 +8,8 @@ import os
 
 import pytest
 
+from tests.testlib.common.utils2 import run
 from tests.testlib.site import Site
-from tests.testlib.utils import run
 
 LOGGER = logging.getLogger(__name__)
 

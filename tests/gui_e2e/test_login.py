@@ -18,8 +18,8 @@ from tests.gui_e2e.testlib.open_ldap import Group, OpenLDAPManager, User
 from tests.gui_e2e.testlib.playwright.helpers import CmkCredentials
 from tests.gui_e2e.testlib.playwright.pom.login import LoginPage
 from tests.gui_e2e.testlib.playwright.pom.monitor.dashboard import ProblemDashboard
+from tests.testlib.common.utils2 import is_containerized
 from tests.testlib.site import Site
-from tests.testlib.utils import is_containerized
 
 
 @pytest.fixture(name="tmp_path_module", scope="module")

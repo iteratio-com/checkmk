@@ -12,8 +12,7 @@ from pathlib import Path
 import pytest
 
 from cmk.crypto.certificate import Certificate
-from tests.testlib.site import Site, SiteFactory
-from tests.testlib.utils import (
+from tests.testlib.common.utils2 import (
     get_services_with_status,
     get_supported_distros,
     is_cleanup_enabled,
@@ -21,6 +20,7 @@ from tests.testlib.utils import (
     ServiceInfo,
     version_spec_from_env,
 )
+from tests.testlib.site import Site, SiteFactory
 from tests.testlib.version import (
     CMKEditionOld,
     CMKPackageInfo,

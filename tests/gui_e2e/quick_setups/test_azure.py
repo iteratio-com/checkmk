@@ -21,8 +21,8 @@ from tests.gui_e2e.testlib.playwright.pom.setup.hosts import SetupHost
 from tests.gui_e2e.testlib.playwright.pom.setup.passwords import Passwords
 from tests.gui_e2e.testlib.playwright.pom.setup.ruleset import Ruleset
 from tests.gui_e2e.testlib.playwright.timeouts import ANIMATION_TIMEOUT
+from tests.testlib.common.utils2 import is_cleanup_enabled, run
 from tests.testlib.site import Site
-from tests.testlib.utils import is_cleanup_enabled, run
 
 logger = logging.getLogger(__name__)
 

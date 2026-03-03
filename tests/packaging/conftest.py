@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 
 from tests.testlib import package_manager
-from tests.testlib.utils import version_spec_from_env
+from tests.testlib.common.utils2 import version_spec_from_env
 
 
 def pytest_addoption(parser: pytest.Parser) -> None:

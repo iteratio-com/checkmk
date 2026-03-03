@@ -26,9 +26,9 @@ from tests.gui_e2e.testlib.playwright.pom.setup.notification_configuration impor
 )
 from tests.gui_e2e.testlib.playwright.pom.setup.notification_rules import EditNotificationRule
 from tests.gui_e2e.testlib.playwright.pom.setup.ruleset import Ruleset
+from tests.testlib.common.utils2 import run
 from tests.testlib.emails import EmailManager
 from tests.testlib.site import Site
-from tests.testlib.utils import run
 
 logger = logging.getLogger(__name__)
 

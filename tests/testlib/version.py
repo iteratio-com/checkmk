@@ -27,7 +27,7 @@ from tests.testlib.common.repo import (
     current_base_branch_name,
     current_branch_version,
 )
-from tests.testlib.utils import version_spec_from_env
+from tests.testlib.common.utils2 import version_spec_from_env
 
 logger = logging.getLogger()
 

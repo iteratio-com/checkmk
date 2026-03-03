@@ -9,10 +9,10 @@ from pathlib import Path
 import pytest
 
 from cmk.ccc.hostaddress import HostName
+from tests.testlib.common.utils2 import ServiceInfo
 from tests.testlib.https import HTTPSDummy
 from tests.testlib.openapi_session import UnexpectedResponse
 from tests.testlib.site import Site
-from tests.testlib.utils import ServiceInfo
 
 logger = logging.getLogger(__name__)
 

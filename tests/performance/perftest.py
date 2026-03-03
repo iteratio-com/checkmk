@@ -23,9 +23,9 @@ from requests.auth import HTTPBasicAuth
 
 from tests.performance.sysmon import track_resources
 from tests.testlib.agent_hosts import piggyback_host_from_dummy_generator
+from tests.testlib.common.utils2 import check_output
 from tests.testlib.site import ADMIN_USER as site_admin_user
 from tests.testlib.site import PythonHelper, Site
-from tests.testlib.utils import check_output
 
 logger = logging.getLogger(__name__)
 

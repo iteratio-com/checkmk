@@ -19,8 +19,8 @@ from tests.testlib.agent import (
     wait_for_agent_cache_omd_status,
     wait_until_host_receives_data,
 )
+from tests.testlib.common.utils2 import ServiceInfo
 from tests.testlib.site import Site
-from tests.testlib.utils import ServiceInfo
 
 logger = logging.getLogger(__name__)
 

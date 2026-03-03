@@ -53,8 +53,8 @@ from cmk.server_side_calls_backend import load_active_checks
 from cmk.utils import ip_lookup, paths
 from cmk.utils.labels import ABCLabelConfig, LabelManager, Labels
 from cmk.utils.servicename import ServiceName
+from tests.testlib.common.empty_config import EMPTY_CONFIG
 from tests.testlib.unit.base_configuration_scenario import Scenario
-from tests.unit.cmk.base.empty_config import EMPTY_CONFIG
 
 _TEST_LOCATION = PluginLocation(
     cmk.plugins.monitoring_plugins.server_side_calls.ftp.__name__,
