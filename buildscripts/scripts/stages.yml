@@ -423,6 +423,7 @@ STAGES:
       RESULT_CHECK_FILE_PATTERN: "results/results.sarif"
 
     - NAME: "Type repository with mypy"
+      ONLY_WHEN_NOT_EMPTY: CHANGED_REFERENCE_IMAGE,CHANGED_FIND_PYTHON_FILES_SCRIPT,CHANGED_PYTHON_FILES
       COMMAND: |
           set +e
           bazel \
@@ -442,7 +443,7 @@ STAGES:
              > results/mypy-results.xml
           exit $exit_code
       BAZEL_LOCKS_AMOUNT: 1
-      TEXT_ON_SKIP: "inconditional"
+      TEXT_ON_SKIP: "No Python files changed"
       RESULT_CHECK_TYPE: "JUNIT"
       RESULT_CHECK_FILE_PATTERN: "results/mypy-results.xml"
 
