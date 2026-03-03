@@ -35,7 +35,6 @@ sh_library(
         "check-cmk-namespace",
         "check-current-commit",
         "check-licence",
-        "check-merge-conflicts",
         "check-qa-test-data",
         "create_cognito_config_cloud.sh",
         "fake-artifacts",

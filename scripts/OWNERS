@@ -1,7 +1,5 @@
 
 
-per-file check-merge-conflicts=file:/component_owners/ci_platform/OWNERS_DEFINITION
-per-file check-merge-conflicts=set noparent
 per-file decent-output=file:/component_owners/ci_platform/OWNERS_DEFINITION
 per-file decent-output=set noparent
 per-file fake-artifacts=file:/component_owners/ci_platform/OWNERS_DEFINITION

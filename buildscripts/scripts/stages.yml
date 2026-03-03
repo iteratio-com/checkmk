@@ -344,10 +344,6 @@ STAGES:
       BAZEL_LOCKS_AMOUNT: 1
       RESULT_CHECK_FILE_PATTERN: "results/sw-documentation.txt"
 
-    - NAME: "Detect Merge Conflicts"
-      COMMAND: "./scripts/check-merge-conflicts ${PATCHSET_REVISION} &> ${RESULTS}/merge-conflicts.txt"
-      RESULT_CHECK_FILE_PATTERN: "results/merge-conflicts.txt"
-
     - NAME: "Plugins Consistency"
       ONLY_WHEN_NOT_EMPTY: CHANGED_CMK_PLUGINS,CHANGED_CMK_CHECKENGINE,CHANGED_CMK_DISCOVER_PLUGINS,CHANGED_CMK_GUI,CHANGED_CMK_SERVER_SIDE_CALLS_BACKEND,CHANGED_CMK_UTILS,CHANGED_CMK_BASE_CONFIG
       DIR: "tests"
