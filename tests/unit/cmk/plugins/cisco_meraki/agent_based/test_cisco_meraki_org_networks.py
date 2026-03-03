@@ -20,6 +20,47 @@ class _NetworkFactory(TypedDictFactory[Network]):
     __check_model__ = False
 
 
+@pytest.mark.xfail(reason="CMK-32015", strict=True)
+def test_parsed_networks_count_with_multiple_orgs_and_single_network() -> None:
+    networks = [
+        {"netid-123": _NetworkFactory.build(id="netid-123", organizationId="123")},
+        {"netid-456": _NetworkFactory.build(id="netid-456", organizationId="456")},
+    ]
+    string_table = [[json.dumps(networks)]]
+
+    value = len(parse_meraki_networks(string_table))
+    expected = 2
+
+    assert value == expected
+
+
+@pytest.mark.xfail(reason="CMK-32015", strict=True)
+def test_parsed_networks_count_with_orgs_with_multiple_networks() -> None:
+    networks = [
+        {
+            "netid-123-a": _NetworkFactory.build(id="netid-123-a", organizationId="123"),
+            "netid-123-b": _NetworkFactory.build(id="netid-123-b", organizationId="123"),
+        },
+        {
+            "netid-456-a": _NetworkFactory.build(id="netid-456-a", organizationId="456"),
+            "netid-456-b": _NetworkFactory.build(id="netid-456-b", organizationId="456"),
+        },
+    ]
+    string_table = [[json.dumps(networks)]]
+
+    value = len(parse_meraki_networks(string_table))
+    expected = 4
+
+    assert value == expected
+
+
+@pytest.mark.xfail(reason="CMK-32015", strict=True)
+def test_parsing_validation_works_with_known_optional_fields() -> None:
+    networks = [{"id": _NetworkFactory.build(id="id", notes=None, enrollmentString=None)}]
+    string_table = [[json.dumps(networks)]]
+    assert parse_meraki_networks(string_table)
+
+
 def test_inventorize_meraki_networks() -> None:
     device = _NetworkFactory.build(id="netid-123")
     string_table = [[f"[{json.dumps({device['id']: device})}]"]]
