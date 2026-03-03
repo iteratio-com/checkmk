@@ -23,7 +23,7 @@ PodmanPiggybackNameMethod = Literal["name", "nodename_name", "name_id"]
 class PodmanConfig(BaseModel, frozen=True):
     deploy: bool
     socket_detection: PodmanSocketDetectionMethod
-    piggyback_name_method: PodmanPiggybackNameMethod = "name"
+    piggyback_name_method: PodmanPiggybackNameMethod = "nodename_name"
 
 
 def get_mk_podman_files(
