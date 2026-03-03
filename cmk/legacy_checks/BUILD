@@ -5,7 +5,10 @@ py_library(
     name = "cmk_legacy_checks",
     srcs = glob(["**/*.py"]),
     imports = ["../.."],
-    visibility = ["//cmk:__pkg__"],
+    visibility = [
+        "//cmk:__pkg__",
+        "//tests:__subpackages__",
+    ],
     deps = [
         "//cmk/legacy_includes:cmk_legacy_includes",
         "//cmk/plugins:cmk_plugins",
