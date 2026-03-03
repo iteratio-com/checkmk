@@ -33,19 +33,6 @@ py_library(
 )
 
 py_library(
-    name = "product_usage_cli",
-    srcs = ["product_usage_cli.py"],
-    imports = [".."],
-    visibility = ["//:__subpackages__"],
-    deps = [
-        "//cmk/base:cmk_base",
-        "//cmk/product_usage:cmk_product_usage",
-        "//cmk/utils:cmk_utils",
-        "//packages/cmk-ccc:version",
-    ],
-)
-
-py_library(
     name = "validate_config",
     srcs = ["validate_config.py"],
     imports = [".."],
@@ -85,7 +72,6 @@ py_library(
     deps = [
         ":cmkpasswd",
         ":message_broker_certs",
-        ":product_usage_cli",
         ":validate_config",
         ":validate_plugins",
         "//cmk/automations:cmk_automations",
@@ -108,6 +94,7 @@ py_library(
         "//cmk/plugins:cmk_plugins_logwatch",
         "//cmk/post_rename_site:cmk_post_rename_site",
         "//cmk/product_usage:cmk_product_usage",
+        "//cmk/product_usage:product_usage_cli",
         "//cmk/rrd:cmk_rrd",
         "//cmk/server_side_calls_backend:cmk_server_side_calls_backend",
         "//cmk/special_agents:cmk_special_agents",
@@ -549,7 +536,6 @@ py_wheel(
     }) + [
         ":cmkpasswd",
         ":message_broker_certs",
-        ":product_usage_cli",
         ":validate_config",
         ":validate_plugins",
         "//cmk/automations:cmk_automations",
@@ -573,6 +559,7 @@ py_wheel(
         "//cmk/plugins:cmk_plugins",
         "//cmk/post_rename_site:cmk_post_rename_site",
         "//cmk/product_usage:cmk_product_usage",
+        "//cmk/product_usage:product_usage_cli",
         "//cmk/rrd:cmk_rrd",
         "//cmk/server_side_calls_backend:cmk_server_side_calls_backend",
         "//cmk/special_agents:cmk_special_agents",

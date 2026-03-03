@@ -73,7 +73,6 @@ pkg_files(
         ":cmk-passwd",
         ":cmk-piggyback",
         ":cmk-piggyback-hub",
-        ":cmk-product-usage",
         ":cmk-pwstore",
         ":cmk-transform-inventory-trees",
         ":cmk-ui-job-scheduler",
@@ -102,11 +101,21 @@ pkg_tar(
     srcs = [
         ":bin_750",
         ":bin_755",
+        ":cmk-product-usage",
         ":cmk-pwstore",
         ":cmk_link",
     ],
     stamp = 1,
     visibility = ["//visibility:public"],
+)
+
+pkg_files(
+    name = "cmk-product-usage",
+    srcs = ["//cmk/product_usage:cli.py"],
+    attributes = pkg_attributes(
+        mode = "0755",
+    ),
+    renames = {"//cmk/product_usage:cli.py": "bin/cmk-product-usage"},
 )
 
 pkg_files(
@@ -131,7 +140,6 @@ sh_library(
         "cmk-monitor-mkbackup",
         "cmk-monitor-mknotifyd",
         "cmk-monitor-otel-collector",
-        "cmk-product-usage",
         "cmk-ui-job-scheduler-health",
         "message-broker-certs",
     ],

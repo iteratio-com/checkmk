@@ -1088,18 +1088,18 @@ COMPONENTS: Mapping[Component, ImportCheckerProtocol] = {
     Component("cmk.plugins"): _allow(
         *PACKAGE_PLUGIN_APIS,
     ),
+    Component("cmk.product_usage.cli"): _allow(
+        *PACKAGE_CCC,
+        "cmk.base",
+        "cmk.product_usage",
+        "cmk.utils.paths",
+    ),
     Component("cmk.product_usage"): _allow(
         # NOTE: this is a dependency of both 'gui' and 'base',
         # so it must not depend on either of them.
         "cmk.ccc.version",
         "cmk.livestatus_client",
         "cmk.utils.http_proxy_config",
-    ),
-    Component("cmk.product_usage_cli"): _allow(
-        *PACKAGE_CCC,
-        "cmk.base",
-        "cmk.product_usage",
-        "cmk.utils.paths",
     ),
     Component("cmk.rulesets"): _allow(),
     Component("cmk.server_side_calls"): _allow(),
@@ -1514,7 +1514,7 @@ COMPONENTS: Mapping[Component, ImportCheckerProtocol] = {
         "cmk.plugins",
         "cmk.post_rename_site",
         "cmk.product_usage",
-        "cmk.product_usage_cli",
+        "cmk.product_usage.cli",
         "cmk.rrd",
         "cmk.server_side_calls_backend",
         "cmk.shared_typing",
