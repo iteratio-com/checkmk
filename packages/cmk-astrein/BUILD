@@ -9,6 +9,7 @@ py_library(
     name = "library",
     srcs = [
         "cmk/astrein/__init__.py",
+        "cmk/astrein/checker_key_size.py",
         "cmk/astrein/checker_localization.py",
         "cmk/astrein/checker_module_layers.py",
         "cmk/astrein/checker_simple_patterns.py",

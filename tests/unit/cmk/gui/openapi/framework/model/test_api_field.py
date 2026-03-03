@@ -72,7 +72,7 @@ def test_pattern() -> None:
     class TestModel:
         field: str = api_field(description="test", pattern="foo")
 
-    adapter = TypeAdapter(TestModel)  # nosemgrep: type-adapter-detected
+    adapter = TypeAdapter(TestModel)  # astrein: disable=pydantic-type-adapter
     schema = adapter.json_schema()
     assert "pattern" in schema["properties"]["field"]
 
@@ -85,7 +85,7 @@ def test_deprecated() -> None:
     class TestModel:
         field: str = api_field(description="test", deprecated=True)
 
-    adapter = TypeAdapter(TestModel)  # nosemgrep: type-adapter-detected
+    adapter = TypeAdapter(TestModel)  # astrein: disable=pydantic-type-adapter
     schema = adapter.json_schema()
     assert "deprecated" in schema["properties"]["field"]
     assert schema["properties"]["field"]["deprecated"] is True
@@ -106,7 +106,7 @@ def test_discriminator() -> None:
     class TestModel:
         field: OptionOne | OptionTwo = api_field(description="test", discriminator="option_type")
 
-    adapter = TypeAdapter(TestModel)  # nosemgrep: type-adapter-detected
+    adapter = TypeAdapter(TestModel)  # astrein: disable=pydantic-type-adapter
     schema = adapter.json_schema()
     assert schema["properties"]["field"]["discriminator"]["propertyName"] == "option_type"
     assert set(schema["properties"]["field"]["discriminator"]["mapping"]) == {"one", "two"}
@@ -152,7 +152,7 @@ def test_json_schema_metadata() -> None:
             additional_metadata={"extra": "metadata"},
         )
 
-    adapter = TypeAdapter(TestModel)  # nosemgrep: type-adapter-detected
+    adapter = TypeAdapter(TestModel)  # astrein: disable=pydantic-type-adapter
     schema = adapter.json_schema()
     properties = schema["properties"]
     assert "field" not in properties
@@ -170,7 +170,7 @@ def test_alias_serialization() -> None:
     class TestModel:
         field: str = api_field(description="test", serialization_alias="alias")
 
-    adapter = TypeAdapter(TestModel)  # nosemgrep: type-adapter-detected
+    adapter = TypeAdapter(TestModel)  # astrein: disable=pydantic-type-adapter
     assert adapter.dump_python(TestModel(field="foo"), by_alias=True) == {"alias": "foo"}
 
 
@@ -179,7 +179,7 @@ def test_alias_deserialization() -> None:
     class TestModel:
         field: str = api_field(description="test", serialization_alias="alias")
 
-    adapter = TypeAdapter(TestModel)  # nosemgrep: type-adapter-detected
+    adapter = TypeAdapter(TestModel)  # astrein: disable=pydantic-type-adapter
     assert adapter.validate_python({"alias": "foo"}) == TestModel(field="foo")
 
     with pytest.raises(ValidationError, match="type=missing"):

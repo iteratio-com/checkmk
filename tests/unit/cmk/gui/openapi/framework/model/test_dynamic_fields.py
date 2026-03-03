@@ -31,7 +31,7 @@ def test_dynamic_field_serialization() -> None:
         },
     )
 
-    result = TypeAdapter(_TestModel).dump_json(model)  # nosemgrep: type-adapter-detected
+    result = TypeAdapter(_TestModel).dump_json(model)  # astrein: disable=pydantic-type-adapter
     # to not rely on the key order, we compare the loaded json
     assert json.loads(result) == {
         "field": 123,
@@ -59,7 +59,7 @@ def test_dynamic_field_serialization_without_omitted() -> None:
 
 
 def test_dynamic_field_deserialization() -> None:
-    adapter = TypeAdapter(_TestModel)  # nosemgrep: type-adapter-detected
+    adapter = TypeAdapter(_TestModel)  # astrein: disable=pydantic-type-adapter
     model = adapter.validate_python(
         {
             "field": 123,
@@ -96,7 +96,7 @@ def test_dynamic_field_serialization_nested() -> None:
         ],
     )
 
-    result = TypeAdapter(_NestedModel).dump_json(model)  # nosemgrep: type-adapter-detected
+    result = TypeAdapter(_NestedModel).dump_json(model)  # astrein: disable=pydantic-type-adapter
     # to not rely on the key order, we compare the loaded json
     assert json.loads(result) == {
         "nested": {"field": 123, "other_type": "2025-01-01T00:00:00Z"},
@@ -131,7 +131,7 @@ def test_dynamic_field_serialization_nested_without_omitted() -> None:
 
 
 def test_dynamic_field_deserialization_nested() -> None:
-    adapter = TypeAdapter(_NestedModel)  # nosemgrep: type-adapter-detected
+    adapter = TypeAdapter(_NestedModel)  # astrein: disable=pydantic-type-adapter
     model = adapter.validate_python(
         {
             "nested": {
@@ -154,7 +154,7 @@ def test_dynamic_field_deserialization_nested() -> None:
 
 
 def test_json_schema_dynamic_field() -> None:
-    model = TypeAdapter(_TestModel)  # nosemgrep: type-adapter-detected
+    model = TypeAdapter(_TestModel)  # astrein: disable=pydantic-type-adapter
     schema = model.json_schema()
     # the `WithDynamicFields` class should only add the `additionalProperties` key
     # properties and required must not change
@@ -181,7 +181,7 @@ def test_json_schema_dynamic_field_custom_type() -> None:
             },
         )
 
-    model = TypeAdapter(_CustomType)  # nosemgrep: type-adapter-detected
+    model = TypeAdapter(_CustomType)  # astrein: disable=pydantic-type-adapter
     schema = model.json_schema()
     assert "dynamic_fields" not in schema["properties"]
     assert "dynamic_fields" not in schema["required"]

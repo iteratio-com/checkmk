@@ -475,7 +475,7 @@ def _parse_raw_metrics(content: bytes) -> list[RawMetrics]:
     # This function is called once per agent_kube invocation. Moving the TypeAdapter definition to
     # import time has no impact. TypeAdapter is faster than RootModel (see CMK-19527), thus
     # remains unchanged.
-    # nosemgrep: type-adapter-detected
+    # astrein: disable=pydantic-type-adapter
     adapter = TypeAdapter(list[RawMetrics])
     return adapter.validate_json(content)
 

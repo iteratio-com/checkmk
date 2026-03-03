@@ -98,7 +98,6 @@ Response = Annotated[ResponseSuccess | ResponseError, Field(discriminator="statu
 # Thus, creating `RESPONSE_ADAPTER` at import time (not during the call to `parse_raw_response`)
 # is the way to go. This variant slightly slows done the check plugin imports. TypeAdapter is faster
 # than RootModel (see CMK-19527), thus remains unchanged.
-# nosemgrep: type-adapter-detected
 RESPONSE_ADAPTER: TypeAdapter[Response] = TypeAdapter(Response)
 
 

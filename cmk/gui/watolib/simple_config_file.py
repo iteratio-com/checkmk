@@ -43,9 +43,8 @@ class WatoConfigFile(ABC, Generic[_G]):
     def validate(self, raw: object) -> _G:
         try:
             # No performance impact - only called during cmk-update-config
-            return TypeAdapter(self.spec_class).validate_python(  # nosemgrep: type-adapter-detected
-                raw, strict=True
-            )
+            # astrein: disable=pydantic-type-adapter
+            return TypeAdapter(self.spec_class).validate_python(raw, strict=True)
         except ValidationError as exc:
             raise ConfigValidationError(
                 which_file=self.name,

@@ -32,7 +32,7 @@ _COMPATIBLE_SORTING_VALUE = {
 def load_precompiled_werks_file(path: Path) -> dict[int, WerkV3]:
     # ? what is the content of these files, to which the path shows
     # There is no performance issue with this TypeAdapter call
-    # nosemgrep: type-adapter-detected
+    # astrein: disable=pydantic-type-adapter
     adapter = TypeAdapter(dict[int, WerkV3 | WerkV2 | WerkV1])
     with path.open("r", encoding="utf-8") as f:
 

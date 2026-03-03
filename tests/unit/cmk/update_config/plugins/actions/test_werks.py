@@ -79,7 +79,7 @@ def test_version_of_werk_keeps_first_incompatible_version(
     compiled_werks_dir.mkdir()
 
     def save_werks_to_site(werks: dict[int, WerkV3]) -> None:
-        adapter = TypeAdapter(dict[int, WerkV3])  # nosemgrep: type-adapter-detected
+        adapter = TypeAdapter(dict[int, WerkV3])  # astrein: disable=pydantic-type-adapter
         (compiled_werks_dir / "werks").write_bytes(adapter.dump_json(werks, by_alias=True))
 
     def update_config() -> None:

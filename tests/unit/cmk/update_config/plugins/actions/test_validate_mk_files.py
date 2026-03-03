@@ -18,4 +18,4 @@ def test_type_adapter_instantiable() -> None:
 
     for wato_config_file in config_file_registry.values():
         # check if pydantic knows how to generate a schema for the given class
-        TypeAdapter(wato_config_file.spec_class)  # nosemgrep: type-adapter-detected
+        TypeAdapter(wato_config_file.spec_class)  # astrein: disable=pydantic-type-adapter

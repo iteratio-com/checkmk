@@ -284,9 +284,7 @@ def _get_parameters(location: LocationType, schema: type | None) -> Sequence[Ope
     out: list[OpenAPIParameter] = []
     if schema is not None:
         # TypeAdapter: this is only used during spec generation
-        json_schema = get_cached_type_adapter(
-            schema
-        ).json_schema(  # nosemgrep: type-adapter-detected
+        json_schema = get_cached_type_adapter(schema).json_schema(
             by_alias=True,
             mode="validation",
             schema_generator=CheckmkGenerateJsonSchema,
@@ -472,7 +470,7 @@ class PydanticResponses:
         error_schema = error_schemas.get(status_code, schema)
         assert error_schema is not None, f"Expected error description for {status_code}"
         # TypeAdapter performance: this is only used during spec generation
-        type_adapter = get_cached_type_adapter(error_schema)  # nosemgrep: type-adapter-detected
+        type_adapter = get_cached_type_adapter(error_schema)
         response: PathItem = {
             "description": f"{http.client.responses[status_code]}: {description}",
             "content": {"application/problem+json": {"schema": type_adapter}},

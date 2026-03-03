@@ -24,21 +24,21 @@ class _TestModel:
 
 
 def test_validation_valid_type_works():
-    model = TypeAdapter(_TestModel).validate_python(  # nosemgrep: type-adapter-detected
+    model = TypeAdapter(_TestModel).validate_python(  # astrein: disable=pydantic-type-adapter
         {"field": 123}
     )
     assert model.field == 123
 
 
 def test_validation_none_stays_none():
-    model = TypeAdapter(_TestModel).validate_python(  # nosemgrep: type-adapter-detected
+    model = TypeAdapter(_TestModel).validate_python(  # astrein: disable=pydantic-type-adapter
         {"field": None}
     )
     assert model.field is None
 
 
 def test_validation_omitted_stays_omitted():
-    model = TypeAdapter(_TestModel).validate_python(  # nosemgrep: type-adapter-detected
+    model = TypeAdapter(_TestModel).validate_python(  # astrein: disable=pydantic-type-adapter
         {"field": ApiOmitted()}
     )
     assert isinstance(model.field, ApiOmitted)
@@ -46,7 +46,7 @@ def test_validation_omitted_stays_omitted():
 
 def test_validation_invalid_type_raises():
     with pytest.raises(ValidationError):
-        TypeAdapter(_TestModel).validate_python(  # nosemgrep: type-adapter-detected
+        TypeAdapter(_TestModel).validate_python(  # astrein: disable=pydantic-type-adapter
             {"field": "string"}
         )
 
