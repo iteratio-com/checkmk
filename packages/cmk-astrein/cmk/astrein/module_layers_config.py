@@ -961,13 +961,6 @@ COMPONENTS: Mapping[Component, ImportCheckerProtocol] = {
         "cmk.shared_typing",
         exclude=("cmk.gui.plugins", "cmk.gui.nonfree.pro.plugins"),
     ),
-    Component("cmk.gui.graphing.nonfree.ultimate"): _allow(
-        *PACKAGE_CCC,
-        *PACKAGE_METRIC_BACKEND,
-        "cmk.gui",
-        "cmk.nonfree.ultimate.metric_backend.gui",
-        "cmk.utils.paths",
-    ),
     Component("cmk.gui"): _allow(
         *PACKAGE_CCC,
         *PACKAGE_PLUGIN_APIS,
