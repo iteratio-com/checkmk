@@ -108,12 +108,11 @@ def run_cli_with_vcr(
     env["VCR_CONFIG"] = json.dumps(vcr_config)
 
     # Debug info
-    print("Running CLI with VCR:")  # nosemgrep: disallow-print
-    # nosemgrep: disallow-print
+    print("Running CLI with VCR:")
     print(f"  Command: {[sys.executable, '-m', 'cmk.werks.cli'] + args}")
-    print(f"  Cassette: {cassette_path}")  # nosemgrep: disallow-print
-    print(f"  VCR Config: {vcr_config}")  # nosemgrep: disallow-print
-    print(f"  PYTHONPATH: {env['PYTHONPATH']}")  # nosemgrep: disallow-print
+    print(f"  Cassette: {cassette_path}")
+    print(f"  VCR Config: {vcr_config}")
+    print(f"  PYTHONPATH: {env['PYTHONPATH']}")
 
     p = subprocess.Popen(
         [sys.executable, "-m", "cmk.werks.cli"] + args,
@@ -124,11 +123,11 @@ def run_cli_with_vcr(
     )
     out, err = p.communicate(input=input_data, timeout=60)
 
-    print(f"CLI completed with return code: {p.returncode}")  # nosemgrep: disallow-print
+    print(f"CLI completed with return code: {p.returncode}")
     if out:
-        print(f"stdout: {out.decode()}")  # nosemgrep: disallow-print
+        print(f"stdout: {out.decode()}")
     if err:
-        print(f"stderr: {err.decode()}")  # nosemgrep: disallow-print
+        print(f"stderr: {err.decode()}")
 
     return p.returncode, out, err
 
@@ -160,9 +159,9 @@ def create_werk(*, title: str, vcr_cassette_dir: str, vcr_config: dict[str, Any]
     )
 
     if returncode != 0:
-        print(f"CLI failed with return code {returncode}")  # nosemgrep: disallow-print
-        print(f"stdout: {stdout.decode()}")  # nosemgrep: disallow-print
-        print(f"stderr: {stderr.decode()}")  # nosemgrep: disallow-print
+        print(f"CLI failed with return code {returncode}")
+        print(f"stdout: {stdout.decode()}")
+        print(f"stderr: {stderr.decode()}")
         raise RuntimeError(f"CLI command failed with return code {returncode}")
 
 

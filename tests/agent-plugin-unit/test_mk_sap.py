@@ -12,7 +12,7 @@ import pytest
 
 from agents.plugins import mk_sap
 
-Value = namedtuple("Value", ["value"])  # nosemgrep: typing-namedtuple-call
+Value = namedtuple("Value", ["value"])
 
 
 class FakeConnectionTree:

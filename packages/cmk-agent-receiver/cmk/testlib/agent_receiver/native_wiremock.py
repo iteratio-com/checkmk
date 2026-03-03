@@ -168,7 +168,6 @@ def run_wiremock(
             base_url = f"http://{hostname}:{http_port}"
             _wait_for_wiremock(base_url)
 
-            # nosemgrep: disallow-print
             print(f"Started native WireMock on {hostname}:{http_port}")
 
             wiremock_proc = WiremockProcess(
@@ -181,7 +180,6 @@ def run_wiremock(
             yield wiremock_proc
 
         finally:
-            # nosemgrep: disallow-print
             print(f"Stopping native WireMock (PID: {process.pid})")
             if process.poll() is None:
                 process.terminate()
