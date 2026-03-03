@@ -29,12 +29,7 @@ py_library(
     ],
     data = [":py_typed"],
     imports = ["."],
-    visibility = [
-        "//cmk:__subpackages__",
-        "//non-free/packages:__subpackages__",
-        "//omd/packages/omd:__pkg__",
-        "//packages:__subpackages__",
-    ],
+    visibility = ["//:__subpackages__"],
     deps = [
         "//packages/cmk-ccc:site",
         requirement("bcrypt"),

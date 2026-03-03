@@ -98,35 +98,6 @@ py_library(
 )
 
 py_library(
-    name = "testlib_unit",
-    testonly = True,
-    srcs = ["__init__.py"] + glob(
-        include = [
-            "testlib/unit/**/*.py",
-        ],
-    ),
-    data = glob(
-        include = [
-            "testlib/unit/**",
-        ],
-        allow_empty = True,
-        exclude = [
-            "**/*.py",
-        ],
-    ),
-    imports = [".."],
-    deps = [
-        "//tests/testlib/common",
-        requirement("pexpect"),
-        requirement("pytest"),
-        requirement("pyyaml"),
-    ] + select({
-        "//:gpl+nonfree_repo": ["//cmk:cmk_pro"],
-        "//:gpl_repo": [],
-    }),
-)
-
-py_library(
     name = "agent-integration",
     testonly = True,
     srcs = glob(

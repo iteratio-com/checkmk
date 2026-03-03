@@ -189,7 +189,7 @@ py_test(
         "//agents/plugins:nginx_status",
         "//cmk:cmk_community",
         "//omd/packages/omd:omdlib",
-        "//tests:testlib",
+        "//tests/testlib/unit:unit_free",
         "//tests/unit:conftest",
     ] + select({
         "@//:gpl+nonfree_repo": [
@@ -202,6 +202,7 @@ py_test(
             "//non-free/packages/cmc-protocols:py_cycletime_proto",
             "//non-free/packages/cmc-protocols:py_state_proto",
             "//non-free/packages/cmk-mknotifyd",
+            "//tests/testlib/unit:unit_nonfree",
         ],
         "@//:gpl_repo": [],
     }),
