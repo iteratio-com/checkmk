@@ -123,6 +123,9 @@ VARIABLES:
 
     ########## packages ########################################################
 
+    - NAME: CHANGED_CC_FILES
+      SH: "echo '${CHANGED_FILES_REL}' | grep -e '^packages/livestatus/' -e '^packages/neb/' -e '^packages/unixcat/' -e '^non-free/packages/cmc/' || true"
+
     - NAME: CHANGED_MK_ORACLE_FILES
       SH: "echo '${CHANGED_FILES_REL}' | grep '^packages/mk-oracle/\\|^requirements/rust/host' || true"
 
@@ -208,7 +211,9 @@ STAGES:
       JENKINS_TEST_RESULT_PATH: "testReport/"
 
     - NAME: "C++ unit tests"
+      ONLY_WHEN_NOT_EMPTY: CHANGED_REFERENCE_IMAGE,CHANGED_CC_FILES
       DIR: "tests"
+      TEXT_ON_SKIP: "No C++ files changed"
       ENV_VARS:
         BAZEL_TEST_LOGS_DEST: "../results/cpp"
       COMMAND: |
