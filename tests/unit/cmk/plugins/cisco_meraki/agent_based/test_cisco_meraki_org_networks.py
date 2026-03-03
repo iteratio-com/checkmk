@@ -52,7 +52,6 @@ def test_parsed_networks_count_with_orgs_with_multiple_networks() -> None:
     assert value == expected
 
 
-@pytest.mark.xfail(reason="CMK-32015", strict=True)
 def test_parsing_validation_works_with_known_optional_fields() -> None:
     networks = [{"id": _NetworkFactory.build(id="id", notes=None, enrollmentString=None)}]
     string_table = [[json.dumps(networks)]]

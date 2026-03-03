@@ -32,7 +32,7 @@ class Network(BaseModel, frozen=True):
     tags: list[str]
     enrollment_string: str | None = Field(alias="enrollmentString")
     url: str
-    notes: str
+    notes: str | None
     is_bound_to_config_template: bool = Field(alias="isBoundToConfigTemplate")
 
 
