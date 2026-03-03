@@ -173,7 +173,7 @@ class LoginPage(Page):
                 )
 
             try:
-                # nosemgrep: use-request-getvalidatedinputtype
+                # astrein: disable=use-request-getvalidatedinputtype
                 username = UserId(username_var.rstrip())
                 password = Password(password_var)
             except ValueError:

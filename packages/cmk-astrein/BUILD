@@ -12,6 +12,7 @@ py_library(
         "cmk/astrein/checker_key_size.py",
         "cmk/astrein/checker_localization.py",
         "cmk/astrein/checker_module_layers.py",
+        "cmk/astrein/checker_request_input.py",
         "cmk/astrein/checker_simple_patterns.py",
         "cmk/astrein/checkers.py",
         "cmk/astrein/cli.py",

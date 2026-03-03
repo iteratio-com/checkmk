@@ -7,6 +7,7 @@
 from cmk.astrein.checker_key_size import KeySizeUnitTestChecker
 from cmk.astrein.checker_localization import LocalizationChecker
 from cmk.astrein.checker_module_layers import ModuleLayersChecker
+from cmk.astrein.checker_request_input import RequestValidatedInputChecker
 from cmk.astrein.checker_simple_patterns import (
     ABCMetaMetaclassChecker,
     HTMLDebugChecker,
@@ -27,4 +28,5 @@ def all_checkers() -> dict[str, type[ASTVisitorChecker]]:
         "pillow-import": PillowImportChecker,
         "pydantic-type-adapter": PydanticTypeAdapterChecker,
         "tarfile-open-read": TarfileOpenReadChecker,
+        "use-request-getvalidatedinputtype": RequestValidatedInputChecker,
     }
