@@ -807,6 +807,14 @@ COMPONENTS: Mapping[Component, ImportCheckerProtocol] = {
         "cmk.gui.nonfree",
         "cmk.gui.community_registration",
     ),
+    Component("cmk.gui.openapi.spec.spec_generator"): _allow(
+        *PACKAGE_CCC,
+        "cmk.gui",
+        "cmk.gui.nonfree",
+        "cmk.gui.community_registration",
+        "cmk.utils.jsontype",
+        "cmk.utils.paths",
+    ),
     Component("cmk.gui.plugins"): _allow(
         *PACKAGE_CCC,
         *PACKAGE_PLUGIN_APIS,
