@@ -20,7 +20,6 @@ class _NetworkFactory(TypedDictFactory[Network]):
     __check_model__ = False
 
 
-@pytest.mark.xfail(reason="CMK-32015", strict=True)
 def test_parsed_networks_count_with_multiple_orgs_and_single_network() -> None:
     networks = [
         {"netid-123": _NetworkFactory.build(id="netid-123", organizationId="123")},
@@ -34,7 +33,6 @@ def test_parsed_networks_count_with_multiple_orgs_and_single_network() -> None:
     assert value == expected
 
 
-@pytest.mark.xfail(reason="CMK-32015", strict=True)
 def test_parsed_networks_count_with_orgs_with_multiple_networks() -> None:
     networks = [
         {
