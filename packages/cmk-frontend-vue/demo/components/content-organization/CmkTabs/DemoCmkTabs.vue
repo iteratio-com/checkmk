@@ -1,95 +1,116 @@
 <!--
-Copyright (C) 2024 Checkmk GmbH - License: GNU General Public License v2
+Copyright (C) 2026 Checkmk GmbH - License: GNU General Public License v2
 This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 conditions defined in the file COPYING, which is part of this source code package.
 -->
-
 <script setup lang="ts">
+import {
+  DemoDetailPageAccessibility,
+  DemoDetailPageCodeExample,
+  DemoDetailPageComponent,
+  DemoDetailPageHeader,
+  DemoDetailPageLayout
+} from '@demo/_demo/components/detail-page'
 import { ref } from 'vue'
 
 import CmkIcon from '@/components/CmkIcon'
-import type { CmkIconProps } from '@/components/CmkIcon'
 import CmkTabs, { CmkTab, CmkTabContent } from '@/components/CmkTabs'
+import CmkHeading from '@/components/typography/CmkHeading.vue'
+import CmkParagraph from '@/components/typography/CmkParagraph.vue'
 
-const openedTab = ref<string | number>('tab-3')
+defineProps<{ screenshotMode: boolean }>()
 
-const tabs: {
-  id: string
-  disabled?: boolean
-  title: string
-  icon: CmkIconProps
-  content: string
-}[] = [
+const a11yDataCmkTabs = [
   {
-    id: 'tab-1',
-    title: 'Tab 1',
-    icon: {
-      name: 'search'
-    },
-    content: 'Any content'
+    keys: ['Tab'],
+    description: 'Moves keyboard focus to the Tab.'
   },
   {
-    id: 'tab-2',
-    title: 'Tab 2 (disabled)',
-    disabled: true,
-    icon: {
-      name: 'close'
-    },
-    content: 'Any content Tab 2'
+    keys: [['Shift', 'Tab']],
+    description: 'Moves focus to the Tab from the next focusable element in reverse order.'
   },
   {
-    id: 'tab-3',
-    title: 'Tab 3 (long title)',
-    icon: {
-      name: 'info-circle'
-    },
-    content: 'Any content Tab 3'
+    keys: ['ArrowLeft', 'ArrowRight'],
+    description: 'Move focus between tabs.'
+  },
+  {
+    keys: ['Home', 'End'],
+    description: 'Move to the first and last tabs respectively.'
   }
 ]
 
-defineProps<{ screenshotMode: boolean }>()
+const codeExampleCmkTabs = `<script setup lang="ts">
+import { ref } from 'vue'
+${'import'} CmkTabs, { CmkTab, CmkTabContent } from '@/components/CmkTabs'
+${'import'} CmkIcon from '@/components/CmkIcon'
+
+const activeTab = ref('tab-1')
+<${'/'}script>
+
+<template>
+  <CmkTabs v-model="activeTab">
+
+    <template #tabs>
+      <CmkTab id="tab-1">
+        <CmkIcon name="search" /> Search
+      </CmkTab>
+      <CmkTab id="tab-2">
+        <CmkIcon name="info-circle" /> Information
+      </CmkTab>
+      <CmkTab id="tab-3" :disabled="true">
+        <CmkIcon name="close" /> Disabled
+      </CmkTab>
+    </template>
+
+    <template #tab-contents>
+      <CmkTabContent id="tab-1">
+        <p>Use the search bar to find hosts and services.</p>
+      </CmkTabContent>
+      <CmkTabContent id="tab-2">
+        <p>Detailed system information and status reports.</p>
+      </CmkTabContent>
+      <CmkTabContent id="tab-3">
+        <p>This content is not accessible.</p>
+      </CmkTabContent>
+    </template>
+
+  </CmkTabs>
+</template>`
+
+const activeTab = ref('tab-1')
 </script>
 
 <template>
-  <CmkTabs v-model="openedTab">
-    <template #tabs>
-      <CmkTab
-        v-for="tab in tabs"
-        :id="tab.id"
-        :key="tab.id"
-        :disabled="tab.disabled"
-        class="demo-cmk-tabs"
-      >
-        <CmkIcon :name="tab.icon.name"></CmkIcon>
-        {{ tab.title }}
-      </CmkTab>
-    </template>
-    <template #tab-contents>
-      <CmkTabContent v-for="tab in tabs" :id="tab.id" :key="tab.id">
-        <p>{{ tab.content }}</p>
-      </CmkTabContent>
-    </template>
-  </CmkTabs>
+  <DemoDetailPageLayout>
+    <DemoDetailPageHeader>CmkTabs</DemoDetailPageHeader>
+
+    <DemoDetailPageComponent>
+      <CmkTabs v-model="activeTab">
+        <template #tabs>
+          <CmkTab id="tab-1"><CmkIcon name="search" /> Search</CmkTab>
+          <CmkTab id="tab-2"><CmkIcon name="info-circle" /> Information</CmkTab>
+          <CmkTab id="tab-3" :disabled="true"><CmkIcon name="close" /> Disabled</CmkTab>
+        </template>
+
+        <template #tab-contents>
+          <CmkTabContent id="tab-1">
+            <CmkHeading type="h3">Search</CmkHeading>
+            <CmkParagraph>Use the search bar to find hosts and services.</CmkParagraph>
+          </CmkTabContent>
+          <CmkTabContent id="tab-2">
+            <CmkHeading type="h3">Information</CmkHeading>
+            <CmkParagraph>Detailed system information and status reports.</CmkParagraph>
+          </CmkTabContent>
+          <CmkTabContent id="tab-3">
+            <CmkHeading type="h3">Disabled</CmkHeading>
+            <CmkParagraph>This content is not accessible.</CmkParagraph>
+          </CmkTabContent>
+        </template>
+      </CmkTabs>
+    </DemoDetailPageComponent>
+
+    <DemoDetailPageCodeExample :code="codeExampleCmkTabs" />
+
+    <DemoDetailPageAccessibility :data="a11yDataCmkTabs" />
+  </DemoDetailPageLayout>
 </template>
-
-<style scoped>
-.demo-cmk-tabs {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-
-  > h2 {
-    margin: 0;
-    padding: 0;
-  }
-
-  /* stylelint-disable-next-line checkmk/vue-bem-naming-convention */
-  > .cmk-icon {
-    margin-right: 16px;
-  }
-}
-
-p {
-  padding-left: 10px;
-}
-</style>

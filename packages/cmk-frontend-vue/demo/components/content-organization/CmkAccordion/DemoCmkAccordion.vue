@@ -1,188 +1,216 @@
 <!--
-Copyright (C) 2024 Checkmk GmbH - License: GNU General Public License v2
+Copyright (C) 2026 Checkmk GmbH - License: GNU General Public License v2
 This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 conditions defined in the file COPYING, which is part of this source code package.
 -->
-
 <script setup lang="ts">
+import {
+  DemoDetailPageAccessibility,
+  DemoDetailPageCodeExample,
+  DemoDetailPageComponent,
+  DemoDetailPageDeveloperPlayground,
+  DemoDetailPageHeader,
+  DemoDetailPageLayout,
+  DemoPropertiesPanel,
+  type Options,
+  type PanelConfig,
+  createPanelState
+} from '@demo/_demo/components/detail-page'
 import { ref } from 'vue'
 
 import CmkAccordion from '@/components/CmkAccordion/CmkAccordion.vue'
 import CmkAccordionItem from '@/components/CmkAccordion/CmkAccordionItem.vue'
 import CmkAccordionItemStateIndicator from '@/components/CmkAccordion/CmkAccordionItemStateIndicator.vue'
-import CmkButton from '@/components/CmkButton.vue'
-import CmkDropdown from '@/components/CmkDropdown'
-import type { CmkIconProps } from '@/components/CmkIcon'
 import CmkIcon from '@/components/CmkIcon'
+import type { HeadingType } from '@/components/typography/CmkHeading.vue'
+
+import DemoCmkAccordionDev from './DemoCmkAccordionDev.vue'
 
 defineProps<{ screenshotMode: boolean }>()
 
-const openedItems = ref<string[]>(['item-3'])
-const renderRef = ref<boolean>(true)
-
-const items: {
-  id: string
-  header: {
-    title: string
-    icon: CmkIconProps
-  }
-  disabled?: boolean
-  content: string
-}[] = [
+const a11yDataCmkAccordion = [
   {
-    id: 'item-1',
-    header: {
-      title: 'Item 1',
-      icon: {
-        name: 'search'
-      }
-    },
-    content: 'This is the 1st Item'
+    keys: ['Tab'],
+    description: 'Moves keyboard focus to the accordion header.'
   },
   {
-    id: 'item-2',
-    disabled: true,
-    header: {
-      title: 'Item 2 (disabled)',
-      icon: {
-        name: 'close'
-      }
-    },
-    content: 'This is the 2nd Item'
+    keys: [['Shift', 'Tab']],
+    description:
+      'Moves focus to the accordion header from the next focusable element in reverse order.'
   },
   {
-    id: 'item-3',
-    header: {
-      title: 'Item 3',
-      icon: {
-        name: 'info-circle'
-      }
-    },
-    content: 'This is the 3rd Item'
-  },
-  {
-    id: 'last-item',
-    header: {
-      title: 'The last item',
-      icon: {
-        name: 'info-circle'
-      }
-    },
-    content: 'This is the 3rd Item'
+    keys: ['Enter', 'Space'],
+    description: 'Toggles the expansion state of the focused accordion item.'
   }
 ]
 
-const minOpenSelected = ref<'0' | '1' | '2'>('1')
-const maxOpenSelected = ref<'1' | '2' | '3'>('1')
+const codeExampleCmkAccordion = `<script setup lang="ts">
+import { ref } from 'vue'
+${'import'} CmkAccordion from '@/components/CmkAccordion/CmkAccordion.vue'
+${'import'} CmkAccordionItem from '@/components/CmkAccordion/CmkAccordionItem.vue'
+${'import'} CmkAccordionItemStateIndicator from '@/components/CmkAccordion/CmkAccordionItemStateIndicator.vue'
+${'import'} CmkIcon from '@/components/CmkIcon'
+
+const openedItems = ref(['item-1'])
+<${'/'}script>
+
+<template>
+  <CmkAccordion v-model="openedItems" :min-open="1" :max-open="1">
+
+    <CmkAccordionItem value="item-1">
+      <template #header>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <CmkIcon name="users" />
+          <span>Personal Information</span>
+          <CmkAccordionItemStateIndicator value="item-1" />
+        </div>
+      </template>
+      <template #content>
+        <p>Manage your personal details, email address, and profile settings.</p>
+      </template>
+    </CmkAccordionItem>
+
+    <CmkAccordionItem value="item-2">
+      <template #header>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <CmkIcon name="passwords" />
+          <span>Security Settings</span>
+        </div>
+      </template>
+      <template #content>
+        <p>Update your password, enable 2FA, and manage security keys.</p>
+      </template>
+    </CmkAccordionItem>
+
+    <CmkAccordionItem value="item-3">
+      <template #header>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <CmkIcon name="notifications" />
+          <span>Notifications</span>
+        </div>
+      </template>
+      <template #content>
+        <p>Configure email digests and real-time alert preferences.</p>
+      </template>
+    </CmkAccordionItem>
+
+  </CmkAccordion>
+</template>`
+
+const panelConfig = {
+  minOpen: {
+    type: 'number',
+    title: 'minOpen',
+    help: '0 allows all items to be collapsed, while 1 or more ensures that at least that many items are always expanded.',
+    initialState: 1
+  },
+  maxOpen: {
+    type: 'number',
+    title: 'maxOpen',
+    help: '0 allows unlimited items to be expanded, while 1 restricts to only one item at a time.',
+    initialState: 1
+  }
+} satisfies PanelConfig
+
+const propState = ref(createPanelState(panelConfig))
+const openedItems = ref(['item-1'])
+
+const itemPanelConfig = {
+  headerAs: {
+    type: 'list',
+    title: 'headerAs',
+    options: [
+      { title: 'h1', name: 'h1' },
+      { title: 'h2', name: 'h2' },
+      { title: 'h3', name: 'h3' },
+      { title: 'h4', name: 'h4' }
+    ] satisfies Options<NonNullable<HeadingType>>[],
+    initialState: 'h3' as NonNullable<HeadingType>,
+    help: 'HTML element used to render the accordion item header.'
+  },
+  disabled: {
+    type: 'boolean',
+    title: 'disabled',
+    initialState: false,
+    help: 'Disables all items in the accordion.'
+  }
+} satisfies PanelConfig
+
+const itemPropState = ref(createPanelState(itemPanelConfig))
 </script>
 
 <template>
-  <div>
-    <label>min. opened:</label>
-    <CmkDropdown
-      v-model:selected-option="minOpenSelected"
-      :options="{
-        type: 'fixed',
+  <DemoDetailPageLayout>
+    <DemoDetailPageHeader>CmkAccordion</DemoDetailPageHeader>
 
-        suggestions: [
-          { name: '0', title: '0' },
-          { name: '1', title: '1' },
-          { name: '2', title: '2' }
-        ]
-      }"
-      component-id="min-opened"
-      label="Accordion min opened"
-    />
-  </div>
+    <DemoDetailPageComponent>
+      <CmkAccordion
+        v-model="openedItems"
+        :min-open="propState.minOpen"
+        :max-open="propState.maxOpen"
+      >
+        <CmkAccordionItem
+          value="item-1"
+          :header-as="itemPropState.headerAs"
+          :disabled="itemPropState.disabled"
+        >
+          <template #header>
+            <div style="display: flex; align-items: center; gap: 8px">
+              <CmkIcon name="users" />
+              <span>Personal Information</span>
+              <CmkAccordionItemStateIndicator value="item-1" />
+            </div>
+          </template>
+          <template #content>
+            <p>Manage your personal details, email address, and profile settings.</p>
+          </template>
+        </CmkAccordionItem>
 
-  <div>
-    <label>max. opened:</label>
-    <CmkDropdown
-      v-model:selected-option="maxOpenSelected"
-      :options="{
-        type: 'fixed',
-        suggestions: [
-          { name: '0', title: '0 (unlimited)' },
-          { name: '1', title: '1' },
-          { name: '2', title: '2' },
-          { name: '3', title: '3' }
-        ]
-      }"
-      component-id="max-opened"
-      label="Accordion max opened"
-    />
-  </div>
+        <CmkAccordionItem
+          value="item-2"
+          :header-as="itemPropState.headerAs"
+          :disabled="itemPropState.disabled"
+        >
+          <template #header>
+            <div style="display: flex; align-items: center; gap: 8px">
+              <CmkIcon name="passwords" />
+              <span>Security Settings</span>
+            </div>
+          </template>
+          <template #content>
+            <p>Update your password, enable 2FA, and manage security keys.</p>
+          </template>
+        </CmkAccordionItem>
 
-  <CmkButton
-    @click="
-      () => {
-        if (openedItems.indexOf('item-1') >= 0) {
-          delete openedItems[openedItems.indexOf('item-1')]
-          openedItems = openedItems.filter((e) => e)
-        } else {
-          openedItems.push('item-1')
-        }
-      }
-    "
-    >Toggle Item-1 from outside Accordion</CmkButton
-  >
+        <CmkAccordionItem
+          value="item-3"
+          :header-as="itemPropState.headerAs"
+          :disabled="itemPropState.disabled"
+        >
+          <template #header>
+            <div style="display: flex; align-items: center; gap: 8px">
+              <CmkIcon name="notifications" />
+              <span>Notifications</span>
+            </div>
+          </template>
+          <template #content>
+            <p>Configure email digests and real-time alert preferences.</p>
+          </template>
+        </CmkAccordionItem>
+      </CmkAccordion>
 
-  <br /><br /><br />
-  <CmkAccordion
-    v-if="renderRef === true"
-    v-model="openedItems"
-    :max-open="parseInt(maxOpenSelected)"
-    :min-open="parseInt(minOpenSelected)"
-    class="cmk-demo-cmk-accordion"
-  >
-    <CmkAccordionItem
-      v-for="item in items"
-      :key="item.id"
-      :value="item.id"
-      :disabled="item.disabled"
-    >
-      <template #header>
-        <CmkIcon :name="item.header.icon.name" class="demo-cmk-accordion__header-icon"></CmkIcon>
-        <span class="demo-cmk-accordion__header-title">
-          {{ item.header.title }}
-          <CmkAccordionItemStateIndicator :value="item.id"></CmkAccordionItemStateIndicator>
-        </span>
+      <template #properties>
+        <DemoPropertiesPanel v-model="propState" :config="panelConfig" />
+        <DemoPropertiesPanel v-model="itemPropState" :config="itemPanelConfig" />
       </template>
-      <template #content>
-        <div v-if="item.id === 'item-1'" class="demo-cmk-accordion__additional-div">
-          This is only rendered in item 1
-        </div>
-        {{ item.content }}
-      </template>
-    </CmkAccordionItem>
-  </CmkAccordion>
+    </DemoDetailPageComponent>
 
-  <br /><br />
-  <label>Currently opened items:</label><br /><br />
-  <code>{{ openedItems }}</code>
+    <DemoDetailPageCodeExample :code="codeExampleCmkAccordion" />
+
+    <DemoDetailPageAccessibility :data="a11yDataCmkAccordion" />
+
+    <DemoDetailPageDeveloperPlayground>
+      <DemoCmkAccordionDev :screenshot-mode="screenshotMode" />
+    </DemoDetailPageDeveloperPlayground>
+  </DemoDetailPageLayout>
 </template>
-
-<style scoped>
-.demo-cmk-accordion__header-icon {
-  margin-right: 16px;
-}
-
-.demo-cmk-accordion__header-title {
-  margin: 0;
-}
-
-.demo-cmk-accordion__additional-div {
-  background: red;
-  padding: 16px;
-  margin: 0 0 16px;
-}
-
-div:has(> label) {
-  padding: 8px 0;
-}
-
-label {
-  width: 200px;
-  display: inline-block;
-}
-</style>
