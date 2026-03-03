@@ -52,7 +52,7 @@ const state = defineModel<PanelState>({ required: true })
         :label="def.title"
         :options="{ type: 'fixed', suggestions: (def as ListPropDef).options }"
         :selected-option="state[key] as string"
-        @update:selected-option="state[key] = $event"
+        @update:selected-option="$event !== null && (state[key] = $event)"
       />
     </div>
   </div>

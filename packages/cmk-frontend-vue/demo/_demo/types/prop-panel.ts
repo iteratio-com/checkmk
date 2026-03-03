@@ -33,14 +33,14 @@ export type PropDef = BoolPropDef | StringPropDef | ListPropDef<string>
 
 export type PanelConfig = Record<string, PropDef>
 
-export type PanelState = Record<string, boolean | string | null>
+export type PanelState = Record<string, boolean | string>
 
 type InferStateFromDef<T extends PropDef> = T extends BoolPropDef
   ? boolean
   : T extends StringPropDef
     ? string
     : T extends ListPropDef<infer U>
-      ? U | null
+      ? NonNullable<U>
       : never
 
 export type InferPanelState<T extends PanelConfig> = {

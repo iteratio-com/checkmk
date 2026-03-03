@@ -19,6 +19,7 @@ import { computed, ref } from 'vue'
 import CmkDropdown from '@/components/CmkDropdown'
 import type { ButtonVariants } from '@/components/CmkDropdown/CmkDropdownButton.vue'
 import type { Suggestions } from '@/components/CmkSuggestions'
+import { Response } from '@/components/CmkSuggestions/suggestions'
 
 import DemoCmkDropdownDev from './DemoCmkDropdownDev.vue'
 
@@ -86,7 +87,7 @@ const panelConfig = {
     options: [
       { title: 'Fixed', name: 'fixed' },
       { title: 'Filtered', name: 'filtered' },
-      { title: 'Callback Filtered', name: null }
+      { title: 'Callback Filtered', name: 'callback' }
     ],
     initialState: 'fixed'
   },
@@ -116,9 +117,21 @@ const dynamicOptions = computed<Suggestions>(() => {
     { name: '3', title: 'Option Three' }
   ]
 
-  return propState.value.optionsType === 'filtered'
-    ? { type: 'filtered', suggestions: baseSuggestions }
-    : { type: 'fixed', suggestions: baseSuggestions }
+  if (propState.value.optionsType === 'callback') {
+    return {
+      type: 'callback-filtered',
+      querySuggestions: async (query: string) =>
+        new Response(
+          baseSuggestions.filter(
+            (s) => s.title.toLowerCase().includes(query.toLowerCase()) || s.name === query
+          )
+        )
+    }
+  } else if (propState.value.optionsType === 'filtered') {
+    return { type: 'filtered', suggestions: baseSuggestions }
+  } else {
+    return { type: 'fixed', suggestions: baseSuggestions }
+  }
 })
 </script>
 
