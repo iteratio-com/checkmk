@@ -294,14 +294,6 @@ pkg_tar(
     package_dir = "/",
 )
 
-_EDITION_SELECT = select({
-    "@cmk//edition:cloud": ["cloud"],
-    "@cmk//edition:community": ["community"],
-    "@cmk//edition:pro": ["pro"],
-    "@cmk//edition:ultimate": ["ultimate"],
-    "@cmk//edition:ultimatemt": ["ultimatemt"],
-})
-
 run_binary(
     name = "generate_doc.spec",
     outs = ["doc.spec"],
@@ -309,8 +301,6 @@ run_binary(
         "generate",
         "--version",
         "v1",
-        "--edition",
-    ] + _EDITION_SELECT + [
         "--target",
         "doc",
         "--out",
@@ -329,8 +319,6 @@ run_binary(
         "generate",
         "--version",
         "v1",
-        "--edition",
-    ] + _EDITION_SELECT + [
         "--target",
         "swagger-ui",
         "--out",
@@ -349,8 +337,6 @@ run_binary(
         "generate",
         "--version",
         "unstable",
-        "--edition",
-    ] + _EDITION_SELECT + [
         "--target",
         "doc",
         "--out",
@@ -369,8 +355,6 @@ run_binary(
         "generate",
         "--version",
         "unstable",
-        "--edition",
-    ] + _EDITION_SELECT + [
         "--target",
         "swagger-ui",
         "--out",

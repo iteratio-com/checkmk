@@ -8,6 +8,7 @@ This is intended to be used from Bazel from command line to generate the OpenAPI
 
 import argparse
 import sys
+from contextlib import suppress
 from pathlib import Path
 from typing import Literal
 
@@ -82,35 +83,44 @@ def list_versions(args: argparse.Namespace) -> None:
     sys.stdout.write(f"{separator.join(released_versions)}\n")
 
 
-def _import_endpoints_for_edition(edition: Edition) -> None:
-    from cmk.gui.community_registration import (
-        register as community_registration,
-    )
+def _import_community_endpoints() -> None:
+    with suppress(Exception):
+        from cmk.gui.community_registration import (  # type: ignore[import-not-found, import-untyped, unused-ignore]
+            register as community_registration,
+        )
 
-    community_registration(Edition.COMMUNITY, ignore_duplicate_endpoints=True)
+        community_registration(Edition.COMMUNITY, ignore_duplicate_endpoints=True)
 
-    if edition in (Edition.PRO, Edition.ULTIMATE, Edition.ULTIMATEMT, Edition.CLOUD):
-        from cmk.gui.nonfree.pro.registration import (  # type: ignore[import-not-found, import-untyped, unused-ignore]
+
+def _import_pro_endpoints() -> None:
+    with suppress(Exception):
+        from cmk.gui.nonfree.pro.registration import (  # type: ignore[import-not-found, import-untyped, unused-ignore] # astrein: disable=cmk-module-layer-violation
             register as pro_registration,
         )
 
         pro_registration(Edition.PRO, ignore_duplicate_endpoints=True)
 
-    if edition in (Edition.ULTIMATE, Edition.ULTIMATEMT, Edition.CLOUD):
-        from cmk.gui.nonfree.ultimate.registration import (  # type: ignore[import-not-found, import-untyped, unused-ignore]
+
+def _import_ultimate_endpoints() -> None:
+    with suppress(Exception):
+        from cmk.gui.nonfree.ultimate.registration import (  # type: ignore[import-not-found, import-untyped, unused-ignore] # astrein: disable=cmk-module-layer-violation
             register as ultimate_registration,
         )
 
         ultimate_registration(Edition.ULTIMATE, ignore_duplicate_endpoints=True)
 
-    if edition is Edition.ULTIMATEMT:
-        from cmk.gui.nonfree.ultimatemt.registration import (  # type: ignore[import-not-found, import-untyped, unused-ignore]
+
+def _import_ultimatemt_endpoints() -> None:
+    with suppress(Exception):
+        from cmk.gui.nonfree.ultimatemt.registration import (  # type: ignore[import-not-found, import-untyped, unused-ignore] # astrein: disable=cmk-module-layer-violation
             register as ultimatemt_registration,
         )
 
         ultimatemt_registration(Edition.ULTIMATEMT, ignore_duplicate_endpoints=True)
 
-    if edition is Edition.CLOUD:
+
+def _import_cloud_endpoints() -> None:
+    with suppress(Exception):
         from cmk.gui.nonfree.cloud.registration import (  # type: ignore[import-not-found, import-untyped, unused-ignore]
             register as cloud_registration,
         )
@@ -119,8 +129,11 @@ def _import_endpoints_for_edition(edition: Edition) -> None:
 
 
 def process_version(args: argparse.Namespace) -> None:
-    edition = Edition.from_long_edition(args.edition)
-    _import_endpoints_for_edition(edition)
+    _import_community_endpoints()
+    _import_pro_endpoints()
+    _import_ultimate_endpoints()
+    _import_ultimatemt_endpoints()
+    _import_cloud_endpoints()
 
     if errors := main_modules.get_failed_plugins():
         sys.exit(f"The following errors occurred during plug-in loading: {errors!r}")
@@ -146,12 +159,6 @@ if __name__ == "__main__":
     process_parser = subparsers.add_parser("generate", help="Generate spec for specific version")
     process_parser.add_argument("--version", help="Must be a published versions", required=True)
     process_parser.add_argument("--out", help="Target file", required=True)
-    process_parser.add_argument(
-        "--edition",
-        help="Checkmk edition",
-        required=True,
-        choices=[e.long for e in Edition],
-    )
     process_parser.add_argument(
         "--target", help="Doc target", default="doc", choices=["swagger-ui", "doc"]
     )
