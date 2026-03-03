@@ -4,12 +4,12 @@
 # conditions defined in the file COPYING, which is part of this source code package.
 
 
-from collections.abc import Callable, Sequence
-from pathlib import Path
+from collections.abc import Sequence
 
 import pytest
 
 from cmk.agent_based.v2 import CheckResult, Metric, Result, Service, State, StringTable
+from cmk.fetchers._snmpscan import _evaluate_snmp_detection as evaluate_snmp_detection
 from cmk.plugins.collection.agent_based.cisco_wlc_clients import (
     parse_cisco_wlc_9800_clients,
     parse_cisco_wlc_clients,
@@ -24,9 +24,6 @@ from cmk.plugins.lib.wlc_clients import (
     ClientsTotal,
     VsResult,
     WlcClientsSection,
-)
-from tests.unit.cmk.plugins.collection.agent_based.snmp import (
-    snmp_is_detected,
 )
 
 # raw data looks like this:
@@ -200,20 +197,22 @@ TABLE_CISCO_WLC_DATA: Sequence[StringTable] = [
     [["13"], ["0"], ["17"]],
 ]
 
-DATA = """
-.1.3.6.1.2.1.1.2.0 .1.3.6.1.4.1.9.1.2861
-.1.3.6.1.4.1.9.9.512.1.1.1.1.4.1 WLAN
-.1.3.6.1.4.1.9.9.512.1.1.1.1.4.10 PHONES
-.1.3.6.1.4.1.9.9.512.1.1.1.1.4.999 GuestLAN
-.1.3.6.1.4.1.14179.2.1.1.1.38.1 13
-.1.3.6.1.4.1.14179.2.1.1.1.38.10 0
-.1.3.6.1.4.1.14179.2.1.1.1.38.999 17
-"""
+DATA: dict[str, str] = {
+    ".1.3.6.1.2.1.1.2.0": ".1.3.6.1.4.1.9.1.2861",
+    ".1.3.6.1.4.1.9.9.512.1.1.1.1.4.1": "WLAN",
+    ".1.3.6.1.4.1.9.9.512.1.1.1.1.4.10": "PHONES",
+    ".1.3.6.1.4.1.9.9.512.1.1.1.1.4.999": "GuestLAN",
+    ".1.3.6.1.4.1.14179.2.1.1.1.38.1": "13",
+    ".1.3.6.1.4.1.14179.2.1.1.1.38.10": "0",
+    ".1.3.6.1.4.1.14179.2.1.1.1.38.999": "17",
+}
 
 
-def test_cisco_wlc_client_with_snmp_walk(as_path: Callable[[str], Path]) -> None:
+def test_cisco_wlc_client_with_snmp_walk() -> None:
     # test detect
-    assert snmp_is_detected(snmp_section_cisco_wlc_9800_clients, as_path(DATA))
+    assert evaluate_snmp_detection(
+        detect_spec=snmp_section_cisco_wlc_9800_clients.detect, oid_value_getter=DATA.get
+    )
 
     # parse
     parsed = snmp_section_cisco_wlc_9800_clients.parse_function(TABLE_CISCO_WLC_DATA)

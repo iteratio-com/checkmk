@@ -3,13 +3,13 @@
 # This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 # conditions defined in the file COPYING, which is part of this source code package.
 
-from collections.abc import Callable, Sequence
-from pathlib import Path
+from collections.abc import Sequence
 
 import pytest
 from pytest import MonkeyPatch
 
 from cmk.agent_based.v2 import IgnoreResultsError, Metric, Result, Service, State, StringTable
+from cmk.fetchers._snmpscan import _evaluate_snmp_detection as evaluate_snmp_detection
 from cmk.plugins.collection.agent_based import cisco_vpn_tunnel
 from cmk.plugins.collection.agent_based.cisco_vpn_tunnel import (
     check_cisco_vpn_tunnel,
@@ -19,9 +19,6 @@ from cmk.plugins.collection.agent_based.cisco_vpn_tunnel import (
     Phase,
     snmp_section_cisco_vpn_tunnel,
     VPNTunnel,
-)
-from tests.unit.cmk.plugins.collection.agent_based.snmp import (
-    snmp_is_detected,
 )
 
 _STRING_TABLE = [
@@ -305,15 +302,18 @@ TABLE_VPN_MISSING: Sequence[StringTable] = [
     [],
 ]
 
-VPN_WALK_FOR_DETECT = """.1.3.6.1.2.1.1.1.0 Cisco Adaptive Security Appliance Version 9.12(4)62
-.1.3.6.1.2.1.1.2.0 .1.3.6.1.4.1.9.1.2314
-"""
+VPN_WALK_FOR_DETECT: dict[str, str] = {
+    ".1.3.6.1.2.1.1.1.0": "Cisco Adaptive Security Appliance Version 9.12(4)62",
+    ".1.3.6.1.2.1.1.2.0": ".1.3.6.1.4.1.9.1.2314",
+}
 
 
-def test_parse_cisco_vpn_tunnel_missing_TunOctets(as_path: Callable[[str], Path]) -> None:
+def test_parse_cisco_vpn_tunnel_missing_TunOctets() -> None:
     # SUP-23416
     # My assumption is that if the handshake does not have values, there won't be any throughput
     # values either, so we omit this tunnel altogether.
-    assert snmp_is_detected(snmp_section_cisco_vpn_tunnel, as_path(VPN_WALK_FOR_DETECT))
+    assert evaluate_snmp_detection(
+        detect_spec=snmp_section_cisco_vpn_tunnel.detect, oid_value_getter=VPN_WALK_FOR_DETECT.get
+    )
 
     assert snmp_section_cisco_vpn_tunnel.parse_function(TABLE_VPN_MISSING) == {}

@@ -3,24 +3,25 @@
 # This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 # conditions defined in the file COPYING, which is part of this source code package.
 
-from collections.abc import Callable, Sequence
-from pathlib import Path
+from collections.abc import Sequence
 
 import pytest
 
 from cmk.agent_based.v2 import StringTable
+from cmk.fetchers._snmpscan import _evaluate_snmp_detection as evaluate_snmp_detection
 from cmk.plugins.collection.agent_based import ups_power
-from tests.unit.cmk.plugins.collection.agent_based.snmp import snmp_is_detected
 
 # walks/usv-liebert
-DATA0 = """
-.1.3.6.1.2.1.1.2.0  .1.3.6.1.4.1.476.1.42
-"""
+DATA0: dict[str, str] = {
+    ".1.3.6.1.2.1.1.2.0": ".1.3.6.1.4.1.476.1.42",
+}
 
 
 @pytest.mark.usefixtures("agent_based_plugins")
-def test_ups_power_detect(as_path: Callable[[str], Path]) -> None:
-    assert snmp_is_detected(ups_power.snmp_section_ups_power, as_path(DATA0))
+def test_ups_power_detect() -> None:
+    assert evaluate_snmp_detection(
+        detect_spec=ups_power.snmp_section_ups_power.detect, oid_value_getter=DATA0.get
+    )
 
 
 @pytest.mark.parametrize(

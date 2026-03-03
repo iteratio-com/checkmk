@@ -5,15 +5,10 @@
 
 # mypy: disable-error-code="no-untyped-call"
 
-from collections.abc import Callable
-from pathlib import Path
-
 from cmk.agent_based.v2 import StringTable
+from cmk.fetchers._snmpscan import _evaluate_snmp_detection as evaluate_snmp_detection
 from cmk.legacy_checks.juniper_fru import check_juniper_fru, inventory_juniper_fru
 from cmk.plugins.juniper.agent_based.juniper_fru_section import snmp_section_juniper_fru
-from tests.unit.cmk.plugins.collection.agent_based.snmp import (
-    snmp_is_detected,
-)
 
 # SUP-13184
 TABLE_DATA_0: StringTable = [
@@ -54,20 +49,22 @@ TABLE_DATA_1: StringTable = [
     ["PEM 3", "7", "6"],
 ]
 
-# Walk data kept for snmp_is_detected tests
-DATA_0 = """
-.1.3.6.1.2.1.1.2.0 .1.3.6.1.4.1.2636.1.1.1.2.99
-.1.3.6.1.4.1.2636.3.1.15.1.5.22.1.0.0 PSM 0
-"""
+# Walk data kept for detection tests
+DATA_0: dict[str, str] = {
+    ".1.3.6.1.2.1.1.2.0": ".1.3.6.1.4.1.2636.1.1.1.2.99",
+    ".1.3.6.1.4.1.2636.3.1.15.1.5.22.1.0.0": "PSM 0",
+}
 
-DATA_1 = """
-.1.3.6.1.2.1.1.2.0 .1.3.6.1.4.1.2636.1.1.1.2.25
-.1.3.6.1.4.1.2636.3.1.15.1.5.2.1.0.0 PEM 0
-"""
+DATA_1: dict[str, str] = {
+    ".1.3.6.1.2.1.1.2.0": ".1.3.6.1.4.1.2636.1.1.1.2.25",
+    ".1.3.6.1.4.1.2636.3.1.15.1.5.2.1.0.0": "PEM 0",
+}
 
 
-def test_juniper_fru(as_path: Callable[[str], Path]) -> None:
-    assert snmp_is_detected(snmp_section_juniper_fru, as_path(DATA_1))
+def test_juniper_fru() -> None:
+    assert evaluate_snmp_detection(
+        detect_spec=snmp_section_juniper_fru.detect, oid_value_getter=DATA_1.get
+    )
     parsed = snmp_section_juniper_fru.parse_function([TABLE_DATA_1])
     assert inventory_juniper_fru(parsed, ["7"]) == [
         ("PEM 0", None),
@@ -79,8 +76,10 @@ def test_juniper_fru(as_path: Callable[[str], Path]) -> None:
     assert (state, message) == (0, "Operational status: online")
 
 
-def test_juniper_fru_18(as_path: Callable[[str], Path]) -> None:
-    assert snmp_is_detected(snmp_section_juniper_fru, as_path(DATA_0))
+def test_juniper_fru_18() -> None:
+    assert evaluate_snmp_detection(
+        detect_spec=snmp_section_juniper_fru.detect, oid_value_getter=DATA_0.get
+    )
     parsed = snmp_section_juniper_fru.parse_function([TABLE_DATA_0])
     assert inventory_juniper_fru(parsed, ["18"]) == [
         ("PSM 1", None),

@@ -6,32 +6,26 @@
 # mypy: disable-error-code="misc"
 # mypy: disable-error-code="type-arg"
 
-
-import typing
-from pathlib import Path
-
 import pytest
 
 from cmk.agent_based.v2 import Metric, Result, Service, SimpleSNMPSection, State, StringTable
+from cmk.fetchers._snmpscan import _evaluate_snmp_detection as evaluate_snmp_detection
 from cmk.plugins.collection.agent_based import mcafee_webgateway_client_requests as plugin
 from cmk.plugins.mcafee.libgateway import MISC_DEFAULT_PARAMS, MiscParams
-from tests.unit.cmk.plugins.collection.agent_based.snmp import (
-    snmp_is_detected,
-)
 
-WALK_MCAFEE = """
-.1.3.6.1.2.1.1.1.0 McAfee Web Gateway 7;VMWare;VMware, Inc.
-.1.3.6.1.4.1.1230.2.7.2.2.1.0 96919
-.1.3.6.1.4.1.1230.2.7.2.3.1.0 1063172
-.1.3.6.1.4.1.1230.2.7.2.6.1.0 92114
-"""
+WALK_MCAFEE: dict[str, str] = {
+    ".1.3.6.1.2.1.1.1.0": "McAfee Web Gateway 7;VMWare;VMware, Inc.",
+    ".1.3.6.1.4.1.1230.2.7.2.2.1.0": "96919",
+    ".1.3.6.1.4.1.1230.2.7.2.3.1.0": "1063172",
+    ".1.3.6.1.4.1.1230.2.7.2.6.1.0": "92114",
+}
 
-WALK_SKYHIGH = """
-.1.3.6.1.2.1.1.2.0 1.3.6.1.4.1.59732.2.7.1.1
-.1.3.6.1.4.1.59732.2.7.2.2.1.0 96919
-.1.3.6.1.4.1.59732.2.7.2.3.1.0 1063172
-.1.3.6.1.4.1.59732.2.7.2.6.1.0 92114
-"""
+WALK_SKYHIGH: dict[str, str] = {
+    ".1.3.6.1.2.1.1.2.0": "1.3.6.1.4.1.59732.2.7.1.1",
+    ".1.3.6.1.4.1.59732.2.7.2.2.1.0": "96919",
+    ".1.3.6.1.4.1.59732.2.7.2.3.1.0": "1063172",
+    ".1.3.6.1.4.1.59732.2.7.2.6.1.0": "92114",
+}
 
 TABLE_CR: StringTable = [["96919", "1063172", "92114"]]
 
@@ -44,11 +38,10 @@ TABLE_CR: StringTable = [["96919", "1063172", "92114"]]
     ],
 )
 def test_detect(
-    walk: str,
+    walk: dict[str, str],
     detected_section: SimpleSNMPSection,
-    as_path: typing.Callable[[str], Path],
 ) -> None:
-    assert snmp_is_detected(detected_section, as_path(walk))
+    assert evaluate_snmp_detection(detect_spec=detected_section.detect, oid_value_getter=walk.get)
 
 
 @pytest.mark.parametrize(
