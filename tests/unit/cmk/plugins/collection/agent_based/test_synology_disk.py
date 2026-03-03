@@ -3,14 +3,10 @@
 # This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 # conditions defined in the file COPYING, which is part of this source code package.
 
-from collections.abc import Callable
-from pathlib import Path
-
 import pytest
 
-from cmk.agent_based.v2 import Metric, Result, State
+from cmk.agent_based.v2 import Metric, Result, State, StringTable
 from cmk.plugins.collection.agent_based import synology_disks
-from tests.unit.cmk.plugins.collection.agent_based.snmp import get_parsed_snmp_section
 
 
 @pytest.fixture
@@ -20,49 +16,17 @@ def empty_value_store(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 # SUP-13080
-DATA_0 = """
-.1.3.6.1.2.1.1.1.0 Linux PPPPPP 1.1.111+ #00000 SMP Tue Nov 11 11:11:11 CST 1111 x86_64
-.1.3.6.1.4.1.6574.2.1.1.2.0 Disk 1
-.1.3.6.1.4.1.6574.2.1.1.2.1 Disk 2
-.1.3.6.1.4.1.6574.2.1.1.2.2 Disk 3
-.1.3.6.1.4.1.6574.2.1.1.2.3 Disk 4
-.1.3.6.1.4.1.6574.2.1.1.3.0 HAT5300-8T
-.1.3.6.1.4.1.6574.2.1.1.3.1 HAT5300-8T
-.1.3.6.1.4.1.6574.2.1.1.3.2 HAT5300-8T
-.1.3.6.1.4.1.6574.2.1.1.3.3 HAT5300-8T
-.1.3.6.1.4.1.6574.2.1.1.5.0 1
-.1.3.6.1.4.1.6574.2.1.1.5.1 1
-.1.3.6.1.4.1.6574.2.1.1.5.2 1
-.1.3.6.1.4.1.6574.2.1.1.5.3 1
-.1.3.6.1.4.1.6574.2.1.1.6.0 27
-.1.3.6.1.4.1.6574.2.1.1.6.1 26
-.1.3.6.1.4.1.6574.2.1.1.6.2 26
-.1.3.6.1.4.1.6574.2.1.1.6.3 25
-.1.3.6.1.4.1.6574.2.1.1.7.0 data
-.1.3.6.1.4.1.6574.2.1.1.7.1 data
-.1.3.6.1.4.1.6574.2.1.1.7.2 data
-.1.3.6.1.4.1.6574.2.1.1.7.3 data
-.1.3.6.1.4.1.6574.2.1.1.13.0 1
-.1.3.6.1.4.1.6574.2.1.1.13.1 1
-.1.3.6.1.4.1.6574.2.1.1.13.2 3
-.1.3.6.1.4.1.6574.2.1.1.13.3 1
-"""
+TABLE_DATA_0: StringTable = [
+    ["Disk 1", "HAT5300-8T", "1", "27", "data", "1"],
+    ["Disk 2", "HAT5300-8T", "1", "26", "data", "1"],
+    ["Disk 3", "HAT5300-8T", "1", "26", "data", "3"],
+    ["Disk 4", "HAT5300-8T", "1", "25", "data", "1"],
+]
 
-DATA_1 = """
-.1.3.6.1.4.1.6574.2.1.1.2.0 Disk 1
-.1.3.6.1.4.1.6574.2.1.1.3.0 HAT5300-8T
-.1.3.6.1.4.1.6574.2.1.1.5.0 1
-.1.3.6.1.4.1.6574.2.1.1.6.0 27
-"""
+TABLE_DATA_1: StringTable = [["Disk 1", "HAT5300-8T", "1", "27", "", ""]]
 
 # SUP-13490
-DATA_2 = """
-.1.3.6.1.4.1.6574.2.1.1.2.3 Disk 4
-.1.3.6.1.4.1.6574.2.1.1.3.3 WD40000000-6666666
-.1.3.6.1.4.1.6574.2.1.1.5.3 3
-.1.3.6.1.4.1.6574.2.1.1.6.3 35
-.1.3.6.1.4.1.6574.2.1.1.7.3 hotspare
-"""
+TABLE_DATA_2: StringTable = [["Disk 4", "WD40000000-6666666", "3", "35", "hotspare", ""]]
 
 SECTION_TABLE = [
     ["Disk 1", "WD40EFAX-68JH4N0", "1", "33", "data", "1"],
@@ -133,9 +97,8 @@ def test_check_role_is_ok_even_if_not_initialized(
     assert State.worst(*(r.state for r in result if isinstance(r, Result))) == expected
 
 
-def test_disk_health_status(as_path: Callable[[str], Path], empty_value_store: None) -> None:
-    parsed = get_parsed_snmp_section(synology_disks.snmp_section_synology_disks, as_path(DATA_0))
-    assert parsed is not None
+def test_disk_health_status(empty_value_store: None) -> None:
+    parsed = synology_disks.parse_synology(TABLE_DATA_0)
     assert list(synology_disks.check_synology_disks("Disk 3", {}, parsed)) == [
         Metric("temp", 26.0),
         Result(state=State.OK, summary="Temperature: 26.0 °C"),
@@ -145,11 +108,8 @@ def test_disk_health_status(as_path: Callable[[str], Path], empty_value_store: N
     ]
 
 
-def test_disk_health_status_missing(
-    as_path: Callable[[str], Path], empty_value_store: None
-) -> None:
-    parsed = get_parsed_snmp_section(synology_disks.snmp_section_synology_disks, as_path(DATA_1))
-    assert parsed is not None
+def test_disk_health_status_missing(empty_value_store: None) -> None:
+    parsed = synology_disks.parse_synology(TABLE_DATA_1)
     assert list(synology_disks.check_synology_disks("Disk 1", {}, parsed)) == [
         Metric("temp", 27.0),
         Result(state=State.OK, summary="Temperature: 27.0 °C"),
@@ -159,9 +119,8 @@ def test_disk_health_status_missing(
     ]
 
 
-def test_hotspare(as_path: Callable[[str], Path], empty_value_store: None) -> None:
-    parsed = get_parsed_snmp_section(synology_disks.snmp_section_synology_disks, as_path(DATA_2))
-    assert parsed is not None
+def test_hotspare(empty_value_store: None) -> None:
+    parsed = synology_disks.parse_synology(TABLE_DATA_2)
     assert list(synology_disks.check_synology_disks("Disk 4", {}, parsed)) == [
         Metric("temp", 35.0),
         Result(state=State.OK, summary="Temperature: 35.0 °C"),

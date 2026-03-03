@@ -4,7 +4,7 @@
 # conditions defined in the file COPYING, which is part of this source code package.
 
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from pathlib import Path
 
 import pytest
@@ -26,7 +26,6 @@ from cmk.plugins.lib.wlc_clients import (
     WlcClientsSection,
 )
 from tests.unit.cmk.plugins.collection.agent_based.snmp import (
-    get_parsed_snmp_section,
     snmp_is_detected,
 )
 
@@ -196,6 +195,11 @@ def test_parse_cisco_wlc_9800_clients() -> None:
     )
 
 
+TABLE_CISCO_WLC_DATA: Sequence[StringTable] = [
+    [["WLAN"], ["PHONES"], ["GuestLAN"]],
+    [["13"], ["0"], ["17"]],
+]
+
 DATA = """
 .1.3.6.1.2.1.1.2.0 .1.3.6.1.4.1.9.1.2861
 .1.3.6.1.4.1.9.9.512.1.1.1.1.4.1 WLAN
@@ -212,7 +216,7 @@ def test_cisco_wlc_client_with_snmp_walk(as_path: Callable[[str], Path]) -> None
     assert snmp_is_detected(snmp_section_cisco_wlc_9800_clients, as_path(DATA))
 
     # parse
-    parsed = get_parsed_snmp_section(snmp_section_cisco_wlc_9800_clients, as_path(DATA))
+    parsed = snmp_section_cisco_wlc_9800_clients.parse_function(TABLE_CISCO_WLC_DATA)
 
     # test discovery
     assert list(check_plugin_wlc_clients.discovery_function(parsed)) == [

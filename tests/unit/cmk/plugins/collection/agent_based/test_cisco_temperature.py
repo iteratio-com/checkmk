@@ -6,7 +6,7 @@
 # mypy: disable-error-code="type-arg"
 
 import typing
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from pathlib import Path
 
 import pytest
@@ -14,10 +14,150 @@ import pytest
 from cmk.agent_based.v1 import Metric, Result, Service, State
 from cmk.agent_based.v2 import CheckResult, StringTable
 from cmk.plugins.collection.agent_based import cisco_temperature as ct
-from tests.unit.cmk.plugins.collection.agent_based.snmp import (
-    get_parsed_snmp_section,
-    snmp_is_detected,
-)
+from tests.unit.cmk.plugins.collection.agent_based.snmp import snmp_is_detected
+
+TABLE_CATALYST: Sequence[StringTable] = [
+    [
+        ["2262", "2083", "Te2/0/22"],
+        ["2263", "2262", "Te2/0/22 Module Temperature Sensor"],
+        ["2264", "2262", "Te2/0/22 Supply Voltage Sensor"],
+        ["2265", "2262", "Te2/0/22 Bias Current Sensor"],
+        ["2266", "2262", "Te2/0/22 Transmit Power Sensor"],
+        ["2267", "2262", "Te2/0/22 Receive Power Sensor"],
+    ],
+    [
+        ["2263", "8", "9", "1", "240", "1"],
+        ["2264", "4", "9", "1", "32", "1"],
+        ["2265", "5", "8", "1", "373", "1"],
+        ["2266", "14", "9", "1", "-14", "1"],
+        ["2267", "14", "9", "1", "-48", "1"],
+    ],
+    [],
+    [],
+    [["30", "TenGigabitEthernet2/0/22", "1"]],
+    [["2262.0", ".1.3.6.1.2.1.2.2.1.1.30"]],
+]
+
+TABLE_ASR: Sequence[StringTable] = [
+    [
+        ["1046", "1015", "subslot 0/0 transceiver container 0"],
+        ["1047", "1046", "subslot 0/0 transceiver 0"],
+        ["1048", "1047", "GigabitEthernet0/0/0"],
+        ["1050", "1047", "subslot 0/0 transceiver 0 Temperature Sensor"],
+        ["1051", "1047", "subslot 0/0 transceiver 0 Supply Voltage Sensor"],
+        ["1052", "1047", "subslot 0/0 transceiver 0 Bias Current Sensor"],
+        ["1053", "1047", "subslot 0/0 transceiver 0 Tx Power Sensor"],
+        ["1054", "1047", "subslot 0/0 transceiver 0 Rx Power Sensor"],
+    ],
+    [
+        ["1050", "8", "9", "3", "29218", "1"],
+        ["1051", "4", "8", "1", "33261", "1"],
+        ["1052", "5", "7", "0", "2782", "1"],
+        ["1053", "14", "9", "1", "-61", "1"],
+        ["1054", "14", "9", "1", "-54", "1"],
+    ],
+    [],
+    [],
+    [["1", "GigabitEthernet0/0/0", "1"]],
+    [["1048.0", ".1.3.6.1.2.1.2.2.1.1.1"]],
+]
+
+TABLE_NEXUS: Sequence[StringTable] = [
+    [
+        ["300000002", "4950", "Ethernet1/1 Lane 1 Transceiver Voltage Sensor"],
+        ["300000004", "4950", "Ethernet1/1 Lane 1 Transceiver Bias Current Sensor"],
+        ["300000007", "4950", "Ethernet1/1 Lane 1 Transceiver Temperature Sensor"],
+        ["300000013", "4950", "Ethernet1/1 Lane 1 Transceiver Receive Power Sensor"],
+        ["300000014", "4950", "Ethernet1/1 Lane 1 Transceiver Transmit Power Sensor"],
+    ],
+    [
+        ["300000002", "3", "8", "0", "3", "1"],
+        ["300000004", "5", "8", "0", "7", "1"],
+        ["300000007", "8", "8", "0", "30", "1"],
+        ["300000013", "14", "8", "0", "-2", "1"],
+        ["300000014", "14", "8", "0", "-2", "1"],
+    ],
+    [],
+    [],
+    [["436207616", "Ethernet1/1", "1"]],
+    [["4950.0", ".1.3.6.1.2.1.2.2.1.1.436207616"]],
+]
+
+TABLE_NEXUS_ADMIN_DOWN: Sequence[StringTable] = [
+    [
+        ["", "4950", ""],
+        ["", "4952", ""],
+        ["300000003", "", "Ethernet1/1 Lane 1 Transceiver Voltage Sensor"],
+        ["300000004", "", "Ethernet1/1 Lane 1 Transceiver Bias Current Sensor"],
+        ["300000007", "", "Ethernet1/1 Lane 1 Transceiver Temperature Sensor"],
+        ["300000013", "", "Ethernet1/1 Lane 1 Transceiver Receive Power Sensor"],
+        ["300000014", "", "Ethernet1/1 Lane 1 Transceiver Transmit Power Sensor"],
+        ["300003523", "", "Ethernet1/3 Lane 1 Transceiver Voltage Sensor"],
+        ["300003524", "", "Ethernet1/3 Lane 1 Transceiver Bias Current Sensor"],
+        ["300003527", "", "Ethernet1/3 Lane 1 Transceiver Temperature Sensor"],
+        ["300003533", "", "Ethernet1/3 Lane 1 Transceiver Receive Power Sensor"],
+        ["300003534", "", "Ethernet1/3 Lane 1 Transceiver Transmit Power Sensor"],
+    ],
+    [
+        ["300000003", "4", "8", "0", "3354", "1"],
+        ["300000004", "5", "7", "0", "314", "1"],
+        ["300000007", "8", "8", "0", "26757", "1"],
+        ["300000013", "14", "8", "0", "-33010", "1"],
+        ["300000014", "14", "8", "0", "-10788", "1"],
+        ["300003523", "4", "8", "0", "3337", "1"],
+        ["300003524", "5", "7", "0", "6172", "1"],
+        ["300003527", "8", "8", "0", "26949", "1"],
+        ["300003533", "14", "8", "0", "-2862", "1"],
+        ["300003534", "14", "8", "0", "-2369", "1"],
+        ["300005283", "", "", "", "", "1"],
+        ["300005284", "", "", "", "", "1"],
+        ["300005287", "", "", "", "", "1"],
+        ["300005293", "", "", "", "", "1"],
+        ["300005294", "", "", "", "", "1"],
+        ["300028163", "", "", "", "", "1"],
+        ["300028164", "", "", "", "", "1"],
+        ["300028167", "", "", "", "", "1"],
+        ["300028173", "", "", "", "", "1"],
+        ["300028174", "", "", "", "", "1"],
+    ],
+    [],
+    [],
+    [["436207616", "Ethernet1/1", "2"], ["436215808", "Ethernet1/3", "1"]],
+    [
+        ["4950.0", ".1.3.6.1.2.1.2.2.1.1.436207616"],
+        ["4952.0", ".1.3.6.1.2.1.2.2.1.1.436215808"],
+    ],
+]
+
+TABLE_FALLBACK: Sequence[StringTable] = [
+    [
+        ["300000002", "4950", "Ethernet1/1 Lane 1 Transceiver Voltage Sensor"],
+        ["300000004", "4950", "Ethernet1/1 Lane 1 Transceiver Bias Current Sensor"],
+        ["300000007", "4950", "Ethernet1/1 Lane 1 Transceiver Temperature Sensor"],
+        ["300000013", "4950", "Ethernet1/1 Lane 1 Transceiver Receive Power Sensor"],
+        ["300000014", "4950", "Ethernet1/1 Lane 1 Transceiver Transmit Power Sensor"],
+    ],
+    [
+        ["300000002", "3", "8", "0", "3", "1"],
+        ["300000004", "5", "8", "0", "7", "1"],
+        ["300000007", "8", "8", "0", "30", "1"],
+        ["300000013", "14", "8", "0", "-2", "1"],
+        ["300000014", "14", "8", "0", "-2", "1"],
+    ],
+    [],
+    [],
+    [["436207616", "Ethernet1/1", "1"]],
+    [],
+]
+
+TABLE_INVALID: Sequence[StringTable] = [
+    [],
+    [["38487", "8", "9", "0", "inf", "1"]],
+    [["38487.1", "10", "4", "70"], ["38487.2", "20", "4", "80"]],
+    [],
+    [],
+    [],
+]
 
 
 @pytest.fixture(name="empty_value_store")
@@ -29,7 +169,7 @@ def _empty_value_store(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.mark.parametrize(
-    ["input_table", "expected_section"],
+    ["input_table", "table", "expected_section"],
     [
         pytest.param(
             """
@@ -75,6 +215,7 @@ def _empty_value_store(monkeypatch: pytest.MonkeyPatch) -> None:
 .1.3.6.1.4.1.9.9.91.1.1.1.1.5.2266 1
 .1.3.6.1.4.1.9.9.91.1.1.1.1.5.2267 1
 """,
+            TABLE_CATALYST,
             {
                 "8": {
                     "Te2/0/22 Module Temperature Sensor": {
@@ -158,6 +299,7 @@ def _empty_value_store(monkeypatch: pytest.MonkeyPatch) -> None:
 .1.3.6.1.4.1.9.9.91.1.1.1.1.5.1053 1
 .1.3.6.1.4.1.9.9.91.1.1.1.1.5.1054 1
             """,
+            TABLE_ASR,
             {
                 "8": {
                     "subslot 0/0 transceiver 0 Temperature Sensor": {
@@ -235,6 +377,7 @@ def _empty_value_store(monkeypatch: pytest.MonkeyPatch) -> None:
 .1.3.6.1.4.1.9.9.91.1.1.1.1.5.300000013 1
 .1.3.6.1.4.1.9.9.91.1.1.1.1.5.300000014 1
             """,
+            TABLE_NEXUS,
             {
                 "14": {
                     "Ethernet1/1 Lane 1 Transceiver Receive Power Sensor": {
@@ -353,6 +496,7 @@ def _empty_value_store(monkeypatch: pytest.MonkeyPatch) -> None:
 .1.3.6.1.4.1.9.9.91.1.1.1.1.5.300028173 1
 .1.3.6.1.4.1.9.9.91.1.1.1.1.5.300028174 1
             """,
+            TABLE_NEXUS_ADMIN_DOWN,
             {
                 "14": {
                     "Ethernet1/1 Lane 1 Transceiver Receive Power Sensor": {
@@ -456,6 +600,7 @@ def _empty_value_store(monkeypatch: pytest.MonkeyPatch) -> None:
 .1.3.6.1.4.1.9.9.91.1.1.1.1.5.300000013 1
 .1.3.6.1.4.1.9.9.91.1.1.1.1.5.300000014 1
             """,
+            TABLE_FALLBACK,
             {
                 "14": {
                     "Ethernet1/1 Lane 1 Transceiver Receive Power Sensor": {
@@ -495,6 +640,7 @@ def _empty_value_store(monkeypatch: pytest.MonkeyPatch) -> None:
 )
 def test_parse_admin_state_mapping(
     input_table: str,
+    table: Sequence[StringTable],
     expected_section: ct.Section,
     as_path: Callable[[str], Path],
 ) -> None:
@@ -502,7 +648,7 @@ def test_parse_admin_state_mapping(
 
     assert snmp_is_detected(ct.snmp_section_cisco_temperature, snmp_walk)
 
-    assert expected_section == get_parsed_snmp_section(ct.snmp_section_cisco_temperature, snmp_walk)
+    assert expected_section == ct.snmp_section_cisco_temperature.parse_function(table)
 
 
 @pytest.mark.parametrize(
@@ -1054,27 +1200,8 @@ def test_check_dom_not_ok_sensors(
     assert list(ct.check_cisco_temperature_dom(item, {}, section_not_ok_sensors)) == expected_result
 
 
-def test_ensure_invalid_data_is_ignored(as_path: Callable[[str], Path]) -> None:
-    input_table = """.1.3.6.1.2.1.1.1.0 Cisco NX-OS(tm) Nexus9000 C93240YC-FX2, Software (NXOS 64-bit), Version 10.2(5), RELEASE SOFTWARE Copyright (c) 2002-2023 by Cisco Systems, Inc. Compiled 3/10/2023 12:00:00
-.1.3.6.1.4.1.9.9.91.1.1.1.1.1.38487 8
-.1.3.6.1.4.1.9.9.91.1.1.1.1.2.38487 9
-.1.3.6.1.4.1.9.9.91.1.1.1.1.3.38487 0
-.1.3.6.1.4.1.9.9.91.1.1.1.1.4.38487 inf
-.1.3.6.1.4.1.9.9.91.1.1.1.1.5.38487 1
-.1.3.6.1.4.1.9.9.91.1.1.1.1.6.38487 554712961
-.1.3.6.1.4.1.9.9.91.1.1.1.1.7.38487 60
-.1.3.6.1.4.1.9.9.91.1.2.1.1.2.38487.1 10
-.1.3.6.1.4.1.9.9.91.1.2.1.1.2.38487.2 20
-.1.3.6.1.4.1.9.9.91.1.2.1.1.3.38487.1 4
-.1.3.6.1.4.1.9.9.91.1.2.1.1.3.38487.2 4
-.1.3.6.1.4.1.9.9.91.1.2.1.1.4.38487.1 70
-.1.3.6.1.4.1.9.9.91.1.2.1.1.4.38487.2 80
-.1.3.6.1.4.1.9.9.91.1.2.1.1.5.38487.1 2
-.1.3.6.1.4.1.9.9.91.1.2.1.1.5.38487.2 2
-.1.3.6.1.4.1.9.9.91.1.2.1.1.6.38487.1 1
-.1.3.6.1.4.1.9.9.91.1.2.1.1.6.38487.2 1"""
-    snmp_walk = as_path(input_table)
-    parsed_section = get_parsed_snmp_section(ct.snmp_section_cisco_temperature, snmp_walk)
+def test_ensure_invalid_data_is_ignored() -> None:
+    parsed_section = ct.snmp_section_cisco_temperature.parse_function(TABLE_INVALID)
     assert parsed_section is not None
     value_store: dict = {}
     _ = list(ct._check_cisco_temperature(value_store, "38487", {}, parsed_section))

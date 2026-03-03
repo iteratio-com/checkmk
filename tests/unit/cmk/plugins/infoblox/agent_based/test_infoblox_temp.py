@@ -6,12 +6,11 @@
 # mypy: disable-error-code="misc"
 # mypy: disable-error-code="type-arg"
 
-from collections.abc import Callable
-from pathlib import Path
+from collections.abc import Sequence
 
 import pytest
 
-from cmk.agent_based.v2 import Metric, Result, Service, State
+from cmk.agent_based.v2 import Metric, Result, Service, State, StringTable
 from cmk.plugins.infoblox.agent_based.infoblox_temp import (
     check_temp,
     discover_infoblox_temp,
@@ -19,47 +18,48 @@ from cmk.plugins.infoblox.agent_based.infoblox_temp import (
     TempDescr,
 )
 from cmk.plugins.lib.temperature import TempParamType
-from tests.unit.cmk.plugins.collection.agent_based.snmp import get_parsed_snmp_section
 
-WALK_NIOS_7_2_7 = """
-.1.3.6.1.4.1.7779.3.1.1.2.1.7.0 7.2.7
-.1.3.6.1.4.1.7779.3.1.1.2.1.10.1.2.37 5
-.1.3.6.1.4.1.7779.3.1.1.2.1.10.1.2.38 1
-.1.3.6.1.4.1.7779.3.1.1.2.1.10.1.2.39 1
-.1.3.6.1.4.1.7779.3.1.1.2.1.10.1.2.40 5
-.1.3.6.1.4.1.7779.3.1.1.2.1.10.1.2.41 1
-.1.3.6.1.4.1.7779.3.1.1.2.1.10.1.3.37 No power information available.
-.1.3.6.1.4.1.7779.3.1.1.2.1.10.1.3.38 The NTP service resumed synchronization.
-.1.3.6.1.4.1.7779.3.1.1.2.1.10.1.3.39 CPU_TEMP: +36.00 C
-.1.3.6.1.4.1.7779.3.1.1.2.1.10.1.3.40 No temperature information available.
-.1.3.6.1.4.1.7779.3.1.1.2.1.10.1.3.41 SYS_TEMP: +34.00 C
-"""
+# SNMPSection (not Simple) - pass table directly (no wrapping needed)
+TABLE_NIOS_7_2_7: Sequence[StringTable] = [
+    [["", "7.2.7"]],
+    [["", "5", "1", "1", "5", "1"]],
+    [
+        [
+            "",
+            "No power information available.",
+            "The NTP service resumed synchronization.",
+            "CPU_TEMP: +36.00 C",
+            "No temperature information available.",
+            "SYS_TEMP: +34.00 C",
+        ]
+    ],
+]
 
-
-WALK_NIOS_9_0_3 = """
-.1.3.6.1.4.1.7779.3.1.1.2.1.7.0 9.0.3-50212
-.1.3.6.1.4.1.7779.3.1.1.2.1.10.1.2.37 1
-.1.3.6.1.4.1.7779.3.1.1.2.1.10.1.2.38 5
-.1.3.6.1.4.1.7779.3.1.1.2.1.10.1.2.39 1
-.1.3.6.1.4.1.7779.3.1.1.2.1.10.1.2.40 5
-.1.3.6.1.4.1.7779.3.1.1.2.1.10.1.2.41 1
-.1.3.6.1.4.1.7779.3.1.1.2.1.10.1.3.37 CPU_TEMP: +36.00 C
-.1.3.6.1.4.1.7779.3.1.1.2.1.10.1.3.38 No temperature information available.
-.1.3.6.1.4.1.7779.3.1.1.2.1.10.1.3.39 SYS_TEMP: +34.00 C
-.1.3.6.1.4.1.7779.3.1.1.2.1.10.1.3.40
-.1.3.6.1.4.1.7779.3.1.1.2.1.10.1.3.41 CPU Usage: 20%
-"""
+TABLE_NIOS_9_0_3: Sequence[StringTable] = [
+    [["", "9.0.3-50212"]],
+    [["", "1", "5", "1", "5", "1"]],
+    [
+        [
+            "",
+            "CPU_TEMP: +36.00 C",
+            "No temperature information available.",
+            "SYS_TEMP: +34.00 C",
+            "",
+            "CPU Usage: 20%",
+        ]
+    ],
+]
 
 
 @pytest.mark.parametrize(
-    ["input_walk"],
+    "string_table",
     [
-        pytest.param(WALK_NIOS_7_2_7, id="Nios 7.2.7"),
-        pytest.param(WALK_NIOS_9_0_3, id="Nios 9.0.3"),
+        pytest.param(TABLE_NIOS_7_2_7, id="Nios 7.2.7"),
+        pytest.param(TABLE_NIOS_9_0_3, id="Nios 9.0.3"),
     ],
 )
-def test_parse_infoblox_temp(input_walk: str, as_path: Callable[[str], Path]) -> None:
-    section = get_parsed_snmp_section(snmp_section_infoblox_temp, as_path(input_walk))
+def test_parse_infoblox_temp(string_table: Sequence[StringTable]) -> None:
+    section = snmp_section_infoblox_temp.parse_function(string_table)
     assert section == {
         "CPU_TEMP 1": TempDescr(reading=36.0, state=(0, "working"), unit="c"),
         "SYS_TEMP": TempDescr(reading=34.0, state=(0, "working"), unit="c"),
@@ -67,14 +67,14 @@ def test_parse_infoblox_temp(input_walk: str, as_path: Callable[[str], Path]) ->
 
 
 @pytest.mark.parametrize(
-    ["input_walk"],
+    "string_table",
     [
-        pytest.param(WALK_NIOS_7_2_7, id="Nios 7.2.7"),
-        pytest.param(WALK_NIOS_9_0_3, id="Nios 9.0.3"),
+        pytest.param(TABLE_NIOS_7_2_7, id="Nios 7.2.7"),
+        pytest.param(TABLE_NIOS_9_0_3, id="Nios 9.0.3"),
     ],
 )
-def test_inventory_infoblox_temp(input_walk: str, as_path: Callable[[str], Path]) -> None:
-    section = get_parsed_snmp_section(snmp_section_infoblox_temp, as_path(input_walk))
+def test_inventory_infoblox_temp(string_table: Sequence[StringTable]) -> None:
+    section = snmp_section_infoblox_temp.parse_function(string_table)
     assert section is not None
     assert list(discover_infoblox_temp(section)) == [
         Service(item="CPU_TEMP 1"),
@@ -83,10 +83,10 @@ def test_inventory_infoblox_temp(input_walk: str, as_path: Callable[[str], Path]
 
 
 @pytest.mark.parametrize(
-    ["input_walk"],
+    "string_table",
     [
-        pytest.param(WALK_NIOS_7_2_7, id="Nios 7.2.7"),
-        pytest.param(WALK_NIOS_9_0_3, id="Nios 9.0.3"),
+        pytest.param(TABLE_NIOS_7_2_7, id="Nios 7.2.7"),
+        pytest.param(TABLE_NIOS_9_0_3, id="Nios 9.0.3"),
     ],
 )
 @pytest.mark.parametrize(
@@ -143,13 +143,12 @@ def test_inventory_infoblox_temp(input_walk: str, as_path: Callable[[str], Path]
     ],
 )
 def test_check_infoblox_temp(
-    input_walk: str,
+    string_table: Sequence[StringTable],
     item: str,
     params: TempParamType,
     expected: list,
-    as_path: Callable[[str], Path],
 ) -> None:
-    section = get_parsed_snmp_section(snmp_section_infoblox_temp, as_path(input_walk))
+    section = snmp_section_infoblox_temp.parse_function(string_table)
     assert section is not None
 
     assert list(check_temp(item, params, section, {})) == expected

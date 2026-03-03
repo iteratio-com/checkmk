@@ -11,11 +11,10 @@ from typing import Any
 import pytest
 
 from cmk.agent_based.v1 import GetRateError, IgnoreResults, Metric, Result, Service, State
-from cmk.agent_based.v2 import StringTable
+from cmk.agent_based.v2 import StringByteTable, StringTable
 from cmk.plugins.brocade.lib import DISCOVERY_DEFAULT_PARAMETERS
 from cmk.plugins.collection.agent_based import brocade_fcport as bf
 from tests.unit.cmk.plugins.collection.agent_based.snmp import (
-    get_parsed_snmp_section,
     snmp_is_detected,
 )
 
@@ -459,7 +458,9 @@ def _get_check_result(section: bf.Section, item: str) -> list[IgnoreResults | Me
 
 def test_interface_speed(as_path: Callable[[str], Path]) -> None:
     assert snmp_is_detected(bf.snmp_section_brocade_fcport, as_path(DATA_0))
-    parsed = get_parsed_snmp_section(bf.snmp_section_brocade_fcport, as_path(DATA_0))
+    parsed = bf.snmp_section_brocade_fcport.parse_function(
+        TABLE_DATA_0  # type: ignore[arg-type]  # FIXME in the plugin
+    )
     assert parsed is not None
     assert list(
         bf.check_plugin_brocade_fcport.discovery_function(
@@ -656,3 +657,121 @@ DATA_0 = """
 .1.3.6.1.4.1.1588.2.1.1.1.6.2.1.36.4 "port3"
 .1.3.6.1.4.1.1588.2.1.1.1.6.2.1.36.5 "port4"
 """
+
+# SNMPSection (not Simple) - pre-computed from DATA_0
+TABLE_DATA_0: Sequence[StringByteTable] = [
+    [
+        ["1", "4", "2", "2", "", "", "0", "0", "0", "0", "0", "0", "0", "", "port0"],
+        ["2", "4", "2", "2", "", "", "0", "0", "0", "0", "0", "0", "0", "", "port1"],
+        [
+            "3",
+            "6",
+            "1",
+            "1",
+            "",
+            "",
+            "1278579376",
+            "3849984522",
+            "56397",
+            "0",
+            "0",
+            "0",
+            "0",
+            "",
+            "port2",
+        ],
+        [
+            "4",
+            "6",
+            "1",
+            "1",
+            "",
+            "",
+            "3470478494",
+            "502548382",
+            "1268924",
+            "0",
+            "0",
+            "14",
+            "0",
+            "",
+            "port3",
+        ],
+        [
+            "5",
+            "6",
+            "1",
+            "1",
+            "",
+            "",
+            "669270126",
+            "1314845716",
+            "3019259357",
+            "0",
+            "0",
+            "0",
+            "1",
+            "",
+            "port4",
+        ],
+    ],
+    [["5", "128"], ["6", "128"], ["7", "128"], ["8", "128"]],
+    [
+        ["805306369", "24", "0"],
+        ["805306370", "6", "1000"],
+        ["805306371", "1", "0"],
+        ["805306372", "1", "0"],
+        ["805306373", "131", "0"],
+        ["805306374", "1", "0"],
+        ["805306375", "1", "0"],
+        ["1073741824", "56", "32000"],
+        ["1073741825", "56", "32000"],
+        ["1073741826", "56", "8000"],
+        ["1073741827", "56", "8000"],
+        ["1073741828", "56", "8000"],
+        ["1207959584", "1", "0"],
+        ["1207991616", "1", "0"],
+    ],
+    [
+        [
+            "16.0.136.148.113.39.235.220.0.0.0.0.0.0.0.0.1",
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+        ],
+        [
+            "16.0.136.148.113.39.235.220.0.0.0.0.0.0.0.0.2",
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+        ],
+        [
+            "16.0.136.148.113.39.235.220.0.0.0.0.0.0.0.0.3",
+            [0, 0, 0, 55, 228, 251, 176, 214],
+            [0, 0, 0, 88, 73, 180, 193, 240],
+            [0, 1, 137, 177, 147, 62, 253, 212],
+            [0, 2, 121, 27, 204, 153, 197, 164],
+            [0, 0, 0, 0, 0, 0, 220, 77],
+        ],
+        [
+            "16.0.136.148.113.39.235.220.0.0.0.0.0.0.0.0.4",
+            [0, 0, 0, 86, 57, 154, 48, 191],
+            [0, 0, 1, 104, 129, 213, 174, 247],
+            [0, 2, 83, 16, 250, 111, 96, 184],
+            [0, 10, 217, 123, 51, 216, 213, 92],
+            [0, 0, 0, 0, 0, 19, 174, 18],
+        ],
+        [
+            "16.0.136.148.113.39.235.220.0.0.0.0.0.0.0.0.5",
+            [0, 0, 1, 218, 42, 125, 73, 220],
+            [0, 0, 0, 10, 191, 17, 240, 181],
+            [0, 14, 79, 160, 81, 97, 147, 180],
+            [0, 0, 76, 180, 44, 64, 118, 160],
+            [0, 0, 0, 41, 157, 117, 103, 134],
+        ],
+    ],
+]

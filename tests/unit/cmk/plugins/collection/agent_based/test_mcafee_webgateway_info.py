@@ -11,10 +11,9 @@ from pathlib import Path
 
 import pytest
 
-from cmk.agent_based.v2 import Result, Service, SimpleSNMPSection, State
+from cmk.agent_based.v2 import Result, Service, SimpleSNMPSection, State, StringTable
 from cmk.plugins.collection.agent_based import mcafee_webgateway_info
 from tests.unit.cmk.plugins.collection.agent_based.snmp import (
-    get_parsed_snmp_section,
     snmp_is_detected,
 )
 
@@ -30,6 +29,8 @@ WALK_SKYHIGH = """
 .1.3.6.1.4.1.59732.2.7.1.3.0 7.6.1.2.0
 .1.3.6.1.4.1.59732.2.7.1.9.0 64221
 """
+
+TABLE_INFO: StringTable = [["7.6.1.2.0", "64221"]]
 
 
 @pytest.mark.parametrize(
@@ -52,43 +53,27 @@ def test_detect(
 
 
 @pytest.mark.parametrize(
-    "walk, detected_section",
+    "detected_section",
     [
-        (
-            WALK_MCAFEE,
-            mcafee_webgateway_info.snmp_section_mcafee_webgateway_info,
-        ),
-        (
-            WALK_SKYHIGH,
-            mcafee_webgateway_info.snmp_section_skyhigh_security_webgateway_info,
-        ),
+        mcafee_webgateway_info.snmp_section_mcafee_webgateway_info,
+        mcafee_webgateway_info.snmp_section_skyhigh_security_webgateway_info,
     ],
 )
-def test_parse(
-    walk: str, detected_section: SimpleSNMPSection, as_path: Callable[[str], Path]
-) -> None:
-    section = get_parsed_snmp_section(detected_section, as_path(walk))
+def test_parse(detected_section: SimpleSNMPSection) -> None:
+    section = detected_section.parse_function([TABLE_INFO])
 
     assert section is not None
 
 
 @pytest.mark.parametrize(
-    "walk, detected_section",
+    "detected_section",
     [
-        (
-            WALK_MCAFEE,
-            mcafee_webgateway_info.snmp_section_mcafee_webgateway_info,
-        ),
-        (
-            WALK_SKYHIGH,
-            mcafee_webgateway_info.snmp_section_skyhigh_security_webgateway_info,
-        ),
+        mcafee_webgateway_info.snmp_section_mcafee_webgateway_info,
+        mcafee_webgateway_info.snmp_section_skyhigh_security_webgateway_info,
     ],
 )
-def test_discovery(
-    walk: str, detected_section: SimpleSNMPSection, as_path: Callable[[str], Path]
-) -> None:
-    section = get_parsed_snmp_section(detected_section, as_path(walk))
+def test_discovery(detected_section: SimpleSNMPSection) -> None:
+    section = detected_section.parse_function([TABLE_INFO])
     assert section is not None
 
     services = list(mcafee_webgateway_info.discovery_webgateway_info(section=section))
@@ -97,16 +82,14 @@ def test_discovery(
 
 
 @pytest.mark.parametrize(
-    "walk, detected_section, expected_results",
+    "detected_section, expected_results",
     [
         pytest.param(
-            WALK_MCAFEE,
             mcafee_webgateway_info.snmp_section_mcafee_webgateway_info,
             [Result(state=State.OK, summary="Product version: 7.6.1.2.0, Revision: 64221")],
             id="Check mcafee",
         ),
         pytest.param(
-            WALK_SKYHIGH,
             mcafee_webgateway_info.snmp_section_skyhigh_security_webgateway_info,
             [Result(state=State.OK, summary="Product version: 7.6.1.2.0, Revision: 64221")],
             id="Check skyhigh",
@@ -114,12 +97,10 @@ def test_discovery(
     ],
 )
 def test_check_results(
-    walk: str,
     detected_section: SimpleSNMPSection,
     expected_results: list[Result],
-    as_path: Callable[[str], Path],
 ) -> None:
-    section = get_parsed_snmp_section(detected_section, as_path(walk))
+    section = detected_section.parse_function([TABLE_INFO])
     assert section is not None
 
     results = [

@@ -7,7 +7,7 @@
 
 import logging
 from pathlib import Path
-from typing import Any, Final
+from typing import Final
 
 from cmk.agent_based.v2 import SimpleSNMPSection, SNMPSection
 from cmk.ccc.hostaddress import HostAddress, HostName
@@ -16,12 +16,9 @@ from cmk.discover_plugins import PluginLocation
 from cmk.fetchers._snmpscan import _evaluate_snmp_detection as evaluate_snmp_detection
 from cmk.fetchers.snmp_backend import StoredWalkSNMPBackend
 from cmk.snmplib import (
-    BackendSNMPTree,
     ensure_str,
-    get_snmp_table,
     SNMPBackendEnum,
     SNMPHostConfig,
-    SNMPSectionName,
     SNMPVersion,
 )
 
@@ -59,29 +56,3 @@ def snmp_is_detected(section: SNMPSection | SimpleSNMPSection, snmp_walk: Path) 
         detect_spec=section_plugin.detect_spec,
         oid_value_getter=oid_value_getter,
     )
-
-
-def get_parsed_snmp_section(
-    section: SNMPSection | SimpleSNMPSection, snmp_walk: Path
-) -> Any | None:
-    logger = logging.getLogger("test")
-    backend = StoredWalkSNMPBackend(SNMP_HOST_CONFIG, logger, snmp_walk)
-
-    section_plugin = create_snmp_section_plugin(
-        section, PluginLocation("not", "relevant"), validate=True
-    )
-
-    table = []
-    for tree in section_plugin.trees:
-        table.append(
-            get_snmp_table(
-                section_name=SNMPSectionName(section_plugin.name),
-                tree=BackendSNMPTree.from_frontend(base=tree.base, oids=tree.oids),
-                walk_cache={},
-                backend=backend,
-                log=logger.debug,
-            )
-        )
-
-    result = section_plugin.parse_function(table)  # type: ignore[arg-type]
-    return result

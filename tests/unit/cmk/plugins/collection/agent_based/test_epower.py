@@ -7,8 +7,6 @@
 # mypy: disable-error-code="type-arg"
 
 
-from collections.abc import Callable
-from pathlib import Path
 from typing import Any, cast
 
 import pytest
@@ -21,64 +19,34 @@ from cmk.agent_based.v2 import (
     Service,
     SimpleSNMPSection,
     State,
+    StringTable,
 )
 from cmk.plugins.collection.agent_based.apc_symmetra_power import snmp_section_apc_symmetra_power
 from cmk.plugins.collection.agent_based.epower import check_epower, discover_epower
 from cmk.plugins.collection.agent_based.ups_power import snmp_section_ups_power
-from tests.unit.cmk.plugins.collection.agent_based.snmp import get_parsed_snmp_section
 
 # SUP-12323
-APC_SYMMETRA_0 = """
-.1.3.6.1.4.1.318.1.1.1.9.3.3.1.2.1.1 1
-.1.3.6.1.4.1.318.1.1.1.9.3.3.1.2.1.2 2
-.1.3.6.1.4.1.318.1.1.1.9.3.3.1.2.1.3 3
-.1.3.6.1.4.1.318.1.1.1.9.3.3.1.7.1.1 1309
-.1.3.6.1.4.1.318.1.1.1.9.3.3.1.7.1.2 1344
-.1.3.6.1.4.1.318.1.1.1.9.3.3.1.7.1.3 1783
-"""
+TABLE_APC_0: StringTable = [["1", "1309"], ["2", "1344"], ["3", "1783"]]
 
-# walks/usv-apc-symmetra-new
-APC_SYMMETRA_1 = """
-.1.3.6.1.4.1.318.1.1.1.9.3.3.1.2.1.1.1 1
-.1.3.6.1.4.1.318.1.1.1.9.3.3.1.2.1.1.2 2
-.1.3.6.1.4.1.318.1.1.1.9.3.3.1.2.1.1.3 3
-.1.3.6.1.4.1.318.1.1.1.9.3.3.1.2.1.1.4 12
-.1.3.6.1.4.1.318.1.1.1.9.3.3.1.2.1.1.5 23
-.1.3.6.1.4.1.318.1.1.1.9.3.3.1.2.1.1.6 31
-.1.3.6.1.4.1.318.1.1.1.9.3.3.1.7.1.1.1 4000
-.1.3.6.1.4.1.318.1.1.1.9.3.3.1.7.1.1.2 2000
-.1.3.6.1.4.1.318.1.1.1.9.3.3.1.7.1.1.3 3000
-.1.3.6.1.4.1.318.1.1.1.9.3.3.1.7.1.1.4 -1
-.1.3.6.1.4.1.318.1.1.1.9.3.3.1.7.1.1.5 -1
-.1.3.6.1.4.1.318.1.1.1.9.3.3.1.7.1.1.6 -1
-"""
+TABLE_APC_1: StringTable = [
+    ["1", "4000"],
+    ["2", "2000"],
+    ["3", "3000"],
+    ["12", "-1"],
+    ["23", "-1"],
+    ["31", "-1"],
+]
 
-# walks/usv-liebert
-UPS_POWER_0 = """
-.1.3.6.1.2.1.33.1.4.4.1.2.1  230
-.1.3.6.1.2.1.33.1.4.4.1.2.2  230
-.1.3.6.1.2.1.33.1.4.4.1.2.3  229
-.1.3.6.1.2.1.33.1.4.4.1.4.1  2300
-.1.3.6.1.2.1.33.1.4.4.1.4.2  3500
-.1.3.6.1.2.1.33.1.4.4.1.4.3  4800
-"""
+TABLE_UPS_0: StringTable = [["1", "2300"], ["2", "3500"], ["3", "4800"]]
 
-# power is 0
-UPS_POWER_1 = """
-.1.3.6.1.2.1.33.1.4.4.1.2.1  230
-.1.3.6.1.2.1.33.1.4.4.1.2.2  230
-.1.3.6.1.2.1.33.1.4.4.1.2.3  229
-.1.3.6.1.2.1.33.1.4.4.1.4.1  0
-.1.3.6.1.2.1.33.1.4.4.1.4.2  3500
-.1.3.6.1.2.1.33.1.4.4.1.4.3  4800
-"""
+TABLE_UPS_1: StringTable = [["1", "0"], ["2", "3500"], ["3", "4800"]]
 
 
 @pytest.mark.parametrize(
-    "walk, section, result",
+    "table, section, result",
     [
         pytest.param(
-            APC_SYMMETRA_0,
+            TABLE_APC_0,
             snmp_section_apc_symmetra_power,
             [
                 Service(item="1"),
@@ -88,7 +56,7 @@ UPS_POWER_1 = """
             id="apc-symmetra-0",
         ),
         pytest.param(
-            APC_SYMMETRA_1,
+            TABLE_APC_1,
             snmp_section_apc_symmetra_power,
             [
                 Service(item="1"),
@@ -98,7 +66,7 @@ UPS_POWER_1 = """
             id="apc-symmetra-1",
         ),
         pytest.param(
-            UPS_POWER_0,
+            TABLE_UPS_0,
             snmp_section_ups_power,
             [
                 Service(item="1"),
@@ -110,21 +78,20 @@ UPS_POWER_1 = """
     ],
 )
 def test_power_discover(
-    walk: str,
+    table: StringTable,
     section: SimpleSNMPSection,
     result: DiscoveryResult,
-    as_path: Callable[[str], Path],
 ) -> None:
-    parsed = cast(dict[str, int], get_parsed_snmp_section(section, as_path(walk)))
+    parsed = cast(dict[str, int], section.parse_function([table]))
 
     assert list(discover_epower(parsed)) == result
 
 
 @pytest.mark.parametrize(
-    "walk, section, item, params, result",
+    "table, section, item, params, result",
     [
         pytest.param(
-            APC_SYMMETRA_0,
+            TABLE_APC_0,
             snmp_section_apc_symmetra_power,
             "1",
             {
@@ -138,7 +105,7 @@ def test_power_discover(
             id="apc-symmetra-0",
         ),
         pytest.param(
-            APC_SYMMETRA_1,
+            TABLE_APC_1,
             snmp_section_apc_symmetra_power,
             "2",
             {"levels_lower": (20, 1), "levels_upper": None},
@@ -149,7 +116,7 @@ def test_power_discover(
             id="apc-symmetra-1",
         ),
         pytest.param(
-            APC_SYMMETRA_1,
+            TABLE_APC_1,
             snmp_section_apc_symmetra_power,
             "2",
             {"levels_lower": (3000, 2000), "levels_upper": None},
@@ -160,7 +127,7 @@ def test_power_discover(
             id="apc-symmetra-1-warn",
         ),
         pytest.param(
-            APC_SYMMETRA_1,
+            TABLE_APC_1,
             snmp_section_apc_symmetra_power,
             "2",
             {"levels_lower": (6000, 3000), "levels_upper": None},
@@ -171,7 +138,7 @@ def test_power_discover(
             id="apc-symmetra-1-crit",
         ),
         pytest.param(
-            UPS_POWER_0,
+            TABLE_UPS_0,
             snmp_section_ups_power,
             "2",
             {"levels_lower": (20, 1), "levels_upper": None},
@@ -182,7 +149,7 @@ def test_power_discover(
             id="ups-power-2-ok",
         ),
         pytest.param(
-            UPS_POWER_0,
+            TABLE_UPS_0,
             snmp_section_ups_power,
             "2",
             {"levels_lower": (4000, 3000), "levels_upper": None},
@@ -193,7 +160,7 @@ def test_power_discover(
             id="ups-power-2-warn",
         ),
         pytest.param(
-            UPS_POWER_0,
+            TABLE_UPS_0,
             snmp_section_ups_power,
             "2",
             {"levels_lower": (6000, 4000), "levels_upper": None},
@@ -204,7 +171,7 @@ def test_power_discover(
             id="ups-power-2-crit",
         ),
         pytest.param(
-            UPS_POWER_1,
+            TABLE_UPS_1,
             snmp_section_ups_power,
             "1",
             {"levels_lower": (4000, 3000), "levels_upper": None},
@@ -215,7 +182,7 @@ def test_power_discover(
             id="ups-power is 0",
         ),
         pytest.param(
-            UPS_POWER_0,
+            TABLE_UPS_0,
             snmp_section_ups_power,
             "2",
             {"levels_lower": (3000, 2000), "levels_upper": (3000, 4000)},
@@ -228,13 +195,12 @@ def test_power_discover(
     ],
 )
 def test_epower_check(
-    walk: str,
+    table: StringTable,
     section: SimpleSNMPSection,
     item: str,
     params: Any,
     result: CheckResult,
-    as_path: Callable[[str], Path],
 ) -> None:
-    parsed = cast(dict[str, int], get_parsed_snmp_section(section, as_path(walk)))
+    parsed = cast(dict[str, int], section.parse_function([table]))
 
     assert list(check_epower(item=item, params=params, section=parsed)) == result

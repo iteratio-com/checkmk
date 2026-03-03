@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from cmk.agent_based.v2 import Metric, Result, Service, SimpleSNMPSection, State
+from cmk.agent_based.v2 import Metric, Result, Service, SimpleSNMPSection, State, StringTable
 from cmk.plugins.collection.agent_based import mcafee_webgateway_time_to_resolve_dns
 from cmk.plugins.collection.agent_based.mcafee_webgateway_misc_section import (
     snmp_section_mcafee_webgateway_misc,
@@ -20,7 +20,6 @@ from cmk.plugins.collection.agent_based.mcafee_webgateway_misc_section import (
 )
 from cmk.plugins.mcafee import libgateway
 from tests.unit.cmk.plugins.collection.agent_based.snmp import (
-    get_parsed_snmp_section,
     snmp_is_detected,
 )
 
@@ -62,6 +61,9 @@ WALK_SKYHIGH = """
 .1.3.6.1.4.1.59732.2.7.2.5.15.0 32
 """
 
+TABLE_TTR_MCAFEE: StringTable = [["16", "35", "2000", "2"]]
+TABLE_TTR_SKYHIGH: StringTable = [["16", "35", "2000", "2"]]
+
 
 @pytest.mark.parametrize(
     "walk, detected_section",
@@ -77,34 +79,30 @@ def test_detect(
 
 
 @pytest.mark.parametrize(
-    "walk, detected_section",
+    "table, detected_section",
     [
-        (WALK_MCAFEE, snmp_section_mcafee_webgateway_misc),
-        (WALK_SKYHIGH, snmp_section_skyhigh_security_webgateway_misc),
+        (TABLE_TTR_MCAFEE, snmp_section_mcafee_webgateway_misc),
+        (TABLE_TTR_SKYHIGH, snmp_section_skyhigh_security_webgateway_misc),
     ],
 )
-def test_parse(
-    walk: str, detected_section: SimpleSNMPSection, as_path: Callable[[str], Path]
-) -> None:
+def test_parse(table: StringTable, detected_section: SimpleSNMPSection) -> None:
     # Act
-    section = get_parsed_snmp_section(detected_section, as_path(walk))
+    section = detected_section.parse_function([table])
 
     # Assert
     assert section is not None
 
 
 @pytest.mark.parametrize(
-    "walk, detected_section",
+    "table, detected_section",
     [
-        (WALK_MCAFEE, snmp_section_mcafee_webgateway_misc),
-        (WALK_SKYHIGH, snmp_section_skyhigh_security_webgateway_misc),
+        (TABLE_TTR_MCAFEE, snmp_section_mcafee_webgateway_misc),
+        (TABLE_TTR_SKYHIGH, snmp_section_skyhigh_security_webgateway_misc),
     ],
 )
-def test_discovery(
-    walk: str, detected_section: SimpleSNMPSection, as_path: Callable[[str], Path]
-) -> None:
+def test_discovery(table: StringTable, detected_section: SimpleSNMPSection) -> None:
     # Assemble
-    section = get_parsed_snmp_section(detected_section, as_path(walk))
+    section = detected_section.parse_function([table])
     assert section is not None
 
     # Act
@@ -115,10 +113,9 @@ def test_discovery(
 
 
 @pytest.mark.parametrize(
-    "walk, detected_section, params_misc, expected_results",
+    "detected_section, params_misc, expected_results",
     [
         pytest.param(
-            WALK_MCAFEE,
             snmp_section_mcafee_webgateway_misc,
             {"time_to_resolve_dns": None},
             [
@@ -127,7 +124,6 @@ def test_discovery(
             id="No levels",
         ),
         pytest.param(
-            WALK_SKYHIGH,
             snmp_section_skyhigh_security_webgateway_misc,
             {"time_to_resolve_dns": None},
             [
@@ -136,7 +132,6 @@ def test_discovery(
             id="No levels",
         ),
         pytest.param(
-            WALK_MCAFEE,
             snmp_section_mcafee_webgateway_misc,
             {"time_to_resolve_dns": (3000, 3000)},
             [
@@ -145,7 +140,6 @@ def test_discovery(
             id="Levels, but OK",
         ),
         pytest.param(
-            WALK_MCAFEE,
             snmp_section_mcafee_webgateway_misc,
             {"time_to_resolve_dns": (2000, 3000)},
             [
@@ -154,7 +148,6 @@ def test_discovery(
             id="Critical",
         ),
         pytest.param(
-            WALK_SKYHIGH,
             snmp_section_skyhigh_security_webgateway_misc,
             {"time_to_resolve_dns": (2000, 3000)},
             [
@@ -163,7 +156,6 @@ def test_discovery(
             id="Critical",
         ),
         pytest.param(
-            WALK_MCAFEE,
             snmp_section_mcafee_webgateway_misc,
             {"time_to_resolve_dns": (1000, 2000)},
             [
@@ -174,16 +166,14 @@ def test_discovery(
     ],
 )
 def test_check_results(
-    walk: str,
     detected_section: SimpleSNMPSection,
     params_misc: dict[str, object],
     expected_results: list[Result],
-    as_path: Callable[[str], Path],
 ) -> None:
     # Assemble
     params = typing.cast(libgateway.MiscParams, libgateway.MISC_DEFAULT_PARAMS | params_misc)
-    # Is this right? Not "detected_section"?
-    section = get_parsed_snmp_section(snmp_section_mcafee_webgateway_misc, as_path(WALK_MCAFEE))
+    # Note: original test always used mcafee section here regardless of parametrize
+    section = snmp_section_mcafee_webgateway_misc.parse_function([TABLE_TTR_MCAFEE])
     assert section is not None
 
     # Act
@@ -198,17 +188,15 @@ def test_check_results(
 
 
 @pytest.mark.parametrize(
-    "walk, detected_section",
+    "table, detected_section",
     [
-        (WALK_MCAFEE, snmp_section_mcafee_webgateway_misc),
-        (WALK_SKYHIGH, snmp_section_skyhigh_security_webgateway_misc),
+        (TABLE_TTR_MCAFEE, snmp_section_mcafee_webgateway_misc),
+        (TABLE_TTR_SKYHIGH, snmp_section_skyhigh_security_webgateway_misc),
     ],
 )
-def test_check_metrics(
-    walk: str, detected_section: SimpleSNMPSection, as_path: Callable[[str], Path]
-) -> None:
+def test_check_metrics(table: StringTable, detected_section: SimpleSNMPSection) -> None:
     # Assemble
-    section = get_parsed_snmp_section(detected_section, as_path(walk))
+    section = detected_section.parse_function([table])
     assert section is not None
 
     # Act

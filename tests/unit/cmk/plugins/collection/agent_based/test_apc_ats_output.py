@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from cmk.agent_based.v1 import Metric, Result, State
-from cmk.agent_based.v2 import CheckResult
+from cmk.agent_based.v2 import CheckResult, StringTable
 from cmk.plugins.collection.agent_based.apc_ats_output import (
     check_apc_ats_output,
     DefaultParameters,
@@ -16,16 +16,12 @@ from cmk.plugins.collection.agent_based.apc_ats_output import (
     snmp_section_apc_ats_output,
 )
 from tests.unit.cmk.plugins.collection.agent_based.snmp import (
-    get_parsed_snmp_section,
     snmp_is_detected,
 )
 
+TABLE_CATALYST: StringTable = [["1", "230", "10", "-1", "230"]]
 
-@pytest.mark.parametrize(
-    ["input_table", "expected_section"],
-    [
-        pytest.param(
-            """
+APC_WALK = """
 .1.3.6.1.2.1.1.1.0 APC Web/SNMP Management Card (MB:v4.1.0 PF:v6.9.6 PN:apc_hw05_aos_696.bin AF1:v6.9.6 AN1:apc_hw05_ats4g_696.bin MN:AP4421 HR:R01 SN: 5A2143T95739 MD:10/31/2021)
 .1.3.6.1.2.1.1.2.0 .1.3.6.1.4.1.318.1.3.32
 .1.3.6.1.2.1.1.3.0 326564370
@@ -68,7 +64,14 @@ from tests.unit.cmk.plugins.collection.agent_based.snmp import (
 .1.3.6.1.4.1.318.1.1.8.5.4.3.1.17.1.1.1 -1
 .1.3.6.1.4.1.318.1.1.8.5.4.3.1.18.1.1.1 -1
 .1.3.6.1.4.1.318.1.1.8.5.4.3.1.19.1.1.1 1
-""",
+"""
+
+
+@pytest.mark.parametrize(
+    ["input_table", "expected_section"],
+    [
+        pytest.param(
+            TABLE_CATALYST,
             {
                 "1": {
                     "voltage": 230.0,
@@ -82,15 +85,14 @@ from tests.unit.cmk.plugins.collection.agent_based.snmp import (
     ],
 )
 def test_parse_snmp_section(
-    input_table: str,
+    input_table: StringTable,
     expected_section: Section,
     as_path: Callable[[str], Path],
 ) -> None:
-    snmp_walk = as_path(input_table)
-
+    snmp_walk = as_path(APC_WALK)
     assert snmp_is_detected(snmp_section_apc_ats_output, snmp_walk)
 
-    assert expected_section == get_parsed_snmp_section(snmp_section_apc_ats_output, snmp_walk)
+    assert expected_section == snmp_section_apc_ats_output.parse_function([input_table])
 
 
 @pytest.mark.parametrize(

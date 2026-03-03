@@ -12,11 +12,10 @@ from pathlib import Path
 
 import pytest
 
-from cmk.agent_based.v2 import Metric, Result, Service, SimpleSNMPSection, State
+from cmk.agent_based.v2 import Metric, Result, Service, SimpleSNMPSection, State, StringTable
 from cmk.plugins.collection.agent_based import mcafee_webgateway_client_requests as plugin
 from cmk.plugins.mcafee.libgateway import MISC_DEFAULT_PARAMS, MiscParams
 from tests.unit.cmk.plugins.collection.agent_based.snmp import (
-    get_parsed_snmp_section,
     snmp_is_detected,
 )
 
@@ -33,6 +32,8 @@ WALK_SKYHIGH = """
 .1.3.6.1.4.1.59732.2.7.2.3.1.0 1063172
 .1.3.6.1.4.1.59732.2.7.2.6.1.0 92114
 """
+
+TABLE_CR: StringTable = [["96919", "1063172", "92114"]]
 
 
 @pytest.mark.parametrize(
@@ -51,38 +52,30 @@ def test_detect(
 
 
 @pytest.mark.parametrize(
-    "walk, detected_section",
+    "detected_section",
     [
-        (WALK_MCAFEE, plugin.snmp_section_mcafee_webgateway_client_requests),
-        (WALK_SKYHIGH, plugin.snmp_section_skyhigh_security_webgateway_client_requests),
+        plugin.snmp_section_mcafee_webgateway_client_requests,
+        plugin.snmp_section_skyhigh_security_webgateway_client_requests,
     ],
 )
-def test_parse(
-    walk: str,
-    detected_section: SimpleSNMPSection,
-    as_path: typing.Callable[[str], Path],
-) -> None:
+def test_parse(detected_section: SimpleSNMPSection) -> None:
     # Act
-    section = get_parsed_snmp_section(detected_section, as_path(walk))
+    section = detected_section.parse_function([TABLE_CR])
 
     # Assert
     assert section is not None
 
 
 @pytest.mark.parametrize(
-    "walk, detected_section",
+    "detected_section",
     [
-        (WALK_MCAFEE, plugin.snmp_section_mcafee_webgateway_client_requests),
-        (WALK_SKYHIGH, plugin.snmp_section_skyhigh_security_webgateway_client_requests),
+        plugin.snmp_section_mcafee_webgateway_client_requests,
+        plugin.snmp_section_skyhigh_security_webgateway_client_requests,
     ],
 )
-def test_discovery(
-    walk: str,
-    detected_section: SimpleSNMPSection,
-    as_path: typing.Callable[[str], Path],
-) -> None:
+def test_discovery(detected_section: SimpleSNMPSection) -> None:
     # Assemble
-    section = get_parsed_snmp_section(detected_section, as_path(walk))
+    section = detected_section.parse_function([TABLE_CR])
     assert section is not None
 
     # Act
@@ -97,10 +90,9 @@ def test_discovery(
 
 
 @pytest.mark.parametrize(
-    "walk, detected_section, params, expected_results",
+    "detected_section, params, expected_results",
     [
         pytest.param(
-            WALK_MCAFEE,
             plugin.snmp_section_mcafee_webgateway_client_requests,
             MISC_DEFAULT_PARAMS | {"client_requests_https": None},
             [
@@ -110,7 +102,6 @@ def test_discovery(
             id="No levels",
         ),
         pytest.param(
-            WALK_MCAFEE,
             plugin.snmp_section_mcafee_webgateway_client_requests,
             MISC_DEFAULT_PARAMS | {"client_requests_https": (1, 2)},
             [
@@ -120,7 +111,6 @@ def test_discovery(
             id="Critical",
         ),
         pytest.param(
-            WALK_SKYHIGH,
             plugin.snmp_section_skyhigh_security_webgateway_client_requests,
             MISC_DEFAULT_PARAMS | {"client_requests_https": (1, 2)},
             [
@@ -132,14 +122,12 @@ def test_discovery(
     ],
 )
 def test_check_https(
-    walk: str,
     detected_section: SimpleSNMPSection,
     params: MiscParams,
     expected_results: list[object],
-    as_path: typing.Callable[[str], Path],
 ) -> None:
     # Assemble
-    section = get_parsed_snmp_section(detected_section, as_path(walk))
+    section = detected_section.parse_function([TABLE_CR])
     assert section is not None
     now = 2.0
     value_store = {"https": (1.0, 92112)}
@@ -152,10 +140,9 @@ def test_check_https(
 
 
 @pytest.mark.parametrize(
-    "walk, detected_section, params, expected_results",
+    "detected_section, params, expected_results",
     [
         pytest.param(
-            WALK_MCAFEE,
             plugin.snmp_section_mcafee_webgateway_client_requests,
             MISC_DEFAULT_PARAMS | {"client_requests_httpv2": None},
             [
@@ -165,7 +152,6 @@ def test_check_https(
             id="No levels",
         ),
         pytest.param(
-            WALK_MCAFEE,
             plugin.snmp_section_mcafee_webgateway_client_requests,
             MISC_DEFAULT_PARAMS | {"client_requests_httpv2": (1, 2)},
             [
@@ -175,7 +161,6 @@ def test_check_https(
             id="Critical",
         ),
         pytest.param(
-            WALK_SKYHIGH,
             plugin.snmp_section_skyhigh_security_webgateway_client_requests,
             MISC_DEFAULT_PARAMS | {"client_requests_httpv2": (1, 2)},
             [
@@ -187,14 +172,12 @@ def test_check_https(
     ],
 )
 def test_check_httpv2(
-    walk: str,
     detected_section: SimpleSNMPSection,
     params: MiscParams,
     expected_results: list[object],
-    as_path: typing.Callable[[str], Path],
 ) -> None:
     # Assemble
-    section = get_parsed_snmp_section(detected_section, as_path(walk))
+    section = detected_section.parse_function([TABLE_CR])
     assert section is not None
     now = 2.0
     value_store = {"httpv2": (1.0, 1063170)}
@@ -207,10 +190,9 @@ def test_check_httpv2(
 
 
 @pytest.mark.parametrize(
-    "walk, detected_section, params, expected_results",
+    "detected_section, params, expected_results",
     [
         pytest.param(
-            WALK_MCAFEE,
             plugin.snmp_section_mcafee_webgateway_client_requests,
             MISC_DEFAULT_PARAMS | {"client_requests_http": None},
             [
@@ -220,7 +202,6 @@ def test_check_httpv2(
             id="No levels",
         ),
         pytest.param(
-            WALK_MCAFEE,
             plugin.snmp_section_mcafee_webgateway_client_requests,
             MISC_DEFAULT_PARAMS | {"client_requests_http": (1, 2)},
             [
@@ -230,7 +211,6 @@ def test_check_httpv2(
             id="Critical",
         ),
         pytest.param(
-            WALK_SKYHIGH,
             plugin.snmp_section_skyhigh_security_webgateway_client_requests,
             MISC_DEFAULT_PARAMS | {"client_requests_http": (1, 2)},
             [
@@ -242,14 +222,12 @@ def test_check_httpv2(
     ],
 )
 def test_check_http(
-    walk: str,
     detected_section: SimpleSNMPSection,
     params: MiscParams,
     expected_results: list[object],
-    as_path: typing.Callable[[str], Path],
 ) -> None:
     # Assemble
-    section = get_parsed_snmp_section(detected_section, as_path(walk))
+    section = detected_section.parse_function([TABLE_CR])
     assert section is not None
     now = 2.0
     value_store = {"http": (1.0, 96917)}
@@ -262,22 +240,15 @@ def test_check_http(
 
 
 @pytest.mark.parametrize(
-    "walk, detected_section",
+    "detected_section",
     [
-        (
-            WALK_MCAFEE,
-            plugin.snmp_section_mcafee_webgateway_client_requests,
-        ),
-        (WALK_SKYHIGH, plugin.snmp_section_skyhigh_security_webgateway_client_requests),
+        plugin.snmp_section_mcafee_webgateway_client_requests,
+        plugin.snmp_section_skyhigh_security_webgateway_client_requests,
     ],
 )
-def test_check_results_newly_discovered(
-    walk: str,
-    detected_section: SimpleSNMPSection,
-    as_path: typing.Callable[[str], Path],
-) -> None:
+def test_check_results_newly_discovered(detected_section: SimpleSNMPSection) -> None:
     # Assemble
-    section = get_parsed_snmp_section(detected_section, as_path(walk))
+    section = detected_section.parse_function([TABLE_CR])
     assert section is not None
 
     # Act
