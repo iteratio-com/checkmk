@@ -133,6 +133,8 @@ class EmbeddedViewSpecManager:
     ) -> None:
         if add_headers := source.get("add_headers"):
             target["add_headers"] = add_headers
+        if row_limit := source.get("row_limit"):
+            target["row_limit"] = row_limit
         if mobile := source.get("mobile"):
             target["mobile"] = mobile
         if mustsearch := source.get("mustsearch"):
