@@ -7,8 +7,8 @@
 import pytest
 
 import cmk.plugins.collection.agent_based.infoblox_systeminfo as ibsi
+from cmk.agent_based.internal import evaluate_snmp_detection
 from cmk.agent_based.v2 import Attributes
-from cmk.fetchers._snmpscan import _evaluate_snmp_detection as evaluate_snmp_detection
 
 
 def _section() -> ibsi.Section:

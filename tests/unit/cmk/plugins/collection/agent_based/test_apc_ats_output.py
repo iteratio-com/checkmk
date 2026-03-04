@@ -5,9 +5,9 @@
 
 import pytest
 
+from cmk.agent_based.internal import evaluate_snmp_detection
 from cmk.agent_based.v1 import Metric, Result, State
 from cmk.agent_based.v2 import CheckResult, StringTable
-from cmk.fetchers._snmpscan import _evaluate_snmp_detection as evaluate_snmp_detection
 from cmk.plugins.collection.agent_based.apc_ats_output import (
     check_apc_ats_output,
     DefaultParameters,

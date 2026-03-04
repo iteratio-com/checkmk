@@ -6,7 +6,8 @@ from collections.abc import Callable, Iterable, Sequence
 
 import pytest
 
-from cmk.agent_based.v1 import (
+from cmk.agent_based.internal import evaluate_snmp_detection
+from cmk.agent_based.v2 import (
     all_of,
     any_of,
     contains,
@@ -17,15 +18,11 @@ from cmk.agent_based.v1 import (
     not_endswith,
     not_exists,
     not_startswith,
+    SNMPDetectSpecification,
     startswith,
 )
 
-# not ideal, but for now access this member.
-# TODO: find out if it's ok for the fetcher to have the API as
-# a dependency, b/c that is where this function belongs.
-from cmk.fetchers._snmpscan import _evaluate_snmp_detection
-
-_SpecCreator = Callable[[str, str], list[list[tuple[str, str, bool]]]]
+_SpecCreator = Callable[[str, str], SNMPDetectSpecification]
 
 
 def _make_oid_getter(return_value: str) -> Callable[[str], str]:
@@ -42,11 +39,11 @@ def _test_atomic_relation(
     inv_spec = inverse(".1.2.3", value)
     for test, result in testcases:
         assert (
-            _evaluate_snmp_detection(detect_spec=spec, oid_value_getter=_make_oid_getter(test))
+            evaluate_snmp_detection(detect_spec=spec, oid_value_getter=_make_oid_getter(test))
             is result
         )
         assert (
-            _evaluate_snmp_detection(detect_spec=inv_spec, oid_value_getter=_make_oid_getter(test))
+            evaluate_snmp_detection(detect_spec=inv_spec, oid_value_getter=_make_oid_getter(test))
             is not result
         )
 
@@ -155,13 +152,13 @@ def test_endswith(value: str, testcases: Sequence[tuple[str, bool]]) -> None:
 )
 def test_exists(test: str, result: bool) -> None:
     assert (
-        _evaluate_snmp_detection(
+        evaluate_snmp_detection(
             detect_spec=exists(".1.2.3"), oid_value_getter=_make_oid_getter(test)
         )
         is result
     )
     assert (
-        _evaluate_snmp_detection(
+        evaluate_snmp_detection(
             detect_spec=not_exists(".1.2.3"), oid_value_getter=_make_oid_getter(test)
         )
         is not result

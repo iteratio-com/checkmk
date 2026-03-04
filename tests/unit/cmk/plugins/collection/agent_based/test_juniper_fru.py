@@ -5,8 +5,8 @@
 
 # mypy: disable-error-code="no-untyped-call"
 
+from cmk.agent_based.internal import evaluate_snmp_detection
 from cmk.agent_based.v2 import StringTable
-from cmk.fetchers._snmpscan import _evaluate_snmp_detection as evaluate_snmp_detection
 from cmk.legacy_checks.juniper_fru import check_juniper_fru, inventory_juniper_fru
 from cmk.plugins.juniper.agent_based.juniper_fru_section import snmp_section_juniper_fru
 

@@ -8,8 +8,8 @@
 
 import pytest
 
+from cmk.agent_based.internal import evaluate_snmp_detection
 from cmk.agent_based.v2 import Metric, Result, Service, SimpleSNMPSection, State, StringTable
-from cmk.fetchers._snmpscan import _evaluate_snmp_detection as evaluate_snmp_detection
 from cmk.plugins.collection.agent_based import mcafee_webgateway_client_requests as plugin
 from cmk.plugins.mcafee.libgateway import MISC_DEFAULT_PARAMS, MiscParams
 

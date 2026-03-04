@@ -8,8 +8,8 @@ from collections.abc import Sequence
 import pytest
 from pytest import MonkeyPatch
 
+from cmk.agent_based.internal import evaluate_snmp_detection
 from cmk.agent_based.v2 import IgnoreResultsError, Metric, Result, Service, State, StringTable
-from cmk.fetchers._snmpscan import _evaluate_snmp_detection as evaluate_snmp_detection
 from cmk.plugins.collection.agent_based import cisco_vpn_tunnel
 from cmk.plugins.collection.agent_based.cisco_vpn_tunnel import (
     check_cisco_vpn_tunnel,

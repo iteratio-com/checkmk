@@ -8,8 +8,8 @@ from collections.abc import Sequence
 
 import pytest
 
+from cmk.agent_based.internal import evaluate_snmp_detection
 from cmk.agent_based.v2 import CheckResult, Metric, Result, Service, State, StringTable
-from cmk.fetchers._snmpscan import _evaluate_snmp_detection as evaluate_snmp_detection
 from cmk.plugins.collection.agent_based.cisco_wlc_clients import (
     parse_cisco_wlc_9800_clients,
     parse_cisco_wlc_clients,

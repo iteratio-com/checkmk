@@ -16,6 +16,8 @@ exports_files(
 py_library(
     name = "agent_based",
     srcs = [
+        "cmk/agent_based/internal/__init__.py",
+        "cmk/agent_based/internal/_snmp.py",
         "cmk/agent_based/legacy/__init__.py",
         "cmk/agent_based/legacy/_loading.py",
         "cmk/agent_based/legacy/conversion.py",

@@ -4,11 +4,12 @@
 # conditions defined in the file COPYING, which is part of this source code package.
 
 import functools
-import re
-from collections.abc import Callable, Collection, Iterable, Mapping
+from collections.abc import Collection, Iterable, Mapping
 from dataclasses import dataclass
 from logging import Logger
 
+from cmk.agent_based.internal import evaluate_snmp_detection
+from cmk.agent_based.v2 import SNMPDetectSpecification
 from cmk.ccc import tty
 from cmk.ccc.exceptions import MKGeneralException, MKTimeout, OnError
 from cmk.ccc.tty import format_warning
@@ -17,7 +18,6 @@ from cmk.snmplib import (
     get_single_oid,
     SNMPBackend,
     SNMPDecodedString,
-    SNMPDetectAtom,
     SNMPDetectBaseType,
     SNMPSectionName,
 )
@@ -131,8 +131,10 @@ def _find_sections(
             log=backend.logger.debug,
         )
         try:
-            if _evaluate_snmp_detection(
-                detect_spec=specs,
+            if evaluate_snmp_detection(
+                # It was an `SNMPDetectSpecification` all along, we forgot the type.
+                # Historic reasons, can be cleaned up.
+                detect_spec=SNMPDetectSpecification(specs),
                 oid_value_getter=oid_value_getter,
             ):
                 found_sections.add(name)
@@ -150,44 +152,6 @@ def _find_sections(
                     format_warning(f"   Exception in SNMP scan function of {name}")
                 )
     return frozenset(found_sections)
-
-
-def _evaluate_snmp_detection(
-    *,
-    detect_spec: SNMPDetectBaseType,
-    oid_value_getter: Callable[[str], str | None],
-) -> bool:
-    """Evaluate a SNMP detection specification
-
-    Return True if and and only if at least all conditions in one "line" are True
-    """
-
-    def _impl(
-        atom: SNMPDetectAtom,
-        oid_value_getter: Callable[[str], str | None],
-    ) -> bool:
-        oid, pattern, flag = atom
-        value = oid_value_getter(oid)
-        if value is None:
-            # check for "not_exists"
-            return pattern == ".*" and not flag
-        # ignore case!
-        return bool(_regex_cache(pattern, re.IGNORECASE | re.DOTALL).fullmatch(value)) is flag
-
-    return any(
-        all(_impl(atom, oid_value_getter) for atom in alternative) for alternative in detect_spec
-    )
-
-
-@functools.cache
-def _regex_cache(pattern: str, flags: int) -> re.Pattern[str]:
-    """
-    compiling regex is compute intensive. So in the fetcher we rather cache regex which change rarely.
-    """
-    try:
-        return re.compile(pattern, flags=flags)
-    except Exception as e:
-        raise RuntimeError(f"Invalid regular expression '{pattern}': {e}")
 
 
 def _output_snmp_check_plugins(

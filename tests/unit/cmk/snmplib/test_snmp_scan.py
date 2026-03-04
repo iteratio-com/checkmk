@@ -14,6 +14,7 @@ from collections.abc import Iterator
 import pytest
 
 import cmk.fetchers._snmpscan as snmp_scan
+from cmk.agent_based.internal import evaluate_snmp_detection as _evaluate_snmp_detection
 from cmk.agent_based.v2 import SimpleSNMPSection, SNMPSection
 from cmk.ccc.exceptions import OnError
 from cmk.ccc.hostaddress import HostAddress, HostName
@@ -68,7 +69,7 @@ def test_evaluate_snmp_detection_legacy(
 ) -> None:
     assert (detect_spec := fix_plugin_legacy.check_info[name].detect) is not None
     assert (
-        snmp_scan._evaluate_snmp_detection(detect_spec=detect_spec, oid_value_getter=oids_data.get)
+        _evaluate_snmp_detection(detect_spec=detect_spec, oid_value_getter=oids_data.get)
         is expected_result
     )
 
@@ -137,9 +138,7 @@ def test_evaluate_snmp_detection(
     expected_result: bool,
 ) -> None:
     assert (
-        snmp_scan._evaluate_snmp_detection(
-            detect_spec=plugin.detect, oid_value_getter=oids_data.get
-        )
+        _evaluate_snmp_detection(detect_spec=plugin.detect, oid_value_getter=oids_data.get)
         is expected_result
     )
 

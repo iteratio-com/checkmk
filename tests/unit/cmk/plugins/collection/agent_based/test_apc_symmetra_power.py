@@ -6,7 +6,7 @@
 
 import pytest
 
-from cmk.fetchers._snmpscan import _evaluate_snmp_detection as evaluate_snmp_detection
+from cmk.agent_based.internal import evaluate_snmp_detection
 from cmk.plugins.collection.agent_based.apc_symmetra_power import snmp_section_apc_symmetra_power
 
 # SUP-12323

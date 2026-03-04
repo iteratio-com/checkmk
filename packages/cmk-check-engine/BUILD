@@ -94,6 +94,7 @@ py_library(
         "//packages/cmk-ccc:tty",
         "//packages/cmk-ccc:version",
         "//packages/cmk-crypto",
+        "//packages/cmk-plugin-apis:agent_based",
         "//packages/cmk-plugin-apis:password_store",
     ] + select({
         "@//:gpl+nonfree_repo": [

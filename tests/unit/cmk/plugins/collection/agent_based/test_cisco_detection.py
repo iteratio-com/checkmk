@@ -7,9 +7,9 @@ from collections.abc import Mapping
 
 import pytest
 
+from cmk.agent_based.internal import evaluate_snmp_detection
 from cmk.agent_based.legacy.v0_unstable import LegacyCheckDefinition
 from cmk.agent_based.v2 import SNMPSection, StringTable
-from cmk.fetchers._snmpscan import _evaluate_snmp_detection as evaluate_snmp_detection
 from cmk.legacy_checks.cisco_cpu import check_info as cisco_cpu_check_info
 from cmk.legacy_checks.cisco_nexus_cpu import check_info as cisco_nexus_cpu_check_info
 from cmk.plugins.collection.agent_based.cisco_cpu_multiitem import (
