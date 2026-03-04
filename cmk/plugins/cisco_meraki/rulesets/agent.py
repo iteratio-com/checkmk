@@ -90,13 +90,13 @@ def _form_special_agent_cisco_meraki() -> Dictionary:
                         ),
                         MultipleChoiceElement(
                             name="appliance_performance",
-                            title=Title("Appliance uplink performance"),
+                            title=Title("Appliance performance"),
                         ),
                         MultipleChoiceElement(
                             name="appliance_uplinks", title=Title("Appliance uplink statuses")
                         ),
                         MultipleChoiceElement(
-                            name="appliance_vpns", title=Title("Appliance uplink VPN statuses")
+                            name="appliance_vpns", title=Title("Appliance VPN statuses")
                         ),
                         MultipleChoiceElement(
                             name="device_statuses",
@@ -205,7 +205,7 @@ def _form_special_agent_cisco_meraki() -> Dictionary:
                                     "The following sections utilize this setting:"
                                     "<ul>"
                                     "<li>Appliance uplink statuses</li>"
-                                    "<li>Appliance uplink VPN statuses</li>"
+                                    "<li>Appliance VPN statuses</li>"
                                     "</ul>"
                                 ),
                             )
