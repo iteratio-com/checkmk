@@ -522,7 +522,7 @@ class ViewWidgetIFrameTokenPage(DashboardTokenAuthenticatedPage):
             ViewWidgetIFramePageHelper.render_iframe_content(
                 unique_widget_name,
                 view_spec,
-                row_limit=ctx.config.soft_query_limit,
+                row_limit=view_spec.get("row_limit", 0) or ctx.config.soft_query_limit,
                 # includes dashboard context via _get_view_spec_by_widget_id
                 context=widget.context,
                 user_permissions=user_permissions,
