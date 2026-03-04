@@ -100,7 +100,7 @@ def _form_special_agent_cisco_meraki() -> Dictionary:
                         ),
                         MultipleChoiceElement(
                             name="device_uplinks_info",
-                            title=Title("Device uplinks"),
+                            title=Title("Device uplinks (HW/SW Inventory only)"),
                         ),
                         MultipleChoiceElement(
                             name="licenses_overview", title=Title("Licenses overview")
