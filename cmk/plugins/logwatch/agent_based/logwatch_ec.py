@@ -25,6 +25,8 @@ from pathlib import Path
 from typing import Any, Literal, Protocol
 from urllib.parse import quote as url_quote
 
+import cmk.ccc.debug
+import cmk.utils.paths
 from cmk.agent_based.v2 import (
     CheckPlugin,
     CheckResult,
@@ -71,7 +73,6 @@ def discover_group(section: logwatch.Section, params: Mapping[str, str]) -> Disc
 
 
 def check_logwatch_ec(params: ParameterLogwatchEc, section: logwatch.Section) -> CheckResult:
-    config = get_global_state()
     # fall back to the cluster case with None as node name.
     yield from check_logwatch_ec_common(
         None,
@@ -79,33 +80,20 @@ def check_logwatch_ec(params: ParameterLogwatchEc, section: logwatch.Section) ->
         {None: section},
         check_plugin_logwatch_ec,
         value_store=get_value_store(),
-        message_forwarder=MessageForwarder(
-            None,
-            HostName(params["host_name"]),
-            config.base_spool_path,
-            config.omd_root,
-            debug=config.debug,
-        ),
+        message_forwarder=MessageForwarder(None, HostName(params["host_name"])),
     )
 
 
 def cluster_check_logwatch_ec(
     params: ParameterLogwatchEc, section: Mapping[str, logwatch.Section | None]
 ) -> CheckResult:
-    config = get_global_state()
     yield from check_logwatch_ec_common(
         None,
         params,
         {k: v for k, v in section.items() if v is not None},
         check_plugin_logwatch_ec,
         value_store=get_value_store(),
-        message_forwarder=MessageForwarder(
-            None,
-            HostName(params["host_name"]),
-            config.base_spool_path,
-            config.omd_root,
-            debug=config.debug,
-        ),
+        message_forwarder=MessageForwarder(None, HostName(params["host_name"])),
     )
 
 
@@ -133,7 +121,6 @@ def check_logwatch_ec_single(
     params: ParameterLogwatchEc,
     section: logwatch.Section,
 ) -> CheckResult:
-    config = get_global_state()
     # fall back to the cluster case with None as node name.
     yield from check_logwatch_ec_common(
         item,
@@ -141,13 +128,7 @@ def check_logwatch_ec_single(
         {None: section},
         check_plugin_logwatch_ec_single,
         value_store=get_value_store(),
-        message_forwarder=MessageForwarder(
-            item,
-            HostName(params["host_name"]),
-            config.base_spool_path,
-            config.omd_root,
-            debug=config.debug,
-        ),
+        message_forwarder=MessageForwarder(item, HostName(params["host_name"])),
     )
 
 
@@ -156,7 +137,6 @@ def cluster_check_logwatch_ec_single(
     params: ParameterLogwatchEc,
     section: Mapping[str, logwatch.Section | None],
 ) -> CheckResult:
-    config = get_global_state()
     # fall back to the cluster case with None as node name.
     yield from check_logwatch_ec_common(
         item,
@@ -164,13 +144,7 @@ def cluster_check_logwatch_ec_single(
         {k: v for k, v in section.items() if v is not None},
         check_plugin_logwatch_ec_single,
         value_store=get_value_store(),
-        message_forwarder=MessageForwarder(
-            item,
-            HostName(params["host_name"]),
-            config.base_spool_path,
-            config.omd_root,
-            debug=config.debug,
-        ),
+        message_forwarder=MessageForwarder(item, HostName(params["host_name"])),
     )
 
 
@@ -271,9 +245,6 @@ class LogwatchForwardedResult:
 
 
 class MessageForwarderProto(Protocol):
-    @property
-    def debug(self) -> bool: ...
-
     def __call__(
         self,
         method: str | tuple,
@@ -444,7 +415,7 @@ def check_logwatch_ec_common(
             )
 
     except Exception as exc:
-        if message_forwarder.debug:
+        if cmk.ccc.debug.enabled():
             raise
         yield Result(
             state=State.CRIT,
@@ -500,9 +471,6 @@ def _monitor_logile_list(
 class MessageForwarder:
     item: str | None
     hostname: HostName
-    base_spool_path: Path
-    omd_root: Path
-    debug: bool
 
     def __call__(
         self,
@@ -511,9 +479,9 @@ class MessageForwarder:
         timestamp: float,
     ) -> LogwatchForwardedResult:
         if not method:
-            method = str(self.omd_root / "tmp/run/mkeventd/eventsocket")
+            method = str(cmk.utils.paths.omd_root / "tmp/run/mkeventd/eventsocket")
         elif isinstance(method, str) and method == "spool:":
-            method += str(self.omd_root / "var/mkeventd/spool")
+            method += str(cmk.utils.paths.omd_root / "var/mkeventd/spool")
 
         if isinstance(method, tuple):
             return self._forward_tcp(
@@ -706,7 +674,7 @@ class MessageForwarder:
                 spool_file_path.write_text(repr(message_chunk))
                 result.num_spooled += len(message_chunk)
             except Exception:
-                if self.debug:
+                if cmk.ccc.debug.enabled():
                     raise
 
                 if num_already_spooled == 0:
@@ -810,6 +778,7 @@ class MessageForwarder:
     def _spool_path(self) -> Path:
         return self._get_spool_path(self.hostname, self.item)
 
-    def _get_spool_path(self, hostname: str, item: str | None) -> Path:
-        result = self.base_spool_path / hostname
+    @staticmethod
+    def _get_spool_path(hostname: str, item: str | None) -> Path:
+        result = cmk.utils.paths.var_dir / "logwatch_spool" / hostname
         return result if item is None else (result / f"item_{url_quote(item, safe='')}")

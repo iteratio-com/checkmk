@@ -101,10 +101,6 @@ DEFAULT_TEST_PARAMETERS = ParameterLogwatchEc(
 class _LogwatchConfigDummy:
     def __init__(self, ec_rules: Sequence[ParameterLogwatchEc] = ()):
         self._ec_rules = ec_rules
-        self.base_spool_path = Path("/dev/null")
-        self.omd_root = Path("/dev/null")
-        self.msg_dir = Path("/dev/null")
-        self.debug = False
 
     def logwatch_rules_all(
         self, *, host_name: str, plugin: CheckPlugin, logfile: str
@@ -267,10 +263,6 @@ def test_logwatch_ec_inventory_groups(
 
 
 class _FakeForwarder:
-    @property
-    def debug(self) -> bool:
-        return False
-
     def __call__(
         self,
         method: str | tuple,
@@ -619,13 +611,7 @@ def test_check_logwatch_ec_common_spool(monkeypatch: pytest.MonkeyPatch) -> None
             },
             logwatch_ec.check_plugin_logwatch_ec_single,
             value_store={},
-            message_forwarder=logwatch_ec.MessageForwarder(
-                "log1",
-                HostName("test-host"),
-                base_spool_path=cmk.utils.paths.var_dir / "logwatch_spool",
-                omd_root=cmk.utils.paths.omd_root,
-                debug=False,
-            ),
+            message_forwarder=logwatch_ec.MessageForwarder("log1", HostName("test-host")),
         )
     ) == [
         Result(state=State.OK, summary="Forwarded 3 messages from log1"),
@@ -644,7 +630,6 @@ class FakeTcpErrorRaised(Exception):
 
 def _forward_message(
     tcp_result: Literal["ok", "raise exception", "set exception"],
-    spool_path: Path = Path("/dev/null"),
     method: tuple[str, dict[str, object]] = ("tcp", {"address": "127.0.0.1", "port": 127001}),
     text: str = "some_text",
     item: str | None = None,
@@ -668,13 +653,7 @@ def _forward_message(
             else:
                 raise NotImplementedError()
 
-    result = TestForwardTcpMessageForwarder(
-        item=item,
-        hostname=HostName("some_host_name"),
-        base_spool_path=spool_path,
-        omd_root=Path("/dev/null"),
-        debug=False,
-    )(
+    result = TestForwardTcpMessageForwarder(item=item, hostname=HostName("some_host_name"))(
         method=method,
         messages=[
             ec.SyslogMessage(
@@ -739,10 +718,7 @@ SPOOL_METHOD = (
 def test_forward_tcp_message_forwarded_spool() -> None:
     # could not send message, so spool it
     result, messages_forwarded = _forward_message(
-        tcp_result="set exception",
-        spool_path=cmk.utils.paths.var_dir / "logwatch_spool",
-        method=SPOOL_METHOD,
-        text="spooled",
+        tcp_result="set exception", method=SPOOL_METHOD, text="spooled"
     )
     assert result.num_forwarded == 0
     assert result.num_spooled == 1
@@ -752,10 +728,7 @@ def test_forward_tcp_message_forwarded_spool() -> None:
 
     # sending works again, so send both of them
     result, messages_forwarded = _forward_message(
-        tcp_result="ok",
-        spool_path=cmk.utils.paths.var_dir / "logwatch_spool",
-        method=SPOOL_METHOD,
-        text="directly_sent_1",
+        tcp_result="ok", method=SPOOL_METHOD, text="directly_sent_1"
     )
     assert result.num_forwarded == 2
     assert result.num_spooled == 0
@@ -767,10 +740,7 @@ def test_forward_tcp_message_forwarded_spool() -> None:
 
     # sending is still working, so send only one
     result, messages_forwarded = _forward_message(
-        tcp_result="ok",
-        spool_path=cmk.utils.paths.var_dir / "logwatch_spool",
-        method=SPOOL_METHOD,
-        text="directly_sent_2",
+        tcp_result="ok", method=SPOOL_METHOD, text="directly_sent_2"
     )
     assert result.num_forwarded == 1
     assert result.num_spooled == 0
@@ -789,7 +759,6 @@ def test_forward_tcp_message_forwarded_spool_twice() -> None:
     # create a spooled message:
     result, messages_forwarded = _forward_message(
         tcp_result="set exception",
-        spool_path=spool_dir.parent,
         method=SPOOL_METHOD,
         timestamp="2023-10-31 16:02:00Z",
     )
@@ -805,7 +774,6 @@ def test_forward_tcp_message_forwarded_spool_twice() -> None:
     # create another spooled message:
     result, messages_forwarded = _forward_message(
         tcp_result="set exception",
-        spool_path=spool_dir.parent,
         method=SPOOL_METHOD,
         timestamp="2023-10-31 16:03:00Z",
     )
@@ -822,16 +790,71 @@ def test_forward_tcp_message_forwarded_spool_twice() -> None:
     }
 
 
+def test_forward_tcp_message_update_old_spoolfiles() -> None:
+    # can be removed with checkmk 2.4.0
+    spool_dir = cmk.utils.paths.var_dir / "logwatch_spool/some_host_name"
+    # logwatch_ec with separate_checks = True creates one service per syslog application, but they
+    # shared one folder for their spool files. this led to problems when writing spool-files
+    # (overwriting each other) and reading spool-files (all items read all spool-files).
+    # with werk 15307 it was introduced that each service get its own subfolder for spool-files.
+    # here we want to check the update process: spool-files from the host-folder should be
+    # read and moved to the correct subfolder.
+
+    # first we create a spooled message for a logwatch_ec service with "separate_checks" = False
+    # this is the same as the old behaviour, before werk 15397 with "separate_checks" = True
+    _result, messages_forwarded = _forward_message(
+        tcp_result="set exception",
+        method=SPOOL_METHOD,
+        application="item_name_1",
+        timestamp="2023-10-31 16:02:00Z",
+    )
+    # we expect one spool file to be created:
+    assert list(f.name for f in spool_dir.iterdir()) == ["spool.1698768120.00"]
+
+    # now we do the same, but for a different item:
+    _result, messages_forwarded = _forward_message(
+        tcp_result="set exception",
+        method=SPOOL_METHOD,
+        application="another_item",
+        timestamp="2023-10-31 16:03:00Z",
+    )
+    # we expect two spool files in the host folder:
+    assert {f.name for f in spool_dir.iterdir()} == {
+        "spool.1698768120.00",
+        "spool.1698768180.00",
+    }
+
+    # this was the old behaviour. now we image the customer installed the new version of checkmk.
+    # their logwatch_ec services had separate_checks = True from the beginning.
+
+    _result, messages_forwarded = _forward_message(
+        tcp_result="ok",
+        method=SPOOL_METHOD,
+        item="item_name_1",
+        application="item_name_1",
+        timestamp="2023-10-31 16:04:00Z",
+    )
+
+    # we now expect, that the item_name_1 message was found (although in the old directory) and the
+    # new message was also sent:
+    assert len(messages_forwarded) == 2
+
+    # and we also expect, the spool-file of another_item to be left alone:
+    assert list(f.name for f in spool_dir.iterdir() if f.is_file()) == [
+        "spool.1698768180.00",
+    ]
+    # and a folder which held the spooled message for a short time
+    assert list(f.name for f in spool_dir.iterdir() if f.is_dir()) == [
+        "item_item_name_1",
+    ]
+    # but is should now be empty as we sent both messages successfully:
+    assert not list(f.name for f in (spool_dir / "item_item_name_1").iterdir())
+
+
 def test_logwatch_spool_path_is_escaped() -> None:
     # item may contain slashes or other stuff, we want to make sure
     # that this is transformed to a single folder name:
-    get_spool_path = logwatch_ec.MessageForwarder(
-        item="some/log/path",
-        hostname=HostName("some_host_name"),
-        base_spool_path=Path("/dev/null"),
-        omd_root=Path("/dev/null"),
-        debug=False,
-    )._get_spool_path
+    get_spool_path = logwatch_ec.MessageForwarder._get_spool_path
     result = get_spool_path(HostName("some_host_name"), "some/log/path")
     assert result.name == "item_some%2Flog%2Fpath"
     assert result.parent.name == "some_host_name"

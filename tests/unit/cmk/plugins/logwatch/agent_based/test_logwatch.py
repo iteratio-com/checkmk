@@ -4,8 +4,8 @@
 # conditions defined in the file COPYING, which is part of this source code package.
 
 
+import pathlib
 from collections.abc import Iterable, Sequence
-from pathlib import Path
 
 import pytest
 from pytest_mock import MockerFixture
@@ -105,14 +105,8 @@ SECTION1 = logwatch_.Section(
 
 
 class _LogwatchConfigDummy:
-    def __init__(
-        self, ec_all: Sequence[ParameterLogwatchEc] = (), msg_dir: Path = Path("/dev/null")
-    ) -> None:
+    def __init__(self, ec_all: Sequence[ParameterLogwatchEc] = ()) -> None:
         self._ec_all = ec_all
-        self.base_spool_path = Path("/dev/null")
-        self.omd_root = Path("/dev/null")
-        self.msg_dir = msg_dir
-        self.debug = False
 
     def logwatch_rules_all(
         self, *, host_name: str, plugin: CheckPlugin, logfile: str
@@ -178,13 +172,10 @@ def test_discovery_single() -> None:
     ],
 )
 def test_check_single(
-    monkeypatch: pytest.MonkeyPatch,
-    log_name: str,
-    expected_result: Iterable[Result],
-    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch, log_name: str, expected_result: Iterable[Result]
 ) -> None:
     monkeypatch.setattr(logwatch, "get_value_store", lambda: {})
-    set_global_state(_LogwatchConfigDummy(msg_dir=tmp_path))
+    set_global_state(_LogwatchConfigDummy())
     monkeypatch.setattr(
         logwatch_,
         logwatch_.compile_reclassify_params.__name__,
@@ -237,10 +228,9 @@ def test_check_logwatch_groups_node(
     group_name: str,
     reg_pattern: Iterable[tuple[str, str]],
     expected_result: Iterable[Result],
-    tmp_path: Path,
 ) -> None:
     monkeypatch.setattr(logwatch, "get_value_store", lambda: {})
-    set_global_state(_LogwatchConfigDummy(msg_dir=tmp_path))
+    set_global_state(_LogwatchConfigDummy())
     monkeypatch.setattr(
         logwatch_,
         logwatch_.compile_reclassify_params.__name__,
@@ -372,17 +362,17 @@ def test_logwatch_discover_groups(monkeypatch: pytest.MonkeyPatch) -> None:
 @pytest.fixture(name="logmsg_file_path")
 def fixture_logmsg_file_path(
     mocker: MockerFixture,
-    tmp_path: Path,
+    tmp_path: pathlib.Path,
 ) -> None:
     mocker.patch.object(
         logwatch,
         "_logmsg_file_path",
-        lambda _base, item, _host_name: tmp_path / item.replace("/", "\\"),
+        lambda item, _host_name: tmp_path / item.replace("/", "\\"),
     )
 
 
-def test_check_logwatch_generic_no_messages(tmp_path: Path) -> None:
-    set_global_state(_LogwatchConfigDummy(msg_dir=tmp_path))
+@pytest.mark.usefixtures("logmsg_file_path")
+def test_check_logwatch_generic_no_messages() -> None:
     item = "/tmp/app.log"
     assert list(
         logwatch.check_logwatch_generic(
@@ -396,12 +386,11 @@ def test_check_logwatch_generic_no_messages(tmp_path: Path) -> None:
     ) == [
         Result(state=State.OK, summary="No error messages"),
     ]
-    assert not logwatch._logmsg_file_path(tmp_path, item, "test-host").exists()
+    assert not logwatch._logmsg_file_path(item, "test-host").exists()
 
 
 @pytest.mark.usefixtures("logmsg_file_path")
-def test_check_logwatch_generic_no_reclassify(tmp_path: Path) -> None:
-    set_global_state(_LogwatchConfigDummy(msg_dir=tmp_path))
+def test_check_logwatch_generic_no_reclassify() -> None:
     item = "/tmp/enterprise.log"
     lines = [
         ". klingons are attacking",
@@ -422,16 +411,13 @@ def test_check_logwatch_generic_no_reclassify(tmp_path: Path) -> None:
         Result(state=State.CRIT, summary='1 CRIT messages (Last worst: "red alert")'),
     ]
     assert (
-        logwatch._logmsg_file_path(tmp_path, item, "test-host")
-        .read_text()
-        .splitlines()[-len(lines) :]
+        logwatch._logmsg_file_path(item, "test-host").read_text().splitlines()[-len(lines) :]
         == lines
     )
 
 
 @pytest.mark.usefixtures("logmsg_file_path")
-def test_check_logwatch_generic_with_reclassification(tmp_path: Path) -> None:
-    set_global_state(_LogwatchConfigDummy(msg_dir=tmp_path))
+def test_check_logwatch_generic_with_reclassification() -> None:
     item = "/tmp/enterprise.log"
     lines = [
         ". klingons are attacking",
@@ -457,7 +443,7 @@ def test_check_logwatch_generic_with_reclassification(tmp_path: Path) -> None:
     ) == [
         Result(state=State.CRIT, summary='2 CRIT messages (Last worst: "red alert")'),
     ]
-    assert logwatch._logmsg_file_path(tmp_path, item, "test-host").read_text().splitlines()[
+    assert logwatch._logmsg_file_path(item, "test-host").read_text().splitlines()[
         -len(lines) :
     ] == [
         "C klingons are attacking",
@@ -467,8 +453,7 @@ def test_check_logwatch_generic_with_reclassification(tmp_path: Path) -> None:
 
 
 @pytest.mark.usefixtures("logmsg_file_path")
-def test_check_logwatch_generic_missing(tmp_path: Path) -> None:
-    set_global_state(_LogwatchConfigDummy(msg_dir=tmp_path))
+def test_check_logwatch_generic_missing() -> None:
     item = "item"
     assert list(
         logwatch.check_logwatch_generic(
@@ -482,7 +467,7 @@ def test_check_logwatch_generic_missing(tmp_path: Path) -> None:
     ) == [
         Result(state=State.UNKNOWN, summary="log not present anymore"),
     ]
-    assert not logwatch._logmsg_file_path(tmp_path, item, "test-host").exists()
+    assert not logwatch._logmsg_file_path(item, "test-host").exists()
 
 
 @pytest.mark.usefixtures("logmsg_file_path")

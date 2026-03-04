@@ -1499,12 +1499,6 @@ class _EmptyDiscoveryConfig(ABCDiscoveryConfig):
 
 
 class _LogwatchConfigDummy:
-    def __init__(self) -> None:
-        self.base_spool_path = Path("/dev/null")
-        self.omd_root = Path("/dev/null")
-        self.msg_dir = Path("/dev/null")
-        self.debug = False
-
     def logwatch_rules_all(
         self, *, host_name: str, plugin: CheckPlugin, logfile: str
     ) -> Sequence[ParameterLogwatchRules]:
