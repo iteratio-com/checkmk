@@ -8430,6 +8430,11 @@ msgstr "Automatisering oproepen"
 msgid "Automation secret for machine accounts"
 msgstr "Automatiseringsgeheim voor machinerekeningen"
 
+#, python-format
+msgid ""
+"Automation user %s has stored secret with %d dangerous permission(s): %s"
+msgstr ""
+
 #, fuzzy
 msgid "Automation user authentication via HTTP parameters"
 msgstr "Kan geen authenticatieverzoek aanmaken"
@@ -16619,6 +16624,9 @@ msgstr "Contact selectie"
 
 msgid "Contact sensor type"
 msgstr "Type contactsensor"
+
+msgid "Contact the dashboard owner if you need access."
+msgstr ""
 
 #, fuzzy
 msgid "Contact us"
@@ -44854,6 +44862,10 @@ msgstr "Gewijzigde tijdsperiode %s"
 msgid "Modified user role '%s'"
 msgstr "Gewijzigde gebruikersrol '%s'"
 
+#, fuzzy, python-format
+msgid "Modified user: %s"
+msgstr "Gewijzigde gebruikers: %s"
+
 #, python-format
 msgid "Modified users: %s"
 msgstr "Gewijzigde gebruikers: %s"
@@ -47028,6 +47040,10 @@ msgstr "Geen Authenticatie"
 
 msgid "No authentication, no privacy"
 msgstr "Geen authenticatie, geen privacy"
+
+msgid ""
+"No automation users with stored secrets have dangerous permissions configured"
+msgstr ""
 
 #, fuzzy
 msgid "No backup codes generated yet."
@@ -50018,10 +50034,6 @@ msgid ""
 msgstr ""
 "Alleen interfaces met het gegeven poorttype worden in deze groep gezet. "
 "Bijvoorbeeld 53 (propVirtual)."
-
-#, fuzzy
-msgid "Only me"
-msgstr "Alleen tijd"
 
 #, python-format
 msgid ""
@@ -66985,6 +66997,10 @@ msgstr "Opgeslagen rapport"
 msgid "Stored reports"
 msgstr "Opgeslagen rapporten"
 
+#, fuzzy
+msgid "Stored secrets for automation users"
+msgstr "Geldig automatiseringsgeheim voor de automatiseringsgebruiker"
+
 msgid "Stormshield quality"
 msgstr ""
 
@@ -67424,7 +67440,7 @@ msgid "Switch port statistics"
 msgstr "Switch poort statistieken"
 
 #, fuzzy
-msgid "Switch port statuses"
+msgid "Switch ports statuses"
 msgstr "Switch poort statistieken"
 
 msgid "Switch slave replication mode"
@@ -69505,9 +69521,6 @@ msgstr ""
 #, fuzzy
 msgid "The access token for this OAuth2 connection."
 msgstr "Een beschrijvende titel van deze actie."
-
-msgid "The access token is invalid, revoked or expired."
-msgstr ""
 
 #, python-format
 msgid "The action '%s' is not implemented"
@@ -72301,6 +72314,14 @@ msgid "The password cannot be changed (it is locked by the user connector)."
 msgstr ""
 "Het wachtwoord kan niet worden gewijzigd (het is vergrendeld door de "
 "gebruikersconnector)."
+
+#, fuzzy
+msgid ""
+"The password cannot be deleted because the user does not have the permission "
+"to edit it."
+msgstr ""
+"De %s is alleen voor jou zichtbaar omdat je'geen toestemming hebt om hem te "
+"delen."
 
 #, fuzzy, python-format
 msgid "The password contains forbidden character: %s"
@@ -90046,6 +90067,12 @@ msgid "Wireless ethernet statuses"
 msgstr "de staat negeren"
 
 msgid ""
+"With 2.4.0 (Werk #17344) it was made optional to store the secret of an "
+"automation user. We do not recommend to store the secret for automation "
+"users with high privileges."
+msgstr ""
+
+msgid ""
 "With ServiceNow you can create different types of management issues, "
 "currently supported are indicents and cases."
 msgstr ""
@@ -96730,6 +96757,10 @@ msgid ""
 msgstr ""
 
 #, fuzzy
+msgid "Sidebar widgets are not available on shared dashboards."
+msgstr "U mag dashboards niet bewerken."
+
+#, fuzzy
 msgid "Generate public link"
 msgstr "Publiek"
 
@@ -97396,18 +97427,6 @@ msgid "This may take up to 30 seconds when a site restart is required."
 msgstr ""
 
 #, fuzzy
-msgid "Pending change(s)"
-msgstr "Hangende wijzigingen (%s)"
-
-#, fuzzy
-msgid "Activation issue(s)"
-msgstr "Activering"
-
-#, fuzzy
-msgid "Site problem(s)"
-msgstr "Service problemen"
-
-#, fuzzy
 msgid "Changes: (%{n})"
 msgstr "Wijzigingen"
 
@@ -98033,6 +98052,11 @@ msgstr "Installatiedatum"
 msgid ""
 "Before deploying the Relay, ensure that Podman is installed on the machine "
 "on which the Relay will be running. "
+msgstr ""
+
+msgid ""
+"Insecure connection detected (HTTP). For better security, we recommend "
+"switching this Checkmk site to HTTPS. "
 msgstr ""
 
 #, fuzzy
@@ -99000,6 +99024,22 @@ msgid ""
 msgstr ""
 
 #, fuzzy
+#~ msgid "Only me"
+#~ msgstr "Alleen tijd"
+
+#, fuzzy
+#~ msgid "Pending change(s)"
+#~ msgstr "Hangende wijzigingen (%s)"
+
+#, fuzzy
+#~ msgid "Activation issue(s)"
+#~ msgstr "Activering"
+
+#, fuzzy
+#~ msgid "Site problem(s)"
+#~ msgstr "Service problemen"
+
+#, fuzzy
 #~ msgid "Register agent updater, if automatic updates are enabled"
 #~ msgstr "Activering van automatische agent-updates"
 
@@ -99178,9 +99218,6 @@ msgstr ""
 
 #~ msgid "Use the credentials of the 'automation' user"
 #~ msgstr "Gebruik de inloggegevens van de \"automation\" gebruiker"
-
-#~ msgid "Valid automation secret for the automation user"
-#~ msgstr "Geldig automatiseringsgeheim voor de automatiseringsgebruiker"
 
 #, fuzzy
 #~ msgid "Enable safe host names"

@@ -8504,6 +8504,11 @@ msgstr "Llamadas de automatización"
 msgid "Automation secret for machine accounts"
 msgstr "El secreto de la automatización de las cuentas de las máquinas"
 
+#, python-format
+msgid ""
+"Automation user %s has stored secret with %d dangerous permission(s): %s"
+msgstr ""
+
 #, fuzzy
 msgid "Automation user authentication via HTTP parameters"
 msgstr "No se puede crear la solicitud de autenticación"
@@ -16737,6 +16742,9 @@ msgstr "Selección de contactos"
 
 msgid "Contact sensor type"
 msgstr "Tipo de sensor de contacto"
+
+msgid "Contact the dashboard owner if you need access."
+msgstr ""
 
 #, fuzzy
 msgid "Contact us"
@@ -45196,6 +45204,10 @@ msgstr "Periodo de tiempo modificado %s"
 msgid "Modified user role '%s'"
 msgstr "Rol de usuario modificado '%s'"
 
+#, fuzzy, python-format
+msgid "Modified user: %s"
+msgstr "Usuarios modificados: %s"
+
 #, python-format
 msgid "Modified users: %s"
 msgstr "Usuarios modificados: %s"
@@ -47389,6 +47401,10 @@ msgstr "Autenticación"
 
 msgid "No authentication, no privacy"
 msgstr "Sin autenticación, sin privacidad"
+
+msgid ""
+"No automation users with stored secrets have dangerous permissions configured"
+msgstr ""
 
 #, fuzzy
 msgid "No backup codes generated yet."
@@ -50407,10 +50423,6 @@ msgid ""
 msgstr ""
 "Sólo las interfaces con el tipo de puerto dado se ponen en este grupo. Por "
 "ejemplo 53 (propVirtual)."
-
-#, fuzzy
-msgid "Only me"
-msgstr "Sólo el tiempo"
 
 #, python-format
 msgid ""
@@ -67554,6 +67566,10 @@ msgstr "Informe almacenado"
 msgid "Stored reports"
 msgstr "Informes almacenados"
 
+#, fuzzy
+msgid "Stored secrets for automation users"
+msgstr "Secreto de automatización válido para el usuario de automatización"
+
 msgid "Stormshield quality"
 msgstr ""
 
@@ -67992,7 +68008,7 @@ msgid "Switch port statistics"
 msgstr "Estadísticas del puerto del Switch"
 
 #, fuzzy
-msgid "Switch port statuses"
+msgid "Switch ports statuses"
 msgstr "Estadísticas del puerto del Switch"
 
 msgid "Switch slave replication mode"
@@ -70088,9 +70104,6 @@ msgstr ""
 #, fuzzy
 msgid "The access token for this OAuth2 connection."
 msgstr "Un título descriptivo de esta acción."
-
-msgid "The access token is invalid, revoked or expired."
-msgstr ""
 
 #, python-format
 msgid "The action '%s' is not implemented"
@@ -72901,6 +72914,13 @@ msgid "The password cannot be changed (it is locked by the user connector)."
 msgstr ""
 "La contraseña no se puede cambiar (está bloqueada por el conector de "
 "usuario)."
+
+#, fuzzy
+msgid ""
+"The password cannot be deleted because the user does not have the permission "
+"to edit it."
+msgstr ""
+"El %s sólo es visible para ti porque no tienes permiso para compartirlo."
 
 #, fuzzy, python-format
 msgid "The password contains forbidden character: %s"
@@ -90752,6 +90772,12 @@ msgid "Wireless ethernet statuses"
 msgstr "ignorar el estado"
 
 msgid ""
+"With 2.4.0 (Werk #17344) it was made optional to store the secret of an "
+"automation user. We do not recommend to store the secret for automation "
+"users with high privileges."
+msgstr ""
+
+msgid ""
 "With ServiceNow you can create different types of management issues, "
 "currently supported are indicents and cases."
 msgstr ""
@@ -97475,6 +97501,10 @@ msgid ""
 msgstr ""
 
 #, fuzzy
+msgid "Sidebar widgets are not available on shared dashboards."
+msgstr "No está permitido editar los cuadros de mando."
+
+#, fuzzy
 msgid "Generate public link"
 msgstr "Público"
 
@@ -98143,18 +98173,6 @@ msgid "This may take up to 30 seconds when a site restart is required."
 msgstr ""
 
 #, fuzzy
-msgid "Pending change(s)"
-msgstr "Cambios pendientes (%s)"
-
-#, fuzzy
-msgid "Activation issue(s)"
-msgstr "Activación"
-
-#, fuzzy
-msgid "Site problem(s)"
-msgstr "Problemas de servicio"
-
-#, fuzzy
 msgid "Changes: (%{n})"
 msgstr "Cambios"
 
@@ -98786,6 +98804,11 @@ msgstr "Fecha de instalación"
 msgid ""
 "Before deploying the Relay, ensure that Podman is installed on the machine "
 "on which the Relay will be running. "
+msgstr ""
+
+msgid ""
+"Insecure connection detected (HTTP). For better security, we recommend "
+"switching this Checkmk site to HTTPS. "
 msgstr ""
 
 #, fuzzy
@@ -99754,6 +99777,22 @@ msgid ""
 msgstr ""
 
 #, fuzzy
+#~ msgid "Only me"
+#~ msgstr "Sólo el tiempo"
+
+#, fuzzy
+#~ msgid "Pending change(s)"
+#~ msgstr "Cambios pendientes (%s)"
+
+#, fuzzy
+#~ msgid "Activation issue(s)"
+#~ msgstr "Activación"
+
+#, fuzzy
+#~ msgid "Site problem(s)"
+#~ msgstr "Problemas de servicio"
+
+#, fuzzy
 #~ msgid "Register agent updater, if automatic updates are enabled"
 #~ msgstr "Activación de las actualizaciones automáticas de los agentes"
 
@@ -99933,9 +99972,6 @@ msgstr ""
 
 #~ msgid "Use the credentials of the 'automation' user"
 #~ msgstr "Utilizar las credenciales del usuario \"automatización\""
-
-#~ msgid "Valid automation secret for the automation user"
-#~ msgstr "Secreto de automatización válido para el usuario de automatización"
 
 #, fuzzy
 #~ msgid "Enable safe host names"

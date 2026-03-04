@@ -8442,6 +8442,11 @@ msgstr "Apeluri de automatizare"
 msgid "Automation secret for machine accounts"
 msgstr "Secretul automatizării pentru conturile de mașini"
 
+#, python-format
+msgid ""
+"Automation user %s has stored secret with %d dangerous permission(s): %s"
+msgstr ""
+
 #, fuzzy
 msgid "Automation user authentication via HTTP parameters"
 msgstr ""
@@ -16667,6 +16672,9 @@ msgstr "Selecție de contact"
 
 msgid "Contact sensor type"
 msgstr "Tipul senzorului de contact"
+
+msgid "Contact the dashboard owner if you need access."
+msgstr ""
 
 #, fuzzy
 msgid "Contact us"
@@ -44976,6 +44984,10 @@ msgstr "Perioada de timp modificată %s."
 msgid "Modified user role '%s'"
 msgstr "Rol de utilizator modificat '%s'"
 
+#, fuzzy, python-format
+msgid "Modified user: %s"
+msgstr "Utilizatori modificați: %s"
+
 #, python-format
 msgid "Modified users: %s"
 msgstr "Utilizatori modificați: %s"
@@ -47171,6 +47183,10 @@ msgstr "Fără autentificare"
 
 msgid "No authentication, no privacy"
 msgstr "Fără autentificare, fără confidențialitate"
+
+msgid ""
+"No automation users with stored secrets have dangerous permissions configured"
+msgstr ""
 
 msgid "No backup codes generated yet."
 msgstr "Nu s-au generat încă coduri de rezervă."
@@ -50158,10 +50174,6 @@ msgid ""
 msgstr ""
 "Numai interfețele cu tipul de port dat sunt incluse în acest grup. De "
 "exemplu, 53 (propVirtual)."
-
-#, fuzzy
-msgid "Only me"
-msgstr "Doar timpul"
 
 #, python-format
 msgid ""
@@ -67238,6 +67250,10 @@ msgstr "Raport stocat"
 msgid "Stored reports"
 msgstr "Rapoarte stocate"
 
+#, fuzzy
+msgid "Stored secrets for automation users"
+msgstr "Secret de automatizare valabil pentru utilizatorul de automatizare"
+
 msgid "Stormshield quality"
 msgstr ""
 
@@ -67673,7 +67689,7 @@ msgid "Switch port statistics"
 msgstr "Statisticile portului de comutare"
 
 #, fuzzy
-msgid "Switch port statuses"
+msgid "Switch ports statuses"
 msgstr "Statisticile portului de comutare"
 
 msgid "Switch slave replication mode"
@@ -69737,9 +69753,6 @@ msgstr ""
 #, fuzzy
 msgid "The access token for this OAuth2 connection."
 msgstr "Un titlu descriptiv despre această acțiune."
-
-msgid "The access token is invalid, revoked or expired."
-msgstr ""
 
 #, python-format
 msgid "The action '%s' is not implemented"
@@ -72560,6 +72573,14 @@ msgstr ""
 msgid "The password cannot be changed (it is locked by the user connector)."
 msgstr ""
 "Parola nu poate fi schimbată (este blocată de conectorul de utilizator)."
+
+#, fuzzy
+msgid ""
+"The password cannot be deleted because the user does not have the permission "
+"to edit it."
+msgstr ""
+"%s este vizibil doar pentru dvs. deoarece nu aveți permisiunea de a-l "
+"partaja."
 
 #, fuzzy, python-format
 msgid "The password contains forbidden character: %s"
@@ -90326,6 +90347,12 @@ msgid "Wireless ethernet statuses"
 msgstr "ignorați statul"
 
 msgid ""
+"With 2.4.0 (Werk #17344) it was made optional to store the secret of an "
+"automation user. We do not recommend to store the secret for automation "
+"users with high privileges."
+msgstr ""
+
+msgid ""
 "With ServiceNow you can create different types of management issues, "
 "currently supported are indicents and cases."
 msgstr ""
@@ -97031,6 +97058,10 @@ msgid ""
 msgstr ""
 
 #, fuzzy
+msgid "Sidebar widgets are not available on shared dashboards."
+msgstr "Nu aveți voie să editați tablouri de bord."
+
+#, fuzzy
 msgid "Generate public link"
 msgstr "Public"
 
@@ -97699,18 +97730,6 @@ msgid "This may take up to 30 seconds when a site restart is required."
 msgstr ""
 
 #, fuzzy
-msgid "Pending change(s)"
-msgstr "Modificări în așteptare"
-
-#, fuzzy
-msgid "Activation issue(s)"
-msgstr "Activare"
-
-#, fuzzy
-msgid "Site problem(s)"
-msgstr "Probleme de service"
-
-#, fuzzy
 msgid "Changes: (%{n})"
 msgstr "Modificări"
 
@@ -98341,6 +98360,11 @@ msgstr "Data instalării"
 msgid ""
 "Before deploying the Relay, ensure that Podman is installed on the machine "
 "on which the Relay will be running. "
+msgstr ""
+
+msgid ""
+"Insecure connection detected (HTTP). For better security, we recommend "
+"switching this Checkmk site to HTTPS. "
 msgstr ""
 
 #, fuzzy
@@ -99315,6 +99339,22 @@ msgid ""
 msgstr ""
 
 #, fuzzy
+#~ msgid "Only me"
+#~ msgstr "Doar timpul"
+
+#, fuzzy
+#~ msgid "Pending change(s)"
+#~ msgstr "Modificări în așteptare"
+
+#, fuzzy
+#~ msgid "Activation issue(s)"
+#~ msgstr "Activare"
+
+#, fuzzy
+#~ msgid "Site problem(s)"
+#~ msgstr "Probleme de service"
+
+#, fuzzy
 #~ msgid "Register agent updater, if automatic updates are enabled"
 #~ msgstr "Activarea actualizărilor automate ale agentului"
 
@@ -99492,9 +99532,6 @@ msgstr ""
 
 #~ msgid "Use the credentials of the 'automation' user"
 #~ msgstr "Utilizați acreditările utilizatorului 'automation'."
-
-#~ msgid "Valid automation secret for the automation user"
-#~ msgstr "Secret de automatizare valabil pentru utilizatorul de automatizare"
 
 #, fuzzy
 #~ msgid "Enable safe host names"
