@@ -75,7 +75,7 @@ def address_str_from(adr_type: int, adr_length: int, raw_address: Sequence[int])
             scope_id = ".".join(hex_str[i : i + 2] for i in range(32, len(hex_str), 2))
             return f"{ipv4_adr}%{scope_id}"
         # not supported
-        case (1, 10) | (1, 151) | (1, 192) | (3, 8) | (2, 110):
+        case (1, 10) | (1, 151) | (1, 192) | (3, 8) | (2, 110) | (4, 16):
             return None
         case _:
             raise ValueError(f"{adr_type} {adr_length} {raw_address}")
