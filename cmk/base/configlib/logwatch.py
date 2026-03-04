@@ -15,6 +15,7 @@
 #########################################################################################
 
 from collections.abc import Mapping, Sequence
+from pathlib import Path
 
 from cmk.agent_based.v2 import CheckPlugin
 from cmk.base.configlib.loaded_config import LoadedConfigFragment
@@ -38,8 +39,21 @@ def set_global_logwatch_config(
     loaded_config: LoadedConfigFragment,
     matcher: RulesetMatcher,
     label_manager: LabelManager,
+    *,
+    omd_root: Path,
+    var_dir: Path,
+    debug: bool,
 ) -> None:
-    set_global_state(_LogwatchConfig(loaded_config, matcher, label_manager))
+    set_global_state(
+        _LogwatchConfig(
+            loaded_config,
+            matcher,
+            label_manager,
+            omd_root=omd_root,
+            var_dir=var_dir,
+            debug=debug,
+        )
+    )
 
 
 class _LogwatchConfig:
@@ -106,6 +120,10 @@ class _LogwatchConfig:
         loaded_config: LoadedConfigFragment,
         matcher: RulesetMatcher,
         label_manager: LabelManager,
+        *,
+        omd_root: Path,
+        var_dir: Path,
+        debug: bool,
     ) -> None:
         self._label_manager = label_manager
         self._matcher = matcher
@@ -118,6 +136,10 @@ class _LogwatchConfig:
 
         self._logwatch_rules = loaded_config.logwatch_rules
         self._logwatch_ec_rules = loaded_config.checkgroup_parameters.get("logwatch_ec", [])
+        self.omd_root = omd_root
+        self.msg_dir = var_dir / "logwatch"
+        self.base_spool_path = var_dir / "logwatch_spool"
+        self.debug = debug
 
     # This is only wishful typing -- but lets assume this is what we get.
     def logwatch_rules_all(

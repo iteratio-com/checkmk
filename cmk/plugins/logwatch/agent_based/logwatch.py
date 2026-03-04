@@ -30,8 +30,6 @@ from re import Match
 from typing import IO, Literal, TypedDict
 
 # for now, we shamelessly violate the API:
-import cmk.ccc.debug
-import cmk.utils.paths
 from cmk.agent_based.v2 import (
     CheckPlugin,
     CheckResult,
@@ -485,8 +483,8 @@ class LogwatchBlockCollector:
         return "%s messages" % ", ".join(count_txt)
 
 
-def _logmsg_file_path(item: str, host_name: str) -> Path:
-    logmsg_dir = cmk.utils.paths.var_dir / "logwatch" / host_name
+def _logmsg_file_path(msg_dir: Path, item: str, host_name: str) -> Path:
+    logmsg_dir = msg_dir / host_name
     logmsg_dir.mkdir(parents=True, exist_ok=True)
     return logmsg_dir / item.replace("/", "\\")
 
@@ -500,7 +498,8 @@ def check_logwatch_generic(
     max_filesize: int,
     host_name: str,
 ) -> CheckResult:
-    logmsg_file_path = _logmsg_file_path(item, host_name)
+    config = get_global_state()
+    logmsg_file_path = _logmsg_file_path(config.msg_dir, item, host_name)
 
     # Logfile (=item) section not found and no local file found. This usually
     # means, that the corresponding logfile also vanished on the target host.

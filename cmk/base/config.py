@@ -730,6 +730,9 @@ def _perform_post_config_loading_actions(
         loaded_config,
         config_cache.ruleset_matcher,
         config_cache.label_manager,
+        omd_root=cmk.utils.paths.omd_root,
+        var_dir=cmk.utils.paths.var_dir,
+        debug=cmk.ccc.debug.enabled(),
     )
 
     return LoadingResult(

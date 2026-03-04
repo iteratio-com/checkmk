@@ -74,6 +74,12 @@ class _AllValueStoresStoreMocker(value_store.AllValueStoresStore):
 
 
 class _LogwatchConfigMocker:
+    def __init__(self) -> None:
+        self.base_spool_path = paths.var_dir / "logwatch_spool"
+        self.msg_dir = paths.var_dir / "logwatch"
+        self.omd_root = paths.omd_root
+        self.debug = False
+
     def logwatch_rules_all(
         self, *, host_name: str, plugin: CheckPlugin, logfile: str
     ) -> Sequence[ParameterLogwatchRules]:

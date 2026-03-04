@@ -5,6 +5,7 @@
 
 
 from collections.abc import Mapping, Sequence
+from pathlib import Path
 from typing import Literal, Never, NotRequired, Protocol, TypedDict
 
 from cmk.agent_based.v2 import CheckPlugin
@@ -45,6 +46,18 @@ class ParameterLogwatchRules(TypedDict):
 
 
 class LogwatchConfigP(Protocol):
+    @property
+    def msg_dir(self) -> Path: ...
+
+    @property
+    def base_spool_path(self) -> Path: ...
+
+    @property
+    def omd_root(self) -> Path: ...
+
+    @property
+    def debug(self) -> bool: ...
+
     def logwatch_rules_all(
         self, *, host_name: str, plugin: CheckPlugin, logfile: str
     ) -> Sequence[ParameterLogwatchRules]: ...
