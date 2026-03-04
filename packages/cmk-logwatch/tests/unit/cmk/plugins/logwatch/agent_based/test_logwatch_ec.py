@@ -8,7 +8,8 @@
 # mypy: disable-error-code="type-arg"
 
 
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
+from contextlib import contextmanager
 from pathlib import Path
 
 import pytest
@@ -27,7 +28,12 @@ from cmk.ccc.hostaddress import HostName
 from cmk.ec import forwarder as ec_forwarder_patch_target
 from cmk.ec.forwarder import ForwardedResult, MessageForwarder
 from cmk.ec.syslog import SyslogMessage
-from cmk.logwatch.config import ParameterLogwatchEc, ParameterLogwatchRules, set_global_state
+from cmk.logwatch.config import (
+    ParameterLogwatchEc,
+    ParameterLogwatchRules,
+    set_global_state,
+    unset_global_state,
+)
 from cmk.plugins.logwatch.agent_based import commons as logwatch_
 from cmk.plugins.logwatch.agent_based import logwatch_ec
 from cmk.plugins.logwatch.agent_based.logwatch_section import parse_logwatch
@@ -114,6 +120,15 @@ class _LogwatchConfigDummy:
 
     def logwatch_ec_all(self, host_name: str) -> Sequence[ParameterLogwatchEc]:
         return self._ec_rules
+
+
+@contextmanager
+def _logwatch_state(config: _LogwatchConfigDummy) -> Iterator[None]:
+    set_global_state(config)
+    try:
+        yield
+    finally:
+        unset_global_state()
 
 
 @pytest.mark.parametrize(
@@ -216,11 +231,12 @@ def test_logwatch_ec_inventory_single(
 ) -> None:
     parsed = parse_logwatch(info)
 
-    set_global_state(_LogwatchConfigDummy(fwd_rule))
-    actual_result = sorted(
-        logwatch_ec.discover_single(parsed, {"host_name": "test-host"}), key=lambda s: s.item or ""
-    )
-    assert actual_result == expected_result
+    with _logwatch_state(_LogwatchConfigDummy(fwd_rule)):
+        actual_result = sorted(
+            logwatch_ec.discover_single(parsed, {"host_name": "test-host"}),
+            key=lambda s: s.item or "",
+        )
+        assert actual_result == expected_result
 
 
 @pytest.mark.parametrize(
@@ -262,9 +278,9 @@ def test_logwatch_ec_inventory_groups(
 ) -> None:
     parsed = parse_logwatch(info)
 
-    set_global_state(_LogwatchConfigDummy(fwd_rule))
-    actual_result = list(logwatch_ec.discover_group(parsed, {"host_name": "test-host"}))
-    assert actual_result == expected_result
+    with _logwatch_state(_LogwatchConfigDummy(fwd_rule)):
+        actual_result = list(logwatch_ec.discover_group(parsed, {"host_name": "test-host"}))
+        assert actual_result == expected_result
 
 
 class _FakeForwarder(MessageForwarder):
@@ -322,20 +338,20 @@ def test_check_logwatch_ec_common_single_node(
     parsed: logwatch_.ClusterSection,
     expected_result: CheckResult,
 ) -> None:
-    set_global_state(_LogwatchConfigDummy())
-    assert (
-        list(
-            logwatch_ec.check_logwatch_ec_common(
-                item,
-                params,
-                parsed,
-                logwatch_ec.check_plugin_logwatch_ec_single,
-                value_store={},
-                message_forwarder=_FakeForwarder(),
+    with _logwatch_state(_LogwatchConfigDummy()):
+        assert (
+            list(
+                logwatch_ec.check_logwatch_ec_common(
+                    item,
+                    params,
+                    parsed,
+                    logwatch_ec.check_plugin_logwatch_ec_single,
+                    value_store={},
+                    message_forwarder=_FakeForwarder(),
+                )
             )
+            == expected_result
         )
-        == expected_result
-    )
 
 
 def test_check_logwatch_ec_common_single_node_item_missing() -> None:
@@ -354,33 +370,33 @@ def test_check_logwatch_ec_common_single_node_item_missing() -> None:
 
 
 def test_check_logwatch_ec_common_single_node_log_missing() -> None:
-    set_global_state(_LogwatchConfigDummy())
-    actual_result = list(
-        logwatch_ec.check_logwatch_ec_common(
-            "log3",
-            {
-                "facility": 17,  # default to "local1"
-                "method": "",  # local site
-                "monitor_logfilelist": True,
-                "monitor_logfile_access_state": 2,
-                "expected_logfiles": ["log3"],
-                "service_level": 10,
-                "host_name": "test-host",
-            },
-            {
-                "node1": parse_logwatch(_STRING_TABLE_MESSAGES_LOG5),
-            },
-            logwatch_ec.check_plugin_logwatch_ec_single,
-            value_store={},
-            message_forwarder=_FakeForwarder(),
+    with _logwatch_state(_LogwatchConfigDummy()):
+        actual_result = list(
+            logwatch_ec.check_logwatch_ec_common(
+                "log3",
+                {
+                    "facility": 17,  # default to "local1"
+                    "method": "",  # local site
+                    "monitor_logfilelist": True,
+                    "monitor_logfile_access_state": 2,
+                    "expected_logfiles": ["log3"],
+                    "service_level": 10,
+                    "host_name": "test-host",
+                },
+                {
+                    "node1": parse_logwatch(_STRING_TABLE_MESSAGES_LOG5),
+                },
+                logwatch_ec.check_plugin_logwatch_ec_single,
+                value_store={},
+                message_forwarder=_FakeForwarder(),
+            )
         )
-    )
 
-    assert actual_result == [
-        Result(state=State.WARN, summary="Missing logfiles: log3 (on node1)"),
-        Result(state=State.OK, summary="Forwarded 0 messages"),
-        Metric("messages", 0.0),
-    ]
+        assert actual_result == [
+            Result(state=State.WARN, summary="Missing logfiles: log3 (on node1)"),
+            Result(state=State.OK, summary="Forwarded 0 messages"),
+            Metric("messages", 0.0),
+        ]
 
 
 @pytest.mark.parametrize(
@@ -425,20 +441,20 @@ def test_check_logwatch_ec_common_multiple_nodes_grouped(
     cluster_section: logwatch_.ClusterSection,
     expected_result: CheckResult,
 ) -> None:
-    set_global_state(_LogwatchConfigDummy())
-    assert (
-        list(
-            logwatch_ec.check_logwatch_ec_common(
-                "log1",
-                DEFAULT_TEST_PARAMETERS,
-                cluster_section,
-                logwatch_ec.check_plugin_logwatch_ec_single,
-                value_store={},
-                message_forwarder=_FakeForwarder(),
+    with _logwatch_state(_LogwatchConfigDummy()):
+        assert (
+            list(
+                logwatch_ec.check_logwatch_ec_common(
+                    "log1",
+                    DEFAULT_TEST_PARAMETERS,
+                    cluster_section,
+                    logwatch_ec.check_plugin_logwatch_ec_single,
+                    value_store={},
+                    message_forwarder=_FakeForwarder(),
+                )
             )
+            == expected_result
         )
-        == expected_result
-    )
 
 
 @pytest.mark.parametrize(
@@ -560,83 +576,83 @@ def test_check_logwatch_ec_common_multiple_nodes_item_completely_missing() -> No
 
 
 def test_check_logwatch_ec_common_multiple_nodes_item_partially_missing() -> None:
-    set_global_state(_LogwatchConfigDummy())
-    assert list(
-        logwatch_ec.check_logwatch_ec_common(
-            "log1",
-            DEFAULT_TEST_PARAMETERS,
-            {
-                "node1": parse_logwatch(_STRING_TABLE_MESSAGES_LOG1),
-                "node2": parse_logwatch(_STRING_TABLE_MESSAGES_LOG5),
-            },
-            logwatch_ec.check_plugin_logwatch_ec_single,
-            value_store={},
-            message_forwarder=_FakeForwarder(),
-        )
-    ) == [
-        Result(state=State.OK, summary="Forwarded 2 messages from log1"),
-        Metric("messages", 2.0),
-    ]
+    with _logwatch_state(_LogwatchConfigDummy()):
+        assert list(
+            logwatch_ec.check_logwatch_ec_common(
+                "log1",
+                DEFAULT_TEST_PARAMETERS,
+                {
+                    "node1": parse_logwatch(_STRING_TABLE_MESSAGES_LOG1),
+                    "node2": parse_logwatch(_STRING_TABLE_MESSAGES_LOG5),
+                },
+                logwatch_ec.check_plugin_logwatch_ec_single,
+                value_store={},
+                message_forwarder=_FakeForwarder(),
+            )
+        ) == [
+            Result(state=State.OK, summary="Forwarded 2 messages from log1"),
+            Metric("messages", 2.0),
+        ]
 
 
 def test_check_logwatch_ec_common_multiple_nodes_logfile_missing() -> None:
-    set_global_state(_LogwatchConfigDummy())
-    assert list(
-        logwatch_ec.check_logwatch_ec_common(
-            "log3",
-            {
-                "facility": 17,  # default to "local1"
-                "method": "",  # local site
-                "monitor_logfilelist": True,
-                "monitor_logfile_access_state": 2,
-                "expected_logfiles": ["log3"],
-                "service_level": 10,
-                "host_name": "test-host",
-            },
-            {
-                "node1": parse_logwatch(_STRING_TABLE_MESSAGES_LOG1),
-                "node2": parse_logwatch(_STRING_TABLE_MESSAGES_LOG1),
-            },
-            logwatch_ec.check_plugin_logwatch_ec_single,
-            value_store={},
-            message_forwarder=_FakeForwarder(),
-        )
-    ) == [
-        Result(state=State.WARN, summary="Missing logfiles: log3 (on node1, node2)"),
-        Result(state=State.OK, summary="Forwarded 0 messages"),
-        Metric("messages", 0.0),
-    ]
+    with _logwatch_state(_LogwatchConfigDummy()):
+        assert list(
+            logwatch_ec.check_logwatch_ec_common(
+                "log3",
+                {
+                    "facility": 17,  # default to "local1"
+                    "method": "",  # local site
+                    "monitor_logfilelist": True,
+                    "monitor_logfile_access_state": 2,
+                    "expected_logfiles": ["log3"],
+                    "service_level": 10,
+                    "host_name": "test-host",
+                },
+                {
+                    "node1": parse_logwatch(_STRING_TABLE_MESSAGES_LOG1),
+                    "node2": parse_logwatch(_STRING_TABLE_MESSAGES_LOG1),
+                },
+                logwatch_ec.check_plugin_logwatch_ec_single,
+                value_store={},
+                message_forwarder=_FakeForwarder(),
+            )
+        ) == [
+            Result(state=State.WARN, summary="Missing logfiles: log3 (on node1, node2)"),
+            Result(state=State.OK, summary="Forwarded 0 messages"),
+            Metric("messages", 0.0),
+        ]
 
 
 def test_check_logwatch_ec_common_spool(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     config = _LogwatchConfigDummy(tmp_path=tmp_path)
-    set_global_state(config)
-    monkeypatch.setattr(ec_forwarder_patch_target, "_MAX_SPOOL_SIZE", 32)
-    assert list(
-        logwatch_ec.check_logwatch_ec_common(
-            "log1",
-            {
-                **DEFAULT_TEST_PARAMETERS,
-                "method": "spool:",
-            },
-            {
-                "node1": SECTION1,
-            },
-            logwatch_ec.check_plugin_logwatch_ec_single,
-            value_store={},
-            message_forwarder=MessageForwarder(
+    with _logwatch_state(config):
+        monkeypatch.setattr(ec_forwarder_patch_target, "_MAX_SPOOL_SIZE", 32)
+        assert list(
+            logwatch_ec.check_logwatch_ec_common(
                 "log1",
-                HostName("test-host"),
-                base_spool_path=config.base_spool_path,
-                omd_root=config.omd_root,
-                debug=False,
-            ),
-        )
-    ) == [
-        Result(state=State.OK, summary="Forwarded 3 messages from log1"),
-        Metric("messages", 3.0),
-    ]
-    assert len(list(Path(config.omd_root, "var/mkeventd/spool").iterdir())) == 3
+                {
+                    **DEFAULT_TEST_PARAMETERS,
+                    "method": "spool:",
+                },
+                {
+                    "node1": SECTION1,
+                },
+                logwatch_ec.check_plugin_logwatch_ec_single,
+                value_store={},
+                message_forwarder=MessageForwarder(
+                    "log1",
+                    HostName("test-host"),
+                    base_spool_path=config.base_spool_path,
+                    omd_root=config.omd_root,
+                    debug=False,
+                ),
+            )
+        ) == [
+            Result(state=State.OK, summary="Forwarded 3 messages from log1"),
+            Metric("messages", 3.0),
+        ]
+        assert len(list(Path(config.omd_root, "var/mkeventd/spool").iterdir())) == 3
 
 
 def test_check_logwatch_ec_common_batch_stored() -> None:
@@ -644,28 +660,34 @@ def test_check_logwatch_ec_common_batch_stored() -> None:
 
     Failing to do so leads to messages being processed multiple times.
     """
-    set_global_state(_LogwatchConfigDummy())
+    with _logwatch_state(_LogwatchConfigDummy()):
+        value_store: dict = {}
 
-    value_store: dict = {}
-
-    _result = list(
-        logwatch_ec.check_logwatch_ec_common(
-            None,
-            DEFAULT_TEST_PARAMETERS,
-            {
-                None: logwatch_.Section(
-                    errors=(),
-                    logfiles={
-                        "foo": logwatch_.ItemData(attr="", lines={"batch_id_occuring_in_foo": []}),
-                        "bar": logwatch_.ItemData(attr="", lines={"batch_id_occuring_in_bar": []}),
-                    },
-                ),
-            },
-            logwatch_ec.check_plugin_logwatch_ec_single,
-            value_store=value_store,
-            message_forwarder=_FakeForwarder(),
+        _result = list(
+            logwatch_ec.check_logwatch_ec_common(
+                None,
+                DEFAULT_TEST_PARAMETERS,
+                {
+                    None: logwatch_.Section(
+                        errors=(),
+                        logfiles={
+                            "foo": logwatch_.ItemData(
+                                attr="", lines={"batch_id_occuring_in_foo": []}
+                            ),
+                            "bar": logwatch_.ItemData(
+                                attr="", lines={"batch_id_occuring_in_bar": []}
+                            ),
+                        },
+                    ),
+                },
+                logwatch_ec.check_plugin_logwatch_ec_single,
+                value_store=value_store,
+                message_forwarder=_FakeForwarder(),
+            )
         )
-    )
 
-    # the value store now needs to report both batches as seen:
-    assert value_store["seen_batches"] == ("batch_id_occuring_in_bar", "batch_id_occuring_in_foo")
+        # the value store now needs to report both batches as seen:
+        assert value_store["seen_batches"] == (
+            "batch_id_occuring_in_bar",
+            "batch_id_occuring_in_foo",
+        )

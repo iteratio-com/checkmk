@@ -75,6 +75,12 @@ def set_global_state(config: LogwatchConfigP) -> None:
     _g_state_config = config
 
 
+def unset_global_state() -> None:
+    """Reset the global state. Only used in tests."""
+    global _g_state_config
+    _g_state_config = None
+
+
 def get_global_state() -> LogwatchConfigP:
     if _g_state_config is None:
         raise RuntimeError("global state not initialised")

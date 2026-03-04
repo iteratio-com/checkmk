@@ -4,14 +4,20 @@
 # conditions defined in the file COPYING, which is part of this source code package.
 
 
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Iterator, Sequence
+from contextlib import contextmanager
 from pathlib import Path
 
 import pytest
 from pytest_mock import MockerFixture
 
 from cmk.agent_based.v2 import CheckPlugin, Result, Service, State
-from cmk.logwatch.config import ParameterLogwatchEc, ParameterLogwatchRules, set_global_state
+from cmk.logwatch.config import (
+    ParameterLogwatchEc,
+    ParameterLogwatchRules,
+    set_global_state,
+    unset_global_state,
+)
 from cmk.plugins.logwatch.agent_based import commons as logwatch_
 from cmk.plugins.logwatch.agent_based import logwatch
 
@@ -123,19 +129,28 @@ class _LogwatchConfigDummy:
         return self._ec_all
 
 
-def test_discovery_single() -> None:
-    set_global_state(_LogwatchConfigDummy())
-    assert sorted(
-        logwatch.discover_logwatch_single(TEST_DISCO_PARAMS, SECTION1),
-        key=lambda s: s.item or "",
-    ) == [
-        Service(item="empty.log"),
-        Service(item="my_other_log"),
-        Service(item="mylog"),
-        Service(item="unreadablelog"),
-    ]
+@contextmanager
+def _logwatch_state(config: _LogwatchConfigDummy) -> Iterator[None]:
+    set_global_state(config)
+    try:
+        yield
+    finally:
+        unset_global_state()
 
-    assert not list(logwatch.discover_logwatch_groups(TEST_DISCO_PARAMS, SECTION1))
+
+def test_discovery_single() -> None:
+    with _logwatch_state(_LogwatchConfigDummy()):
+        assert sorted(
+            logwatch.discover_logwatch_single(TEST_DISCO_PARAMS, SECTION1),
+            key=lambda s: s.item or "",
+        ) == [
+            Service(item="empty.log"),
+            Service(item="my_other_log"),
+            Service(item="mylog"),
+            Service(item="unreadablelog"),
+        ]
+
+        assert not list(logwatch.discover_logwatch_groups(TEST_DISCO_PARAMS, SECTION1))
 
 
 @pytest.mark.parametrize(
@@ -184,17 +199,17 @@ def test_check_single(
     tmp_path: Path,
 ) -> None:
     monkeypatch.setattr(logwatch, "get_value_store", lambda: {})
-    set_global_state(_LogwatchConfigDummy(msg_dir=tmp_path))
-    monkeypatch.setattr(
-        logwatch_,
-        logwatch_.compile_reclassify_params.__name__,
-        lambda _item: logwatch_.ReclassifyParameters((), {}),
-    )
+    with _logwatch_state(_LogwatchConfigDummy(msg_dir=tmp_path)):
+        monkeypatch.setattr(
+            logwatch_,
+            logwatch_.compile_reclassify_params.__name__,
+            lambda _item: logwatch_.ReclassifyParameters((), {}),
+        )
 
-    assert (
-        list(logwatch.check_logwatch_node(log_name, {"host_name": "test-host"}, SECTION1))
-        == expected_result
-    )
+        assert (
+            list(logwatch.check_logwatch_node(log_name, {"host_name": "test-host"}, SECTION1))
+            == expected_result
+        )
 
 
 @pytest.mark.parametrize(
@@ -240,41 +255,41 @@ def test_check_logwatch_groups_node(
     tmp_path: Path,
 ) -> None:
     monkeypatch.setattr(logwatch, "get_value_store", lambda: {})
-    set_global_state(_LogwatchConfigDummy(msg_dir=tmp_path))
-    monkeypatch.setattr(
-        logwatch_,
-        logwatch_.compile_reclassify_params.__name__,
-        lambda _item: logwatch_.ReclassifyParameters((), {}),
-    )
-
-    section = logwatch_.Section(
-        errors=[],
-        logfiles={
-            "log1": {
-                "attr": "ok",
-                "lines": {"batch1": ["W be cautious!"]},
-            },
-            "log2": {
-                "attr": "ok",
-                "lines": {"batch": ["W very warning"]},
-            },
-            "log_a": {
-                "attr": "ok",
-                "lines": {"batch2": ["W another warning"]},
-            },
-        },
-    )
-
-    assert (
-        list(
-            logwatch.check_logwatch_groups_node(
-                group_name,
-                {"group_patterns": reg_pattern, "host_name": "test-host"},
-                section,
-            )
+    with _logwatch_state(_LogwatchConfigDummy(msg_dir=tmp_path)):
+        monkeypatch.setattr(
+            logwatch_,
+            logwatch_.compile_reclassify_params.__name__,
+            lambda _item: logwatch_.ReclassifyParameters((), {}),
         )
-        == expected_result
-    )
+
+        section = logwatch_.Section(
+            errors=[],
+            logfiles={
+                "log1": {
+                    "attr": "ok",
+                    "lines": {"batch1": ["W be cautious!"]},
+                },
+                "log2": {
+                    "attr": "ok",
+                    "lines": {"batch": ["W very warning"]},
+                },
+                "log_a": {
+                    "attr": "ok",
+                    "lines": {"batch2": ["W another warning"]},
+                },
+            },
+        )
+
+        assert (
+            list(
+                logwatch.check_logwatch_groups_node(
+                    group_name,
+                    {"group_patterns": reg_pattern, "host_name": "test-host"},
+                    section,
+                )
+            )
+            == expected_result
+        )
 
 
 SECTION2 = logwatch_.Section(
@@ -305,7 +320,7 @@ SECTION2 = logwatch_.Section(
 
 
 def test_logwatch_discover_single_restrict() -> None:
-    set_global_state(
+    with _logwatch_state(
         _LogwatchConfigDummy(
             ec_all=[
                 ParameterLogwatchEc(
@@ -315,15 +330,15 @@ def test_logwatch_discover_single_restrict() -> None:
                 )
             ]
         )
-    )
-    assert sorted(
-        logwatch.discover_logwatch_single(TEST_DISCO_PARAMS, SECTION2),
-        key=lambda s: s.item or "",
-    ) == [
-        Service(item="log1"),
-        Service(item="log4"),
-        Service(item="log5"),
-    ]
+    ):
+        assert sorted(
+            logwatch.discover_logwatch_single(TEST_DISCO_PARAMS, SECTION2),
+            key=lambda s: s.item or "",
+        ) == [
+            Service(item="log1"),
+            Service(item="log4"),
+            Service(item="log5"),
+        ]
 
 
 def test_logwatch_discover_single_groups(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -336,11 +351,10 @@ def test_logwatch_discover_single_groups(monkeypatch: pytest.MonkeyPatch) -> Non
         )
     ]
 
-    set_global_state(_LogwatchConfigDummy())
-
-    assert list(logwatch.discover_logwatch_single(params, SECTION2)) == [
-        Service(item="log1"),
-    ]
+    with _logwatch_state(_LogwatchConfigDummy()):
+        assert list(logwatch.discover_logwatch_single(params, SECTION2)) == [
+            Service(item="log1"),
+        ]
 
 
 def test_logwatch_discover_groups(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -354,19 +368,18 @@ def test_logwatch_discover_groups(monkeypatch: pytest.MonkeyPatch) -> None:
         )
     ]
 
-    set_global_state(_LogwatchConfigDummy())
-
-    assert list(logwatch.discover_logwatch_groups(params, SECTION2)) == [
-        Service(
-            item="my_log_group",
-            parameters={
-                "group_patterns": [
-                    ("~log.*", "~.*5"),
-                    ("~log[^5]", "~.*1"),
-                ],
-            },
-        ),
-    ]
+    with _logwatch_state(_LogwatchConfigDummy()):
+        assert list(logwatch.discover_logwatch_groups(params, SECTION2)) == [
+            Service(
+                item="my_log_group",
+                parameters={
+                    "group_patterns": [
+                        ("~log.*", "~.*5"),
+                        ("~log[^5]", "~.*1"),
+                    ],
+                },
+            ),
+        ]
 
 
 @pytest.fixture(name="logmsg_file_path")
@@ -382,153 +395,153 @@ def fixture_logmsg_file_path(
 
 
 def test_check_logwatch_generic_no_messages(tmp_path: Path) -> None:
-    set_global_state(_LogwatchConfigDummy(msg_dir=tmp_path))
-    item = "/tmp/app.log"
-    assert list(
-        logwatch.check_logwatch_generic(
-            item=item,
-            reclassify_parameters=logwatch_.ReclassifyParameters((), {}),
-            loglines=[],
-            found=True,
-            max_filesize=logwatch._LOGWATCH_MAX_FILESIZE,  # noqa: SLF001
-            host_name="test-host",
-        )
-    ) == [
-        Result(state=State.OK, summary="No error messages"),
-    ]
-    assert not logwatch._logmsg_file_path(tmp_path, item, "test-host").exists()  # noqa: SLF001
+    with _logwatch_state(_LogwatchConfigDummy(msg_dir=tmp_path)):
+        item = "/tmp/app.log"
+        assert list(
+            logwatch.check_logwatch_generic(
+                item=item,
+                reclassify_parameters=logwatch_.ReclassifyParameters((), {}),
+                loglines=[],
+                found=True,
+                max_filesize=logwatch._LOGWATCH_MAX_FILESIZE,  # noqa: SLF001
+                host_name="test-host",
+            )
+        ) == [
+            Result(state=State.OK, summary="No error messages"),
+        ]
+        assert not logwatch._logmsg_file_path(tmp_path, item, "test-host").exists()  # noqa: SLF001
 
 
 @pytest.mark.usefixtures("logmsg_file_path")
 def test_check_logwatch_generic_no_reclassify(tmp_path: Path) -> None:
-    set_global_state(_LogwatchConfigDummy(msg_dir=tmp_path))
-    item = "/tmp/enterprise.log"
-    lines = [
-        ". klingons are attacking",
-        "C red alert",
-        ". more context",
-    ]
+    with _logwatch_state(_LogwatchConfigDummy(msg_dir=tmp_path)):
+        item = "/tmp/enterprise.log"
+        lines = [
+            ". klingons are attacking",
+            "C red alert",
+            ". more context",
+        ]
 
-    assert list(
-        logwatch.check_logwatch_generic(
-            item=item,
-            reclassify_parameters=logwatch_.ReclassifyParameters((), {}),
-            loglines=lines,
-            found=True,
-            max_filesize=logwatch._LOGWATCH_MAX_FILESIZE,  # noqa: SLF001
-            host_name="test-host",
+        assert list(
+            logwatch.check_logwatch_generic(
+                item=item,
+                reclassify_parameters=logwatch_.ReclassifyParameters((), {}),
+                loglines=lines,
+                found=True,
+                max_filesize=logwatch._LOGWATCH_MAX_FILESIZE,  # noqa: SLF001
+                host_name="test-host",
+            )
+        ) == [
+            Result(state=State.CRIT, summary='1 CRIT messages (Last worst: "red alert")'),
+        ]
+        assert (
+            logwatch._logmsg_file_path(tmp_path, item, "test-host")  # noqa: SLF001
+            .read_text()
+            .splitlines()[-len(lines) :]
+            == lines
         )
-    ) == [
-        Result(state=State.CRIT, summary='1 CRIT messages (Last worst: "red alert")'),
-    ]
-    assert (
-        logwatch._logmsg_file_path(tmp_path, item, "test-host")  # noqa: SLF001
-        .read_text()
-        .splitlines()[-len(lines) :]
-        == lines
-    )
 
 
 @pytest.mark.usefixtures("logmsg_file_path")
 def test_check_logwatch_generic_with_reclassification(tmp_path: Path) -> None:
-    set_global_state(_LogwatchConfigDummy(msg_dir=tmp_path))
-    item = "/tmp/enterprise.log"
-    lines = [
-        ". klingons are attacking",
-        "C red alert",
-        ". more context",
-    ]
+    with _logwatch_state(_LogwatchConfigDummy(msg_dir=tmp_path)):
+        item = "/tmp/enterprise.log"
+        lines = [
+            ". klingons are attacking",
+            "C red alert",
+            ". more context",
+        ]
 
-    assert list(
-        logwatch.check_logwatch_generic(
-            item=item,
-            reclassify_parameters=logwatch_.ReclassifyParameters(
-                patterns=[
-                    ("C", ".*klingon.*", "galatic conflict"),
-                    ("I", "123", ""),
-                ],
-                states={},
-            ),
-            loglines=lines,
-            found=True,
-            max_filesize=logwatch._LOGWATCH_MAX_FILESIZE,  # noqa: SLF001
-            host_name="test-host",
-        )
-    ) == [
-        Result(state=State.CRIT, summary='2 CRIT messages (Last worst: "red alert")'),
-    ]
-    path = logwatch._logmsg_file_path(tmp_path, item, "test-host")  # noqa: SLF001
-    assert path.read_text().splitlines()[-len(lines) :] == [
-        "C klingons are attacking",
-        "C red alert",
-        ". more context",
-    ]
+        assert list(
+            logwatch.check_logwatch_generic(
+                item=item,
+                reclassify_parameters=logwatch_.ReclassifyParameters(
+                    patterns=[
+                        ("C", ".*klingon.*", "galatic conflict"),
+                        ("I", "123", ""),
+                    ],
+                    states={},
+                ),
+                loglines=lines,
+                found=True,
+                max_filesize=logwatch._LOGWATCH_MAX_FILESIZE,  # noqa: SLF001
+                host_name="test-host",
+            )
+        ) == [
+            Result(state=State.CRIT, summary='2 CRIT messages (Last worst: "red alert")'),
+        ]
+        path = logwatch._logmsg_file_path(tmp_path, item, "test-host")  # noqa: SLF001
+        assert path.read_text().splitlines()[-len(lines) :] == [
+            "C klingons are attacking",
+            "C red alert",
+            ". more context",
+        ]
 
 
 @pytest.mark.usefixtures("logmsg_file_path")
 def test_check_logwatch_generic_missing(tmp_path: Path) -> None:
-    set_global_state(_LogwatchConfigDummy(msg_dir=tmp_path))
-    item = "item"
-    assert list(
-        logwatch.check_logwatch_generic(
-            item=item,
-            reclassify_parameters=logwatch_.ReclassifyParameters((), {}),
-            loglines=[],
-            found=False,
-            max_filesize=logwatch._LOGWATCH_MAX_FILESIZE,  # noqa: SLF001
-            host_name="test-host",
-        )
-    ) == [
-        Result(state=State.UNKNOWN, summary="log not present anymore"),
-    ]
-    assert not logwatch._logmsg_file_path(tmp_path, item, "test-host").exists()  # noqa: SLF001
+    with _logwatch_state(_LogwatchConfigDummy(msg_dir=tmp_path)):
+        item = "item"
+        assert list(
+            logwatch.check_logwatch_generic(
+                item=item,
+                reclassify_parameters=logwatch_.ReclassifyParameters((), {}),
+                loglines=[],
+                found=False,
+                max_filesize=logwatch._LOGWATCH_MAX_FILESIZE,  # noqa: SLF001
+                host_name="test-host",
+            )
+        ) == [
+            Result(state=State.UNKNOWN, summary="log not present anymore"),
+        ]
+        assert not logwatch._logmsg_file_path(tmp_path, item, "test-host").exists()  # noqa: SLF001
 
 
 @pytest.mark.usefixtures("logmsg_file_path")
 def test_check_logwatch_generic_reclassify_to_ok_shows_summary(tmp_path: Path) -> None:
-    set_global_state(_LogwatchConfigDummy(msg_dir=tmp_path))
-    # Create reclassify parameters to reclassify Critical to OK
-    reclassify_parameters = logwatch_.ReclassifyParameters(
-        patterns=[],
-        states={"c_to": "O"},
-    )
-
-    assert list(
-        logwatch.check_logwatch_generic(
-            item="item",
-            reclassify_parameters=reclassify_parameters,
-            loglines=[
-                "C One critical error occurred",
-                "C Second critical error",
-            ],
-            found=True,
-            max_filesize=logwatch._LOGWATCH_MAX_FILESIZE,  # noqa: SLF001
-            host_name="test-host",
+    with _logwatch_state(_LogwatchConfigDummy(msg_dir=tmp_path)):
+        # Create reclassify parameters to reclassify Critical to OK
+        reclassify_parameters = logwatch_.ReclassifyParameters(
+            patterns=[],
+            states={"c_to": "O"},
         )
-    ) == [
-        Result(state=State.OK, summary='2 OK messages (Last worst: "Second critical error")'),
-    ]
+
+        assert list(
+            logwatch.check_logwatch_generic(
+                item="item",
+                reclassify_parameters=reclassify_parameters,
+                loglines=[
+                    "C One critical error occurred",
+                    "C Second critical error",
+                ],
+                found=True,
+                max_filesize=logwatch._LOGWATCH_MAX_FILESIZE,  # noqa: SLF001
+                host_name="test-host",
+            )
+        ) == [
+            Result(state=State.OK, summary='2 OK messages (Last worst: "Second critical error")'),
+        ]
 
 
 @pytest.mark.usefixtures("logmsg_file_path")
 def test_check_logwatch_generic_multiline_logline_to_summary_details(tmp_path: Path) -> None:
-    set_global_state(_LogwatchConfigDummy(msg_dir=tmp_path))
-    assert list(
-        logwatch.check_logwatch_generic(
-            item="item",
-            reclassify_parameters=logwatch_.ReclassifyParameters((), {}),
-            loglines=[
-                "C One critical error occurred",
-                "C Second critical error\nWith a second line\nand a third line",
-            ],
-            found=True,
-            max_filesize=logwatch._LOGWATCH_MAX_FILESIZE,  # noqa: SLF001
-            host_name="test-host",
-        )
-    ) == [
-        Result(
-            state=State.CRIT,
-            summary='2 CRIT messages (Last worst: "Second critical error',
-            details='With a second line\nand a third line")',
-        ),
-    ]
+    with _logwatch_state(_LogwatchConfigDummy(msg_dir=tmp_path)):
+        assert list(
+            logwatch.check_logwatch_generic(
+                item="item",
+                reclassify_parameters=logwatch_.ReclassifyParameters((), {}),
+                loglines=[
+                    "C One critical error occurred",
+                    "C Second critical error\nWith a second line\nand a third line",
+                ],
+                found=True,
+                max_filesize=logwatch._LOGWATCH_MAX_FILESIZE,  # noqa: SLF001
+                host_name="test-host",
+            )
+        ) == [
+            Result(
+                state=State.CRIT,
+                summary='2 CRIT messages (Last worst: "Second critical error',
+                details='With a second line\nand a third line")',
+            ),
+        ]
