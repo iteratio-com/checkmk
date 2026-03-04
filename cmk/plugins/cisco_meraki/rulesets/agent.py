@@ -89,10 +89,12 @@ def _form_special_agent_cisco_meraki() -> Dictionary:
                             title=Title("Appliance performance"),
                         ),
                         MultipleChoiceElement(
-                            name="appliance_uplinks", title=Title("Appliance uplink statuses")
+                            name="appliance_uplinks",
+                            title=Title("Appliance uplink statuses"),
                         ),
                         MultipleChoiceElement(
-                            name="appliance_vpns", title=Title("Appliance VPN statuses")
+                            name="appliance_vpns",
+                            title=Title("Appliance VPN statuses"),
                         ),
                         MultipleChoiceElement(
                             name="device_statuses",
@@ -103,13 +105,16 @@ def _form_special_agent_cisco_meraki() -> Dictionary:
                             title=Title("Device uplinks (HW/SW Inventory only)"),
                         ),
                         MultipleChoiceElement(
-                            name="licenses_overview", title=Title("Licenses overview")
+                            name="licenses_overview",
+                            title=Title("Licenses overview"),
                         ),
                         MultipleChoiceElement(
-                            name="sensor_readings", title=Title("Sensor readings")
+                            name="sensor_readings",
+                            title=Title("Sensor readings"),
                         ),
                         MultipleChoiceElement(
-                            name="switch_ports_statuses", title=Title("Switch ports statuses")
+                            name="switch_ports_statuses",
+                            title=Title("Switch ports statuses"),
                         ),
                         MultipleChoiceElement(
                             name="wireless_device_statuses",
