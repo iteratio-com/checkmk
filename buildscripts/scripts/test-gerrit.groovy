@@ -146,13 +146,9 @@ void main() {
                                 CUSTOM_GIT_REF: GERRIT_PATCHSET_REVISION,
                             ];
                             break;
-                        case "Package cmc":
                         case "Package cmk-relay-engine":
                         // "cmk-relay-engine" does not work with the default container of the pod used for test-gerrit-single
                         // 'testing-ubuntu-2204-checkmk-master' works 'ubuntu-2404-master-latest' does not
-                        case "Package neb":
-                        case "Package livestatus":
-                        case "Package unixcat":
                         case "Package mk-oracle":
                             relative_job_name = "${branch_base_folder}/builders/build-cmk-package-k8s";
                             build_params = [
