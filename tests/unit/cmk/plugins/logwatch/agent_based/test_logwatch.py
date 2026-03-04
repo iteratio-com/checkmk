@@ -486,7 +486,8 @@ def test_check_logwatch_generic_missing(tmp_path: Path) -> None:
 
 
 @pytest.mark.usefixtures("logmsg_file_path")
-def test_check_logwatch_generic_reclassify_to_ok_shows_summary() -> None:
+def test_check_logwatch_generic_reclassify_to_ok_shows_summary(tmp_path: Path) -> None:
+    set_global_state(_LogwatchConfigDummy(msg_dir=tmp_path))
     # Create reclassify parameters to reclassify Critical to OK
     reclassify_parameters = logwatch_.ReclassifyParameters(
         patterns=[],
@@ -511,7 +512,8 @@ def test_check_logwatch_generic_reclassify_to_ok_shows_summary() -> None:
 
 
 @pytest.mark.usefixtures("logmsg_file_path")
-def test_check_logwatch_generic_multiline_logline_to_summary_details() -> None:
+def test_check_logwatch_generic_multiline_logline_to_summary_details(tmp_path: Path) -> None:
+    set_global_state(_LogwatchConfigDummy(msg_dir=tmp_path))
     assert list(
         logwatch.check_logwatch_generic(
             item="item",
