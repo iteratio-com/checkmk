@@ -78,10 +78,6 @@ def _form_special_agent_cisco_meraki() -> Dictionary:
                     title=Title("Sections"),
                     help_text=Help(
                         "Select the sections that you want to include in the agent output."
-                        "<p>"
-                        "<b>Note:</b> some Meraki resources are marked as deprecated, which"
-                        "means that they could be removed at some point in the future."
-                        "</p>"
                     ),
                     elements=[
                         MultipleChoiceElement(
@@ -100,7 +96,7 @@ def _form_special_agent_cisco_meraki() -> Dictionary:
                         ),
                         MultipleChoiceElement(
                             name="device_statuses",
-                            title=Title("Device statuses <b>[deprecated]</b>"),
+                            title=Title("Device statuses"),
                         ),
                         MultipleChoiceElement(
                             name="device_uplinks_info",
