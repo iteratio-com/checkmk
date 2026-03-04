@@ -9,8 +9,10 @@
 from __future__ import annotations
 
 from base64 import b64encode
-from collections.abc import Generator, Iterator
+from collections.abc import Callable, Generator, Iterator
+from datetime import datetime
 from http.cookies import SimpleCookie
+from typing import Literal
 
 import flask
 import pytest
@@ -22,11 +24,20 @@ from cmk.gui.config import active_config
 from cmk.gui.http import request
 from cmk.gui.logged_in import LoggedInNobody, LoggedInUser, user
 from cmk.gui.session import session
-from cmk.gui.type_defs import UserSpec, WebAuthnCredential
+from cmk.gui.type_defs import (
+    SessionStateMachine,
+    TwoFactorCredentials,
+    UserSpec,
+    WebAuthnCredential,
+)
+from cmk.gui.userdb import is_two_factor_login_enabled
 from cmk.gui.userdb.session import auth_cookie_name, auth_cookie_value, generate_auth_hash
+from cmk.gui.userdb.store import load_custom_attr, save_custom_attr, save_two_factor_credentials
+from cmk.gui.utils import saveint
 from cmk.gui.utils.roles import UserPermissions
 from cmk.gui.utils.script_helpers import application_and_request_context
 from cmk.livestatus_client.testing import MockLiveStatusConnection
+from tests.testlib.common.utils import wait_until
 from tests.unit.cmk.gui.users import create_and_destroy_user
 from tests.unit.cmk.web_test_app import WebTestAppForCMK
 
@@ -297,3 +308,383 @@ def test_auth_session_times(user_login: WebTestAppForCMK, auth_request: http.Req
     assert session.session_info.started_at == started_at
     # tried it with time.sleep and ">".
     assert session.session_info.last_activity >= last_activity
+
+
+def _validate_check_and_process_file_complete(expected_state: str) -> bool:
+    return session.check_and_update_session_state() == expected_state
+
+
+@pytest.mark.parametrize(
+    "two_factor_creds, expected_state_two_factor_setting, expected_state",
+    [
+        pytest.param(
+            {
+                "webauthn_credentials": {},
+                "backup_codes": [],
+                "totp_credentials": {
+                    "83deaab4-d3cc-4c43-8928-6f3da4c37f17": {
+                        "credential_id": "83deaab4-d3cc-4c43-8928-6f3da4c37f17",
+                        "secret": b"\xf4x\x13\x1d\x12g\t\xe6R\xa6",
+                        "version": 1,
+                        "registered_at": int(datetime.now().timestamp()),
+                        "alias": "",
+                    }
+                },
+            },
+            True,
+            "second_factor_auth_needed",
+        ),
+        pytest.param(
+            {
+                "webauthn_credentials": {},
+                "backup_codes": [],
+                "totp_credentials": {},
+            },
+            False,
+            "logged_in",
+        ),
+    ],
+)
+def test_check_and_update_two_factor_auth(
+    user_login: WebTestAppForCMK,
+    auth_request: http.Request,
+    two_factor_creds: TwoFactorCredentials,
+    expected_state_two_factor_setting: bool,
+    expected_state: str,
+) -> None:
+    try:
+        session.logout()
+        assert session.session_info.session_state == "credentials_needed"
+
+        save_two_factor_credentials(session.user.ident, two_factor_creds)
+        assert is_two_factor_login_enabled(session.user.ident) == expected_state_two_factor_setting
+        wait_until(
+            lambda: _validate_check_and_process_file_complete(expected_state=expected_state),
+            timeout=10,
+        )
+    finally:
+        save_two_factor_credentials(
+            session.user.ident,
+            {
+                "webauthn_credentials": {},
+                "backup_codes": [],
+                "totp_credentials": {},
+            },
+        )
+        session.logout()
+
+
+def _validate_pw_change_file_saved(expected_password_change_setting: int) -> bool:
+    save_custom_attr(session.user.ident, "enforce_pw_change", str(expected_password_change_setting))
+    return (
+        load_custom_attr(user_id=session.user.ident, key="enforce_pw_change", parser=saveint)
+        == expected_password_change_setting
+    )
+
+
+@pytest.mark.parametrize(
+    "expected_password_change_setting, expected_state",
+    [
+        pytest.param(
+            1,
+            "password_change_needed",
+        ),
+        pytest.param(
+            0,
+            "logged_in",
+        ),
+    ],
+)
+def test_check_and_update_password_change(
+    user_login: WebTestAppForCMK,
+    auth_request: http.Request,
+    expected_password_change_setting: int,
+    expected_state: str,
+) -> None:
+    try:
+        session.logout()
+        assert session.session_info.session_state == "credentials_needed"
+
+        wait_until(
+            lambda: _validate_pw_change_file_saved(expected_password_change_setting), timeout=10
+        )
+        wait_until(
+            lambda: _validate_check_and_process_file_complete(expected_state=expected_state),
+            timeout=10,
+        )
+    finally:
+        wait_until(lambda: _validate_pw_change_file_saved(0), timeout=10)
+        session.logout()
+
+
+def simplified_auth_check_true() -> bool:
+    return True
+
+
+def simplified_auth_check_false() -> bool:
+    return False
+
+
+@pytest.mark.parametrize(
+    "two_fa_auth_needed, two_fa_setup_needed, pw_changed_needed, starting_state, expected_state",
+    [
+        pytest.param(
+            simplified_auth_check_true,
+            simplified_auth_check_false,
+            simplified_auth_check_false,
+            "credentials_needed",
+            "second_factor_auth_needed",
+            id="cn_to_sfan_auth_set",
+        ),
+        pytest.param(
+            simplified_auth_check_true,
+            simplified_auth_check_true,
+            simplified_auth_check_false,
+            "credentials_needed",
+            "second_factor_auth_needed",
+            id="cn_to_sfan_auth_setup_set",
+        ),
+        pytest.param(
+            simplified_auth_check_true,
+            simplified_auth_check_true,
+            simplified_auth_check_true,
+            "credentials_needed",
+            "second_factor_auth_needed",
+            id="cn_to_sfan_auth_setup_password_set",
+        ),
+        pytest.param(
+            simplified_auth_check_false,
+            simplified_auth_check_true,
+            simplified_auth_check_false,
+            "credentials_needed",
+            "second_factor_setup_needed",
+            id="cn_to_sfsn_setup_set",
+        ),
+        pytest.param(
+            simplified_auth_check_false,
+            simplified_auth_check_true,
+            simplified_auth_check_true,
+            "credentials_needed",
+            "second_factor_setup_needed",
+            id="cn_to_sfsn_setup_password_set",
+        ),
+        pytest.param(
+            simplified_auth_check_false,
+            simplified_auth_check_false,
+            simplified_auth_check_true,
+            "credentials_needed",
+            "password_change_needed",
+            id="cn_to_pcn_password_set",
+        ),
+        pytest.param(
+            simplified_auth_check_true,
+            simplified_auth_check_false,
+            simplified_auth_check_false,
+            "second_factor_auth_needed",
+            "logged_in",
+            id="sfan_to_li_auth_set",
+        ),
+        pytest.param(
+            simplified_auth_check_true,
+            simplified_auth_check_true,
+            simplified_auth_check_false,
+            "second_factor_auth_needed",
+            "logged_in",
+            id="sfan_to_li_auth_setup_set",
+        ),
+        pytest.param(
+            simplified_auth_check_true,
+            simplified_auth_check_true,
+            simplified_auth_check_true,
+            "second_factor_auth_needed",
+            "password_change_needed",
+            id="sfan_to_pcn_auth_setup_password_set",
+        ),
+        pytest.param(
+            simplified_auth_check_false,
+            simplified_auth_check_true,
+            simplified_auth_check_true,
+            "second_factor_auth_needed",
+            "password_change_needed",
+            id="sfan_to_pcn_setup_password_set",
+        ),
+        pytest.param(
+            simplified_auth_check_false,
+            simplified_auth_check_false,
+            simplified_auth_check_true,
+            "second_factor_auth_needed",
+            "password_change_needed",
+            id="sfan_to_pcn_password_set",
+        ),
+        pytest.param(
+            simplified_auth_check_true,
+            simplified_auth_check_false,
+            simplified_auth_check_false,
+            "second_factor_setup_needed",
+            "logged_in",
+            id="sfsn_to_li_auth_set",
+        ),
+        pytest.param(
+            simplified_auth_check_true,
+            simplified_auth_check_true,
+            simplified_auth_check_false,
+            "second_factor_setup_needed",
+            "logged_in",
+            id="sfsn_to_li_auth_setup_set",
+        ),
+        pytest.param(
+            simplified_auth_check_true,
+            simplified_auth_check_true,
+            simplified_auth_check_true,
+            "second_factor_setup_needed",
+            "password_change_needed",
+            id="sfsn_to_pcn_auth_setup_password_set",
+        ),
+        pytest.param(
+            simplified_auth_check_false,
+            simplified_auth_check_true,
+            simplified_auth_check_true,
+            "second_factor_setup_needed",
+            "password_change_needed",
+            id="sfsn_to_pcn_setup_password_set",
+        ),
+        pytest.param(
+            simplified_auth_check_false,
+            simplified_auth_check_false,
+            simplified_auth_check_true,
+            "second_factor_setup_needed",
+            "password_change_needed",
+            id="sfsn_to_pcn_password_set",
+        ),
+        pytest.param(
+            simplified_auth_check_true,
+            simplified_auth_check_false,
+            simplified_auth_check_false,
+            "password_change_needed",
+            "logged_in",
+            id="pcn_to_li_auth_set",
+        ),
+        pytest.param(
+            simplified_auth_check_true,
+            simplified_auth_check_true,
+            simplified_auth_check_false,
+            "password_change_needed",
+            "logged_in",
+            id="pcn_to_li_auth_setup_set",
+        ),
+        pytest.param(
+            simplified_auth_check_true,
+            simplified_auth_check_true,
+            simplified_auth_check_true,
+            "password_change_needed",
+            "logged_in",
+            id="pcn_to_li_auth_setup_password_set",
+        ),
+        pytest.param(
+            simplified_auth_check_false,
+            simplified_auth_check_true,
+            simplified_auth_check_true,
+            "password_change_needed",
+            "logged_in",
+            id="pcn_to_li_setup_password_set",
+        ),
+        pytest.param(
+            simplified_auth_check_false,
+            simplified_auth_check_false,
+            simplified_auth_check_true,
+            "password_change_needed",
+            "logged_in",
+            id="pcn_to_li_password_set",
+        ),
+        pytest.param(
+            simplified_auth_check_false,
+            simplified_auth_check_false,
+            simplified_auth_check_false,
+            "credentials_needed",
+            "logged_in",
+            id="cn_to_li_none_set",
+        ),
+        pytest.param(
+            simplified_auth_check_false,
+            simplified_auth_check_false,
+            simplified_auth_check_false,
+            "second_factor_auth_needed",
+            "logged_in",
+            id="sfan_to_li_none_set",
+        ),
+        pytest.param(
+            simplified_auth_check_false,
+            simplified_auth_check_false,
+            simplified_auth_check_false,
+            "second_factor_setup_needed",
+            "logged_in",
+            id="sfsn_to_li_none_set",
+        ),
+        pytest.param(
+            simplified_auth_check_false,
+            simplified_auth_check_false,
+            simplified_auth_check_false,
+            "password_change_needed",
+            "logged_in",
+            id="pcn_to_li_none_set",
+        ),
+    ],
+)
+def test_state_transition_flow_logic(
+    user_login: WebTestAppForCMK,
+    auth_request: http.Request,
+    two_fa_auth_needed: Callable[[], bool],
+    two_fa_setup_needed: Callable[[], bool],
+    pw_changed_needed: Callable[[], bool],
+    starting_state: Literal[
+        "credentials_needed",
+        "password_change_needed",
+        "logged_in",
+        "second_factor_setup_needed",
+        "second_factor_auth_needed",
+    ],
+    expected_state: Literal[
+        "credentials_needed",
+        "password_change_needed",
+        "logged_in",
+        "second_factor_setup_needed",
+        "second_factor_auth_needed",
+    ],
+) -> None:
+    try:
+        session.logout()
+        assert session.session_info.session_state == "credentials_needed"
+
+        state = session.session_info.session_state = starting_state
+        ssm = SessionStateMachine(state)
+        assert (
+            ssm.transition(
+                check_if_2fa_auth_is_needed=two_fa_auth_needed,
+                check_if_2fa_setup_is_needed=two_fa_setup_needed,
+                check_if_pw_change_is_needed=pw_changed_needed,
+            )
+            == expected_state
+        )
+    finally:
+        session.logout()
+
+
+def test_state_transition_invalid_state(
+    user_login: WebTestAppForCMK,
+    auth_request: http.Request,
+) -> None:
+    try:
+        session.logout()
+        assert session.session_info.session_state == "credentials_needed"
+
+        state = session.session_info.session_state = "no_a_real_state"  # type: ignore[assignment] # As we are forcing a value not in the Literal
+
+        with pytest.raises(ValueError):
+            ssm = SessionStateMachine(state)  # type: ignore[arg-type]  # As we are forcing a value not in the Literal
+            ssm.transition(
+                check_if_2fa_auth_is_needed=simplified_auth_check_true,
+                check_if_2fa_setup_is_needed=simplified_auth_check_true,
+                check_if_pw_change_is_needed=simplified_auth_check_true,
+            )
+    finally:
+        session.logout()
