@@ -272,10 +272,12 @@ export class MainMenuService extends ServiceBase {
   }
 
   private async updateBadgeValue(id: NavItemIdEnum, badge: NavItemBadge) {
+    let success = true
     try {
       switch (badge.mode) {
         case 'num-pending-changes': {
           const res = (await this.api.get(badge.url)) as NumberOfPendingChangesResponse
+
           if (!res.number_of_pending_changes) {
             this.resetNavItemBadge(id)
           } else {
@@ -291,6 +293,7 @@ export class MainMenuService extends ServiceBase {
         }
       }
     } catch {
+      success = false
       this.setNavItemBadge(id, {
         content: '!',
         color: 'danger'
@@ -298,9 +301,12 @@ export class MainMenuService extends ServiceBase {
     }
 
     if (badge.interval_in_seconds) {
-      setTimeout(() => {
-        void this.updateBadgeValue(id, badge)
-      }, badge.interval_in_seconds * 1000)
+      setTimeout(
+        () => {
+          void this.updateBadgeValue(id, badge)
+        },
+        badge.interval_in_seconds * (success ? 1000 : 10000)
+      )
     }
   }
 
