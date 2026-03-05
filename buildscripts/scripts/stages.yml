@@ -138,12 +138,6 @@ VARIABLES:
     - NAME: CHANGED_CMK_EC_FILES
       SH: "echo '${CHANGED_FILES_REL}' | grep '^packages/cmk-ec/' || true"
 
-    - NAME: CHANGED_OTEL_FILES
-      SH: "echo '${CHANGED_FILES_REL}' | grep '^non-free/packages/otel-collector/' || true"
-
-    - NAME: CHANGED_GO_MOD
-      SH: "echo '${CHANGED_FILES_REL}' | grep '^go.mod' || true"
-
     - NAME: CHANGED_CMK_RELAY_PROTOCOLS_FILES
       SH: "echo '${CHANGED_FILES_REL}' | grep '^packages/cmk-relay-protocols/' || true"
 
@@ -366,15 +360,6 @@ STAGES:
       BAZEL_LOCKS_AMOUNT: 1
       TEXT_ON_SKIP: "No cmk-agent-receiver files changed"
       RESULT_CHECK_FILE_PATTERN: "results/cmk-agent-receiver.txt"
-
-    - NAME: "Package otel-collector"
-      ONLY_WHEN_NOT_EMPTY: CHANGED_OTEL_FILES, CHANGED_GO_MOD
-      DIR: "non-free/packages/otel-collector"
-      # No entry point for linters
-      COMMAND: "./run --check-format  &> ${RESULTS}/otel-collector.txt"
-      BAZEL_LOCKS_AMOUNT: 1
-      TEXT_ON_SKIP: "No otel-collector files changed"
-      RESULT_CHECK_FILE_PATTERN: "results/otel-collector.txt"
 
     - NAME: "Package cmk-frontend-vue"
       ONLY_WHEN_NOT_EMPTY: CHANGED_REFERENCE_IMAGE,CHANGED_FRONTEND_VUE_FILES,CHANGED_SHARED_TYPING_FILES,CHANGED_JS_DEPENDENCIES
