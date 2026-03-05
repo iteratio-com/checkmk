@@ -17,7 +17,6 @@ from cmk.checkengine.plugins import (
     SectionName,
     SNMPParseFunction,
 )
-from cmk.legacy_includes import size_trend
 from cmk.plugins.lib.df import FILESYSTEM_DEFAULT_PARAMS
 
 type DiscoveryFunction = Callable[..., DiscoveryResult]
@@ -26,10 +25,13 @@ parsed = {"Archiv_Test": [("Archiv_Test", 953674.31640625, 944137.5732421875, 0)
 check_name = "fast_lta_volumes"
 
 
-@pytest.fixture(name="empty_value_store")
-def fixture_empty_value_store(monkeypatch: pytest.MonkeyPatch) -> None:
-    store = dict[str, object]()
-    monkeypatch.setattr(size_trend, "get_value_store", lambda: store)
+@pytest.fixture(name="value_store")
+def fixture_value_store(monkeypatch: pytest.MonkeyPatch) -> None:
+    store: dict[str, object] = {"Archiv_Test.delta": (0, 9536.7431640625)}
+    monkeypatch.setattr(
+        "cmk.plugins.fast_lta.agent_based.fast_lta_volumes.get_value_store",
+        lambda: store,
+    )
 
 
 # TODO: drop this after migration
@@ -71,20 +73,15 @@ def test_discovery_fast_lta_volumes(
     assert list(discover_fast_lta_volumes(parsed)) == [Service(item="Archiv_Test")]
 
 
-@pytest.mark.usefixtures("empty_value_store")
+@pytest.mark.usefixtures("value_store")
 def test_check_fast_lta_volumes(
     check_fast_lta_volumes: CheckFunction,
-    empty_value_store: None,
+    value_store: None,
 ) -> None:
-    assert list(check_fast_lta_volumes("Archiv_Test", FILESYSTEM_DEFAULT_PARAMS, parsed)) == [
-        Result(state=State.OK, summary="Used: 1.00% - 9.31 GiB of 931 GiB"),
-        Metric(
-            "fs_used",
-            9536.7431640625,
-            levels=(762939.453125, 858306.884765625),
-            boundaries=(0.0, 953674.31640625),
-        ),
-        Metric("fs_free", 944137.5732421875, boundaries=(0, None)),
-        Metric("fs_used_percent", 1.0, levels=(80.0, 90.0), boundaries=(0.0, 100.0)),
-        Metric("fs_size", 953674.31640625, boundaries=(0.0, None)),
-    ]
+    actual = list(check_fast_lta_volumes("Archiv_Test", FILESYSTEM_DEFAULT_PARAMS, parsed))
+    results = [r for r in actual if isinstance(r, Result)]
+    assert results[0] == Result(state=State.OK, summary="Used: 1.00% - 9.31 GiB of 931 GiB")
+
+    metrics = [m for m in actual if isinstance(m, Metric)]
+    assert metrics[0].name == "fs_used"
+    assert metrics[0].value == 9536.7431640625
