@@ -108,3 +108,23 @@ def test_check_appliance_uplinks_zero_usage(params: CheckParams) -> None:
     }
 
     assert expected & value == expected
+
+
+def test_check_appliance_uplinks_bandwidth_works_with_ready_state(params: CheckParams) -> None:
+    uplinks = _UplinkStatusesFactory.build(
+        usageByInterface={"wan1": {"received": 0, "sent": 0}},
+        uplinks=[{"interface": "wan1", "status": "ready"}],
+    )
+    string_table = [[f"[{json.dumps(uplinks)}]"]]
+    section = parse_appliance_uplinks(string_table)
+    assert section
+
+    value = set(check_appliance_uplinks("wan1", params, section))
+    expected = {
+        Result(state=State.OK, summary="In: 0.00 Bit/s"),
+        Metric("if_in_bps", 0.0),
+        Result(state=State.OK, summary="Out: 0.00 Bit/s"),
+        Metric("if_out_bps", 0.0),
+    }
+
+    assert expected & value == expected
