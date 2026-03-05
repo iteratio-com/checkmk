@@ -16,6 +16,7 @@ import sys
 import time
 import traceback
 from collections.abc import Iterator, Sequence
+from contextlib import suppress
 from functools import cache
 from pathlib import Path
 from typing import Literal, NamedTuple
@@ -50,6 +51,7 @@ from .meisterwerk import (
     rewrite_werk,
     user_understanding_of_werk,
 )
+from .models import EditionV2, EditionV3
 from .parse import WerkV3ParseResult
 from .schemas.requests import Werk as WerkRequest
 from .schemas.werk import Stash, Werk, WerkId
@@ -554,7 +556,11 @@ def main_list(args: argparse.Namespace, fmt: str) -> None:
     for werk in werks:
         skip = False
         for tp, entries in filters.items():
-            if werk.content.metadata[tp] not in entries:
+            value = werk.content.metadata[tp]
+            if tp == "edition":
+                with suppress(ValueError):
+                    value = EditionV3.from_v2(EditionV2(value)).value
+            if value not in entries:
                 skip = True
                 break
         if not skip:
