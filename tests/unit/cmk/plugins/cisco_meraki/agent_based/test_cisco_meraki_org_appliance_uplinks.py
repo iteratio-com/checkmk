@@ -23,8 +23,13 @@ class _UplinkStatusesFactory(TypedDictFactory[UplinkStatuses]):
     __check_model__ = False
 
     @classmethod
-    def uplinks(cls) -> list[dict[str, object]]:
-        return [
+    def lastReportedAt(cls) -> str:
+        return datetime.datetime.now().strftime("%Y-%m-%d")
+
+
+def test_discover_appliance_uplinks() -> None:
+    uplinks = _UplinkStatusesFactory.build(
+        uplinks=[
             {
                 "interface": "wan1",
                 "status": "active",
@@ -36,14 +41,7 @@ class _UplinkStatusesFactory(TypedDictFactory[UplinkStatuses]):
                 "ipAssignedBy": "static",
             }
         ]
-
-    @classmethod
-    def lastReportedAt(cls) -> str:
-        return datetime.datetime.now().strftime("%Y-%m-%d")
-
-
-def test_discover_appliance_uplinks() -> None:
-    uplinks = _UplinkStatusesFactory.build()
+    )
     string_table = [[f"[{json.dumps(uplinks)}]"]]
     section = parse_appliance_uplinks(string_table)
     assert section
@@ -67,6 +65,18 @@ def test_check_appliance_uplinks(params: CheckParams) -> None:
         networkName="main",
         highAvailability={"enabled": "true", "role": "primary"},
         usageByInterface={"wan1": {"received": 200, "sent": 100}},
+        uplinks=[
+            {
+                "interface": "wan1",
+                "status": "active",
+                "ip": "1.2.3.4",
+                "gateway": "1.2.3.5",
+                "publicIp": "192.0.2.2",
+                "primaryDns": "8.8.8.8",
+                "secondaryDns": "8.8.4.4",
+                "ipAssignedBy": "static",
+            }
+        ],
     )
     string_table = [[f"[{json.dumps(uplinks)}]"]]
     section = parse_appliance_uplinks(string_table)
@@ -94,7 +104,21 @@ def test_check_appliance_uplinks(params: CheckParams) -> None:
 
 
 def test_check_appliance_uplinks_zero_usage(params: CheckParams) -> None:
-    uplinks = _UplinkStatusesFactory.build(usageByInterface={"wan1": {"received": 0, "sent": 0}})
+    uplinks = _UplinkStatusesFactory.build(
+        usageByInterface={"wan1": {"received": 0, "sent": 0}},
+        uplinks=[
+            {
+                "interface": "wan1",
+                "status": "active",
+                "ip": "1.2.3.4",
+                "gateway": "1.2.3.5",
+                "publicIp": "192.0.2.2",
+                "primaryDns": "8.8.8.8",
+                "secondaryDns": "8.8.4.4",
+                "ipAssignedBy": "static",
+            }
+        ],
+    )
     string_table = [[f"[{json.dumps(uplinks)}]"]]
     section = parse_appliance_uplinks(string_table)
     assert section
