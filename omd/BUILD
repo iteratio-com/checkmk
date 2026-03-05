@@ -59,7 +59,7 @@ edition_deps = select({
         "//omd/non-free/packages/cmc:pkg_tar",
         "//omd/non-free/packages/cmk-dcd:pkg_tar",
         "//omd/non-free/packages/cmk-liveproxyd:pkg_tar",
-        "//omd/non-free/packages/legal-docs:enterprise_pkg_tar",
+        "//omd/non-free/packages/legal-docs:pro_pkg_tar",
         "//omd/non-free/packages/licensing:pkg_tar",
         "//omd/non-free/packages/reporting:pkg_tar",
         "//omd/non-free/packages/robotmk:pkg_tar",
