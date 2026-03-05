@@ -3,21 +3,16 @@
 # This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 # conditions defined in the file COPYING, which is part of this source code package.
 
-# mypy: disable-error-code="misc"
-# mypy: disable-error-code="no-untyped-def"
-
-from collections.abc import Callable
-
 import pytest
 
-from cmk.agent_based.v2 import DiscoveryResult, Metric, Result, Service, State
-from cmk.checkengine.plugins import CheckFunction, CheckPluginName
+from cmk.agent_based.v2 import Metric, Result, Service, State
+from cmk.plugins.fast_lta.agent_based.fast_lta_silent_cubes import (
+    check_fast_lta_silent_cubes_capacity,
+    discover_fast_lta_silent_cubes_capacity,
+)
 from cmk.plugins.lib.df import FILESYSTEM_DEFAULT_PARAMS
 
-type DiscoveryFunction = Callable[..., DiscoveryResult]
-
 info = [["8001591181312", "3875508482048"]]
-check_name = "fast_lta_silent_cubes_capacity"
 
 
 @pytest.fixture(name="value_store")
@@ -29,35 +24,12 @@ def fixture_value_store(monkeypatch: pytest.MonkeyPatch) -> None:
     )
 
 
-# TODO: drop this after migration
-@pytest.fixture(scope="module", name="plugin")
-def _get_plugin(agent_based_plugins):
-    return agent_based_plugins.check_plugins[CheckPluginName(check_name)]
-
-
-# TODO: drop this after migration
-@pytest.fixture(scope="module", name=f"discover_{check_name}")
-def _get_discovery_function(plugin):
-    return lambda s: plugin.discovery_function(section=s)
-
-
-# TODO: drop this after migration
-@pytest.fixture(scope="module", name=f"check_{check_name}")
-def _get_check_function(plugin):
-    return lambda i, p, s: plugin.check_function(item=i, params=p, section=s)
-
-
-def test_discovery_fast_lta_silent_cube_capacity(
-    discover_fast_lta_silent_cubes_capacity: DiscoveryFunction,
-) -> None:
+def test_discovery_fast_lta_silent_cube_capacity() -> None:
     assert list(discover_fast_lta_silent_cubes_capacity(info)) == [Service(item="Total")]
 
 
 @pytest.mark.usefixtures("value_store")
-def test_check_fast_lta_silent_cube_capacity(
-    check_fast_lta_silent_cubes_capacity: CheckFunction,
-    value_store: None,
-) -> None:
+def test_check_fast_lta_silent_cube_capacity() -> None:
     actual_check_results = list(
         check_fast_lta_silent_cubes_capacity("Total", FILESYSTEM_DEFAULT_PARAMS, info)
     )

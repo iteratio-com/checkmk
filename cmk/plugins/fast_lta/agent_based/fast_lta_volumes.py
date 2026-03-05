@@ -29,11 +29,13 @@ def parse_fast_lta_volumes(string_table: StringTable) -> Section:
     parsed: dict[str, list[FSBlock]] = {}
     for volname, volquota, volused in string_table:
         try:
-            size_mb = int(volquota) / 1048576.0
-            avail_mb = (int(volquota) - int(volused)) / 1048576.0
+            quota_bytes = int(volquota)
+            used_bytes = int(volused)
         except ValueError:
             continue
-        parsed.setdefault(volname, []).append((volname, size_mb, avail_mb, 0))
+        parsed.setdefault(volname, []).append(
+            (volname, quota_bytes / 1048576.0, (quota_bytes - used_bytes) / 1048576.0, 0)
+        )
 
     return parsed
 

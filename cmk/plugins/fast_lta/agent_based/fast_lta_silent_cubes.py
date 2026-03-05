@@ -37,9 +37,9 @@ def check_fast_lta_silent_cubes_capacity(
 ) -> CheckResult:
     fslist: list[FSBlock] = []
     for total, used in section:
-        size_mb = int(total) / 1048576.0
-        avail_mb = (int(total) - int(used)) / 1048576.0
-        fslist.append((item, size_mb, avail_mb, 0))
+        total_bytes = int(total)
+        used_bytes = int(used)
+        fslist.append((item, total_bytes / 1048576.0, (total_bytes - used_bytes) / 1048576.0, 0))
 
     yield from df_check_filesystem_list(
         value_store=get_value_store(),
