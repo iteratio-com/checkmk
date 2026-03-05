@@ -7,33 +7,21 @@
 # mypy: disable-error-code="no-untyped-def"
 
 import datetime
-from collections.abc import Callable
 from typing import Final
 from zoneinfo import ZoneInfo
 
 import pytest
 import time_machine
 
-from cmk.agent_based.v2 import Attributes, CheckResult, DiscoveryResult, Result, Service, State
-from cmk.checkengine.plugins import CheckPluginName
+from cmk.agent_based.v2 import Attributes, Result, Service, State
 from cmk.plugins.suseconnect.agent_based.agent_section import parse, Section
+from cmk.plugins.suseconnect.agent_based.check_plugin import (
+    check as check_suseconnect,
+)
+from cmk.plugins.suseconnect.agent_based.check_plugin import (
+    discover as discover_suseconnect,
+)
 from cmk.plugins.suseconnect.agent_based.inventory import inventory
-
-
-@pytest.fixture(name="plugin", scope="module")
-def _get_plugin(agent_based_plugins):
-    return agent_based_plugins.check_plugins[CheckPluginName("suseconnect")]
-
-
-@pytest.fixture(name="discover_suseconnect", scope="module")
-def _get_disvovery_function(plugin):
-    return lambda section: plugin.discovery_function(section=section)
-
-
-@pytest.fixture(name="check_suseconnect", scope="module")
-def _get_check_function(plugin):
-    return lambda params, section: plugin.check_function(params=params, section=section)
-
 
 STRING_TABLE_1: Final = [
     ["identifier", " SLES"],
@@ -53,15 +41,11 @@ def _get_section_1() -> Section:
     return parse(STRING_TABLE_1)
 
 
-def test_discovery(
-    discover_suseconnect: Callable[[Section], DiscoveryResult], section_1: Section
-) -> None:
+def test_discovery(section_1: Section) -> None:
     assert list(discover_suseconnect(section_1)) == [Service()]
 
 
-def test_check(
-    check_suseconnect: Callable[[object, Section], CheckResult], section_1: Section
-) -> None:
+def test_check(section_1: Section) -> None:
     with time_machine.travel(datetime.datetime(2020, 7, 15, tzinfo=ZoneInfo("UTC"))):
         assert list(
             check_suseconnect(
@@ -83,9 +67,7 @@ def test_check(
         ]
 
 
-def test_agent_output_parsable(
-    check_suseconnect: Callable[[object, Section], DiscoveryResult],
-) -> None:
+def test_agent_output_parsable() -> None:
     with time_machine.travel(datetime.datetime(2020, 7, 15, tzinfo=ZoneInfo("UTC"))):
         assert list(
             check_suseconnect(
