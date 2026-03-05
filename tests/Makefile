@@ -50,6 +50,7 @@ SYSTEM_TESTS := \
     test-gui-e2e-cloud \
     test-extension-compatibility
 PYTEST_SYSTEM_TEST_ARGS := \
+    $(TEST_FILTER) \
     -p "no:cov" \
     --log-cli-level=INFO \
     --log-cli-format="%(asctime)s.%(msecs)03d %(levelname)s %(message)s"
