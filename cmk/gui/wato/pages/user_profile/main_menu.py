@@ -43,6 +43,9 @@ def register(
     page_registry.register(PageEndpoint("ajax_ui_theme", ModeAjaxCycleThemes()))
     page_registry.register(PageEndpoint("ajax_sidebar_position", ModeAjaxCycleSidebarPosition()))
     page_registry.register(PageEndpoint("ajax_set_dashboard_start_url", ModeAjaxSetStartURL()))
+    page_registry.register(
+        PageEndpoint("ajax_set_change_action_full_page", ModeAjaxChangesActionFullPage())
+    )
 
     main_menu_registry.register(
         MainMenuItem(
@@ -232,6 +235,17 @@ class ModeAjaxCycleThemes(AjaxPage):
             new_theme = themes[theme_index + 1]
 
         set_user_attribute("ui_theme", new_theme)
+        return {}
+
+
+class ModeAjaxChangesActionFullPage(AjaxPage):
+    """AJAX handler for quick access option 'Changes Action" in changes menu"""
+
+    @override
+    def page(self, ctx: PageContext) -> PageResult:
+        check_csrf_token(ctx.request.get_json()["_csrf_token"])
+
+        set_user_attribute("navbar_changes_action", "full_page")
         return {}
 
 

@@ -132,6 +132,7 @@ class UserData:
     nav_hide_icons_title: Literal["hide"] | None | _MissingValueSentinel
     icons_per_item: Literal["entry"] | None | _MissingValueSentinel
     ui_sidebar_position: Literal["left"] | None  # I think None means right, which is the default?
+    navbar_changes_action: Literal["full_page"] | None
     ui_theme: Literal["modern-dark", "facelift"] | None
     # contextual_help_icon: NotRequired[Literal["hide_icon"] | None]
 
@@ -185,6 +186,7 @@ class UserData:
             # UI
             ("temperature_unit", self.temperature_unit),
             ("ui_sidebar_position", self.ui_sidebar_position),
+            ("navbar_changes_action", self.navbar_changes_action),
             ("ui_theme", self.ui_theme),
             ("start_url", self.start_url),
             ("idle_timeout", self.idle_timeout),
@@ -287,6 +289,7 @@ class UserData:
             temperature_unit=userspec.get("temperature_unit"),
             two_factor_credentials=userspec.get("two_factor_credentials"),
             ui_sidebar_position=userspec.get("ui_sidebar_position"),
+            navbar_changes_action=userspec.get("navbar_changes_action"),
             ui_theme=userspec.get("ui_theme"),
             created_on_version=userspec.get("created_on_version"),
             user_id=user_id,

@@ -13,6 +13,7 @@ from cmk.gui.i18n import _l
 from cmk.gui.logged_in import LoggedInUser, user
 from cmk.gui.main_menu import MainMenuRegistry
 from cmk.gui.main_menu_types import ConfigurableMainMenuItem, MainMenuItem, MainMenuLinkItem
+from cmk.gui.userdb.store import load_custom_attr
 from cmk.gui.utils.urls import makeuri, makeuri_contextless
 from cmk.shared_typing.changes import ChangesProps
 from cmk.shared_typing.main_menu import (
@@ -62,10 +63,19 @@ def get_activate_changes_full_page_url(request: Request) -> str:
     )
 
 
+def _get_navbar_changes_action(user: LoggedInUser) -> str | None:
+    assert user.id is not None
+    return load_custom_attr(
+        user_id=user.id,
+        key="navbar_changes_action",
+        parser=lambda x: None if x == "None" else x,
+    )
+
+
 def get_activate_changes_nav_item_instance(
     item: ConfigurableMainMenuItem, user: LoggedInUser
 ) -> MainMenuItem | MainMenuLinkItem:
-    if user.attributes.get("navbar_changes_action") == "full_page":
+    if _get_navbar_changes_action(user) == "full_page":
         return MainMenuLinkItem(
             id=item.id,
             title=item.title,
