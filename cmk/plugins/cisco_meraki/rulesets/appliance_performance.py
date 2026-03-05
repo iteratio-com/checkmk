@@ -22,7 +22,7 @@ def _parameter_form() -> Dictionary:
         elements={
             "levels_upper": DictElement(
                 parameter_form=SimpleLevels(
-                    title=Title("Performance utilization"),
+                    title=Title("Appliance utilization"),
                     level_direction=LevelDirection.UPPER,
                     form_spec_template=Integer(),
                     prefill_fixed_levels=DefaultValue(value=(60, 80)),
