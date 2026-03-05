@@ -24,7 +24,6 @@ from typing import Literal, NamedTuple
 from . import load_werk as cmk_werks_load_werk
 from . import parse_werk
 from .config import Config, load_config, try_load_current_version_from_defines_make
-from .convert import werkv1_metadata_to_markdown_werk_metadata
 from .format import format_as_markdown_werk
 from .in_out_elements import (
     ask_user_if_not_provided,
@@ -768,7 +767,7 @@ def _meisterwerk_for_new_werk(werk_path: Path, werk_id: WerkId, metadata: dict[s
                     id=werk_id,
                     path=werk_path,
                     content=WerkV3ParseResult(
-                        metadata=werkv1_metadata_to_markdown_werk_metadata(metadata),
+                        metadata=metadata,
                         description=rewritten_werk.rewritten_text,
                     ),
                 )
