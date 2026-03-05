@@ -39,7 +39,7 @@ from cmk.gui.utils.htpasswd import Htpasswd
 from cmk.gui.utils.security_log_events import AuthenticationFailureEvent
 from cmk.gui.utils.urls import requested_file_name
 from cmk.utils.local_secrets import SiteInternalSecret
-from cmk.utils.log.security_event import log_security_event
+from cmk.utils.security_event import log_security_event
 
 auth_logger = logger.getChild("auth")
 

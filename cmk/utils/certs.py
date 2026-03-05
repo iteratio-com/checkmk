@@ -28,7 +28,7 @@ from cmk.crypto.certificate import (
 )
 from cmk.crypto.keys import is_supported_private_key_type, PrivateKey
 from cmk.crypto.x509 import SAN, SubjectAlternativeNames
-from cmk.utils.log.security_event import log_security_event, SecurityEvent
+from cmk.utils.security_event import log_security_event, SecurityEvent
 
 CertificateType = Literal["site", "site-ca", "agent-ca", "broker-ca", "broker"]
 
@@ -571,7 +571,10 @@ class CustomerBrokerCA:
             common_name=common_name,
             organization=organization,
             subject_alternative_names=SubjectAlternativeNames(
-                [SAN.checkmk_site(SiteId(site_name)), SAN.customer_id(customer)]
+                [
+                    SAN.checkmk_site(SiteId(site_name)),
+                    SAN.customer_id(customer),
+                ]
             ),
             expiry=expires,
             key_size=key_size,

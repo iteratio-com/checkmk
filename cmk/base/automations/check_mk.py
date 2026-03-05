@@ -219,7 +219,6 @@ from cmk.utils.everythingtype import EVERYTHING
 from cmk.utils.ip_lookup import make_lookup_mgmt_board_ip_address
 from cmk.utils.labels import DiscoveredHostLabelsStore, HostLabel, LabelManager, Labels
 from cmk.utils.log import console
-from cmk.utils.log.security_event import InputValidationFailureEvent, log_security_event
 from cmk.utils.macros import replace_macros_in_str
 from cmk.utils.password_store import make_staged_passwords_lookup
 from cmk.utils.paths import (
@@ -246,6 +245,7 @@ from cmk.utils.rulesets.ruleset_matcher import (
     RulesetMatcher,
     RulesetName,
 )
+from cmk.utils.security_event import InputValidationFailureEvent, log_security_event
 from cmk.utils.servicename import Item, ServiceName
 
 HistoryFile = str

@@ -39,9 +39,9 @@ from cmk.gui.watolib.user_scripts import (
 )
 from cmk.gui.watolib.utils import multisite_dir, wato_root_dir
 from cmk.utils import paths
-from cmk.utils.log.security_event import log_security_event
 from cmk.utils.notify_types import EventRule
 from cmk.utils.object_diff import make_diff_text
+from cmk.utils.security_event import log_security_event
 
 _UserAssociatedSitesFn: TypeAlias = Callable[[UserSpec], Sequence[SiteId] | None]
 

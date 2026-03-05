@@ -46,7 +46,7 @@ from cmk.gui.valuespec import (
 )
 from cmk.utils.certs import CertManagementEvent
 from cmk.utils.keypair_store import Key, KeyAlreadyExists, KeyId, KeypairMap, KeypairStore
-from cmk.utils.log.security_event import log_security_event
+from cmk.utils.security_event import log_security_event
 
 
 class PageKeyManagement:

@@ -46,7 +46,7 @@ from cmk.utils.certs import (
     CertManagementEvent,
     SiteCA,
 )
-from cmk.utils.log.security_event import log_security_event
+from cmk.utils.security_event import log_security_event
 
 
 @contextmanager

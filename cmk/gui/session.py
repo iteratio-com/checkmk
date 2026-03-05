@@ -43,7 +43,7 @@ from cmk.gui.utils.flashed_messages import MsgType
 from cmk.gui.utils.roles import UserPermissions
 from cmk.gui.utils.security_log_events import AuthenticationSuccessEvent
 from cmk.gui.wsgi.utils import dict_property
-from cmk.utils.log.security_event import log_security_event
+from cmk.utils.security_event import log_security_event
 
 tracer = trace.get_tracer()
 

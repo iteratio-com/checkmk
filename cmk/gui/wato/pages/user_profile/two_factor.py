@@ -111,7 +111,7 @@ from cmk.gui.utils.user_security_message import SecurityNotificationEvent, send_
 from cmk.gui.valuespec import Dictionary, FixedValue, TextInput
 from cmk.gui.watolib.mode import redirect
 from cmk.utils.jsontype import JsonSerializable
-from cmk.utils.log.security_event import log_security_event
+from cmk.utils.security_event import log_security_event
 
 from .page_menu import page_menu_dropdown_user_related
 from .verify_requirements import verify_requirements

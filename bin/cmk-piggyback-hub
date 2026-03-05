@@ -11,7 +11,7 @@ from cmk.ccc.crash_reporting import ABCCrashReport, CrashReportStore, make_crash
 from cmk.ccc.hostaddress import HostNameValidationError
 from cmk.ccc.version import get_general_version_infos
 from cmk.piggyback.hub import main
-from cmk.utils.log.security_event import InputValidationFailureEvent, log_security_event
+from cmk.utils.security_event import InputValidationFailureEvent, log_security_event
 from cmk.utils.paths import omd_root
 
 

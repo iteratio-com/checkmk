@@ -37,7 +37,7 @@ from cmk.gui.watolib.users import (
     get_enabled_remote_sites_for_logged_in_user,
     verify_password_policy,
 )
-from cmk.utils.log.security_event import log_security_event
+from cmk.utils.security_event import log_security_event
 
 from .page_menu import user_profile_page_menu
 from .verify_requirements import verify_requirements

@@ -16,7 +16,7 @@ from cmk.gui.config import Config
 from cmk.gui.http import Request
 from cmk.gui.watolib.automation_commands import AutomationCommand, AutomationCommandRegistry
 from cmk.utils.certs import cert_dir, CertManagementEvent, SiteCA
-from cmk.utils.log.security_event import log_security_event
+from cmk.utils.security_event import log_security_event
 
 SITE_CA_CERTIFICATE_DIRECTORY = cert_dir(cmk.utils.paths.omd_root)
 SITE_CA_CERTIFICATE_TMP_PATH = SITE_CA_CERTIFICATE_DIRECTORY / "temp_certificate"

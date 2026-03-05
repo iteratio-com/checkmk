@@ -14,7 +14,7 @@ from pytest import CaptureFixture
 
 from cmk.utils import log
 from cmk.utils.jsontype import JsonSerializable
-from cmk.utils.log.security_event import log_security_event, SecurityEvent
+from cmk.utils.security_event import log_security_event, SecurityEvent
 
 
 @contextlib.contextmanager

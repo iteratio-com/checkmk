@@ -21,7 +21,7 @@ from cmk.gui.log import logger as gui_logger
 from cmk.gui.type_defs import UserSpec
 from cmk.gui.utils.htpasswd import Htpasswd
 from cmk.gui.utils.security_log_events import UserManagementEvent
-from cmk.utils.log.security_event import log_security_event
+from cmk.utils.security_event import log_security_event
 
 from ._connections import active_connections, get_connection
 from ._user_attribute import UserAttribute

@@ -22,7 +22,7 @@ from cmk.gui.token_auth._store import (
     TokenRevoked,
 )
 from cmk.gui.utils.security_log_events import AuthenticationFailureEvent
-from cmk.utils.log.security_event import log_security_event
+from cmk.utils.security_event import log_security_event
 
 
 class TokenAuthenticatedPage:
