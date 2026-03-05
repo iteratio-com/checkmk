@@ -152,7 +152,7 @@ boolean download_hot_cache(Map args) {
     try {
         // average runtime of this part is up to 60sec when transfering a 11GB linter archive
         timeout(time: 120, unit: 'SECONDS') {
-            sh("""
+            sh(label: "download_hot_cache", script: """
                 mkdir -p ${args.download_dest}
                 cp \
                     ${env.PERSISTENT_K8S_VOLUME_PATH}/${args.file_pattern}{${hashfile_extension},} \
@@ -177,7 +177,7 @@ boolean download_hot_cache(Map args) {
     try {
         println("hot cache: Decompressing ${args.file_pattern} in ${args.download_dest}");
 
-        sh("""
+        sh(label: "decompress_hot_cache", script: """
             cd ${args.download_dest}
             time mbuffer -q -P 80 -m 10G -i ${args.file_pattern} | lz4 -dc | tar -xf - 2>/dev/null
 
