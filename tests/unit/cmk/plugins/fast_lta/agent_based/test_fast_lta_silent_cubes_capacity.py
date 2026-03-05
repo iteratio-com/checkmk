@@ -24,7 +24,7 @@ check_name = "fast_lta_silent_cubes_capacity"
 def fixture_value_store(monkeypatch: pytest.MonkeyPatch) -> None:
     store: dict[str, object] = {"Total.delta": (0, 3695972.90234375)}
     monkeypatch.setattr(
-        "cmk.legacy_checks.fast_lta_silent_cubes.get_value_store",
+        "cmk.plugins.fast_lta.agent_based.fast_lta_silent_cubes.get_value_store",
         lambda: store,
     )
 
