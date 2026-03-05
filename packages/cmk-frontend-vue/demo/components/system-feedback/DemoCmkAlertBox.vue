@@ -67,6 +67,7 @@ const panelConfig = {
     initialState: 'medium' as const
   },
   heading: { type: 'string', title: 'Heading', initialState: 'Alert Heading' },
+  dismissable: { type: 'boolean', title: 'Dismissable', initialState: false },
   autoDismiss: { type: 'boolean', title: 'Auto Dismiss (6s)', initialState: false }
 } satisfies PanelConfig
 
@@ -84,6 +85,7 @@ const propState = ref(createPanelState(panelConfig))
         :size="propState.size"
         :heading="propState.heading"
         :auto-dismiss="propState.autoDismiss"
+        :dismissible="propState.dismissable"
       >
         This is a demonstration of the alert box content. You can put any long text or HTML elements
         in here to showcase wrapping and layout.
