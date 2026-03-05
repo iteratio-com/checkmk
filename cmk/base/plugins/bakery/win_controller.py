@@ -16,6 +16,10 @@ def get_win_controller_windows_config(conf: dict[str, Any]) -> WindowsConfigGene
         path=_path_to("check"), content=conf.get("check_controller_access", True)
     )
     yield WindowsConfigEntry(path=_path_to("force_legacy"), content=conf.get("force_legacy", False))
+    if (channel_conf := conf.get("agent_channel")) is not None:
+        kind, value = channel_conf
+        channel_str = "mailslot" if kind == "mailslot" else f"localhost:{value}"
+        yield WindowsConfigEntry(path=_path_to("agent_channel"), content=channel_str)
 
 
 register.bakery_plugin(
