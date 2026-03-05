@@ -13,8 +13,12 @@ import pytest
 import time_machine
 
 from cmk.agent_based.v2 import IgnoreResultsError, Metric, Result, Service, State, StringTable
-from cmk.checkengine.plugins import AgentBasedPlugins, CheckPluginName, SectionName
-from cmk.plugins.collection.agent_based import sap_hana_diskusage
+from cmk.plugins.collection.agent_based import sap_hana_diskusage as sap_hana_diskusage_module
+from cmk.plugins.collection.agent_based.sap_hana_diskusage import (
+    check_sap_hana_diskusage,
+    discovery_sap_hana_diskusage,
+    parse_sap_hana_diskusage,
+)
 from cmk.plugins.lib.df import FILESYSTEM_DEFAULT_PARAMS
 
 NOW_SIMULATED = datetime.fromisoformat("1988-06-08 17:00:00.000000Z")
@@ -54,12 +58,10 @@ LAST_TIME_EPOCH = (
     ],
 )
 def test_parse_sap_hana_diskusage(
-    agent_based_plugins: AgentBasedPlugins,
     info: StringTable,
     expected_result: Mapping[str, Mapping[str, float]],
 ) -> None:
-    section_plugin = agent_based_plugins.agent_sections[SectionName("sap_hana_diskusage")]
-    assert section_plugin.parse_function(info) == expected_result
+    assert parse_sap_hana_diskusage(info) == expected_result
 
 
 @pytest.mark.parametrize(
@@ -81,13 +83,10 @@ def test_parse_sap_hana_diskusage(
     ],
 )
 def test_inventory_sap_hana_diskusage(
-    agent_based_plugins: AgentBasedPlugins, info: StringTable, expected_result: Sequence[Service]
+    info: StringTable, expected_result: Sequence[Service]
 ) -> None:
-    section = agent_based_plugins.agent_sections[SectionName("sap_hana_diskusage")].parse_function(
-        info
-    )
-    plugin = agent_based_plugins.check_plugins[CheckPluginName("sap_hana_diskusage")]
-    assert list(plugin.discovery_function(section)) == expected_result
+    section = parse_sap_hana_diskusage(info)
+    assert list(discovery_sap_hana_diskusage(section)) == expected_result
 
 
 @pytest.fixture(name="value_store_patch")
@@ -96,7 +95,7 @@ def value_store_fixture(monkeypatch):
         "HXE 90 HXE - Log.delta": (2000000, 30000000),
         "HXE 90 HXE - Log.trend": (LAST_TIME_EPOCH - 86400, LAST_TIME_EPOCH, 4625.8),
     }
-    monkeypatch.setattr(sap_hana_diskusage, "get_value_store", lambda: value_store_patched)
+    monkeypatch.setattr(sap_hana_diskusage_module, "get_value_store", lambda: value_store_patched)
     yield value_store_patched
 
 
@@ -197,16 +196,12 @@ def value_store_fixture(monkeypatch):
 )
 @time_machine.travel(NOW_SIMULATED)
 def test_check_sap_hana_diskusage(
-    agent_based_plugins: AgentBasedPlugins,
     item: str,
     info: StringTable,
     expected_result: Sequence[Result | Metric],
 ) -> None:
-    section = agent_based_plugins.agent_sections[SectionName("sap_hana_diskusage")].parse_function(
-        info
-    )
-    plugin = agent_based_plugins.check_plugins[CheckPluginName("sap_hana_diskusage")]
-    check_results = list(plugin.check_function(item, FILESYSTEM_DEFAULT_PARAMS, section))
+    section = parse_sap_hana_diskusage(info)
+    check_results = list(check_sap_hana_diskusage(item, FILESYSTEM_DEFAULT_PARAMS, section))
 
     assert [r for r in check_results if isinstance(r, Result)] == [
         r for r in expected_result if isinstance(r, Result)
@@ -233,12 +228,7 @@ def test_check_sap_hana_diskusage(
         ),
     ],
 )
-def test_check_sap_hana_diskusage_stale(
-    agent_based_plugins: AgentBasedPlugins, item: str, info: StringTable
-) -> None:
-    section = agent_based_plugins.agent_sections[SectionName("sap_hana_diskusage")].parse_function(
-        info
-    )
-    plugin = agent_based_plugins.check_plugins[CheckPluginName("sap_hana_diskusage")]
+def test_check_sap_hana_diskusage_stale(item: str, info: StringTable) -> None:
+    section = parse_sap_hana_diskusage(info)
     with pytest.raises(IgnoreResultsError):
-        list(plugin.check_function(item, {}, section))
+        list(check_sap_hana_diskusage(item, {}, section))

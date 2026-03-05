@@ -7,7 +7,10 @@
 import pytest
 
 from cmk.agent_based.v2 import Result, Service, State
-from cmk.checkengine.plugins import AgentBasedPlugins, CheckPlugin, CheckPluginName
+from cmk.plugins.scaleio.agent_based.scaleio_devices import (
+    check_scaleio_devices,
+    discover_scaleio_devices,
+)
 
 _SECTION = {
     "devices": [
@@ -36,13 +39,8 @@ _SECTION = {
 }
 
 
-@pytest.fixture(name="scaleio_devices")
-def fixture_scaleio_devices(agent_based_plugins: AgentBasedPlugins) -> CheckPlugin:
-    return agent_based_plugins.check_plugins[CheckPluginName("scaleio_devices")]
-
-
-def test_discover_scaleio_devices(scaleio_devices: CheckPlugin) -> None:
-    assert list(scaleio_devices.discovery_function(_SECTION)) == [
+def test_discover_scaleio_devices() -> None:
+    assert list(discover_scaleio_devices(_SECTION)) == [
         Service(item="devices"),
     ]
 
@@ -71,13 +69,12 @@ def test_discover_scaleio_devices(scaleio_devices: CheckPlugin) -> None:
     ],
 )
 def test_check_scaleio_devices(
-    scaleio_devices: CheckPlugin,
     item: str,
     expected_result: list[Result],
 ) -> None:
     assert (
         list(
-            scaleio_devices.check_function(
+            check_scaleio_devices(
                 item=item,
                 section=_SECTION,
             )
