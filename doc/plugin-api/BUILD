@@ -1,4 +1,5 @@
 load("@aspect_rules_py//py:defs.bzl", "py_binary")
+load("@bazel_skylib//rules:build_test.bzl", "build_test")
 load("@cmk_requirements//:requirements.bzl", "requirement")
 load("@rules_pkg//pkg:tar.bzl", "pkg_tar")
 load("@rules_sphinx//sphinx:defs.bzl", "sphinx_html")
@@ -41,14 +42,37 @@ py_binary(
     ],
 )
 
+filegroup(
+    name = "srcs",
+    srcs = glob(
+        include = ["source/**/*.rst"],
+        exclude = ["**/nonfree/**"],
+    ),
+)
+
+filegroup(
+    name = "srcs_nonfree",
+    srcs = glob(
+        include = ["source/**/nonfree/**/*.rst"],
+        allow_empty = True,
+    ),
+)
+
 sphinx_html(
     name = "plugin-api",
-    srcs =
-        glob(["source/**/*"]),
+    srcs = glob(["source/_static/**/*"]) + [":srcs"] + select({
+        "@cmk//edition:community": [],
+        "//conditions:default": [":srcs_nonfree"],
+    }),
     args = ["--fail-on-warning"],
     config = "source/conf.py",
     index = "source/index.rst",
     sphinx_build = ":sphinx_build",
+)
+
+build_test(
+    name = "build_test",
+    targets = [":plugin-api"],
 )
 
 pkg_tar(
