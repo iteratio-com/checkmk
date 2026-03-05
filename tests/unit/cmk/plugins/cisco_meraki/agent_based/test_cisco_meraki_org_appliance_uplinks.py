@@ -28,20 +28,7 @@ class _UplinkStatusesFactory(TypedDictFactory[UplinkStatuses]):
 
 
 def test_discover_appliance_uplinks() -> None:
-    uplinks = _UplinkStatusesFactory.build(
-        uplinks=[
-            {
-                "interface": "wan1",
-                "status": "active",
-                "ip": "1.2.3.4",
-                "gateway": "1.2.3.5",
-                "publicIp": "192.0.2.2",
-                "primaryDns": "8.8.8.8",
-                "secondaryDns": "8.8.4.4",
-                "ipAssignedBy": "static",
-            }
-        ]
-    )
+    uplinks = _UplinkStatusesFactory.build(uplinks=[{"interface": "wan1"}])
     string_table = [[f"[{json.dumps(uplinks)}]"]]
     section = parse_appliance_uplinks(string_table)
     assert section
@@ -106,18 +93,7 @@ def test_check_appliance_uplinks(params: CheckParams) -> None:
 def test_check_appliance_uplinks_zero_usage(params: CheckParams) -> None:
     uplinks = _UplinkStatusesFactory.build(
         usageByInterface={"wan1": {"received": 0, "sent": 0}},
-        uplinks=[
-            {
-                "interface": "wan1",
-                "status": "active",
-                "ip": "1.2.3.4",
-                "gateway": "1.2.3.5",
-                "publicIp": "192.0.2.2",
-                "primaryDns": "8.8.8.8",
-                "secondaryDns": "8.8.4.4",
-                "ipAssignedBy": "static",
-            }
-        ],
+        uplinks=[{"interface": "wan1", "status": "active"}],
     )
     string_table = [[f"[{json.dumps(uplinks)}]"]]
     section = parse_appliance_uplinks(string_table)
