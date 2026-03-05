@@ -151,7 +151,7 @@ void clean_caches() {
 boolean download_hot_cache(Map args) {
     try {
         // average runtime of this part is up to 60sec when transfering a 11GB linter archive
-        timeout(time: 120, unit: 'SECONDS') {
+        timeout(time: 300, unit: 'SECONDS') {
             sh(label: "download_hot_cache", script: """
                 mkdir -p ${args.download_dest}
                 cp \
