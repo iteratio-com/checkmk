@@ -657,7 +657,7 @@ pkg_tar(
     deps = [
         "//bin:pkg_tar",
         "//active_checks:pkg_tar",
-        "//doc/plugin-api:pkg_tar",
+        "//doc/plugin-api/source:pkg_tar",
         "//locale",
         "//notifications",
         #added here instead of above because of disappearing file
