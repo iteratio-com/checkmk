@@ -53,6 +53,9 @@ get_candidates_from_filesystem() {
     if [ "$with_packages" = "true" ] && [ -d "packages" ]; then
         SEARCH+=" packages"
     fi
+    if [ "$with_packages" = "true" ] && [ -d "non-free/packages" ]; then
+        SEARCH+=" non-free/packages"
+    fi
     # The submodule is not checked out in the CI, so it should also not be checked locally.
     # The content of that repo needs to be checked by it's own CI
     PRUNE+=" -path $(realpath tests/qa-test-data) -prune -o"
