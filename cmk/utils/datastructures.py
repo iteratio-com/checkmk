@@ -7,20 +7,18 @@
 
 from __future__ import annotations
 
-from typing import assert_never, overload, TypeVar
-
-T = TypeVar("T")
+from typing import assert_never, overload
 
 
 @overload
-def denilled(obj: list[T | None]) -> list[T]: ...
+def denilled[T](obj: list[T | None]) -> list[T]: ...
 
 
 @overload
-def denilled(obj: dict[str, T | None]) -> dict[str, T]: ...
+def denilled[T](obj: dict[str, T | None]) -> dict[str, T]: ...
 
 
-def denilled(
+def denilled[T](
     obj: list[T | None] | dict[str, T | None],
 ) -> list[T] | dict[str, T]:
     """Remove all None values from a dict or list.

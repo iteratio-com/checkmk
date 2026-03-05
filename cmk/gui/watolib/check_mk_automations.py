@@ -7,7 +7,7 @@
 
 import json
 from collections.abc import Iterable, Mapping, Sequence
-from typing import Any, NamedTuple, TypeVar
+from typing import Any, NamedTuple
 
 import cmk.ccc.version as cmk_version
 from cmk.automations import results
@@ -115,15 +115,12 @@ def _automation_failure(
     )
 
 
-_ResultType = TypeVar("_ResultType", bound=results.ABCAutomationResult)
-
-
-def _deserialize(
+def _deserialize[ResultType: results.ABCAutomationResult](
     response: AutomationResponse,
-    result_type: type[_ResultType],
+    result_type: type[ResultType],
     *,
     debug: bool,
-) -> _ResultType:
+) -> ResultType:
     try:
         return result_type.deserialize(response.serialized_result)
     except SyntaxError as excpt:

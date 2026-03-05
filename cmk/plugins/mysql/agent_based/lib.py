@@ -3,19 +3,15 @@
 # This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 # conditions defined in the file COPYING, which is part of this source code package.
 
-
 import functools
 from collections.abc import Callable, Mapping, MutableSequence, Sequence
-from typing import TypeVar
-
-_TSection = TypeVar("_TSection")
 
 
-def mysql_parse_per_item(
-    parse_function: Callable[[Sequence[Sequence[str]]], _TSection],
-) -> Callable[[Sequence[Sequence[str]]], Mapping[str, _TSection]]:
+def mysql_parse_per_item[TSection](
+    parse_function: Callable[[Sequence[Sequence[str]]], TSection],
+) -> Callable[[Sequence[Sequence[str]]], Mapping[str, TSection]]:
     @functools.wraps(parse_function)
-    def wrapped_parse_function(info: Sequence[Sequence[str]]) -> Mapping[str, _TSection]:
+    def wrapped_parse_function(info: Sequence[Sequence[str]]) -> Mapping[str, TSection]:
         item = "mysql"
         grouped: dict[str, MutableSequence[Sequence[str]]] = {}
         for line in info:

@@ -4,7 +4,6 @@
 # conditions defined in the file COPYING, which is part of this source code package.
 
 # mypy: disable-error-code="comparison-overlap"
-
 # mypy: disable-error-code="no-any-return"
 # mypy: disable-error-code="unreachable"
 # mypy: disable-error-code="possibly-undefined"
@@ -17,7 +16,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from functools import partial
 from itertools import zip_longest
-from typing import assert_never, Literal, NotRequired, TypedDict, TypeVar
+from typing import assert_never, Literal, NotRequired, TypedDict
 
 from dateutil.relativedelta import relativedelta
 from pydantic import BaseModel
@@ -444,12 +443,9 @@ def _halfstep_interpolation(rrddata: TimeSeries) -> Iterator[TimeSeriesValue]:
     yield rrddata_values[-1]
 
 
-_TCurveType = TypeVar("_TCurveType", Curve, LayoutedCurve)
-
-
-def order_graph_curves_for_legend_and_mouse_hover(
-    curves: Sequence[_TCurveType],
-) -> list[_TCurveType]:
+def order_graph_curves_for_legend_and_mouse_hover[TCurveType: (Curve, LayoutedCurve)](
+    curves: Sequence[TCurveType],
+) -> list[TCurveType]:
     """
     CMK-22181
     Graph(
@@ -506,11 +502,11 @@ def order_graph_curves_for_legend_and_mouse_hover(
     - lower-simple-2
     - Sum of lower-compound-1 & lower-compound-2
     """
-    lines: list[_TCurveType] = []
-    areas: list[_TCurveType] = []
-    mirrored_lines: list[_TCurveType] = []
-    mirrored_areas: list[_TCurveType] = []
-    refs: list[_TCurveType] = []
+    lines: list[TCurveType] = []
+    areas: list[TCurveType] = []
+    mirrored_lines: list[TCurveType] = []
+    mirrored_areas: list[TCurveType] = []
+    refs: list[TCurveType] = []
     for curve in curves:
         match line_type := curve["line_type"]:
             case "line":

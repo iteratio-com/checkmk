@@ -8,7 +8,7 @@
 from collections.abc import Mapping
 from datetime import datetime
 from enum import Enum
-from typing import cast, Literal, TypedDict, TypeVar
+from typing import cast, Literal, TypedDict
 from xml.etree import ElementTree
 
 from pydantic import BaseModel
@@ -137,10 +137,7 @@ def get_int_from_element(element: ElementTree.Element | None) -> int | None:
     return int(element.text)
 
 
-T = TypeVar("T")
-
-
-def _let_pydantic_check_none(value: T | None) -> T:
+def _let_pydantic_check_none[T](value: T | None) -> T:
     return cast(T, value)
 
 

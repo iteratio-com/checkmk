@@ -11,7 +11,7 @@
 import logging
 from collections import defaultdict
 from collections.abc import Iterator
-from typing import Any, TypeVar
+from typing import Any
 
 import pytest
 from faker import Faker
@@ -40,8 +40,6 @@ from tests.testlib.site import (
 
 logger = logging.getLogger(__name__)
 
-
-TCmkPage = TypeVar("TCmkPage", bound=CmkPage)
 
 # loading pom fixtures
 setup_fixtures = [notification_user]
@@ -107,7 +105,7 @@ def _licensing_page(cmk_page: Page, test_site: Site, credentials: CmkCredentials
     return navigate_to_page(cmk_page, test_site.internal_url, credentials, Licensing)
 
 
-def navigate_to_page(
+def navigate_to_page[TCmkPage: CmkPage](
     page: Page,
     url: str,
     credentials: CmkCredentials,

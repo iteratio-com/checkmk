@@ -7,7 +7,7 @@ from collections.abc import Callable, Collection, Container, Iterable, Mapping, 
 from dataclasses import dataclass
 from itertools import groupby
 from operator import itemgetter
-from typing import Any, get_args, Literal, NotRequired, TypedDict, TypeVar
+from typing import Any, get_args, Literal, NotRequired, TypedDict
 
 from cmk.ccc.exceptions import MKGeneralException
 from cmk.ccc.hostaddress import HostName
@@ -28,7 +28,6 @@ from cmk.utils.password_store import PasswordConfig
 from cmk.utils.rulesets.definition import RuleGroupType
 from cmk.utils.rulesets.ruleset_matcher import RuleSpec
 
-_T = TypeVar("_T")
 IdentFinder = Callable[[GlobalIdent | None], str | None]
 Entity = Literal["host", "rule", "password", "dcd"]
 Permission = Literal["hosts", "rulesets", "passwords", "dcd_connections"]
@@ -418,8 +417,8 @@ def delete_config_bundle_objects(
         )
 
 
-def _collect_many(values: Iterable[tuple[str, _T]]) -> Mapping[BundleId, Sequence[_T]]:
-    mapping: dict[BundleId, list[_T]] = {}
+def _collect_many[T](values: Iterable[tuple[str, T]]) -> Mapping[BundleId, Sequence[T]]:
+    mapping: dict[BundleId, list[T]] = {}
     for bundle_id_str, value in values:
         bundle_id = BundleId(bundle_id_str)
         if bundle_id in mapping:

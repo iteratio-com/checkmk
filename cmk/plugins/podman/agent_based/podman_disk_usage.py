@@ -8,7 +8,7 @@
 import json
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any, Literal, TypeVar
+from typing import Any, Literal
 
 from cmk.agent_based.v2 import (
     AgentSection,
@@ -71,8 +71,6 @@ class Section:
     disk_usage: Mapping[str, DiskUsage]
 
 
-T = TypeVar("T")
-
 _SUMMARY_TYPE_MAP = {
     "Images": "images",
     "Containers": "containers",
@@ -123,7 +121,7 @@ def _parse_summary_format(string_table: StringTable) -> Mapping[str, DiskUsage]:
     return aggregated
 
 
-def parse_entities(
+def parse_entities[T](
     string_table: StringTable,
     key: str,
     factory: Callable[[dict[str, Any]], T],

@@ -9,7 +9,7 @@
 
 from collections.abc import Callable, Mapping, Sequence
 from functools import partial
-from typing import Any, TypeVar
+from typing import Any
 
 import pytest
 
@@ -1842,10 +1842,7 @@ def test_list_custom_validate(input_value: Sequence[str], expected_error: str) -
         legacy_list.validate_value(input_value, "var_prefix")
 
 
-T = TypeVar("T")
-
-
-def _narrow_type(x: object, narrow_to: type[T]) -> T:
+def _narrow_type[T](x: object, narrow_to: type[T]) -> T:
     if isinstance(x, narrow_to):
         return x
     raise ValueError(x)

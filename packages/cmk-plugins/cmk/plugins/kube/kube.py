@@ -5,7 +5,7 @@
 
 import time
 from collections.abc import Callable, Mapping, Sequence
-from typing import Literal, TypeVar
+from typing import Literal
 
 from cmk.agent_based.v2 import CheckResult, HostLabel, HostLabelGenerator
 from cmk.plugins.kube.schemata.api import (
@@ -138,10 +138,7 @@ def erroneous_or_incomplete_containers(
     ]
 
 
-T = TypeVar("T", bound=Section)
-
-
-def check_with_time(
+def check_with_time[T: Section](
     check_function: Callable[[float, T], CheckResult],
 ) -> Callable[[T], CheckResult]:
     def check_function_with_time(section: T) -> CheckResult:

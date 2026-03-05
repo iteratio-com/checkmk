@@ -85,8 +85,10 @@ snmp_section_if64adm = SimpleSNMPSection(
 )
 
 
-def _add_admin_status_to_ifaces(
-    section_if64: interfaces.Section[interfaces.TInterfaceType],
+def _add_admin_status_to_ifaces[
+    TInterfaceType: (interfaces.InterfaceWithCounters, interfaces.InterfaceWithRates)
+](
+    section_if64: interfaces.Section[TInterfaceType],
     section_if64adm: If64AdmSection | None,
 ) -> None:
     if section_if64adm is None:

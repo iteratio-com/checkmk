@@ -30,7 +30,7 @@ import time
 from collections import defaultdict
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from multiprocessing import Lock
-from typing import Any, Literal, NamedTuple, TypeVar
+from typing import Any, Literal, NamedTuple
 
 import msal
 import requests
@@ -41,7 +41,6 @@ from cmk.utils.http_proxy_config import deserialize_http_proxy_config, HTTPProxy
 
 from ._data_cache import DataCache
 
-T = TypeVar("T")
 Args = argparse.Namespace
 GroupLabels = Mapping[str, Mapping[str, str]]
 
@@ -241,7 +240,7 @@ class TagsImportPatternOption(enum.Enum):
 TagsOption = str | Literal[TagsImportPatternOption.ignore_all, TagsImportPatternOption.import_all]
 
 
-def _chunks(list_: Sequence[T], length: int = 50) -> Sequence[Sequence[T]]:
+def _chunks[T](list_: Sequence[T], length: int = 50) -> Sequence[Sequence[T]]:
     return [list_[i : i + length] for i in range(0, len(list_), length)]
 
 

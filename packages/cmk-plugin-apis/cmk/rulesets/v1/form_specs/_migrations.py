@@ -3,7 +3,7 @@
 # This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 # conditions defined in the file COPYING, which is part of this source code package.
 
-from typing import Literal, TypeVar
+from typing import Literal
 from uuid import uuid4
 
 from ._levels import (
@@ -13,12 +13,10 @@ from ._levels import (
     SimpleLevelsConfigModel,
 )
 
-_NumberT = TypeVar("_NumberT", int, float)
 
-
-def _extract_bound(
-    model: object, scale: float, ntype: type[_NumberT], level_dir: LevelDirection | None
-) -> tuple[_NumberT, _NumberT] | None:
+def _extract_bound[NumberT: (int, float)](
+    model: object, scale: float, ntype: type[NumberT], level_dir: LevelDirection | None
+) -> tuple[NumberT, NumberT] | None:
     match (model, level_dir):
         case ({"levels_upper_min": (warn, crit)}, LevelDirection.UPPER):
             return ntype(warn * scale), ntype(crit * scale)
@@ -26,16 +24,16 @@ def _extract_bound(
             return None
 
 
-def _extract_levels(
+def _extract_levels[NumberT: (int, float)](
     raw_levels: (
         tuple[Literal["absolute"], tuple[int, int] | tuple[float, float]]
         | tuple[Literal["relative"], tuple[float, float]]
         | tuple[Literal["stdev"], tuple[float, float]]
     ),
     scale: float,
-    ntype: type[_NumberT],
+    ntype: type[NumberT],
 ) -> (
-    tuple[Literal["absolute"], tuple[_NumberT, _NumberT]]
+    tuple[Literal["absolute"], tuple[NumberT, NumberT]]
     | tuple[Literal["relative"], tuple[float, float]]
     | tuple[Literal["stdev"], tuple[float, float]]
 ):
@@ -50,9 +48,9 @@ def _extract_levels(
             raise TypeError(f"Invalid predictive levels model {raw_levels}")
 
 
-def _parse_to_predictive_levels(
-    model: object, scale: float, ntype: type[_NumberT], level_dir: LevelDirection
-) -> _PredictiveLevelsT[_NumberT] | None:
+def _parse_to_predictive_levels[NumberT: (int, float)](
+    model: object, scale: float, ntype: type[NumberT], level_dir: LevelDirection
+) -> _PredictiveLevelsT[NumberT] | None:
     match model:
         # already migrated
         # NOTE: Using a variable of type "type[...]" in a class pattern should be OK, but
@@ -75,7 +73,7 @@ def _parse_to_predictive_levels(
             | ("relative", (float(), float()))
             | ("stdev", (float(), float())) as raw_levels,
         } if level_dir is LevelDirection.UPPER:
-            return _PredictiveLevelsT[_NumberT](
+            return _PredictiveLevelsT[NumberT](
                 period=p,
                 horizon=h,
                 levels=_extract_levels(raw_levels, scale, ntype),
@@ -89,7 +87,7 @@ def _parse_to_predictive_levels(
             | ("relative", (float(), float()))
             | ("stdev", (float(), float())) as raw_levels,
         } if level_dir is LevelDirection.LOWER:
-            return _PredictiveLevelsT[_NumberT](
+            return _PredictiveLevelsT[NumberT](
                 period=p,
                 horizon=h,
                 levels=_extract_levels(raw_levels, scale, ntype),
@@ -110,9 +108,9 @@ def _parse_to_predictive_levels(
             )
 
 
-def _migrate_to_levels(
-    model: object, scale: float, ntype: type[_NumberT], level_dir: LevelDirection
-) -> LevelsConfigModel[_NumberT]:
+def _migrate_to_levels[NumberT: (int, float)](
+    model: object, scale: float, ntype: type[NumberT], level_dir: LevelDirection
+) -> LevelsConfigModel[NumberT]:
     if (already_migrated := _parse_already_migrated(model, ntype, level_dir)) is not None:
         return already_migrated
 
@@ -138,9 +136,9 @@ def _migrate_to_levels(
             )
 
 
-def _parse_already_migrated(
-    model: object, ntype: type[_NumberT], level_dir: LevelDirection
-) -> LevelsConfigModel[_NumberT] | None:
+def _parse_already_migrated[NumberT: (int, float)](
+    model: object, ntype: type[NumberT], level_dir: LevelDirection
+) -> LevelsConfigModel[NumberT] | None:
     match model:
         case ("no_levels", None):
             return "no_levels", None
@@ -213,9 +211,9 @@ def migrate_to_lower_float_levels(model: object, scale: float = 1.0) -> LevelsCo
     return _migrate_to_levels(model, scale, float, LevelDirection.LOWER)
 
 
-def _migrate_to_simple_levels(
-    model: object, scale: float, ntype: type[_NumberT]
-) -> SimpleLevelsConfigModel[_NumberT]:
+def _migrate_to_simple_levels[NumberT: (int, float)](
+    model: object, scale: float, ntype: type[NumberT]
+) -> SimpleLevelsConfigModel[NumberT]:
     match model:
         case None | (None, None) | ("no_levels", None):
             return "no_levels", None

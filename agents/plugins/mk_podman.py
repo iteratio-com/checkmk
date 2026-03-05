@@ -15,15 +15,14 @@ from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 from shutil import which
-from typing import Any, Literal, TypedDict, TypeVar, Union
+from typing import Any, Literal, TypedDict, Union
 
 # override decorator is only available in Python 3.12+
 try:
     from typing import override
 except ImportError:
-    _F = TypeVar("_F", bound=Callable[..., object])
 
-    def override(func: _F, /) -> _F:
+    def override[F: Callable[..., object]](func: F, /) -> F:
         return func
 
 

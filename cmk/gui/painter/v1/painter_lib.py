@@ -7,7 +7,7 @@
 
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
-from typing import Any, Generic, TypeVar
+from typing import Any
 
 import cmk.ccc.plugin_registry
 from cmk.gui.logged_in import LoggedInUser, user
@@ -15,8 +15,6 @@ from cmk.gui.painter_options import PainterOptions
 from cmk.gui.type_defs import ColumnName, PainterParameters, Rows
 from cmk.gui.utils.speaklater import LazyString
 from cmk.gui.view_utils import CellSpec
-
-T = TypeVar("T")
 
 
 @dataclass(frozen=True)
@@ -28,7 +26,7 @@ class PainterConfiguration:
     dynamic_columns: Callable[["PainterConfiguration"], Sequence[ColumnName]] | None = None
 
 
-def strip_css_from_cell_spec(
+def strip_css_from_cell_spec[T](
     html_formatter: Callable[[T, PainterConfiguration, LoggedInUser], CellSpec], user: LoggedInUser
 ) -> Callable[[T, PainterConfiguration], str]:
     def css_remover(painter_data: T, painter_configuration: PainterConfiguration) -> str:
@@ -37,7 +35,7 @@ def strip_css_from_cell_spec(
     return css_remover
 
 
-class Formatters(Generic[T]):
+class Formatters[T]:
     def __init__(
         self,
         html: Callable[[T, PainterConfiguration, LoggedInUser], CellSpec],
@@ -51,7 +49,7 @@ class Formatters(Generic[T]):
 
 
 @dataclass(frozen=True, kw_only=True)
-class Painter(Generic[T]):
+class Painter[T]:
     """Base class for "new" Painters.
 
     This hierarchy is incompatible with old Painters, so it is necessary to wrap these classes with

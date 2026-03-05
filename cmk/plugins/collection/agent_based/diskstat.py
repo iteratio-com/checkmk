@@ -77,7 +77,7 @@
 import re
 import time
 from collections.abc import Iterable, Mapping, MutableMapping, Sequence
-from typing import Any, TypeVar
+from typing import Any
 
 from cmk.agent_based.v2 import (
     AgentSection,
@@ -545,12 +545,9 @@ def get_disk_for_item(
     return None
 
 
-_ItemData = TypeVar("_ItemData")
-
-
-def _merge_cluster_sections(
-    cluster_section: Mapping[str, Mapping[str, _ItemData] | None],
-) -> Mapping[str, _ItemData] | None:
+def _merge_cluster_sections[ItemData](
+    cluster_section: Mapping[str, Mapping[str, ItemData] | None],
+) -> Mapping[str, ItemData] | None:
     return {
         k: v
         for section in cluster_section.values()

@@ -18,26 +18,23 @@ from __future__ import annotations
 import functools
 import hashlib
 import marshal
-import typing
 from collections.abc import Awaitable, Callable
+from typing import Literal, TYPE_CHECKING
 
 from redis.exceptions import RedisError
 
 from cmk.utils.redis import redis_enabled
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     # There is a redis module in this package, making it hard to doctest.
     import redis
 
-P = typing.ParamSpec("P")
-R = typing.TypeVar("R")
-F = typing.TypeVar("F")
-RedisFactory = Callable[[], "redis.Redis"]
-CacheWrapper = Callable[P, R]
-CacheDecorator = Callable[[F], CacheWrapper[P, R]]
+type RedisFactory = Callable[[], "redis.Redis"]
+type CacheWrapper[**P, R] = Callable[P, R]
+type CacheDecorator[**P, R, F] = Callable[[F], CacheWrapper[P, R]]
 
 
-def ttl_memoize(ttl: int, connection_factory: RedisFactory) -> CacheDecorator:
+def ttl_memoize[**P, R](ttl: int, connection_factory: RedisFactory) -> CacheDecorator[P, R]:
     """Decorator factory for caching function results in Redis with a TTL.
 
     This decorator does nothing to ensure no duplicate calculations will ever be done. If multiple
@@ -135,7 +132,7 @@ def sorted_cache_key(*args: object, **kwargs: object) -> tuple[object, ...]:
     return args
 
 
-def _get_dotted_path(callable_obj: Callable[P, R]) -> str:
+def _get_dotted_path[**P, R](callable_obj: Callable[P, R]) -> str:
     """Derive something like a dotted path to the object being passed.
 
     The resulting path is not actually usable for imports or any other purpose. It is used
@@ -169,7 +166,7 @@ def _get_dotted_path(callable_obj: Callable[P, R]) -> str:
 
 def ensure_bytes(
     inp: bytes | str | None,
-    errors: typing.Literal["strict", "ignore", "replace"] = "strict",
+    errors: Literal["strict", "ignore", "replace"] = "strict",
 ) -> bytes | None:
     if inp is None:
         return None

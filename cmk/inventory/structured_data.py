@@ -22,7 +22,7 @@ from collections import Counter
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Generic, Literal, NewType, Self, TypedDict, TypeVar
+from typing import Literal, NewType, Self, TypedDict
 
 from cmk.ccc import store
 from cmk.ccc.exceptions import MKGeneralException
@@ -170,17 +170,14 @@ def _make_row_ident(key_columns: Sequence[SDKey], row: Mapping[SDKey, SDValue]) 
     return tuple(row[k] for k in key_columns if k in row)
 
 
-_T = TypeVar("_T")
-
-
 @dataclass(frozen=True, kw_only=True)
-class _DictKeys(Generic[_T]):
-    only_left: set[_T]
-    both: set[_T]
-    only_right: set[_T]
+class _DictKeys[T]:
+    only_left: set[T]
+    both: set[T]
+    only_right: set[T]
 
     @classmethod
-    def compare(cls, *, left: set[_T], right: set[_T]) -> Self:
+    def compare(cls, *, left: set[T], right: set[T]) -> Self:
         """
         Returns the set relationships of the keys between two dictionaries:
         - relative complement of right in left
@@ -900,10 +897,9 @@ class SDRetentionFilterChoices:
         self._columns.append(_SDRetentionFilterChoice(choice, cache_info))
 
 
-_CT = TypeVar("_CT", SDKey, SDNodeName)
-
-
-def _make_filter_func(choice: Literal["nothing", "all"] | Sequence[_CT]) -> Callable[[_CT], bool]:
+def _make_filter_func[CT: (SDKey, SDNodeName)](
+    choice: Literal["nothing", "all"] | Sequence[CT],
+) -> Callable[[CT], bool]:
     match choice:
         case "nothing":
             return lambda k: False
@@ -913,18 +909,15 @@ def _make_filter_func(choice: Literal["nothing", "all"] | Sequence[_CT]) -> Call
             return lambda k: k in choice
 
 
-def _consolidate_filter_funcs(
-    choices: Sequence[Literal["nothing", "all"] | Sequence[_CT]],
-) -> Callable[[_CT], bool]:
+def _consolidate_filter_funcs[CT: (SDKey, SDNodeName)](
+    choices: Sequence[Literal["nothing", "all"] | Sequence[CT]],
+) -> Callable[[CT], bool]:
     return lambda kn: any(_make_filter_func(c)(kn) for c in choices)
 
 
-_VT_co = TypeVar("_VT_co", covariant=True)
-
-
-def _get_filtered_dict(
-    mapping: Mapping[SDKey, _VT_co], filter_func: Callable[[SDKey], bool]
-) -> Mapping[SDKey, _VT_co]:
+def _get_filtered_dict[VT_co](
+    mapping: Mapping[SDKey, VT_co], filter_func: Callable[[SDKey], bool]
+) -> Mapping[SDKey, VT_co]:
     return {k: v for k, v in mapping.items() if filter_func(k)}
 
 
@@ -945,14 +938,14 @@ class _FilterTree:
     def filters_by_name(self) -> Mapping[SDNodeName, _FilterTree]:
         return self._filter_choices_by_name
 
-    def filter_pairs(self, pairs: Mapping[SDKey, _VT_co]) -> Mapping[SDKey, _VT_co]:
+    def filter_pairs[VT_co](self, pairs: Mapping[SDKey, VT_co]) -> Mapping[SDKey, VT_co]:
         return (
             _get_filtered_dict(pairs, _consolidate_filter_funcs(self._filter_choices_pairs))
             if self._filter_choices_pairs
             else pairs
         )
 
-    def filter_row(self, row: Mapping[SDKey, _VT_co]) -> Mapping[SDKey, _VT_co]:
+    def filter_row[VT_co](self, row: Mapping[SDKey, VT_co]) -> Mapping[SDKey, VT_co]:
         return (
             _get_filtered_dict(row, _consolidate_filter_funcs(self._filter_choices_columns))
             if self._filter_choices_columns

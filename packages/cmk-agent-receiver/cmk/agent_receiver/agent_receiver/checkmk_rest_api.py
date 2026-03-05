@@ -6,7 +6,7 @@
 from collections.abc import Callable
 from enum import Enum
 from http import HTTPStatus
-from typing import Concatenate, ParamSpec, TypeVar
+from typing import Concatenate
 from urllib.parse import quote
 
 import requests
@@ -118,19 +118,15 @@ def _forward_put_token(
     )
 
 
-_TEndpointParams = ParamSpec("_TEndpointParams")
-_TEndpointReturn = TypeVar("_TEndpointReturn")
-
-
-def log_http_exception(
-    endpoint_call: Callable[_TEndpointParams, _TEndpointReturn],
-) -> Callable[Concatenate[str, _TEndpointParams], _TEndpointReturn]:
+def log_http_exception[**TEndpointParams, TEndpointReturn](
+    endpoint_call: Callable[TEndpointParams, TEndpointReturn],
+) -> Callable[Concatenate[str, TEndpointParams], TEndpointReturn]:
     def wrapper(
         log_text: str,
         /,
-        *args: _TEndpointParams.args,
-        **kwargs: _TEndpointParams.kwargs,
-    ) -> _TEndpointReturn:
+        *args: TEndpointParams.args,
+        **kwargs: TEndpointParams.kwargs,
+    ) -> TEndpointReturn:
         try:
             return endpoint_call(*args, **kwargs)
         except HTTPException as http_excpt:

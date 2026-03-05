@@ -3,7 +3,6 @@
 # This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 # conditions defined in the file COPYING, which is part of this source code package.
 from collections.abc import Callable
-from typing import TypeVar
 
 from cmk.rulesets.v1 import Help, Title
 from cmk.rulesets.v1.form_specs import (
@@ -24,10 +23,8 @@ from cmk.rulesets.v1.form_specs import (
 from cmk.rulesets.v1.form_specs.validators import NumberInRange
 from cmk.rulesets.v1.rule_specs import CheckParameters, HostCondition, Topic
 
-Number = TypeVar("Number", int, float)
 
-
-def _validate_level_factory(
+def _validate_level_factory[Number: (int, float)](
     *validators: Callable[[Number], None],
 ) -> Callable[[SimpleLevelsConfigModel[Number]], None]:
     def validate(levels: SimpleLevelsConfigModel[Number]) -> None:

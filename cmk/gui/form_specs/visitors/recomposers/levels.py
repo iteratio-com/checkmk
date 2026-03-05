@@ -8,7 +8,7 @@
 import dataclasses
 import enum
 from collections.abc import Callable
-from typing import Any, assert_never, Literal, TypeVar
+from typing import Any, assert_never, Literal
 
 from cmk.ccc.exceptions import MKGeneralException
 from cmk.ccc.i18n import _
@@ -46,12 +46,12 @@ from cmk.rulesets.v1.form_specs.validators import NumberInRange
 
 from .._type_defs import DefaultValue as FrontendDefaultValue
 
-_NumberT = TypeVar("_NumberT", int, float)
+type _LevelsFormSpecModel[NumberT: (int, float)] = (
+    SimpleLevelsConfigModel[NumberT] | tuple[Literal["predictive"], object]
+)
 
-_LevelsFormSpecModel = SimpleLevelsConfigModel[_NumberT] | tuple[Literal["predictive"], object]
-
-_LevelsConfigModel = (
-    SimpleLevelsConfigModel[_NumberT]
+type _LevelsConfigModel[NumberT: (int, float)] = (
+    SimpleLevelsConfigModel[NumberT]
     | tuple[Literal["cmk_postprocessed"], Literal["predictive_levels"], object]
 )
 
@@ -68,9 +68,9 @@ class _PredictiveLevelDefinition(enum.StrEnum):
     STDEV = "stdev"
 
 
-def _transform_from_disk(
+def _transform_from_disk[NumberT: (int, float)](
     value: object,
-) -> _LevelsFormSpecModel[_NumberT] | FrontendDefaultValue:
+) -> _LevelsFormSpecModel[NumberT] | FrontendDefaultValue:
     if isinstance(value, FrontendDefaultValue):
         return value
 
@@ -91,12 +91,12 @@ def _transform_from_disk(
     raise ValueError(value)
 
 
-def _wrapped_transform_to_disk(
-    form_spec: Levels[_NumberT] | SimpleLevels[_NumberT],
-) -> Callable[[object], _LevelsConfigModel[_NumberT]]:
+def _wrapped_transform_to_disk[NumberT: (int, float)](
+    form_spec: Levels[NumberT] | SimpleLevels[NumberT],
+) -> Callable[[object], _LevelsConfigModel[NumberT]]:
     def _transform_to_disk(
         value: object,
-    ) -> _LevelsConfigModel[_NumberT]:
+    ) -> _LevelsConfigModel[NumberT]:
         match value:
             case "no_levels", None:
                 return "no_levels", None
@@ -121,12 +121,12 @@ def _wrapped_transform_to_disk(
     return _transform_to_disk
 
 
-def _force_replace_prefill_and_title(
-    form_spec_template: FormSpec[_NumberT],
+def _force_replace_prefill_and_title[NumberT: (int, float)](
+    form_spec_template: FormSpec[NumberT],
     new_title: Title,
-    new_prefill_value: _NumberT,
-    new_prefill_type: (type[DefaultValue[_NumberT]] | type[InputHint[_NumberT]]),
-) -> FormSpec[_NumberT]:
+    new_prefill_value: NumberT,
+    new_prefill_type: (type[DefaultValue[NumberT]] | type[InputHint[NumberT]]),
+) -> FormSpec[NumberT]:
     # Currently all FormSpec[_NumberT] types have a prefill attribute,
     # but we don't know it statically. Let's just skip it in case
     # we someday invent one that does not have this attribute.
@@ -138,13 +138,15 @@ def _force_replace_prefill_and_title(
     return dataclasses.replace(form_spec_template, title=new_title)
 
 
-def _get_prefill_type(
-    prefill: Prefill[tuple[_NumberT, _NumberT]],
-) -> type[DefaultValue[_NumberT]] | type[InputHint[_NumberT]]:
-    return DefaultValue[_NumberT] if isinstance(prefill, DefaultValue) else InputHint[_NumberT]
+def _get_prefill_type[NumberT: (int, float)](
+    prefill: Prefill[tuple[NumberT, NumberT]],
+) -> type[DefaultValue[NumberT]] | type[InputHint[NumberT]]:
+    return DefaultValue[NumberT] if isinstance(prefill, DefaultValue) else InputHint[NumberT]
 
 
-def _fixed_levels(form_spec: Levels[_NumberT] | SimpleLevels[_NumberT]) -> Tuple:
+def _fixed_levels[NumberT: (int, float)](
+    form_spec: Levels[NumberT] | SimpleLevels[NumberT],
+) -> Tuple:
     if form_spec.level_direction is LevelDirection.LOWER:
         warn_title = Title("Warning below")
         crit_title = Title("Critical below")
@@ -187,9 +189,9 @@ def _no_levels() -> FixedValue[None]:
     )
 
 
-def _get_level_computation_dropdown(
-    field_spec: FormSpec[_NumberT],
-    predictive_levels: PredictiveLevels[_NumberT],
+def _get_level_computation_dropdown[NumberT: (int, float)](
+    field_spec: FormSpec[NumberT],
+    predictive_levels: PredictiveLevels[NumberT],
     level_direction: LevelDirection,
 ) -> CascadingSingleChoice:
     if level_direction is LevelDirection.UPPER:
@@ -287,8 +289,8 @@ def _get_level_computation_dropdown(
     )
 
 
-def _predictive_bound(
-    field_spec: FormSpec[_NumberT], level_direction: LevelDirection
+def _predictive_bound[NumberT: (int, float)](
+    field_spec: FormSpec[NumberT], level_direction: LevelDirection
 ) -> OptionalChoice:
     if level_direction is LevelDirection.UPPER:
         fixed_warn_title = Title("Warning level is at least")
@@ -333,9 +335,9 @@ def _predictive_bound(
     )
 
 
-def _predictive_levels(
-    predictive_levels: PredictiveLevels[_NumberT],
-    field_spec: FormSpec[_NumberT],
+def _predictive_levels[NumberT: (int, float)](
+    predictive_levels: PredictiveLevels[NumberT],
+    field_spec: FormSpec[NumberT],
     level_direction: LevelDirection,
 ) -> Dictionary:
     return Dictionary(

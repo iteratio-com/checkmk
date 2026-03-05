@@ -8,7 +8,6 @@ import pprint
 from collections.abc import Callable, Sequence
 from dataclasses import asdict, dataclass
 from enum import Enum
-from typing import TypeVar
 
 from cmk.ccc.exceptions import MKGeneralException
 from cmk.ccc.i18n import _
@@ -30,8 +29,6 @@ from .visitors import (
     RawFrontendData,
     VisitorOptions,
 )
-
-T = TypeVar("T")
 
 
 class DisplayMode(Enum):
@@ -83,10 +80,7 @@ def process_validation_messages(
         raise FormSpecValidationError(validation_messages)
 
 
-ModelT = TypeVar("ModelT")
-
-
-def create_validation_error_for_mk_user_error(
+def create_validation_error_for_mk_user_error[ModelT](
     wrapped_function: Callable[[ModelT], None],
 ) -> Callable[[ModelT], None]:
     def wrapped(value: ModelT) -> None:
@@ -98,7 +92,7 @@ def create_validation_error_for_mk_user_error(
     return wrapped
 
 
-def render_form_spec(
+def render_form_spec[T](
     form_spec: FormSpec[T],
     field_id: str,
     value: IncomingData,
@@ -126,25 +120,25 @@ def read_data_from_frontend(field_id: str) -> RawFrontendData:
     return RawFrontendData(json.loads(request.get_str_input_mandatory(field_id)))
 
 
-def parse_and_validate_frontend_data(form_spec: FormSpec[T], data: RawFrontendData) -> object:
+def parse_and_validate_frontend_data[T](form_spec: FormSpec[T], data: RawFrontendData) -> object:
     visitor = get_visitor(form_spec, VisitorOptions(migrate_values=False, mask_values=False))
     process_validation_errors(visitor.validate(data))
     return visitor.to_disk(data)
 
 
-def parse_data_from_field_id(form_spec: FormSpec[T], field_id: str) -> object:
+def parse_data_from_field_id[T](form_spec: FormSpec[T], field_id: str) -> object:
     """Computes/validates the value from a vue formular field"""
     return parse_and_validate_frontend_data(form_spec, read_data_from_frontend(field_id))
 
 
-def validate_value_from_frontend(
+def validate_value_from_frontend[T](
     form_spec: FormSpec[T], value: IncomingData
 ) -> Sequence[shared_type_defs.ValidationMessage]:
     visitor = get_visitor(form_spec, VisitorOptions(migrate_values=True, mask_values=False))
     return visitor.validate(value)
 
 
-def serialize_data_for_frontend(
+def serialize_data_for_frontend[T](
     form_spec: FormSpec[T],
     field_id: str,
     do_validate: bool,

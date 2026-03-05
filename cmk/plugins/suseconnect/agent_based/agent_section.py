@@ -38,7 +38,6 @@
 #   (PackageHub/12.5/x86_64)
 
 from collections.abc import Mapping, Sequence
-from typing import TypeVar
 
 from cmk.agent_based.v2 import (
     AgentSection,
@@ -46,10 +45,9 @@ from cmk.agent_based.v2 import (
 )
 
 Section = Mapping[str, Mapping[str, str]]
-_TVal = TypeVar("_TVal")
 
 
-def get_data(section: Mapping[str, _TVal]) -> _TVal | None:
+def get_data[TVal](section: Mapping[str, TVal]) -> TVal | None:
     return next((value for key, value in section.items() if "SLES" in key), None)
 
 

@@ -5,7 +5,7 @@
 
 from collections.abc import Mapping
 from time import time
-from typing import Any, NamedTuple, TypeVar
+from typing import Any, NamedTuple
 
 from cmk.agent_based.v2 import (
     AgentSection,
@@ -83,10 +83,9 @@ def status_result(
         )
 
 
-T = TypeVar("T", HAProxyServerStatus, HAProxyFrontendStatus)
-
-
-def status_to_enum(status: str, _enum: type[T]) -> T | str:
+def status_to_enum[T: (HAProxyServerStatus, HAProxyFrontendStatus)](
+    status: str, _enum: type[T]
+) -> T | str:
     try:
         return _enum(status)
     except ValueError:

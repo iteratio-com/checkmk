@@ -5,23 +5,13 @@
 """This module provides generic Check_MK ruleset processing functionality"""
 
 # mypy: disable-error-code="comparison-overlap"
-
 # mypy: disable-error-code="redundant-expr"
 
 import contextlib
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from re import Pattern
-from typing import (
-    Any,
-    cast,
-    Generic,
-    NotRequired,
-    TypeAlias,
-    TypedDict,
-    TypeGuard,
-    TypeVar,
-)
+from typing import Any, cast, NotRequired, TypeAlias, TypedDict, TypeGuard
 
 import cmk.trace
 from cmk.ccc.hostaddress import HostAddress, HostName
@@ -42,9 +32,6 @@ from .conditions import HostOrServiceConditions, HostOrServiceConditionsSimple
 tracer = cmk.trace.get_tracer()
 
 RulesetName = str  # Could move to a less cluttered module as it is often used on its own.
-TRuleValue = TypeVar("TRuleValue")
-TDefaultValue = TypeVar("TDefaultValue")
-TRuleValueMapping = TypeVar("TRuleValueMapping", bound=Mapping[str, object])
 
 # The Tag* types below are *not* used in `cmk.utils.tags`
 # but they are used here.  Therefore, they do *not* belong
@@ -129,7 +116,7 @@ class RuleConditionsSpec(TypedDict, total=True):
     host_folder: NotRequired[str]
 
 
-class RuleSpec(Generic[TRuleValue], TypedDict):
+class RuleSpec[TRuleValue](TypedDict):
     value: TRuleValue
     condition: RuleConditionsSpec
     id: str  # a UUID if provided by either the GUI or the REST API
@@ -137,7 +124,7 @@ class RuleSpec(Generic[TRuleValue], TypedDict):
     locked_by: NotRequired[GlobalIdent]
 
 
-def is_disabled(rule: RuleSpec[TRuleValue]) -> bool:
+def is_disabled[TRuleValue](rule: RuleSpec[TRuleValue]) -> bool:
     # TODO consolidate with cmk.gui.watolib.rulesets.py::Rule::is_disabled
     return "options" in rule and bool(rule["options"].get("disabled", False))
 
@@ -211,7 +198,7 @@ class RulesetMatcher:
             return value
         return False  # no match. Do not ignore
 
-    def get_host_values_merged(
+    def get_host_values_merged[TRuleValue](
         self,
         hostname: HostName,
         ruleset: Sequence[RuleSpec[Mapping[str, TRuleValue]]],
@@ -225,7 +212,7 @@ class RulesetMatcher:
             self.get_host_values_all(hostname, ruleset, labels_of_host), default={}
         )
 
-    def get_host_values_all(
+    def get_host_values_all[TRuleValue](
         self,
         hostname: HostName | HostAddress,
         ruleset: Sequence[RuleSpec[TRuleValue]],
@@ -235,7 +222,7 @@ class RulesetMatcher:
 
         return self.ruleset_optimizer.get_host_ruleset(hostname, ruleset, labels_of_host)
 
-    def get_service_bool_value(
+    def get_service_bool_value[TRuleValue](
         self,
         hostname: HostName,
         service_name: ServiceName,
@@ -257,7 +244,7 @@ class RulesetMatcher:
             return value
         return False
 
-    def get_service_values_merged(
+    def get_service_values_merged[TRuleValue](
         self,
         hostname: HostName,
         service_name: ServiceName,
@@ -278,7 +265,7 @@ class RulesetMatcher:
             default={},
         )
 
-    def get_service_values_all(
+    def get_service_values_all[TRuleValue](
         self,
         hostname: HostName,
         service_name: ServiceName,
@@ -293,7 +280,7 @@ class RulesetMatcher:
             )
         )
 
-    def get_checkgroup_ruleset_values(
+    def get_checkgroup_ruleset_values[TRuleValue](
         self,
         hostname: HostName,
         item: Item,
@@ -319,7 +306,7 @@ class RulesetMatcher:
                 )
             )
 
-    def _get_service_ruleset_values(
+    def _get_service_ruleset_values[TRuleValue](
         self,
         host_name: HostName,
         match_text: ServiceName | Item,
@@ -472,7 +459,7 @@ class RulesetOptimizer:
             1.0 * len(self._all_processed_hosts) / len(used_groups)
         )
 
-    def get_host_ruleset(
+    def get_host_ruleset[TRuleValue](
         self,
         host_name: HostName,
         ruleset: Sequence[RuleSpec[TRuleValue]],
@@ -506,7 +493,7 @@ class RulesetOptimizer:
             )
         return optimized_ruleset.get(host_name, [])
 
-    def get_service_ruleset(
+    def get_service_ruleset[TRuleValue](
         self,
         host_name: HostName,
         ruleset: Sequence[RuleSpec[TRuleValue]],

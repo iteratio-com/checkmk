@@ -12,7 +12,7 @@ import pickle
 from collections.abc import Callable, Mapping, Sequence
 from contextlib import suppress
 from pathlib import Path
-from typing import Any, cast, Final, Generic, get_args, TypeVar
+from typing import Any, cast, Final, get_args, TypeVar
 
 import cmk.ccc.version as cmk_version
 import cmk.utils.paths
@@ -34,8 +34,8 @@ from cmk.gui.utils.speaklater import LazyString
 from cmk.mkp_tool import id_to_mkp, Installer, PackageName, PackagePart
 from cmk.utils.escaping import escape
 
-TVisual = TypeVar("TVisual", bound=Visual)
-CustomUserVisuals = dict[tuple[UserId, VisualName], TVisual]
+TVisual = TypeVar("TVisual", bound=Visual)  # TODO: Remove this
+type CustomUserVisuals[TVisual: Visual] = dict[tuple[UserId, VisualName], TVisual]
 
 __all__ = [
     "save",
@@ -52,7 +52,7 @@ __all__ = [
 ]
 
 
-def save(
+def save[TVisual: Visual](
     what: VisualTypeName,
     visuals: dict[tuple[UserId, VisualName], TVisual],
     user_id: UserId | None = None,
@@ -96,7 +96,7 @@ def load(
     return visuals
 
 
-def _fix_lazy_strings(obj: TVisual) -> TVisual:
+def _fix_lazy_strings[TVisual: Visual](obj: TVisual) -> TVisual:
     """
     Recursively evaluate all LazyStrings in the object to fixed strings by running them through str()
     """
@@ -115,7 +115,7 @@ def _fix_lazy_strings(obj: TVisual) -> TVisual:
     return cast(TVisual, {attr: _fix(value) for attr, value in obj.items()})
 
 
-class _CombinedVisualsCache(Generic[TVisual]):
+class _CombinedVisualsCache[TVisual: Visual]:
     _visuals_cache_dir: Final = cmk.utils.paths.visuals_cache_dir
 
     def __init__(self, visual_type: VisualTypeName) -> None:
@@ -199,7 +199,7 @@ def invalidate_all_caches() -> None:
     _CombinedVisualsCache.invalidate_all_caches()
 
 
-def _load_custom_user_visuals(
+def _load_custom_user_visuals[TVisual: Visual](
     what: VisualTypeName,
     internal_to_runtime_transformer: Callable[[dict[str, Any]], TVisual],
 ) -> CustomUserVisuals:
@@ -250,7 +250,7 @@ def _load_custom_user_visuals(
     return visuals
 
 
-def load_visuals_of_a_user(
+def load_visuals_of_a_user[TVisual: Visual](
     what: VisualTypeName,
     internal_to_runtime_transformer: Callable[[dict[str, Any]], TVisual],
     path: Path,
@@ -282,7 +282,7 @@ def load_raw_visuals_of_a_user(
     )
 
 
-def _get_packaged_visuals(
+def _get_packaged_visuals[TVisual: Visual](
     visual_type: VisualTypeName,
     internal_to_runtime_transformer: Callable[[dict[str, Any]], TVisual],
 ) -> CustomUserVisuals[TVisual]:
@@ -341,7 +341,7 @@ def _all_local_visuals_files(what: VisualTypeName) -> set[Path]:
     return set()
 
 
-def move_visual_to_local(
+def move_visual_to_local[TVisual: Visual](
     visual_id: str,
     owner: UserId,
     all_visuals: dict[tuple[UserId, VisualName], TVisual],
@@ -397,7 +397,9 @@ def _get_dynamic_visual_default_permissions() -> Sequence[RoleName]:
     return ["admin"]
 
 
-def declare_visual_permission(what: VisualTypeName, name: str, visual: TVisual) -> None:
+def declare_visual_permission[TVisual: Visual](
+    what: VisualTypeName, name: str, visual: TVisual
+) -> None:
     permname = PermissionName(f"{what[:-1]}.{name}")
     if published_to_user(visual) and permname not in permission_registry:
         declare_permission(
@@ -408,7 +410,9 @@ def declare_visual_permission(what: VisualTypeName, name: str, visual: TVisual) 
         )
 
 
-def declare_packaged_visual_permission(what: VisualTypeName, name: str, visual: TVisual) -> None:
+def declare_packaged_visual_permission[TVisual: Visual](
+    what: VisualTypeName, name: str, visual: TVisual
+) -> None:
     permname = PermissionName(f"{what[:-1]}.{name}_packaged")
     if visual["packaged"] and permname not in permission_registry:
         declare_permission(
@@ -461,7 +465,7 @@ def declare_packaged_visuals_permissions(what: VisualTypeName) -> None:
                 raise
 
 
-def available(
+def available[TVisual: Visual](
     what: VisualTypeName,
     all_visuals: Mapping[tuple[UserId, VisualName], TVisual],
     user_permissions: UserPermissions,
@@ -483,7 +487,7 @@ def available(
 
 # Get the list of visuals which are available to the user
 # (which could be retrieved with get_visual)
-def available_by_owner(
+def available_by_owner[TVisual: Visual](
     what: VisualTypeName,
     all_visuals: Mapping[tuple[UserId, VisualName], TVisual],
     user_permissions: UserPermissions,
@@ -553,7 +557,7 @@ def available_by_owner(
     return visuals
 
 
-def published_to_user(visual: TVisual) -> bool:
+def published_to_user[TVisual: Visual](visual: TVisual) -> bool:
     if visual["public"] is True:
         return True
 
@@ -570,7 +574,7 @@ def published_to_user(visual: TVisual) -> bool:
     return False
 
 
-def get_permissioned_visual(
+def get_permissioned_visual[TVisual: Visual](
     item: str,
     owner: UserId | None,
     what: str,

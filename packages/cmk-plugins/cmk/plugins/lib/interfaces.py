@@ -6,7 +6,6 @@
 # mypy: disable-error-code="comparison-overlap"
 # mypy: disable-error-code="exhaustive-match"
 # mypy: disable-error-code="misc"
-
 # mypy: disable-error-code="redundant-expr"
 
 import enum
@@ -26,7 +25,7 @@ from collections.abc import (
 )
 from dataclasses import dataclass, field, fields, replace
 from functools import partial
-from typing import Any, assert_never, Final, Literal, ParamSpec, TypedDict, TypeVar
+from typing import Any, assert_never, Final, Literal, ParamSpec, TypedDict
 
 import pydantic
 
@@ -697,10 +696,7 @@ class InterfaceWithRatesAndAverages:
         return rate_with_avg
 
 
-TInterfaceType = TypeVar("TInterfaceType", InterfaceWithCounters, InterfaceWithRates)
-
-
-Section = Sequence[TInterfaceType]
+type Section[TInterfaceType: (InterfaceWithCounters, InterfaceWithRates)] = Sequence[TInterfaceType]
 
 
 def saveint(i: Any) -> int:
@@ -769,7 +765,7 @@ def render_mac_address(phys_address: Iterable[int] | str) -> str:
     return (":".join(["%02s" % hex(m)[2:] for m in mac_bytes]).replace(" ", "0")).upper()
 
 
-def matching_interfaces_for_item(
+def matching_interfaces_for_item[TInterfaceType: (InterfaceWithCounters, InterfaceWithRates)](
     item: str,
     section: Section[TInterfaceType],
     appearance: _ItemAppearance | None = None,
@@ -785,7 +781,9 @@ def matching_interfaces_for_item(
         yield match
 
 
-def _matching_clustered_interfaces_for_item(
+def _matching_clustered_interfaces_for_item[
+    TInterfaceType: (InterfaceWithCounters, InterfaceWithRates)
+](
     item: str,
     section: Section[TInterfaceType],
     appearance: _ItemAppearance | None,
@@ -806,7 +804,9 @@ def _matching_clustered_interfaces_for_item(
             yield match
 
 
-def _matching_unclustered_interface_for_item(
+def _matching_unclustered_interface_for_item[
+    TInterfaceType: (InterfaceWithCounters, InterfaceWithRates)
+](
     item: str,
     section: Section[TInterfaceType],
     appearance: _ItemAppearance | None,
@@ -818,7 +818,9 @@ def _matching_unclustered_interface_for_item(
     )
 
 
-def _matching_interface_for_simple_item(
+def _matching_interface_for_simple_item[
+    TInterfaceType: (InterfaceWithCounters, InterfaceWithRates)
+](
     item: str,
     ifaces: Iterable[TInterfaceType],
     appearance: _ItemAppearance | None,
@@ -844,7 +846,9 @@ def _matching_interface_for_simple_item(
     )
 
 
-def _matching_interface_for_compound_item(
+def _matching_interface_for_compound_item[
+    TInterfaceType: (InterfaceWithCounters, InterfaceWithRates)
+](
     item: str,
     ifaces: Iterable[TInterfaceType],
     appearance: _ItemAppearance | None,
@@ -871,7 +875,7 @@ def _matching_interface_for_compound_item(
 
 # Pads port numbers with zeroes, so that items
 # nicely sort alphabetically
-def _pad_with_zeroes(
+def _pad_with_zeroes[TInterfaceType: (InterfaceWithCounters, InterfaceWithRates)](
     section: Section[TInterfaceType],
     ifIndex: str,
     pad_portnumbers: bool,
@@ -1027,7 +1031,7 @@ class ItemInfo:
     item: str
 
 
-def _compute_item(
+def _compute_item[TInterfaceType: (InterfaceWithCounters, InterfaceWithRates)](
     configured_item_appearance: _ItemAppearance,
     attributes: Attributes,
     section: Section[TInterfaceType],
@@ -1159,7 +1163,7 @@ def _groups_from_params(
     return groups
 
 
-def discover_interfaces(
+def discover_interfaces[TInterfaceType: (InterfaceWithCounters, InterfaceWithRates)](
     params: Sequence[Mapping[str, Any]],
     section: Section[TInterfaceType],
 ) -> DiscoveryResult:
@@ -1342,7 +1346,7 @@ def discover_interfaces(
 GroupMembers = dict[str | None, list[MemberInfo]]
 
 
-def _check_ungrouped_ifs(
+def _check_ungrouped_ifs[TInterfaceType: (InterfaceWithCounters, InterfaceWithRates)](
     item: str,
     params: Mapping[str, Any],
     section: Section[TInterfaceType],
@@ -1478,7 +1482,7 @@ def _accumulate_get_rate_errors(
     )
 
 
-def _group_members(
+def _group_members[TInterfaceType: (InterfaceWithCounters, InterfaceWithRates)](
     *,
     matching_attributes: Iterable[Attributes],
     item: str,
@@ -1520,7 +1524,7 @@ def _group_members(
     return group_members
 
 
-def _check_grouped_ifs(
+def _check_grouped_ifs[TInterfaceType: (InterfaceWithCounters, InterfaceWithRates)](
     item: str,
     params: Mapping[str, Any],
     section: Section[TInterfaceType],
@@ -1569,7 +1573,7 @@ def _check_grouped_ifs(
     )
 
 
-def check_multiple_interfaces(
+def check_multiple_interfaces[TInterfaceType: (InterfaceWithCounters, InterfaceWithRates)](
     item: str,
     params: Mapping[str, Any],
     section: Section[TInterfaceType],
@@ -1670,12 +1674,12 @@ _METRICS_TO_LEGACY_MAP = {
 # renaming metrics currently leads to a loss of historic data in Checkmk Community, even if there is a
 # corresponding translation. This issue will hopefully be eliminated in the 2.3. Once this is the
 # case, we can remove _rename_metrics_to_legacy.
-def _rename_metrics_to_legacy(
-    check_interfaces: Callable[_TCheckInterfaceParams, CheckResult],
-) -> Callable[_TCheckInterfaceParams, CheckResult]:
+def _rename_metrics_to_legacy[**TCheckInterfaceParams](
+    check_interfaces: Callable[TCheckInterfaceParams, CheckResult],
+) -> Callable[TCheckInterfaceParams, CheckResult]:
     def rename_metrics_to_legacy(
-        *args: _TCheckInterfaceParams.args,
-        **kwargs: _TCheckInterfaceParams.kwargs,
+        *args: TCheckInterfaceParams.args,
+        **kwargs: TCheckInterfaceParams.kwargs,
     ) -> CheckResult:
         yield from (
             (
@@ -2343,7 +2347,7 @@ def _check_single_packet_rate(
     )
 
 
-def cluster_check(
+def cluster_check[TInterfaceType: (InterfaceWithCounters, InterfaceWithRates)](
     item: str,
     params: Mapping[str, Any],
     section: Mapping[str, Section[TInterfaceType] | None],

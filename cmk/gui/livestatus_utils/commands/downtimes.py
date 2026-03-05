@@ -6,7 +6,7 @@
 
 import datetime as dt
 from collections.abc import Hashable, Sequence
-from typing import Literal, TypeVar
+from typing import Literal
 
 from livestatus import MultiSiteConnection
 
@@ -852,10 +852,7 @@ def _recur_mode(recur: RecurMode, duration: int) -> int:
     return rv
 
 
-_T = TypeVar("_T", bound=Hashable)
-
-
-def _deduplicate(seq: Sequence[_T]) -> list[_T]:
+def _deduplicate[T: Hashable](seq: Sequence[T]) -> list[T]:
     """Like set() but retains sorting order of input.
 
     Args:
@@ -868,8 +865,8 @@ def _deduplicate(seq: Sequence[_T]) -> list[_T]:
 
 
     """
-    result: list[_T] = []
-    seen: set[_T] = set()
+    result: list[T] = []
+    seen: set[T] = set()
     for entry in seq:
         if entry in seen:
             continue

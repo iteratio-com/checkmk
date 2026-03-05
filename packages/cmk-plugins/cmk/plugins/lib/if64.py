@@ -380,10 +380,12 @@ def parse_if64(
     return generic_parse_if64(preprocessed_lines, timestamp)
 
 
-def generic_check_if64(
+def generic_check_if64[
+    TInterfaceType: (interfaces.InterfaceWithCounters, interfaces.InterfaceWithRates)
+](
     item: str,
     params: Mapping[str, Any],
-    section: interfaces.Section[interfaces.TInterfaceType],
+    section: interfaces.Section[TInterfaceType],
 ) -> CheckResult:
     yield from interfaces.check_multiple_interfaces(
         item,

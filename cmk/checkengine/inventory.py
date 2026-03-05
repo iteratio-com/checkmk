@@ -20,7 +20,7 @@ from collections.abc import (
     Sequence,
 )
 from dataclasses import dataclass, field
-from typing import Any, assert_never, TypeVar
+from typing import Any, assert_never
 
 import cmk.ccc.debug
 import cmk.utils.paths
@@ -385,10 +385,9 @@ def _collect_inventory_plugin_items(
             console.verbose(f" {tty.green}{tty.bold}{plugin_name}{tty.normal}: ok")
 
 
-_TV = TypeVar("_TV", bound=Attributes | TableRow)
-
-
-def _parse_inventory_plugin_item(item: _TV, expected_class_name: str) -> _TV:
+def _parse_inventory_plugin_item[TV: Attributes | TableRow](
+    item: TV, expected_class_name: str
+) -> TV:
     if item.__class__.__name__ != expected_class_name:
         raise TypeError(
             f"Cannot create {item.__class__.__name__} at path {item.path}:"

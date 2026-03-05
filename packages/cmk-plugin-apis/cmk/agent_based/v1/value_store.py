@@ -35,15 +35,13 @@ the check function is called.
 
 .. autofunction:: set_value_store_manager
 
-.. autoclass:: _TypeValueStoreManager
-
 .. autoclass:: _ValueStoreManagerProtocol
 
 """
 
 from collections.abc import Iterator, MutableMapping
 from contextlib import contextmanager
-from typing import Any, Protocol, TypeVar
+from typing import Any, Protocol
 
 
 class _ValueStoreManagerProtocol(Protocol):
@@ -70,15 +68,12 @@ def get_value_store() -> MutableMapping[str, Any]:
     return _active_host_value_store.active_service_interface
 
 
-_TypeValueStoreManager = TypeVar("_TypeValueStoreManager", bound=_ValueStoreManagerProtocol)
-
-
 @contextmanager
-def set_value_store_manager(
-    vs_manager: _TypeValueStoreManager,
+def set_value_store_manager[TypeValueStoreManager: _ValueStoreManagerProtocol](
+    vs_manager: TypeValueStoreManager,
     *,
     store_changes: bool,
-) -> Iterator[_TypeValueStoreManager]:
+) -> Iterator[TypeValueStoreManager]:
     """Create and load the value store for the host
 
     This class is not to be used by plug-ins, and not part of the plug-in API.

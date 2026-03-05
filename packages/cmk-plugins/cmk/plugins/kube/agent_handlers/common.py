@@ -9,7 +9,7 @@ import re
 from collections import defaultdict
 from collections.abc import Callable, Collection, Sequence
 from dataclasses import dataclass
-from typing import Literal, NamedTuple, TypeVar
+from typing import Literal, NamedTuple
 
 from cmk.plugins.kube.api_server import APIData
 from cmk.plugins.kube.schemata import api, section
@@ -113,12 +113,9 @@ PB_KUBE_OBJECT = (
 PiggybackFormatter = Callable[[PB_KUBE_OBJECT], str]
 
 
-KubeNamespacedObj = TypeVar(
-    "KubeNamespacedObj", bound=DaemonSet | Deployment | StatefulSet | api.CronJob | api.Pod
-)
-
-
-def kube_object_namespace_name(kube_object: KubeNamespacedObj) -> NamespaceName:
+def kube_object_namespace_name[
+    KubeNamespacedObj: DaemonSet | Deployment | StatefulSet | api.CronJob | api.Pod
+](kube_object: KubeNamespacedObj) -> NamespaceName:
     """The namespace name of the Kubernetes object"""
     return kube_object.metadata.namespace
 

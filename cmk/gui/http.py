@@ -4,9 +4,7 @@
 # conditions defined in the file COPYING, which is part of this source code package.
 
 # mypy: disable-error-code="comparison-overlap"
-
 # mypy: disable-error-code="mutable-override"
-
 # mypy: disable-error-code="no-any-return"
 # mypy: disable-error-code="type-arg"
 
@@ -19,7 +17,7 @@ import urllib.parse
 from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
 from enum import auto, StrEnum
-from typing import Any, cast, Literal, overload, Protocol, TypeVar
+from typing import Any, cast, Literal, overload, Protocol
 
 import flask
 from flask import request as flask_request
@@ -34,9 +32,6 @@ from cmk.gui.i18n import _
 from cmk.utils.urls import is_allowed_url
 
 UploadedFile = tuple[str, str, bytes]
-T = TypeVar("T")
-Value = TypeVar("Value")
-
 HTTPMethod = Literal["get", "put", "post", "delete"]
 
 
@@ -79,11 +74,6 @@ class ValidatedClass(Protocol):
     def __new__(cls, value: str) -> "ValidatedClass":
         # must raise ValueErrors if value is not valid
         ...
-
-
-Validation_T = TypeVar("Validation_T", bound=ValidatedClass)
-
-Model_T = TypeVar("Model_T", bound=BaseModel)
 
 
 class LegacyVarsMixin:
@@ -291,7 +281,7 @@ class LegacyDeprecatedMixin:
         return self.is_secure  # type: ignore[attr-defined]
 
 
-def mandatory_parameter(varname: str, value: T | None) -> T:
+def mandatory_parameter[T](varname: str, value: T | None) -> T:
     if value is None:
         raise MKUserError(varname, _('The parameter "%s" is missing.') % varname)
     return value
@@ -366,7 +356,7 @@ class Request(
     def get_str_input_mandatory(self, varname: str, deflt: str | None = None) -> str:
         return mandatory_parameter(varname, self.get_str_input(varname, deflt))
 
-    def get_model_mandatory(
+    def get_model_mandatory[Model_T: BaseModel](
         self,
         model: type[Model_T],
         varname: str,
@@ -378,7 +368,7 @@ class Request(
             raise MKUserError(varname, _("The value is not valid: '%s'") % exception)
 
     @overload
-    def get_validated_type_input(
+    def get_validated_type_input[Validation_T: ValidatedClass](
         self,
         type_: type[Validation_T],
         varname: str,
@@ -387,7 +377,7 @@ class Request(
     ) -> Validation_T | None: ...
 
     @overload
-    def get_validated_type_input(
+    def get_validated_type_input[Validation_T: ValidatedClass](
         self,
         type_: type[Validation_T],
         varname: str,
@@ -397,7 +387,7 @@ class Request(
     ) -> Validation_T | None: ...
 
     @overload
-    def get_validated_type_input(
+    def get_validated_type_input[Validation_T: ValidatedClass](
         self,
         type_: type[Validation_T],
         varname: str,
@@ -406,7 +396,7 @@ class Request(
         empty_is_none: bool = False,
     ) -> Validation_T: ...
 
-    def get_validated_type_input(
+    def get_validated_type_input[Validation_T: ValidatedClass](
         self,
         type_: type[Validation_T],
         varname: str,
@@ -435,7 +425,7 @@ class Request(
         except ValueError as exception:
             raise MKUserError(varname, _("The value is not valid: '%s'") % exception)
 
-    def get_validated_type_input_mandatory(
+    def get_validated_type_input_mandatory[Validation_T: ValidatedClass](
         self,
         type_: type[Validation_T],
         varname: str,
@@ -502,7 +492,9 @@ class Request(
     def get_float_input_mandatory(self, varname: str, deflt: float | None = None) -> float:
         return mandatory_parameter(varname, self.get_float_input(varname, deflt))
 
-    def get_item_input(self, varname: str, collection: Mapping[str, Value]) -> tuple[Value, str]:
+    def get_item_input[Value](
+        self, varname: str, collection: Mapping[str, Value]
+    ) -> tuple[Value, str]:
         """Helper to get an item from the given collection
         Raises a MKUserError() in case the requested item is not available."""
         item = self.get_ascii_input(varname)

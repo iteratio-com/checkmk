@@ -17,7 +17,7 @@ import time
 from collections.abc import Callable, Container, Iterable, Mapping, Sequence
 from contextlib import suppress
 from pathlib import Path
-from typing import Final, Literal, NamedTuple, TypedDict, TypeVar
+from typing import Final, Literal, NamedTuple, TypedDict
 
 import livestatus
 
@@ -2261,8 +2261,6 @@ _CHECK_DISCOVERY_MODE = Mode(
 #   |                                                                      |
 #   '----------------------------------------------------------------------'
 
-_TName = TypeVar("_TName", str, CheckPluginName, InventoryPluginName, SectionName)
-
 
 def _convert_sections_argument(arg: str) -> set[SectionName]:
     try:
@@ -2284,8 +2282,10 @@ _option_sections = Option(
 )
 
 
-def _get_plugins_option(type_: type[_TName]) -> Option:
-    def _convert_plugins_argument(arg: str) -> set[_TName]:
+def _get_plugins_option[TName: (str, CheckPluginName, InventoryPluginName, SectionName)](
+    type_: type[TName],
+) -> Option:
+    def _convert_plugins_argument(arg: str) -> set[TName]:
         try:
             # kindly forgive empty strings
             return {type_(n) for n in arg.split(",") if n}
@@ -2319,11 +2319,9 @@ _option_detect_plugins = Option(
     argument_conv=_convert_detect_plugins_argument,
 )
 
-_PluginName = TypeVar("_PluginName", CheckPluginName, InventoryPluginName)
 
-
-def _lookup_plugin(
-    plugin_name: _PluginName, plugins: Mapping[_PluginName, CheckPlugin | InventoryPlugin]
+def _lookup_plugin[PluginName: (CheckPluginName, InventoryPluginName)](
+    plugin_name: PluginName, plugins: Mapping[PluginName, CheckPlugin | InventoryPlugin]
 ) -> CheckPlugin | InventoryPlugin:
     try:
         return plugins[plugin_name]
@@ -2331,11 +2329,11 @@ def _lookup_plugin(
         raise MKBailOut(f"Unknown check plugin '{plugin_name}'") from exc
 
 
-def _extract_plugin_selection(
+def _extract_plugin_selection[PluginName: (CheckPluginName, InventoryPluginName)](
     options: "_CheckingOptions | _DiscoveryOptions | _InventoryOptions",
-    plugins: Mapping[_PluginName, CheckPlugin | InventoryPlugin],
+    plugins: Mapping[PluginName, CheckPlugin | InventoryPlugin],
     sections: Iterable[AgentSectionPlugin | SNMPSectionPlugin],
-    type_: type[_PluginName],
+    type_: type[PluginName],
 ) -> tuple[SectionNameCollection, Container]:
     detect_plugins = options.get("detect-plugins")
     if detect_plugins is None:

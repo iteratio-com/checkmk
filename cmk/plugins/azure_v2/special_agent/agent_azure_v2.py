@@ -34,7 +34,7 @@ from collections.abc import Coroutine, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from enum import Enum
 from multiprocessing import Lock
-from typing import Any, Final, Literal, Required, TypedDict, TypeVar
+from typing import Any, Final, Literal, Required, TypedDict
 
 import requests
 from pydantic import BaseModel, RootModel
@@ -66,7 +66,6 @@ from cmk.server_side_programs.v1_unstable import report_agent_crashes, vcrtrace
 
 from ._data_cache import DataCache
 
-T = TypeVar("T")
 type ResourceId = str
 
 __version__ = "2.6.0b1"
@@ -251,7 +250,7 @@ class TagsImportPatternOption(enum.Enum):
 TagsOption = str | Literal[TagsImportPatternOption.ignore_all, TagsImportPatternOption.import_all]
 
 
-def _chunks(list_: Sequence[T], length: int = 50) -> Sequence[Sequence[T]]:
+def _chunks[T](list_: Sequence[T], length: int = 50) -> Sequence[Sequence[T]]:
     return [list_[i : i + length] for i in range(0, len(list_), length)]
 
 

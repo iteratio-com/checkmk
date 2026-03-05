@@ -9,7 +9,7 @@ import abc
 import logging
 from collections.abc import Iterable, Iterator, Sequence
 from pprint import pformat
-from typing import Generic, NamedTuple, Protocol, TypeVar
+from typing import NamedTuple, Protocol
 
 import pytest
 
@@ -34,10 +34,6 @@ from tests.unit.cmk.gui.common_fixtures import perform_load_plugins
 
 logger = logging.getLogger(__name__)
 
-T = TypeVar("T")
-TF = TypeVar("TF", bound=Rulespec)
-TC = TypeVar("TC", bound=CheckPlugin | InventoryPlugin)
-
 
 @pytest.fixture(autouse=True)
 def load_plugins() -> None:
@@ -53,7 +49,7 @@ class DefaultLoadingFailed(Exception):
     pass
 
 
-class Base(Generic[T], abc.ABC):
+class Base[T](abc.ABC):
     type: str
 
     def __init__(self, element: T) -> None:
@@ -116,7 +112,7 @@ class PluginProtocol(BaseProtocol, Protocol):
     def get_default_parameters(self) -> ParametersTypeAlias | None: ...
 
 
-class Plugin(Base[TC], abc.ABC):
+class Plugin[TC: CheckPlugin | InventoryPlugin](Base[TC], abc.ABC):
     def get_description(self) -> str:
         return f"{self.type}-plugin '{self.get_name()}'"
 
@@ -163,7 +159,7 @@ class PluginCheck(Plugin[CheckPlugin]):
         return "%" in self._element.service_name
 
 
-class Wato(Base[TF]):
+class Wato[TF: Rulespec](Base[TF]):
     def get_description(self) -> str:
         return f"wato {self.type}-rule '{self.get_name()}'"
 
@@ -411,18 +407,13 @@ class ErrorReporter:
 ################################################################################
 
 
-T_contra = TypeVar("T_contra", contravariant=True)
-
-
-class SupportsGreaterThan(Protocol, Generic[T_contra]):
+class SupportsGreaterThan[T_contra](Protocol):
     def __gt__(self, other: T_contra) -> bool: ...
 
 
-A = TypeVar("A", bound=SupportsGreaterThan)
-B = TypeVar("B")
-
-
-def merge(a: Iterable[A], b: Iterable[B]) -> Iterator[tuple[A | None, B | None]]:
+def merge[A: SupportsGreaterThan, B](
+    a: Iterable[A], b: Iterable[B]
+) -> Iterator[tuple[A | None, B | None]]:
     """
     merge a and b in a way that elements that are equal in a and b are in the
     same tuple.

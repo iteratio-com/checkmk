@@ -7,7 +7,7 @@
 # mypy: disable-error-code="type-arg"
 
 from collections.abc import Mapping, Sequence
-from typing import Any, override, TypeVar
+from typing import Any, override
 
 from cmk.gui.config import active_config, Config
 from cmk.gui.exceptions import MKUserError
@@ -26,8 +26,6 @@ from cmk.gui.valuespec import (
 from cmk.gui.valuespec.definitions import ValueSpec
 from cmk.utils.tags import AuxTag, TagGroup, TagGroupID, TagID
 
-_TagChoiceID = TypeVar("_TagChoiceID", TagGroupID, TagID)
-
 
 def _is_or_is_not(label: str | None = None) -> DropdownChoice:
     return DropdownChoice(
@@ -39,9 +37,9 @@ def _is_or_is_not(label: str | None = None) -> DropdownChoice:
     )
 
 
-def _single_tag_choice(
-    tag_group_id: _TagChoiceID, choice_title: str, tag_id: TagID | None, title: str
-) -> tuple[_TagChoiceID, Tuple]:
+def _single_tag_choice[TagChoiceID: (TagGroupID, TagID)](
+    tag_group_id: TagChoiceID, choice_title: str, tag_id: TagID | None, title: str
+) -> tuple[TagChoiceID, Tuple]:
     return (
         tag_group_id,
         Tuple(

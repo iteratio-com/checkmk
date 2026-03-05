@@ -18,7 +18,7 @@ import traceback
 from collections.abc import Callable, Mapping, Sequence
 from datetime import datetime
 from pathlib import Path
-from typing import Any, cast, Literal, TypeVar
+from typing import Any, cast, Literal
 
 import cmk.gui.pages
 import cmk.utils.paths
@@ -59,12 +59,10 @@ from ._connector import UserConnector
 from ._user_attribute import UserAttribute
 from ._user_spec import add_internal_attributes, new_user_template
 
-T = TypeVar("T")
-
 _ContactgroupName = str
 
 
-def load_custom_attr(
+def load_custom_attr[T](
     *,
     user_id: UserId,
     key: str,

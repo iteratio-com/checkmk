@@ -33,14 +33,12 @@ from cmk.plugins.kube.api_server import APIData
 from cmk.plugins.kube.schemata import api
 from cmk.plugins.kube.special_agents import agent_kube as agent
 
-T = typing.TypeVar("T", bound=pydantic.BaseModel)
 
-
-class Batch(typing.Protocol[T]):
+class Batch[T: pydantic.BaseModel](typing.Protocol):
     def __call__(self, size: int) -> list[T]: ...
 
 
-def randomize_size(batch: Batch[T]) -> typing.Callable[[], list[T]]:
+def randomize_size[T: pydantic.BaseModel](batch: Batch[T]) -> typing.Callable[[], list[T]]:
     def use() -> list[T]:
         return batch(size=random.choice([0, 1, 2, 4, 8]))
 

@@ -9,7 +9,7 @@
 import abc
 from collections.abc import Mapping, Sequence
 from enum import Enum
-from typing import Any, override, TypeVar
+from typing import Any, override
 
 import cmk.utils.paths
 import cmk.utils.tags
@@ -417,10 +417,7 @@ def _change_host_tags_in_hosts(
     return affected_hosts
 
 
-T = TypeVar("T", Folder, Host)
-
-
-def _change_host_tags_in_host_or_folder(
+def _change_host_tags_in_host_or_folder[T: (Folder, Host)](
     operation: ABCTagGroupOperation | OperationReplaceGroupedTags,
     mode: TagCleanupMode,
     host_or_folder: T,

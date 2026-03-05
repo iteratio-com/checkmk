@@ -2482,9 +2482,11 @@ def test_cluster_check_ignore_discovered_params() -> None:
         ),
     ],
 )
-def test_matching_interfaces_for_item(
+def test_matching_interfaces_for_item[
+    TInterfaceType: (interfaces.InterfaceWithCounters, interfaces.InterfaceWithRates)
+](
     item: str,
-    section: interfaces.Section[interfaces.TInterfaceType],
+    section: interfaces.Section[TInterfaceType],
     expected_matches: Sequence[interfaces.Attributes],
 ) -> None:
     assert [
@@ -2711,10 +2713,12 @@ def test_matching_interfaces_for_item(
         ),
     ],
 )
-def test_matching_interfaces_for_item_clear_mixup_with_appearance(
+def test_matching_interfaces_for_item_clear_mixup_with_appearance[
+    TInterfaceType: (interfaces.InterfaceWithCounters, interfaces.InterfaceWithRates)
+](
     item: str,
     appearance: interfaces._ItemAppearance | None,
-    section: interfaces.Section[interfaces.TInterfaceType],
+    section: interfaces.Section[TInterfaceType],
     expected_matches: Sequence[interfaces.Attributes],
 ) -> None:
     assert [

@@ -10,10 +10,12 @@ from cmk.agent_based.v2 import CheckPlugin, CheckResult, RuleSetType
 from cmk.plugins.lib import interfaces
 
 
-def check_interfaces(
+def check_interfaces[
+    TInterfaceType: (interfaces.InterfaceWithCounters, interfaces.InterfaceWithRates)
+](
     item: str,
     params: Mapping[str, Any],
-    section: interfaces.Section[interfaces.TInterfaceType],
+    section: interfaces.Section[TInterfaceType],
 ) -> CheckResult:
     yield from interfaces.check_multiple_interfaces(
         item=item,

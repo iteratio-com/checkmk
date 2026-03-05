@@ -4,7 +4,6 @@
 # conditions defined in the file COPYING, which is part of this source code package.
 
 # mypy: disable-error-code="comparison-overlap"
-
 # mypy: disable-error-code="mutable-override"
 # mypy: disable-error-code="no-any-return"
 # mypy: disable-error-code="unreachable"
@@ -51,18 +50,7 @@ from collections.abc import (
 from enum import Enum
 from pathlib import Path
 from re import Pattern
-from typing import (
-    Any,
-    cast,
-    Final,
-    Generic,
-    Literal,
-    NamedTuple,
-    Protocol,
-    SupportsFloat,
-    TypeAlias,
-    TypeVar,
-)
+from typing import Any, cast, Final, Literal, NamedTuple, Protocol, SupportsFloat
 
 import dateutil.parser
 from dateutil.relativedelta import relativedelta
@@ -138,41 +126,37 @@ class Sentinel:
 # Some arbitrary object for checking whether or not default_value was set
 DEF_VALUE = Sentinel()
 
-T = TypeVar("T")
-
 # A value which can be delayed.
 # NOTE: Due to the use of Union below, we can't have Callables as values.
 # NOTE: No caching, so it's different from e.g. Scheme's delay/force.
-Promise: TypeAlias = T | Callable[[], T]
+type Promise[T] = T | Callable[[], T]
 
 
 # NOTE: This helper function should be used everywhere instead of dispatching on
 # callable() all over the place, but there is currently a bug in mypy, which would
 # result in a return type of "object". :-/ https://github.com/python/mypy/issues/6751
-def force(p: Promise[T]) -> T:
+def force[T](p: Promise[T]) -> T:
     return p() if callable(p) else p
 
 
-ValueSpecValidateFunc = Callable[[T, str], None]
-ValueSpecDefault = Promise[Sentinel | T]
+type ValueSpecValidateFunc[T] = Callable[[T, str], None]
+type ValueSpecDefault[T] = Promise[Sentinel | T]
 ValueSpecText = str | HTML
 ValueSpecHelp = Promise[ValueSpecText]
 # TODO: redefine after https://github.com/python/mypy/pull/13516 is released
 JSONValue = Any
 
-C = TypeVar("C", bound="Comparable")
-
 
 # Look, mom, we finally have Haskell type classes! :-D Naive version requiring
 # only <, hopefully some similar class will make it into typing soon...
-class Comparable(Protocol):
+class Comparable[C: Comparable](Protocol):
     @abc.abstractmethod
     def __lt__(self: C, other: C) -> bool:
         pass
 
 
 # NOTE: Bounds are inclusive!
-class Bounds(Generic[C]):
+class Bounds[C: Comparable]:
     def __init__(self, lower: C | None, upper: C | None) -> None:
         super().__init__()
         self._lower = lower
@@ -217,7 +201,7 @@ class Bounds(Generic[C]):
         return value
 
 
-class ValueSpec(abc.ABC, Generic[T]):
+class ValueSpec[T](abc.ABC):
     """Abstract base class of all value declaration classes"""
 
     # TODO: Cleanup help argument redefined-builtin
@@ -377,7 +361,7 @@ class ValueSpec(abc.ABC, Generic[T]):
 
 
 # TODO: T should be bound to JSONValue
-class FixedValue(ValueSpec[T]):
+class FixedValue[T](ValueSpec[T]):
     """A fixed non-editable value, e.g. to be used in 'Alternative'"""
 
     def __init__(
@@ -2296,10 +2280,10 @@ def ListOfNetworkPorts(title: str | None, default_value: Sequence[int]) -> ListO
     )
 
 
-ListOfModel = Sequence[T]
+type ListOfModel[T] = Sequence[T]
 
 
-class ListOf(ValueSpec[ListOfModel[T]]):
+class ListOf[T](ValueSpec[ListOfModel[T]]):
     """Generic list-of-valuespec ValueSpec with Javascript-based add/delete/move"""
 
     class Style(Enum):
@@ -3017,13 +3001,13 @@ class Checkbox(ValueSpec[bool]):
             )
 
 
-DropdownChoiceEntry = tuple[T, str]
+type DropdownChoiceEntry[T] = tuple[T, str]
 DropdownChoiceEntries = Sequence[DropdownChoiceEntry]
 DropdownChoices = Promise[DropdownChoiceEntries]
 DropdownInvalidChoice = Literal[None, "complain", "replace"]
 
 
-class DropdownChoice(ValueSpec[T | None]):
+class DropdownChoice[T](ValueSpec[T | None]):
     """A type-safe dropdown choice
 
     Parameters:
@@ -4353,7 +4337,7 @@ class DualListChoice(ListChoice):
         return value
 
 
-class OptionalDropdownChoice(DropdownChoice[T]):
+class OptionalDropdownChoice[T](DropdownChoice[T]):
     """A type-safe dropdown choice with one extra field that
     opens a further value spec for entering an alternative
     Value."""
@@ -5547,7 +5531,7 @@ def TimeFormat(
     )
 
 
-class Optional(ValueSpec[None | T]):
+class Optional[T](ValueSpec[None | T]):
     """Make a configuration value optional, i.e. it may be None.
 
     The user has a checkbox for activating the option. Example:
@@ -5856,10 +5840,7 @@ class Alternative(ValueSpec[AlternativeModel]):
         return vs.transform_value(value)
 
 
-TT = TypeVar("TT", bound=tuple[Any, ...])
-
-
-class Tuple(ValueSpec[TT]):
+class Tuple[TT: tuple[Any, ...]](ValueSpec[TT]):
     # TODO: wait for TypeVarTuple mypy support:
     # https://github.com/python/mypy/issues/12840
     """Edit a n-tuple (with fixed size) of values"""
@@ -6557,7 +6538,7 @@ class AutoTimestamp(FixedValue[float]):
             raise MKUserError(varprefix, _("Invalid data type of timestamp: must be int or float."))
 
 
-class Foldable(ValueSpec[T]):
+class Foldable[T](ValueSpec[T]):
     """Fully transparant VS encapsulating a vs in a foldable container"""
 
     def __init__(
@@ -6638,7 +6619,7 @@ class Foldable(ValueSpec[T]):
         return self._valuespec.has_show_more()
 
 
-class Transform(ValueSpec[T]):
+class Transform[T](ValueSpec[T]):
     """Transforms the value from one representation to another while being
     completely transparent to the user
 
@@ -6739,7 +6720,7 @@ class Transform(ValueSpec[T]):
         return self.from_valuespec(self._valuespec.value_from_json(json_value))
 
 
-class Migrate(Transform[T]):
+class Migrate[T](Transform[T]):
     """Migrates a value from a legacy format to the current format while
     being completely transparent to the user
 
@@ -6769,13 +6750,13 @@ class Migrate(Transform[T]):
         )
 
 
-class MigrateNotUpdated(Migrate[T]):
+class MigrateNotUpdated[T](Migrate[T]):
     """Marks places which are not covered by update_config, ie. places which cannot
     be cleaned up after a new major release.
     """
 
 
-class Transparent(Transform[T]):
+class Transparent[T](Transform[T]):
     """Transparenly changes the title or the help of a wrapped ValueSpec"""
 
     def __init__(
@@ -7472,7 +7453,7 @@ class Labels(ValueSpec[LabelsModel]):
         raise NotImplementedError()
 
 
-AndOrNotDropdownValue = tuple[AndOrNotLiteral, T | None]
+type AndOrNotDropdownValue[T] = tuple[AndOrNotLiteral, T | None]
 ListOfAndOrNotDropdownValue = Sequence[AndOrNotDropdownValue]
 
 
@@ -8460,7 +8441,7 @@ class _CAorCAChain(UploadOrPasteTextFile):
         return HTMLWriter.render_table(HTML.empty().join(rows))
 
 
-def ListOfCAs(
+def ListOfCAs[T](
     # ListOf
     magic: str = "@!@",
     add_label: str | None = None,
@@ -8794,7 +8775,7 @@ class DatePicker(ValueSpec[str]):
     def value_from_json(self, json_value: JSONValue) -> str:
         return json_value
 
-    def value_to_json(self, value: T) -> JSONValue:
+    def value_to_json[T](self, value: T) -> JSONValue:
         return value
 
     def validate_value(self, value: str, varprefix: str) -> None:
@@ -8841,7 +8822,7 @@ class TimePicker(ValueSpec[str]):
     def value_from_json(self, json_value: JSONValue) -> str:
         return json_value
 
-    def value_to_json(self, value: T) -> JSONValue:
+    def value_to_json[T](self, value: T) -> JSONValue:
         return value
 
     def validate_value(self, value: str, varprefix: str) -> None:

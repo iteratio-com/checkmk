@@ -10,7 +10,7 @@
 import os
 import re
 from collections.abc import Sequence
-from typing import Any, AnyStr, Final
+from typing import Any, Final
 
 import pytest
 
@@ -98,7 +98,7 @@ def change_config_cpuload_method(  # type: ignore[no-untyped-def]
 
 @pytest.fixture(name="testconfig", params=["alone", "with_systemtime"])
 def fixture_testconfig(  # type: ignore[no-untyped-def]
-    request, config_with_cpuload_method
+    request, config_with_cpuload_method: dict[str, Any]
 ) -> dict[str, Any]:
     Globals.alone = request.param == "alone"
     config_with_cpuload_method["global"]["sections"] = (
@@ -109,7 +109,7 @@ def fixture_testconfig(  # type: ignore[no-untyped-def]
 
 
 @pytest.fixture(name="expected")
-def expected_output_engine(testconfig) -> Sequence[str]:  # type: ignore[no-untyped-def]
+def expected_output_engine(testconfig: dict[str, Any]) -> Sequence[str]:
     method = testconfig["global"]["cpuload_method"]
     expected = [
         re.escape(f"<<<{Globals.section}:sep(124)>>>"),
@@ -125,9 +125,9 @@ def expected_output_engine(testconfig) -> Sequence[str]:  # type: ignore[no-unty
     return expected
 
 
-def test_section_wmi_cpuload(  # type: ignore[no-untyped-def]
+def test_section_wmi_cpuload[AnyStr: (bytes, str)](
     expected: Sequence[str], actual_output: Sequence[str], testfile: AnyStr
-):
+) -> None:
     required_lines = 7
     name = "cpu_load"
 

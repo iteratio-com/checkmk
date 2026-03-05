@@ -13,7 +13,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterator, Mapping, Sequence
 from contextlib import suppress
 from dataclasses import dataclass, field
-from typing import Annotated, assert_never, final, Literal, TypeVar
+from typing import Annotated, assert_never, final, Literal
 
 from pydantic import BaseModel, computed_field, PlainValidator, SerializeAsAny
 
@@ -168,13 +168,10 @@ def _derive_num_points(
     )
 
 
-_TOperatorReturn = TypeVar("_TOperatorReturn")
-
-
-def op_func_wrapper(
-    op_func: Callable[[TimeSeries | TimeSeriesValues], _TOperatorReturn],
+def op_func_wrapper[TOperatorReturn](
+    op_func: Callable[[TimeSeries | TimeSeriesValues], TOperatorReturn],
     tsp: TimeSeries | TimeSeriesValues,
-) -> _TOperatorReturn | None:
+) -> TOperatorReturn | None:
     if tsp.count(None) < len(tsp):  # At least one non-None value
         try:
             return op_func(tsp)

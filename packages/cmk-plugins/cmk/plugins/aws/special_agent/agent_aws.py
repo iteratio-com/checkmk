@@ -8,7 +8,6 @@ Checkmk special agent for monitoring Amazon Web Services (AWS).
 """
 
 # mypy: disable-error-code="comparison-overlap"
-
 # mypy: disable-error-code="no-any-return"
 # mypy: disable-error-code="redundant-expr"
 # mypy: disable-error-code="type-arg"
@@ -34,16 +33,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum, StrEnum
 from time import sleep
-from typing import (
-    Any,
-    assert_never,
-    Literal,
-    NamedTuple,
-    NotRequired,
-    TYPE_CHECKING,
-    TypedDict,
-    TypeVar,
-)
+from typing import Any, assert_never, Literal, NamedTuple, NotRequired, TYPE_CHECKING, TypedDict
 
 import boto3
 import botocore
@@ -123,8 +113,6 @@ Scope = Literal["REGIONAL", "CLOUDFRONT"]
 LoadBalancers = dict[str, list[tuple[str, Sequence[str]]]]
 Buckets = Sequence[Mapping[Literal["Name", "CreationDate"], str | datetime]]
 Results = dict[tuple[str, float, float], Sequence["AWSSectionResult"]]
-
-T = TypeVar("T")
 
 
 class Quota(BaseModel):
@@ -405,7 +393,7 @@ class AWSConfig:
 #   '----------------------------------------------------------------------'
 
 
-def _chunks(list_: Sequence[T], length: int = 100) -> Sequence[Sequence[T]]:
+def _chunks[T](list_: Sequence[T], length: int = 100) -> Sequence[Sequence[T]]:
     return [list_[i : i + length] for i in range(0, len(list_), length)]
 
 
@@ -5301,7 +5289,7 @@ class LambdaCloudwatchInsights(AWSSection):
         )
         return response_query_id["queryId"]
 
-    def _get_splitted_list(self, source_list: list[T], chunk_size: int) -> list[list[T]]:
+    def _get_splitted_list[T](self, source_list: list[T], chunk_size: int) -> list[list[T]]:
         """
         Split a list into a list of lists where every nested list has a maximum size of `chunk_size`
         """

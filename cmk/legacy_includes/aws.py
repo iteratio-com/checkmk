@@ -4,12 +4,11 @@
 # conditions defined in the file COPYING, which is part of this source code package.
 
 # mypy: disable-error-code="comparison-overlap"
-
 # mypy: disable-error-code="type-arg"
 # mypy: disable-error-code="unreachable"
 
 from collections.abc import Callable, Container, Iterable, Mapping, Sequence
-from typing import Any, NotRequired, TypedDict, TypeVar
+from typing import Any, NotRequired, TypedDict
 
 import cmk.plugins.aws.constants as agent_aws_types
 import cmk.plugins.aws.lib as aws
@@ -240,10 +239,7 @@ def check_aws_metrics(
         raise IgnoreResultsError("Currently no data from AWS")
 
 
-_Data = TypeVar("_Data")
-
-
-def get_data_or_go_stale(item: str, section: Mapping[str, _Data]) -> _Data:
+def get_data_or_go_stale[Data](item: str, section: Mapping[str, Data]) -> Data:
     try:
         return section[item]
     except KeyError:

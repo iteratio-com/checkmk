@@ -8,21 +8,20 @@ import threading
 from collections.abc import Callable, Iterable
 from logging import Logger
 from types import TracebackType
-from typing import Literal, TypeAlias, TypeVar
+from typing import Literal
 
 # Our tokens are bytes, so we use a memoryview as a stream of bytes.
-Tokens: TypeAlias = memoryview
+type Tokens = memoryview
 
 # No error reporting, we just state that we failed.
 Failure = None
-FailureType: TypeAlias = None
+type FailureType = None
 
 # The result of the parser is the value it parsed + the still unparsed tokens.
-T = TypeVar("T")
-ParseResult: TypeAlias = tuple[T | FailureType, Tokens]
+type ParseResult[T] = tuple[T | FailureType, Tokens]
 
 # It would be nice if we could reuse this for defs, but Python is too restricted for this.
-Parser = Callable[[Tokens], ParseResult[T]]
+type Parser[T] = Callable[[Tokens], ParseResult[T]]
 
 
 def parse_bytes(length: int, tokens: Tokens) -> ParseResult[bytes]:
@@ -44,7 +43,7 @@ def parse_digit(tokens: Tokens) -> ParseResult[bytes]:
     return parse_one_of(b"0123456789", tokens)
 
 
-def zero_or_more(parser: Parser[T], tokens: Tokens) -> ParseResult[list[T]]:
+def zero_or_more[T](parser: Parser[T], tokens: Tokens) -> ParseResult[list[T]]:
     result: list[T] = []
     while True:
         value, tokens = parser(tokens)

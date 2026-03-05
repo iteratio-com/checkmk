@@ -10,7 +10,6 @@ from __future__ import annotations
 import sys
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
-from typing import TypeVar
 
 from cmk.agent_based.v1 import HostLabel
 from cmk.ccc.exceptions import MKGeneralException, MKTimeout, OnError
@@ -166,10 +165,9 @@ def _discover_host_labels_for_source_type(
     return host_labels
 
 
-_TupleT = TypeVar("_TupleT", bound=tuple[object, ...])
-
-
-def _sort_sections_by_label_priority(sections: Iterable[_TupleT]) -> Sequence[_TupleT]:
+def _sort_sections_by_label_priority[TupleT: tuple[object, ...]](
+    sections: Iterable[TupleT],
+) -> Sequence[TupleT]:
     """
     `snmp_info`` sets a couple of host labels for device type but should not overwrite device specific ones.
     We put the snmp_info section first.

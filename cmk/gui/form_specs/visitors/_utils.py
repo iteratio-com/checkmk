@@ -4,12 +4,11 @@
 # conditions defined in the file COPYING, which is part of this source code package.
 
 # mypy: disable-error-code="comparison-overlap"
-
 # mypy: disable-error-code="redundant-expr"
 
 import hashlib
 from collections.abc import Callable, Sequence
-from typing import Any, Protocol, TypeVar
+from typing import Any, Protocol
 
 from cmk.gui.htmllib import html
 from cmk.gui.i18n import _, translate_to_current_language
@@ -22,17 +21,15 @@ from cmk.shared_typing import vue_formspec_components as shared_type_defs
 
 from ._type_defs import InvalidValue
 
-ModelT = TypeVar("ModelT")
 
-
-def get_title_and_help(form_spec: FormSpec[ModelT]) -> tuple[str, str]:
+def get_title_and_help[ModelT](form_spec: FormSpec[ModelT]) -> tuple[str, str]:
     title_text = localize(form_spec.title)
     translated_help_text = localize(form_spec.help_text)
     escaped_help_text = escaping.escape_to_html_permissive(translated_help_text, escape_links=False)
     return title_text, html.HTMLGenerator.resolve_help_text_macros(str(escaped_help_text))
 
 
-def get_title_and_help_with_optional_macro_support(
+def get_title_and_help_with_optional_macro_support[ModelT](
     form_spec: FormSpec[ModelT], macro_support: bool
 ) -> tuple[str, str]:
     title_text, help_text = get_title_and_help(form_spec)
@@ -61,7 +58,7 @@ def localize(localizable: SupportsLocalize | None) -> str:
     return "" if localizable is None else localizable.localize(translate_to_current_language)
 
 
-def optional_validation(
+def optional_validation[ModelT](
     validators: Sequence[Callable[[ModelT], object]], raw_value: Any
 ) -> list[str]:
     validation_errors = []
@@ -85,7 +82,7 @@ def create_validation_error(
     ]
 
 
-def compute_validation_errors(
+def compute_validation_errors[ModelT](
     validators: Sequence[Callable[[ModelT], object]],
     replacement_value: Callable[[], object],
     raw_value: Any,
@@ -103,21 +100,22 @@ def compute_validators(form_spec: FormSpec[Any]) -> list[Callable[[Any], object]
     return list(form_spec.custom_validate) if form_spec.custom_validate else []
 
 
-_PrefillTypes = DefaultValue[ModelT] | InputHint[ModelT] | InputHint[Title]
-_FallbackDataModel = TypeVar("_FallbackDataModel")
+type _PrefillTypes[ModelT] = DefaultValue[ModelT] | InputHint[ModelT] | InputHint[Title]
 
 
-def get_prefill_default(
-    prefill: _PrefillTypes[ModelT], fallback_value: _FallbackDataModel
-) -> ModelT | InvalidValue[_FallbackDataModel]:
+def get_prefill_default[ModelT, FallbackDataModel](
+    prefill: _PrefillTypes[ModelT], fallback_value: FallbackDataModel
+) -> ModelT | InvalidValue[FallbackDataModel]:
     if not isinstance(prefill, DefaultValue):
-        return InvalidValue[_FallbackDataModel](
+        return InvalidValue[FallbackDataModel](
             reason=_("Prefill value is an input hint"), fallback_value=fallback_value
         )
     return prefill.value
 
 
-def compute_title_input_hint(prefill: DefaultValue[ModelT] | InputHint[Title]) -> str | None:
+def compute_title_input_hint[ModelT](
+    prefill: DefaultValue[ModelT] | InputHint[Title],
+) -> str | None:
     # InputHint[Title] is only used by SingleChoice and CascadingSingleChoice
     # in all other cases you should use compute_input_hint
     if isinstance(prefill, InputHint):
@@ -126,7 +124,7 @@ def compute_title_input_hint(prefill: DefaultValue[ModelT] | InputHint[Title]) -
     return None
 
 
-def compute_input_hint(prefill: Prefill[ModelT]) -> ModelT | None:
+def compute_input_hint[ModelT](prefill: Prefill[ModelT]) -> ModelT | None:
     if not isinstance(prefill, InputHint):
         return None
     return prefill.value

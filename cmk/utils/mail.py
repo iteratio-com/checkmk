@@ -19,7 +19,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import formatdate, parseaddr
 from pathlib import Path
-from typing import Literal, NamedTuple, TypeVar
+from typing import Literal, NamedTuple
 
 from cmk.ccc import version as cmk_version
 from cmk.ccc.store import load_text_from_file
@@ -145,10 +145,7 @@ def default_from_address() -> str:
     return environ_default
 
 
-EmailType = TypeVar("EmailType", bound=Message)
-
-
-def set_mail_headers(
+def set_mail_headers[EmailType: Message](
     target: MailString,
     subject: MailString,
     from_address: MailString,

@@ -6,16 +6,11 @@
 # mypy: disable-error-code="exhaustive-match"
 
 from collections.abc import Callable, Mapping, Sequence
-from typing import TypeVar
 
 from cmk.agent_based.v2 import startswith, StringTable
 
-TParsed = TypeVar("TParsed")
-
-Section = Mapping[str, tuple[TParsed, str]]
-
-SectionWithoutUnit = Mapping[str, TParsed]
-
+type Section[TParsed] = Mapping[str, tuple[TParsed, str]]
+type SectionWithoutUnit[TParsed] = Mapping[str, TParsed]
 SystemSection = SectionWithoutUnit[str]
 
 DETECT_LIEBERT = startswith(".1.3.6.1.2.1.1.2.0", ".1.3.6.1.4.1.476.1.42")
@@ -33,7 +28,7 @@ def parse_liebert_str_without_unit(string_table: StringTable) -> SectionWithoutU
     return parse_liebert_without_unit([string_table], str)
 
 
-def parse_liebert_without_unit(
+def parse_liebert_without_unit[TParsed](
     string_table: Sequence[StringTable],
     type_func: Callable[[str], TParsed],
 ) -> SectionWithoutUnit[TParsed]:
@@ -65,7 +60,7 @@ def parse_liebert_without_unit(
     return parsed
 
 
-def parse_liebert(
+def parse_liebert[TParsed](
     string_table: Sequence[StringTable],
     type_func: Callable[[str], TParsed],
 ) -> Section[TParsed]:

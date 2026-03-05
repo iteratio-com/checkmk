@@ -11,7 +11,7 @@ import time
 from collections.abc import Callable, Iterable, Mapping, Sequence, Set
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Final, Generic, NamedTuple, Self, TypeVar
+from typing import Any, Final, NamedTuple, Self
 
 from cmk.ccc import debug
 from cmk.ccc.hostaddress import HostName
@@ -25,8 +25,6 @@ from .plugins import ParsedSectionName, SectionName
 _CacheInfo = tuple[int, int]
 
 ParsedSectionContent = object  # the parse function may return *anything*.
-
-_TSeq = TypeVar("_TSeq", bound=Sequence)
 
 
 @dataclass(frozen=True)
@@ -57,12 +55,12 @@ class ResolvedResult(NamedTuple):
     cache_info: _CacheInfo | None
 
 
-class SectionsParser(Generic[_TSeq]):
+class SectionsParser[TSeq: Sequence]:
     """Call the sections parse function and return the parsing result."""
 
     def __init__(
         self,
-        host_sections: HostSections[Mapping[SectionName, _TSeq]],
+        host_sections: HostSections[Mapping[SectionName, TSeq]],
         host_name: HostName,
         *,
         # Note: It would be better to keep the error handling entirely out of the
@@ -71,10 +69,10 @@ class SectionsParser(Generic[_TSeq]):
         #
         #       See `cmk.base.checkers.CheckPluginMapper.__getitem__`.
         #
-        error_handling: Callable[[SectionName, _TSeq], str],
+        error_handling: Callable[[SectionName, TSeq], str],
     ) -> None:
         super().__init__()
-        self._host_sections: HostSections[Mapping[SectionName, _TSeq]] = host_sections
+        self._host_sections: HostSections[Mapping[SectionName, TSeq]] = host_sections
         self.parsing_errors: list[str] = []
         self._memoized_results: dict[SectionName, _ParsingResult | None] = {}
         self._host_name = host_name
@@ -84,7 +82,7 @@ class SectionsParser(Generic[_TSeq]):
         return f"{type(self).__name__}(host_sections={self._host_sections!r}, host_name={self._host_name!r})"
 
     def parse(
-        self, section_name: SectionName, parse_function: Callable[[Sequence[_TSeq]], Any]
+        self, section_name: SectionName, parse_function: Callable[[Sequence[TSeq]], Any]
     ) -> _ParsingResult | None:
         if section_name in self._memoized_results:
             return self._memoized_results[section_name]
@@ -106,7 +104,7 @@ class SectionsParser(Generic[_TSeq]):
             self._memoized_results[section_name] = None
 
     def _parse_raw_data(
-        self, section_name: SectionName, parse_function: Callable[[Sequence[_TSeq]], Any]
+        self, section_name: SectionName, parse_function: Callable[[Sequence[TSeq]], Any]
     ) -> Any:  # yes *ANY*
         try:
             raw_data = self._host_sections.sections[section_name]
@@ -218,11 +216,11 @@ def store_piggybacked_sections(
         )
 
 
-def make_providers(
+def make_providers[TSeq: Sequence](
     host_sections: Mapping[HostKey, HostSections],
     section_plugins: Mapping[SectionName, SectionPlugin],
     *,
-    error_handling: Callable[[SectionName, _TSeq], str],
+    error_handling: Callable[[SectionName, TSeq], str],
 ) -> Mapping[HostKey, Provider]:
     return {
         host_key: ParsedSectionsResolver(

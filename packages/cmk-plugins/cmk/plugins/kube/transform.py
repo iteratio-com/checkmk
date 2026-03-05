@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import typing
 from collections.abc import Iterable, Mapping, Sequence
-from typing import cast, Literal, TypeAlias, TypeVar
+from typing import cast, Literal
 
 import pydantic
 from kubernetes.client import (  # type: ignore[attr-defined]
@@ -90,10 +90,7 @@ def containers_spec(containers: Sequence[V1Container]) -> Sequence[api.Container
     ]
 
 
-T = TypeVar("T")
-
-
-def expect_value(v: T | None) -> T:
+def expect_value[T](v: T | None) -> T:
     if v is None:
         raise NotImplementedError("Unexpected missing value.")
     return v
@@ -102,7 +99,7 @@ def expect_value(v: T | None) -> T:
 def pod_spec(pod: V1Pod) -> api.PodSpec:
     spec: V1PodSpec = expect_value(pod.spec)
 
-    def _parse_obj_as(
+    def _parse_obj_as[T](
         model: type[list[T]], expr: typing.Sequence[T] | None
     ) -> typing.Sequence[T] | None:
         adapter = pydantic.TypeAdapter(model)
@@ -487,7 +484,7 @@ def persistent_volume_claim_from_client(
     )
 
 
-WorkloadResource: TypeAlias = (
+type WorkloadResource = (
     V1Pod
     | V1Deployment
     | V1ReplicaSet

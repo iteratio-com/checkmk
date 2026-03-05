@@ -11,13 +11,11 @@
 from __future__ import annotations
 
 from functools import partial
-from typing import Any, Literal, TypeVar
+from typing import Any, Literal
 
 from flask import g as g
 from flask import request, session
 from werkzeug.local import LocalProxy
-
-T = TypeVar("T")
 
 RequestLocalVarName = Literal[
     "config",
@@ -90,7 +88,7 @@ def global_var(name: RequestLocalVarName, default: Any | Unset = unset) -> Any:
     return request.meta.get(name, default)  # type: ignore[attr-defined]
 
 
-def session_attr(name: SessionVarName, type_class: type[T]) -> T:
+def session_attr[T](name: SessionVarName, type_class: type[T]) -> T:
     def get_attr_or_item(obj: Any, key: str) -> Any:
         if hasattr(obj, key):
             return getattr(obj, key)
@@ -126,7 +124,7 @@ def session_attr(name: SessionVarName, type_class: type[T]) -> T:
     )  # type: ignore[return-value]
 
 
-def request_local_attr(name: RequestLocalVarName, type_class: type[T]) -> T:
+def request_local_attr[T](name: RequestLocalVarName, type_class: type[T]) -> T:
     """Delegate access to the corresponding attribute on RequestContext
 
     When the returned object is accessed, the Proxy will fetch the current

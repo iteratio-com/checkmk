@@ -26,7 +26,6 @@ from contextlib import nullcontext
 from dataclasses import dataclass
 from itertools import chain
 from pathlib import Path
-from typing import TypeVar
 
 import requests
 import urllib3
@@ -52,7 +51,6 @@ from cmk.plugins.kube.agent_handlers.common import (
     DaemonSet,
     Deployment,
     kube_object_namespace_name,
-    KubeNamespacedObj,
     namespace_name,
     Node,
     PB_KUBE_OBJECT,
@@ -468,9 +466,6 @@ class ClusterConnectionError(Exception):
     pass
 
 
-Model = TypeVar("Model")
-
-
 def _parse_raw_metrics(content: bytes) -> list[RawMetrics]:
     # This function is called once per agent_kube invocation. Moving the TypeAdapter definition to
     # import time has no impact. TypeAdapter is faster than RootModel (see CMK-19527), thus
@@ -480,7 +475,7 @@ def _parse_raw_metrics(content: bytes) -> list[RawMetrics]:
     return adapter.validate_json(content)
 
 
-def request_cluster_collector(
+def request_cluster_collector[Model](
     token: Secret[str],
     path: query.CollectorPath,
     config: query.CollectorSessionConfig,
@@ -513,7 +508,9 @@ def pod_lookup_from_api_pod(api_pod: api.Pod) -> PodLookupName:
     return lookup_name(kube_object_namespace_name(api_pod), pod_name(api_pod))
 
 
-def kube_objects_from_namespaces(
+def kube_objects_from_namespaces[
+    KubeNamespacedObj: DaemonSet | Deployment | StatefulSet | api.CronJob | api.Pod
+](
     kube_objects: Sequence[KubeNamespacedObj], namespaces: set[api.NamespaceName]
 ) -> Sequence[KubeNamespacedObj]:
     return [kube_obj for kube_obj in kube_objects if kube_obj.metadata.namespace in namespaces]

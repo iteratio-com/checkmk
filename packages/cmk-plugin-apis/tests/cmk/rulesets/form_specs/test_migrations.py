@@ -5,7 +5,7 @@
 
 from contextlib import AbstractContextManager as ContextManager
 from contextlib import nullcontext as does_not_raise
-from typing import Literal, NamedTuple, TypeVar
+from typing import Literal, NamedTuple
 from unittest.mock import ANY
 
 import pytest
@@ -23,10 +23,8 @@ from cmk.rulesets.v1.form_specs import (
     migrate_to_upper_integer_levels,
 )
 
-_NumberT = TypeVar("_NumberT", float, int)
 
-
-def _to_levels_test_cases(ntype: type[_NumberT]) -> list[NamedTuple]:
+def _to_levels_test_cases[NumberT: (float, int)](ntype: type[NumberT]) -> list[NamedTuple]:
     return [
         pytest.param(
             None,
@@ -211,7 +209,7 @@ def _to_levels_test_cases(ntype: type[_NumberT]) -> list[NamedTuple]:
     ]
 
 
-def _to_lower_levels_test_cases(ntype: type[_NumberT]) -> list[NamedTuple]:
+def _to_lower_levels_test_cases[NumberT: (float, int)](ntype: type[NumberT]) -> list[NamedTuple]:
     return _to_levels_test_cases(ntype) + [
         pytest.param(
             {
@@ -279,7 +277,7 @@ def _to_lower_levels_test_cases(ntype: type[_NumberT]) -> list[NamedTuple]:
     ]
 
 
-def _to_upper_levels_test_cases(ntype: type[_NumberT]) -> list[NamedTuple]:
+def _to_upper_levels_test_cases[NumberT: (float, int)](ntype: type[NumberT]) -> list[NamedTuple]:
     return _to_levels_test_cases(ntype) + [
         pytest.param(
             {

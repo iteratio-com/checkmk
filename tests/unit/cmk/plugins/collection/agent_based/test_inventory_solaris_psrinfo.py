@@ -4,7 +4,7 @@
 # conditions defined in the file COPYING, which is part of this source code package.
 
 from collections.abc import Callable
-from typing import NamedTuple, TypeVar
+from typing import NamedTuple
 
 import pytest
 
@@ -18,8 +18,6 @@ from cmk.plugins.collection.agent_based.inventory_solaris_psrinfo import (
 )
 
 from .utils_inventory import sort_inventory_result
-
-T = TypeVar("T")
 
 
 class PsrInfo(NamedTuple):
@@ -117,7 +115,7 @@ test_set_2 = PsrInfo(
 )
 
 
-def _section(section_function: Callable[[StringTable], T], agent_output: str | None) -> T | None:
+def _section[T](section_function: Callable[[StringTable], T], agent_output: str | None) -> T | None:
     if agent_output is None:
         return None
 

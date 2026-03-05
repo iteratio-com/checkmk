@@ -4,11 +4,8 @@
 # conditions defined in the file COPYING, which is part of this source code package.
 
 # mypy: disable-error-code="comparison-overlap"
-
 # mypy: disable-error-code="unreachable"
-
 # mypy: disable-error-code="exhaustive-match"
-
 # mypy: disable-error-code="possibly-undefined"
 # mypy: disable-error-code="redundant-expr"
 # mypy: disable-error-code="type-arg"
@@ -19,7 +16,7 @@ from collections import defaultdict
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from functools import partial
-from typing import Any, assert_never, cast, Literal, Self, TypeVar
+from typing import Any, assert_never, cast, Literal, Self
 
 from cmk.ccc.user import UserId
 from cmk.ccc.version import Edition
@@ -1587,14 +1584,11 @@ def _get_item_spec_maker(
             raise ValueError(other)
 
 
-_ValidateFuncType = TypeVar("_ValidateFuncType")
-
-
-def _convert_to_legacy_validation(
-    v1_validate_funcs: Iterable[Callable[[_ValidateFuncType], object]],
+def _convert_to_legacy_validation[ValidateFuncType](
+    v1_validate_funcs: Iterable[Callable[[ValidateFuncType], object]],
     localizer: Callable[[str], str],
-) -> Callable[[_ValidateFuncType, str], None]:
-    def wrapper(value: _ValidateFuncType, var_prefix: str) -> None:
+) -> Callable[[ValidateFuncType, str], None]:
+    def wrapper(value: ValidateFuncType, var_prefix: str) -> None:
         try:
             _ = [v1_validate_func(value) for v1_validate_func in v1_validate_funcs]
         except ruleset_api_v1.form_specs.validators.ValidationError as e:
@@ -1718,13 +1712,10 @@ def _convert_to_legacy_time_span(
     return legacy_valuespecs.TimeSpan(**converted_kwargs)
 
 
-_NumberT = TypeVar("_NumberT", float, int)
-
-
-def _get_legacy_level_spec(
-    form_spec_template: ruleset_api_v1.form_specs.FormSpec[_NumberT],
+def _get_legacy_level_spec[NumberT: (int, float)](
+    form_spec_template: ruleset_api_v1.form_specs.FormSpec[NumberT],
     title: ruleset_api_v1.Title,
-    prefill_value: _NumberT,
+    prefill_value: NumberT,
     prefill_type: (
         type[ruleset_api_v1.form_specs.DefaultValue] | type[ruleset_api_v1.form_specs.InputHint]
     ),
@@ -1753,9 +1744,9 @@ def _get_prefill_type(
     )
 
 
-def _get_fixed_levels_choice_element(
-    form_spec: ruleset_api_v1.form_specs.FormSpec[_NumberT],
-    prefill: ruleset_api_v1.form_specs.Prefill[tuple[_NumberT, _NumberT]],
+def _get_fixed_levels_choice_element[NumberT: (int, float)](
+    form_spec: ruleset_api_v1.form_specs.FormSpec[NumberT],
+    prefill: ruleset_api_v1.form_specs.Prefill[tuple[NumberT, NumberT]],
     level_direction: ruleset_api_v1.form_specs.LevelDirection,
     localizer: Callable[[str], str],
 ) -> legacy_valuespecs.Tuple:
@@ -1788,9 +1779,9 @@ class _PredictiveLevelDefinition(enum.StrEnum):
     STDEV = "stdev"
 
 
-def _get_level_computation_dropdown(
-    form_spec_template: ruleset_api_v1.form_specs.FormSpec[_NumberT],
-    to_convert: ruleset_api_v1.form_specs.PredictiveLevels[_NumberT],
+def _get_level_computation_dropdown[NumberT: (int, float)](
+    form_spec_template: ruleset_api_v1.form_specs.FormSpec[NumberT],
+    to_convert: ruleset_api_v1.form_specs.PredictiveLevels[NumberT],
     level_direction: ruleset_api_v1.form_specs.LevelDirection,
     localizer: Callable[[str], str],
 ) -> legacy_valuespecs.CascadingDropdown:
@@ -1901,9 +1892,9 @@ def _get_level_computation_dropdown(
     )
 
 
-def _get_predictive_levels_choice_element(
-    form_spec_template: ruleset_api_v1.form_specs.FormSpec[_NumberT],
-    to_convert: ruleset_api_v1.form_specs.PredictiveLevels[_NumberT],
+def _get_predictive_levels_choice_element[NumberT: (int, float)](
+    form_spec_template: ruleset_api_v1.form_specs.FormSpec[NumberT],
+    to_convert: ruleset_api_v1.form_specs.PredictiveLevels[NumberT],
     level_direction: ruleset_api_v1.form_specs.LevelDirection,
     localizer: Callable[[str], str],
 ) -> legacy_valuespecs.Transform:
@@ -2060,10 +2051,9 @@ def _transform_levels_back(
     raise ValueError(value)
 
 
-def _convert_to_legacy_levels(
+def _convert_to_legacy_levels[NumberT: (int, float)](
     to_convert: (
-        ruleset_api_v1.form_specs.Levels[_NumberT]
-        | ruleset_api_v1.form_specs.SimpleLevels[_NumberT]
+        ruleset_api_v1.form_specs.Levels[NumberT] | ruleset_api_v1.form_specs.SimpleLevels[NumberT]
     ),
     localizer: Callable[[str], str],
 ) -> legacy_valuespecs.Transform:
@@ -2139,13 +2129,12 @@ def _convert_to_legacy_levels(
     )
 
 
-def _make_levels_default_value(
+def _make_levels_default_value[NumberT: (int, float)](
     to_convert: (
-        ruleset_api_v1.form_specs.Levels[_NumberT]
-        | ruleset_api_v1.form_specs.SimpleLevels[_NumberT]
+        ruleset_api_v1.form_specs.Levels[NumberT] | ruleset_api_v1.form_specs.SimpleLevels[NumberT]
     ),
-    prefill_fixed: tuple[_NumberT, _NumberT],
-) -> tuple[str, None | tuple[_NumberT, _NumberT] | dict[str, Any]]:
+    prefill_fixed: tuple[NumberT, NumberT],
+) -> tuple[str, None | tuple[NumberT, NumberT] | dict[str, Any]]:
     if to_convert.prefill_levels_type.value is ruleset_api_v1.form_specs.LevelsType.NONE:
         return _LevelDynamicChoice.NO_LEVELS.value, None
 
@@ -2871,11 +2860,11 @@ def _convert_to_legacy_user_selection(
     )
 
 
-def _convert_to_legacy_validation_with_none(
-    v1_validate_funcs: Iterable[Callable[[_ValidateFuncType], object]],
+def _convert_to_legacy_validation_with_none[ValidateFuncType](
+    v1_validate_funcs: Iterable[Callable[[ValidateFuncType], object]],
     localizer: Callable[[str], str],
-) -> Callable[[_ValidateFuncType | None, str], None]:
-    def wrapper(value: _ValidateFuncType | None, var_prefix: str) -> None:
+) -> Callable[[ValidateFuncType | None, str], None]:
+    def wrapper(value: ValidateFuncType | None, var_prefix: str) -> None:
         if value is None:
             return
         try:
@@ -2899,9 +2888,6 @@ def _convert_to_legacy_autocompleter(
         if to_convert.autocompleter
         else None,
     )
-
-
-T = TypeVar("T")
 
 
 def convert_dictionary_formspec_to_valuespec(

@@ -5,7 +5,7 @@
 
 from collections.abc import Callable, Generator, Iterable, Mapping
 from dataclasses import dataclass
-from typing import Any, TypeVar
+from typing import Any
 
 from cmk.base.config import load_all_pluginX
 from cmk.ccc import debug
@@ -140,10 +140,7 @@ def _fix_entry(
     )
 
 
-T = TypeVar("T", bound=LegacyCheckParameters)
-
-
-def _transformed_params(
+def _transformed_params[T: LegacyCheckParameters](
     plugin_name: CheckPluginName,
     params: T,
     all_rulesets: RulesetCollection,
