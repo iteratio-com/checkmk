@@ -36,6 +36,7 @@ edition_deps = select({
         "//omd/non-free/packages/alert-handling:pkg_tar",
         "//omd/non-free/packages/cmc:pkg_tar",
         "//omd/non-free/packages/cmk-dcd:pkg_tar",
+        "//omd/non-free/packages/cmk-dcd:connectors-ultimate-pkg_tar",
         "//omd/non-free/packages/cmk-liveproxyd:pkg_tar",
         "//omd/non-free/packages/legal-docs:ultimate_pkg_tar",
         "//omd/non-free/packages/licensing:pkg_tar",

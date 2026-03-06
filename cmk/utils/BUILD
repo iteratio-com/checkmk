@@ -20,6 +20,7 @@ py_library(
     data = ["//cmk/utils/werks/announce/templates:j2_templates"],
     visibility = [
         "//cmk:__subpackages__",
+        "//non-free/packages/cmk-dcd:__pkg__",
         "//omd/packages/omd:__pkg__",
         "//tests:__subpackages__",
     ],
@@ -78,6 +79,7 @@ py_library(
     imports = ["../.."],
     visibility = [
         "//cmk:__subpackages__",
+        "//non-free/packages/cmk-dcd:__pkg__",
         "//tests:__subpackages__",
     ],
     deps = [

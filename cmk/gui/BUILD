@@ -161,10 +161,10 @@ py_library(
     ] + select({
         "@//:gpl+nonfree_repo": [
             "//cmk/nonfree/pro/bakery",
-            "//cmk/nonfree/pro/dcd",
             "//cmk/nonfree/pro/robotmk",
             "//cmk/nonfree/pro/robotmk:bakery",
             "//cmk/utils:cmk_utils_pro",
+            "//non-free/packages/cmk-dcd",
             "//non-free/packages/cmk-mknotifyd",
         ],
         "@//:gpl_repo": [],

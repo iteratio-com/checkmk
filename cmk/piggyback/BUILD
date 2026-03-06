@@ -4,7 +4,10 @@ py_library(
     name = "backend",
     srcs = glob(["backend/**/*.py"]),
     imports = ["../.."],
-    visibility = ["//cmk:__subpackages__"],
+    visibility = [
+        "//cmk:__subpackages__",
+        "//non-free/packages/cmk-dcd:__pkg__",
+    ],
     deps = [
         "//packages/cmk-ccc:hostaddress",
     ],
@@ -14,7 +17,10 @@ py_library(
     name = "hub",
     srcs = glob(["hub/**/*.py"]),
     imports = ["../.."],
-    visibility = ["//cmk:__subpackages__"],
+    visibility = [
+        "//cmk:__subpackages__",
+        "//non-free/packages/cmk-dcd:__pkg__",
+    ],
     deps = [
         ":backend",
         "//packages/cmk-ccc:daemon",

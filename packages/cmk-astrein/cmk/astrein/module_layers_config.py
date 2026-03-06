@@ -1188,7 +1188,7 @@ COMPONENTS: Mapping[Component, ImportCheckerProtocol] = {
     Component("cmk.nonfree.ultimate.metric_backend.dcd"): _allow(
         *PACKAGE_METRIC_BACKEND,
         "cmk.ccc",
-        "cmk.nonfree.pro.dcd",
+        "cmk.dcd.daemon",
         "cmk.utils",
     ),
     Component("cmk.nonfree.ultimate.metric_backend.gui"): _allow(
@@ -1205,7 +1205,7 @@ COMPONENTS: Mapping[Component, ImportCheckerProtocol] = {
         *PACKAGE_CCC,
         *PACKAGE_CRYPTO,
     ),
-    Component("cmk.nonfree.pro.dcd"): _allow(
+    Component("cmk.dcd.daemon"): _allow(
         *PACKAGE_CCC,
         "cmk.nonfree.ultimate.otel.dcd.register",
         "cmk.otel_collector",
@@ -1287,7 +1287,7 @@ COMPONENTS: Mapping[Component, ImportCheckerProtocol] = {
     Component("cmk.nonfree.ultimate.otel.dcd"): _allow(
         *PACKAGE_METRIC_BACKEND,
         "cmk.ccc",
-        "cmk.nonfree.pro.dcd",
+        "cmk.dcd.daemon",
         "cmk.utils",
     ),
     Component("cmk.nonfree.ultimate.otel.gui"): _allow(
@@ -1434,7 +1434,7 @@ COMPONENTS: Mapping[Component, ImportCheckerProtocol] = {
     Component("tests.unit.cmk.nonfree.ultimate.otel.dcd"): _allow(
         *PACKAGE_CCC,
         "cmk.nonfree.ultimate.otel.dcd",
-        "cmk.nonfree.pro.dcd",
+        "cmk.dcd.daemon",
         "cmk.utils.paths",
     ),
     Component("tests.unit.cmk.legacy_checks"): _allow(
@@ -1505,8 +1505,8 @@ COMPONENTS: Mapping[Component, ImportCheckerProtocol] = {
         "cmk.legacy_includes",
         "cmk.message_broker_certs",
         "cmk.metric_backend",
+        "cmk.dcd.daemon",
         "cmk.nonfree.pro.bakery",
-        "cmk.nonfree.pro.dcd",
         "cmk.nonfree.pro.liveproxy",
         "cmk.nonfree.pro.robotmk",
         "cmk.nonfree.ultimate.metric_backend",
@@ -1567,8 +1567,8 @@ EXPLICIT_FILE_TO_COMPONENT = {
     ModulePath("bin/post-rename-site"): Component("cmk.post_rename_site"),
     ModulePath("cmk/active_checks/check_cmk_inv.py"): Component("cmk.base"),
     ModulePath("omd/packages/appliance/webconf_snapin.py"): Component("cmk.gui"),
-    ModulePath("omd/non-free/packages/cmk-dcd/cmk-dcd.py"): Component("cmk.nonfree.pro.dcd"),
-    ModulePath("omd/non-free/packages/cmk-dcd/dcd.py"): Component("cmk.nonfree.pro.dcd"),
+    ModulePath("omd/non-free/packages/cmk-dcd/cmk-dcd.py"): Component("cmk.dcd.daemon"),
+    ModulePath("omd/non-free/packages/cmk-dcd/dcd.py"): Component("cmk.dcd.daemon"),
     ModulePath("omd/non-free/packages/cmk-liveproxyd/liveproxyd.py"): Component(
         "cmk.nonfree.pro.liveproxy"
     ),

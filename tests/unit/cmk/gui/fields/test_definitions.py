@@ -10,6 +10,7 @@ from cmk.gui.fields.definitions import (
     _ListOfColumns,
     _LiveStatusColumn,
     ExprSchema,
+    HostField,
     NotExprSchema,
     Timestamp,
 )
@@ -115,3 +116,11 @@ def test_timestamp_invalid_value() -> None:
     schema = TestSchema()
     with pytest.raises(ValidationError):
         schema.load({"ts_field": "foo"})
+
+
+def test_host_field_definitions() -> None:
+    assert HostField.default_error_messages["should_exist"] == "Host not found: {host_name!r}"
+    assert (
+        HostField.default_error_messages["invalid_name"]
+        == "The provided name for host {host_name!r} is invalid: {invalid_reason!r}"
+    )
