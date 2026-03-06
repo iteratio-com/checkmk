@@ -8,15 +8,6 @@ exports_files([
     "wsgi/.f12",
 ])
 
-filegroup(
-    name = "nonfree_f12",
-    srcs = select({
-        "@//:gpl+nonfree_repo": ["nonfree/pro/dcd/.f12"],
-        "@//:gpl_repo": [],
-    }),
-    visibility = ["//cmk:__subpackages__"],
-)
-
 py_library(
     name = "cmk_gui",
     srcs = glob(
@@ -29,6 +20,7 @@ py_library(
     imports = ["../.."],
     visibility = [
         "//cmk:__subpackages__",
+        "//non-free/packages/cmk-dcd:__pkg__",
         "//tests:__subpackages__",
     ],
     deps = [
@@ -164,7 +156,8 @@ py_library(
             "//cmk/nonfree/pro/robotmk",
             "//cmk/nonfree/pro/robotmk:bakery",
             "//cmk/utils:cmk_utils_pro",
-            "//non-free/packages/cmk-dcd",
+            "//non-free/packages/cmk-dcd:gui",
+            "//non-free/packages/cmk-dcd:protocols",
             "//non-free/packages/cmk-mknotifyd",
         ],
         "@//:gpl_repo": [],

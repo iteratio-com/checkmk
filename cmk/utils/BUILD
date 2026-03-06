@@ -4,7 +4,6 @@ load("@cmk_requirements//:requirements.bzl", "requirement")
 package(default_visibility = ["//cmk:__subpackages__"])
 
 exports_files([
-    "nonfree/pro/dcd/.f12",
     "password_store/cli.py",
 ])
 

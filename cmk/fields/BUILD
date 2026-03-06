@@ -10,7 +10,10 @@ py_library(
         "validators.py",
     ],
     imports = ["../.."],
-    visibility = ["//cmk:__subpackages__"],
+    visibility = [
+        "//cmk:__subpackages__",
+        "//non-free/packages/cmk-dcd:__pkg__",
+    ],
     deps = [
         "//packages/cmk-ccc:hostaddress",
         requirement("marshmallow"),

@@ -190,6 +190,8 @@ py_library(
         "//non-free/packages/cmk-core-helpers:inline-snmp",
         "//non-free/packages/cmk-core-helpers:relay-fetcher-trigger",
         "//non-free/packages/cmk-dcd",
+        "//non-free/packages/cmk-dcd:gui",
+        "//non-free/packages/cmk-dcd:protocols",
         "//non-free/packages/cmk-mknotifyd",
         "//non-free/packages/cmk-otel-collector",
         "//non-free/packages/cmk-update-agent:cmk-update-agent-py",
@@ -607,9 +609,7 @@ sh_library(
         "//cmk/plugins:shell_scripts",
     ] + select({
         "@//:gpl+nonfree_repo": [
-            "//cmk/gui:nonfree_f12",
             "//cmk/nonfree/pro/robotmk:.f12",
-            "//cmk/utils:nonfree/pro/dcd/.f12",
         ],
         "@//:gpl_repo": [],
     }),
