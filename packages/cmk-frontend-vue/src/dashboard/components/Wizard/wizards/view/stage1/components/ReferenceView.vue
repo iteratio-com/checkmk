@@ -91,7 +91,6 @@ watch(
           v-model:context-infos="contextInfos"
           v-model:restricted-ids="restrictedToSingleInfos"
           v-model:mode="singleInfosMode"
-          :is-new-view="false"
           :read-only="true"
         />
       </div>
