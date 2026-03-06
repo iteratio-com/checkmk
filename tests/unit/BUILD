@@ -99,6 +99,110 @@ py_test(
 )
 
 py_test(
+    name = "base_community",
+    srcs = ["__test__.py"] + glob(
+        include = ["cmk/base/**/*.py"],
+        exclude = ["**/nonfree/**"],
+    ),
+    args = [
+        "--config-file=$(location @//:pyproject.toml)",
+        "--import-mode=importlib",
+        "--random-order-bucket=global",
+        "--dist=loadfile",
+        "--numprocesses=4",
+    ],
+    data = ["@//:pyproject.toml"],
+    main = ":__test__.py",
+    visibility = ["//tests:__subpackages__"],
+    deps = [
+        ":__test__",
+        ":conftest",
+        "//tests/testlib/unit:unit_free",
+        requirement("pytest-mock"),
+        requirement("pytest-asyncio"),
+        requirement("pytest-random-order"),
+        requirement("fakeredis"),
+        requirement("fastapi"),
+        requirement("starlette"),
+        requirement("time-machine"),
+        requirement("requests"),
+        requirement("watchdog"),
+    ],
+)
+
+py_test(
+    name = "base_pro",
+    srcs = ["__test__.py"] + glob(
+        # There's stuff directly under nonfree that misses the `pro` segment. Work around that:
+        include = ["cmk/base/**/nonfree/**/*.py"],
+        allow_empty = True,
+        exclude = [
+            "**/nonfree/**/cloud/**",
+            "**/nonfree/**/ultimate/**",
+            "**/nonfree/**/ultimatemt/**",
+        ],
+    ),
+    args = [
+        "--config-file=$(location @//:pyproject.toml)",
+        "--import-mode=importlib",
+        "--random-order-bucket=global",
+        "--dist=loadfile",
+        "--numprocesses=4",
+    ],
+    data = ["@//:pyproject.toml"],
+    main = ":__test__.py",
+    target_compatible_with = select({
+        "@//:gpl+nonfree_repo": [],
+        "@//:gpl_repo": ["@platforms//:incompatible"],
+    }),
+    visibility = ["//tests:__subpackages__"],
+    deps = [
+        ":__test__",
+        ":conftest",
+        "//tests/testlib/unit:unit_free",
+        requirement("protobuf"),
+        requirement("pyyaml"),
+        requirement("pytest-mock"),
+        requirement("pytest-asyncio"),
+        requirement("pytest-random-order"),
+    ] + select({
+        "@//:gpl+nonfree_repo": [
+            "//non-free/packages/cmc-protocols:py_config_proto",
+        ],
+        "@//:gpl_repo": [],
+    }),
+)
+
+py_test(
+    name = "base_ultimate",
+    srcs = ["__test__.py"] + glob(
+        include = ["cmk/base/**/nonfree/**/ultimate/**/*.py"],
+        allow_empty = True,
+    ),
+    args = [
+        "--config-file=$(location @//:pyproject.toml)",
+        "--import-mode=importlib",
+        "--random-order-bucket=global",
+        "--dist=loadfile",
+        "--numprocesses=4",
+    ],
+    data = ["@//:pyproject.toml"],
+    main = ":__test__.py",
+    target_compatible_with = select({
+        "@//:gpl+nonfree_repo": [],
+        "@//:gpl_repo": ["@platforms//:incompatible"],
+    }),
+    visibility = ["//tests:__subpackages__"],
+    deps = [
+        ":__test__",
+        ":conftest",
+        requirement("time-machine"),
+        requirement("pytest-asyncio"),
+        requirement("pytest-random-order"),
+    ],
+)
+
+py_test(
     name = "gui_community",
     # https://bazel.build/reference/be/common-definitions#test.size
     size = "large",
@@ -458,7 +562,6 @@ py_test(
             "agents/**/*.py",
             "cmk/*.py",
             "cmk/automations/**/*.py",
-            "cmk/base/**/*.py",
             "cmk/bi/**/*.py",
             "cmk/checkengine/**/*.py",
             "cmk/diagnostics/**/*.py",
