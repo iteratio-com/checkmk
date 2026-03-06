@@ -60,7 +60,6 @@ class TestParseTrxArgumentsAuth:
 
         assert value == expected
 
-    @pytest.mark.xfail(reason="CMK-28742", strict=True)
     def test_parse_oauth(self, parser: ArgumentParser) -> None:
         argv = [
             "--send-server",
