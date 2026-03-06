@@ -5487,14 +5487,6 @@ msgstr "Agent controller verbindingen"
 msgid "Agent Controller deployment"
 msgstr "Inzet van agent-controller"
 
-msgid ""
-"Agent Controller not registered at this site: You tried to register for "
-"agent updates with a user who's authorized to register agents. This is "
-"supported, but requires a prior Agent Controller registration. To register "
-"for agent updates only, you need an explicit permission for agent updater "
-"registration."
-msgstr ""
-
 msgid "Agent TCP connect timeout"
 msgstr "Agent TCP connect timeout"
 
@@ -7330,14 +7322,15 @@ msgid "Appliance"
 msgstr "Toestel"
 
 #, fuzzy
+msgid "Appliance VPN statuses"
+msgstr "Apache status"
+
+#, fuzzy
 msgid "Appliance device utilization"
 msgstr "Encodergebruik"
 
-msgid "Appliance uplink VPN statuses"
-msgstr ""
-
 #, fuzzy
-msgid "Appliance uplink performance"
+msgid "Appliance performance"
 msgstr "Oracle Prestaties"
 
 #, fuzzy
@@ -13192,6 +13185,10 @@ msgstr "Checkpoint Firewall Verbindingen"
 #, fuzzy
 msgid "Check Point firewall packet rates"
 msgstr "Checkpoint Firewall Pakkettarieven"
+
+#, fuzzy
+msgid "Check Point powersupply"
+msgstr "Cisco Meraki"
 
 #, fuzzy
 msgid "Check Point tunnel status"
@@ -21175,7 +21172,7 @@ msgid "Device state not available"
 msgstr "Toestand apparaat niet beschikbaar"
 
 #, fuzzy
-msgid "Device statuses <b>[deprecated]</b>"
+msgid "Device statuses"
 msgstr "Dienstverleningsstatus"
 
 msgid "Device type"
@@ -21187,6 +21184,10 @@ msgstr "Apparaat niet beschikbaar"
 #, fuzzy
 msgid "Device uplinks"
 msgstr "Apparaat online"
+
+#, fuzzy
+msgid "Device uplinks (HW/SW Inventory only)"
+msgstr "HW/SW-inventaris"
 
 msgid "Devices"
 msgstr "Apparaten"
@@ -22805,6 +22806,10 @@ msgstr "Ongeldig certificaat"
 msgid "Do not validate server certificate during port query"
 msgstr "Servercertificaat niet valideren tijdens poortverzoek"
 
+#, fuzzy
+msgid "Do not verify the server certificate (unsafe)"
+msgstr "Servercertificaat niet valideren tijdens poortverzoek"
+
 msgid "Do now show reserved space"
 msgstr "Toon nu gereserveerde ruimte"
 
@@ -24272,6 +24277,12 @@ msgstr "Rapport gemaild naar %s."
 msgid "Emails"
 msgstr "E-mail"
 
+msgid ""
+"Emails are sent via the Microsoft Graph API. The endpoint "
+"(graph.microsoft.com) will appear as the sending host in the message headers "
+"of forwarded emails."
+msgstr ""
+
 #, fuzzy
 msgid "Emails containing URL per second"
 msgstr "E-mails met %s per seconde"
@@ -24361,6 +24372,14 @@ msgstr "Actieve controles inschakelen"
 #, fuzzy
 msgid "Enable ad hoc downtime"
 msgstr "Adhoc uitvaltijd mogelijk maken"
+
+#, fuzzy
+msgid "Enable agent updates on all hosts & download all monitoring agents"
+msgstr "Registreer alle hosts & download alle monitoring agents"
+
+#, fuzzy
+msgid "Enable agent updates on hosts & download monitoring agents"
+msgstr "Registreer alle hosts & download alle monitoring agents"
 
 msgid "Enable all"
 msgstr "Alles inschakelen"
@@ -44389,6 +44408,10 @@ msgstr "Locatieverbinding toevoegen"
 msgid "Microsoft Exchange Online"
 msgstr ""
 
+#, fuzzy
+msgid "Microsoft Graph API endpoint"
+msgstr "Prometheus API eindpunt"
+
 msgid "Microsoft Hyper-V Server VM state"
 msgstr "Microsoft Hyper-V Server VM staat"
 
@@ -51492,8 +51515,8 @@ msgid "Organizational unit (OU)"
 msgstr "Organisatie"
 
 #, fuzzy
-msgid "Organizations"
-msgstr "Organisatie"
+msgid "Organizations IDs"
+msgstr "Organisaties"
 
 msgid "Organize your hosts in groups independent of the tree structure."
 msgstr "Organiseer uw hosts in groepen onafhankelijk van de boomstructuur."
@@ -54882,6 +54905,10 @@ msgstr "Vermogen"
 msgid "Power Supplies"
 msgstr "Stroomvoorziening"
 
+#, fuzzy
+msgid "Power Supply Name"
+msgstr "Naam stroomvoorziening"
+
 msgid "Power Usage"
 msgstr "Stroomverbruik"
 
@@ -57073,21 +57100,6 @@ msgstr "Naam van de regio"
 msgid "Regions to monitor"
 msgstr "Te controleren regio's"
 
-msgid "Register all hosts & download all monitoring agents"
-msgstr "Registreer alle hosts & download alle monitoring agents"
-
-#, fuzzy
-msgid ""
-"Register all hosts with the Agent Bakery and download all monitoring agents "
-"that have been created with the Agent Bakery, even if you are not a contact "
-"for the host in question. Please note that these agents might contain "
-"confidential information such as passwords."
-msgstr ""
-"Registreer alle hosts bij de agent bakery en download alle monitoring agents "
-"die zijn aangemaakt bij de agent bakery, zelfs als u geen contactpersoon "
-"bent voor de host in kwestie. Houd er rekening mee dat deze agents "
-"vertrouwelijke informatie zoals wachtwoorden kunnen bevatten."
-
 msgid ""
 "Register an app in Entra ID. Note down the Directory (tenant) ID and "
 "Application (client) ID. Additionally, note down one or more Subscription "
@@ -57112,22 +57124,6 @@ msgstr "Registreer elke nieuwe host"
 msgid "Register authenticator app"
 msgstr "Systeemauthenticatie"
 
-#, fuzzy
-msgid "Register host & download monitoring agents of your hosts"
-msgstr "Registreer Host & download monitoring agents van uw hosts"
-
-#, fuzzy
-msgid ""
-"Register hosts that you are a contact for and then download monitoring "
-"agents that have been created with the Agent Bakery for these hosts. Please "
-"note that these agents might contain confidential information such as "
-"passwords."
-msgstr ""
-"Registreer hosts waarvoor u een contactpersoon bent en download vervolgens "
-"monitoring agents die zijn aangemaakt met de agent bakery voor deze hosts. "
-"Houd er rekening mee dat deze agents vertrouwelijke informatie zoals "
-"wachtwoorden kunnen bevatten."
-
 msgid "Register managed existing host"
 msgstr "Registreer beheerde bestaande host"
 
@@ -57137,6 +57133,34 @@ msgstr "Nieuwe hosts registreren in beheerde mappen"
 #, fuzzy
 msgid "Register security token"
 msgstr "Veiligheidsnaam"
+
+#, fuzzy
+msgid ""
+"Register the Agent Updater for all hosts and download all monitoring agents "
+"that have been created with the Agent Bakery, even if you are not a contact "
+"for the host in question. These agents might contain confidential "
+"information such as passwords.<br>Note: This permission is not sufficient "
+"for registering the Agent Controller. This requires a suitable permission "
+"from the <i>Agent registration</i> section."
+msgstr ""
+"Registreer alle hosts bij de agent bakery en download alle monitoring agents "
+"die zijn aangemaakt bij de agent bakery, zelfs als u geen contactpersoon "
+"bent voor de host in kwestie. Houd er rekening mee dat deze agents "
+"vertrouwelijke informatie zoals wachtwoorden kunnen bevatten."
+
+#, fuzzy
+msgid ""
+"Register the Agent Updater for hosts that you are a contact for and download "
+"monitoring agents that have been created with the Agent Bakery for these "
+"hosts. These agents might contain confidential information such as passwords."
+"<br>Note: This permission is not sufficient for registering the Agent "
+"Controller. This requires a suitable permission from the <i>Agent "
+"registration</i> section."
+msgstr ""
+"Registreer hosts waarvoor u een contactpersoon bent en download vervolgens "
+"monitoring agents die zijn aangemaakt met de agent bakery voor deze hosts. "
+"Houd er rekening mee dat deze agents vertrouwelijke informatie zoals "
+"wachtwoorden kunnen bevatten."
 
 msgid "Registered"
 msgstr "Geregistreerd"
@@ -61194,11 +61218,9 @@ msgstr "(selecteer doel map)"
 msgid "Select the relay that should monitor this host."
 msgstr "Specificeer de site die deze host moet monitoren."
 
-msgid ""
-"Select the sections that you want to include in the agent output.<p><b>Note:"
-"</b> some Meraki resources are marked as deprecated, whichmeans that they "
-"could be removed at some point in the future.</p>"
-msgstr ""
+#, fuzzy
+msgid "Select the sections that you want to include in the agent output."
+msgstr "Selecteer het type inhoudselement"
 
 #, python-format
 msgid ""
@@ -65005,6 +65027,9 @@ msgstr ""
 "Geef aan op welk tijdstip een nieuw bestand voor de voorvalgeschiedenis "
 "wordt aangemaakt."
 
+msgid "Specify by ID which organizations to fetch data from."
+msgstr ""
+
 msgid "Specify database names that the rule should apply to"
 msgstr "Geef databanknamen op waarop de regel moet worden toegepast"
 
@@ -65528,9 +65553,6 @@ msgstr ""
 msgid ""
 "Specify when and how notifications are sent based on frequency, timing, and "
 "content criteria."
-msgstr ""
-
-msgid "Specify which organizations to fetch data from."
 msgstr ""
 
 msgid "Specify which port types should not be discovered"
@@ -66601,6 +66623,14 @@ msgstr "Staat wanneer replicatietoestand aan het synchroniseren is"
 
 msgid "State when replication state is unknown"
 msgstr "Staat wanneer replicatietoestand onbekend is"
+
+#, fuzzy
+msgid "State when reported device status is Present"
+msgstr "Toestand wanneer VPN-status Fase 1 is"
+
+#, fuzzy
+msgid "State when reported device status is Up"
+msgstr "Toestand wanneer replicatietoestand fout is"
 
 msgid "State when security updates are pending"
 msgstr "Staat wanneer beveiligingsupdates in afwachting zijn"
@@ -67839,6 +67869,10 @@ msgstr "TLS"
 
 msgid "TLS Authentication without TLS is not possible"
 msgstr "TLS-authenticatie zonder TLS is niet mogelijk"
+
+#, fuzzy
+msgid "TLS certificate hostname"
+msgstr "SSL-certificaat validatie"
 
 #, fuzzy
 msgid "TLS certificate revocation checks"
@@ -70817,7 +70851,7 @@ msgstr ""
 
 msgid ""
 "The following sections utilize this setting:<ul><li>Appliance uplink "
-"statuses</li><li>Appliance uplink VPN statuses</li></ul>"
+"statuses</li><li>Appliance VPN statuses</li></ul>"
 msgstr ""
 
 msgid ""
@@ -72742,6 +72776,24 @@ msgstr "De restauratie is begonnen."
 msgid "The restore has been stopped."
 msgstr "De restauratie is gestopt."
 
+#, python-format
+msgid ""
+"The result of your query hit the maximum number of %s time series. Please "
+"narrow down your queries for the following metrics: %s"
+msgstr ""
+
+#, python-format
+msgid ""
+"The result of your query hit the maximum number of %s time series. Please "
+"narrow down your query."
+msgstr ""
+
+#, python-format
+msgid ""
+"The result of your query hit the maximum number of %s time series. Please "
+"narrow down your query. See graph '<a href='%s'>%s</a>' for further details."
+msgstr ""
+
 msgid ""
 "The result will be treated as connection failure if the threshold gets "
 "reached and leads to a CRIT on the service."
@@ -73216,6 +73268,11 @@ msgstr ""
 
 msgid "The source host"
 msgstr "De bronhost"
+
+msgid ""
+"The special agent will use this hostname for the TLS certificate validation. "
+"If omitted, the Checkmk host name of the host will be used"
+msgstr ""
 
 msgid ""
 "The staleness value of a host / service is calculated by measuring the "
@@ -76160,26 +76217,6 @@ msgid ""
 msgstr ""
 
 msgid ""
-"This permission allows the registration of any existing host the user is a "
-"contact of."
-msgstr ""
-"Deze toestemming staat de registratie toe van elke bestaande host waar de "
-"gebruiker contact mee heeft."
-
-msgid "This permission allows the registration of any existing host."
-msgstr "Met deze toestemming kan elke bestaande host worden geregistreerd."
-
-msgid ""
-"This permission allows the registration of any new host in a folder the user "
-"is a contact of."
-msgstr ""
-"Deze toestemming staat de registratie toe van elke nieuwe host in een map "
-"waarvan de gebruiker contactpersoon is."
-
-msgid "This permission allows the registration of any new host."
-msgstr "Met deze toestemming kan elke nieuwe host worden geregistreerd."
-
-msgid ""
 "This permission allows to change the state classification of an event (e.g. "
 "from CRIT to WARN)."
 msgstr ""
@@ -76191,6 +76228,34 @@ msgid ""
 msgstr ""
 "Met deze toestemming kunnen de globale instellingen van de "
 "gebeurtenisconsole worden geconfigureerd."
+
+#, fuzzy
+msgid ""
+"This permission allows to register the Agent Controller for any existing "
+"host the user is a contact of."
+msgstr ""
+"Deze toestemming staat de registratie toe van elke bestaande host waar de "
+"gebruiker contact mee heeft."
+
+#, fuzzy
+msgid ""
+"This permission allows to register the Agent Controller for any existing "
+"host."
+msgstr "Met deze toestemming kan elke bestaande host worden geregistreerd."
+
+msgid ""
+"This permission allows to register the Agent Controller for any new host in "
+"a folder the user is a contact of.<br>Note: This permission is not "
+"sufficient for registering the Agent Updater. This requires the additional "
+"permission <i>Enable agent updates on hosts & download monitoring agents</i>."
+msgstr ""
+
+msgid ""
+"This permission allows to register the Agent Controller for any new host."
+"<br>Note: This permission is not sufficient for registering the Agent "
+"Updater. This requires the additional permission <i>Enable agent updates on "
+"all hosts & download all monitoring agents</i>."
+msgstr ""
 
 msgid ""
 "This permission allows to revert pending changes. Beware that this holds "
@@ -87751,6 +87816,10 @@ msgstr ""
 msgid "Verify the certificate"
 msgstr "Verifieer het certificaat"
 
+#, fuzzy
+msgid "Verify the server certificate"
+msgstr "Verifieer server certificaat"
+
 msgid "Veritas Cluster Server"
 msgstr "Veritas Cluster Server"
 
@@ -96254,6 +96323,10 @@ msgstr "Filter toevoegen"
 msgid "See all"
 msgstr "Verwijder alle"
 
+#, fuzzy
+msgid "Minimum must be less than maximum"
+msgstr "Weergavebereik: Minimum moet strikt kleiner zijn dan maximum"
+
 msgid "% (Decimal, auto precision, 2 digits)"
 msgstr ""
 
@@ -96650,7 +96723,7 @@ msgstr "Kloon aangepaste grafiek"
 msgid "Select a custom graph"
 msgstr "Kloon aangepaste grafiek"
 
-msgid "Only me (private)"
+msgid "Owner (private)"
 msgstr ""
 
 #, fuzzy
@@ -96795,6 +96868,19 @@ msgstr "Begin of einde van een geplande downtime"
 #, fuzzy
 msgid "Save changes"
 msgstr "Is veranderd"
+
+#, fuzzy
+msgid "Public link can't be generated"
+msgstr "Registratie Staat"
+
+msgid ""
+"Public dashboards are view-only and don't support runtime filters.nRemove "
+"runtime filters or convert them to default filters to continue."
+msgstr ""
+
+#, fuzzy
+msgid "Review filters"
+msgstr "Service Filters"
 
 #, fuzzy
 msgid "Event selection"
@@ -99024,6 +99110,28 @@ msgid ""
 msgstr ""
 
 #, fuzzy
+#~ msgid "Device statuses <b>[deprecated]</b>"
+#~ msgstr "Dienstverleningsstatus"
+
+#, fuzzy
+#~ msgid "Organizations"
+#~ msgstr "Organisatie"
+
+#, fuzzy
+#~ msgid "Register host & download monitoring agents of your hosts"
+#~ msgstr "Registreer Host & download monitoring agents van uw hosts"
+
+#~ msgid ""
+#~ "This permission allows the registration of any new host in a folder the "
+#~ "user is a contact of."
+#~ msgstr ""
+#~ "Deze toestemming staat de registratie toe van elke nieuwe host in een map "
+#~ "waarvan de gebruiker contactpersoon is."
+
+#~ msgid "This permission allows the registration of any new host."
+#~ msgstr "Met deze toestemming kan elke nieuwe host worden geregistreerd."
+
+#, fuzzy
 #~ msgid "Only me"
 #~ msgstr "Alleen tijd"
 
@@ -99315,10 +99423,6 @@ msgstr ""
 #~ msgstr "dit gedeelte uitschakelen"
 
 #, fuzzy
-#~ msgid "Device statuses"
-#~ msgstr "Dienstverleningsstatus"
-
-#, fuzzy
 #~ msgid "HW/SW inventory property"
 #~ msgstr "HW/SW-inventaris"
 
@@ -99560,10 +99664,6 @@ msgstr ""
 
 #~ msgid "Missing needed custom_graph parameter."
 #~ msgstr "Ontbrekende benodigde custom_graph parameter."
-
-#, fuzzy
-#~ msgid "Select the subscriptions you want to monitor."
-#~ msgstr "Selecteer het type inhoudselement"
 
 #, fuzzy
 #~ msgid ""
@@ -99845,9 +99945,6 @@ msgstr ""
 
 #~ msgid "Display axis labels for the selected/automatic data range"
 #~ msgstr "Toon aslabels voor het geselecteerde/automatische gegevensbereik"
-
-#~ msgid "Display range: Minimum must be strictly less than maximum"
-#~ msgstr "Weergavebereik: Minimum moet strikt kleiner zijn dan maximum"
 
 #, fuzzy
 #~ msgid "Do not show the service state"
@@ -103970,10 +104067,6 @@ msgstr ""
 
 #~ msgid "Inventory: History"
 #~ msgstr "Inventaris: Geschiedenis"
-
-#, fuzzy
-#~ msgid "Recent HW/SW Inventory"
-#~ msgstr "HW/SW-inventaris"
 
 #~ msgid "Do hardware/software inventory"
 #~ msgstr "Inventarisatie hardware/software"

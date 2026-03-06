@@ -5501,14 +5501,6 @@ msgstr "Conexiuni agent controler"
 msgid "Agent Controller deployment"
 msgstr "Implementarea controlerului de agent"
 
-msgid ""
-"Agent Controller not registered at this site: You tried to register for "
-"agent updates with a user who's authorized to register agents. This is "
-"supported, but requires a prior Agent Controller registration. To register "
-"for agent updates only, you need an explicit permission for agent updater "
-"registration."
-msgstr ""
-
 msgid "Agent TCP connect timeout"
 msgstr "Timpul de conectare TCP al agentului"
 
@@ -7352,14 +7344,15 @@ msgid "Appliance"
 msgstr "Aparatură"
 
 #, fuzzy
+msgid "Appliance VPN statuses"
+msgstr "Starea Apache"
+
+#, fuzzy
 msgid "Appliance device utilization"
 msgstr "Utilizarea codificatorului"
 
-msgid "Appliance uplink VPN statuses"
-msgstr ""
-
 #, fuzzy
-msgid "Appliance uplink performance"
+msgid "Appliance performance"
 msgstr "Performanța Oracle"
 
 #, fuzzy
@@ -13249,6 +13242,10 @@ msgstr "Conexiuni Check Point Firewall"
 #, fuzzy
 msgid "Check Point firewall packet rates"
 msgstr "Check Point Firewall Ratele pachetelor"
+
+#, fuzzy
+msgid "Check Point powersupply"
+msgstr "Cisco Meraki"
 
 #, fuzzy
 msgid "Check Point tunnel status"
@@ -21240,7 +21237,7 @@ msgid "Device state not available"
 msgstr "Starea dispozitivului nu este disponibilă"
 
 #, fuzzy
-msgid "Device statuses <b>[deprecated]</b>"
+msgid "Device statuses"
 msgstr "Starea serviciului"
 
 msgid "Device type"
@@ -21252,6 +21249,10 @@ msgstr "Dispozitiv indisponibil"
 #, fuzzy
 msgid "Device uplinks"
 msgstr "Dispozitiv online"
+
+#, fuzzy
+msgid "Device uplinks (HW/SW Inventory only)"
+msgstr "Inventarul HW/SW"
 
 msgid "Devices"
 msgstr "Dispozitive"
@@ -22882,6 +22883,10 @@ msgstr "Certificat invalid"
 msgid "Do not validate server certificate during port query"
 msgstr "Nu validați certificatul serverului în timpul interogării portului"
 
+#, fuzzy
+msgid "Do not verify the server certificate (unsafe)"
+msgstr "Nu validați certificatul serverului în timpul interogării portului"
+
 msgid "Do now show reserved space"
 msgstr "Afișați acum spațiul rezervat"
 
@@ -24352,6 +24357,12 @@ msgstr "A trimis raportul prin e-mail la %s."
 msgid "Emails"
 msgstr "Email"
 
+msgid ""
+"Emails are sent via the Microsoft Graph API. The endpoint "
+"(graph.microsoft.com) will appear as the sending host in the message headers "
+"of forwarded emails."
+msgstr ""
+
 #, fuzzy
 msgid "Emails containing URL per second"
 msgstr "E-mailuri care conțin %s pe secundă"
@@ -24441,6 +24452,14 @@ msgstr "Activarea verificărilor active"
 
 msgid "Enable ad hoc downtime"
 msgstr "Activați timpul de oprire adhoc"
+
+#, fuzzy
+msgid "Enable agent updates on all hosts & download all monitoring agents"
+msgstr "Înregistrați toate gazdele & descărcați toți agenții de monitorizare"
+
+#, fuzzy
+msgid "Enable agent updates on hosts & download monitoring agents"
+msgstr "Înregistrați toate gazdele & descărcați toți agenții de monitorizare"
 
 msgid "Enable all"
 msgstr "Activați toate"
@@ -44515,6 +44534,10 @@ msgstr "Adăugați o conexiune de site"
 msgid "Microsoft Exchange Online"
 msgstr ""
 
+#, fuzzy
+msgid "Microsoft Graph API endpoint"
+msgstr "Punct final API Prometheus"
+
 msgid "Microsoft Hyper-V Server VM state"
 msgstr "Starea VM Microsoft Hyper-V Server"
 
@@ -51632,8 +51655,8 @@ msgid "Organizational unit (OU)"
 msgstr "Unitate organizațională (OU)"
 
 #, fuzzy
-msgid "Organizations"
-msgstr "Organizația"
+msgid "Organizations IDs"
+msgstr "ID-ul organizației"
 
 msgid "Organize your hosts in groups independent of the tree structure."
 msgstr ""
@@ -55025,6 +55048,10 @@ msgstr "Putere"
 msgid "Power Supplies"
 msgstr "Surse de alimentare"
 
+#, fuzzy
+msgid "Power Supply Name"
+msgstr "Denumirea sursei de alimentare"
+
 msgid "Power Usage"
 msgstr "Utilizarea energiei"
 
@@ -57215,21 +57242,6 @@ msgstr "Numele regiunii"
 msgid "Regions to monitor"
 msgstr "Regiuni de monitorizat"
 
-msgid "Register all hosts & download all monitoring agents"
-msgstr "Înregistrați toate gazdele & descărcați toți agenții de monitorizare"
-
-#, fuzzy
-msgid ""
-"Register all hosts with the Agent Bakery and download all monitoring agents "
-"that have been created with the Agent Bakery, even if you are not a contact "
-"for the host in question. Please note that these agents might contain "
-"confidential information such as passwords."
-msgstr ""
-"Înregistrați toate gazdele cu agenția de agenți și descărcați toți agenții "
-"de monitorizare care au fost creați cu agenția de agenți, chiar dacă nu "
-"sunteți o persoană de contact pentru gazda în cauză. Rețineți că acești "
-"agenți pot conține informații confidențiale, cum ar fi parolele."
-
 msgid ""
 "Register an app in Entra ID. Note down the Directory (tenant) ID and "
 "Application (client) ID. Additionally, note down one or more Subscription "
@@ -57255,22 +57267,6 @@ msgstr "Înregistrați orice gazdă nouă"
 msgid "Register authenticator app"
 msgstr "Înregistrați aplicația Authenticator App"
 
-msgid "Register host & download monitoring agents of your hosts"
-msgstr ""
-"Înregistrați gazda & descărcați agenții de monitorizare a gazdelor dvs."
-
-#, fuzzy
-msgid ""
-"Register hosts that you are a contact for and then download monitoring "
-"agents that have been created with the Agent Bakery for these hosts. Please "
-"note that these agents might contain confidential information such as "
-"passwords."
-msgstr ""
-"Înregistrați gazdele pentru care sunteți persoană de contact și apoi "
-"descărcați agenții de monitorizare care au fost creați cu ajutorul agent "
-"bakery pentru aceste gazde. Rețineți că acești agenți pot conține informații "
-"confidențiale, cum ar fi parolele."
-
 msgid "Register managed existing host"
 msgstr "Înregistrare gestionată gazdă existentă"
 
@@ -57279,6 +57275,34 @@ msgstr "Înregistrarea de noi gazde în folderele gestionate"
 
 msgid "Register security token"
 msgstr "Înregistrarea jetonului de securitate"
+
+#, fuzzy
+msgid ""
+"Register the Agent Updater for all hosts and download all monitoring agents "
+"that have been created with the Agent Bakery, even if you are not a contact "
+"for the host in question. These agents might contain confidential "
+"information such as passwords.<br>Note: This permission is not sufficient "
+"for registering the Agent Controller. This requires a suitable permission "
+"from the <i>Agent registration</i> section."
+msgstr ""
+"Înregistrați toate gazdele cu agenția de agenți și descărcați toți agenții "
+"de monitorizare care au fost creați cu agenția de agenți, chiar dacă nu "
+"sunteți o persoană de contact pentru gazda în cauză. Rețineți că acești "
+"agenți pot conține informații confidențiale, cum ar fi parolele."
+
+#, fuzzy
+msgid ""
+"Register the Agent Updater for hosts that you are a contact for and download "
+"monitoring agents that have been created with the Agent Bakery for these "
+"hosts. These agents might contain confidential information such as passwords."
+"<br>Note: This permission is not sufficient for registering the Agent "
+"Controller. This requires a suitable permission from the <i>Agent "
+"registration</i> section."
+msgstr ""
+"Înregistrați gazdele pentru care sunteți persoană de contact și apoi "
+"descărcați agenții de monitorizare care au fost creați cu ajutorul agent "
+"bakery pentru aceste gazde. Rețineți că acești agenți pot conține informații "
+"confidențiale, cum ar fi parolele."
 
 msgid "Registered"
 msgstr "Înregistrat"
@@ -61363,11 +61387,9 @@ msgstr "(selectați folderul țintă)"
 msgid "Select the relay that should monitor this host."
 msgstr "Specificați site-ul care trebuie să monitorizeze această gazdă."
 
-msgid ""
-"Select the sections that you want to include in the agent output.<p><b>Note:"
-"</b> some Meraki resources are marked as deprecated, whichmeans that they "
-"could be removed at some point in the future.</p>"
-msgstr ""
+#, fuzzy
+msgid "Select the sections that you want to include in the agent output."
+msgstr "Selectați tipul de element de conținut"
 
 #, python-format
 msgid ""
@@ -65231,6 +65253,9 @@ msgstr ""
 "Specificați la ce perioadă de timp va fi creat un nou fișier pentru "
 "istoricul evenimentelor."
 
+msgid "Specify by ID which organizations to fetch data from."
+msgstr ""
+
 msgid "Specify database names that the rule should apply to"
 msgstr "Specificați numele bazelor de date la care trebuie să se aplice regula"
 
@@ -65772,9 +65797,6 @@ msgstr ""
 msgid ""
 "Specify when and how notifications are sent based on frequency, timing, and "
 "content criteria."
-msgstr ""
-
-msgid "Specify which organizations to fetch data from."
 msgstr ""
 
 msgid "Specify which port types should not be discovered"
@@ -66852,6 +66874,14 @@ msgstr "Starea când se sincronizează starea de replicare"
 
 msgid "State when replication state is unknown"
 msgstr "Stare atunci când starea de replicare este necunoscută"
+
+#, fuzzy
+msgid "State when reported device status is Present"
+msgstr "Stare când starea VPN este faza 1"
+
+#, fuzzy
+msgid "State when reported device status is Up"
+msgstr "Stare atunci când starea de replicare este eroare"
 
 msgid "State when security updates are pending"
 msgstr "Stare atunci când actualizările de securitate sunt în așteptare"
@@ -68080,6 +68110,10 @@ msgstr "TLS"
 
 msgid "TLS Authentication without TLS is not possible"
 msgstr "TLS Autentificarea fără TLS nu este posibilă"
+
+#, fuzzy
+msgid "TLS certificate hostname"
+msgstr "Validarea certificatului SSL"
 
 #, fuzzy
 msgid "TLS certificate revocation checks"
@@ -71054,7 +71088,7 @@ msgstr ""
 
 msgid ""
 "The following sections utilize this setting:<ul><li>Appliance uplink "
-"statuses</li><li>Appliance uplink VPN statuses</li></ul>"
+"statuses</li><li>Appliance VPN statuses</li></ul>"
 msgstr ""
 
 msgid ""
@@ -72995,6 +73029,24 @@ msgstr "Restaurarea a fost începută."
 msgid "The restore has been stopped."
 msgstr "Restaurarea a fost oprită."
 
+#, python-format
+msgid ""
+"The result of your query hit the maximum number of %s time series. Please "
+"narrow down your queries for the following metrics: %s"
+msgstr ""
+
+#, python-format
+msgid ""
+"The result of your query hit the maximum number of %s time series. Please "
+"narrow down your query."
+msgstr ""
+
+#, python-format
+msgid ""
+"The result of your query hit the maximum number of %s time series. Please "
+"narrow down your query. See graph '<a href='%s'>%s</a>' for further details."
+msgstr ""
+
 msgid ""
 "The result will be treated as connection failure if the threshold gets "
 "reached and leads to a CRIT on the service."
@@ -73474,6 +73526,11 @@ msgstr ""
 
 msgid "The source host"
 msgstr "Gazda sursă"
+
+msgid ""
+"The special agent will use this hostname for the TLS certificate validation. "
+"If omitted, the Checkmk host name of the host will be used"
+msgstr ""
 
 msgid ""
 "The staleness value of a host / service is calculated by measuring the "
@@ -76451,26 +76508,6 @@ msgid ""
 msgstr ""
 
 msgid ""
-"This permission allows the registration of any existing host the user is a "
-"contact of."
-msgstr ""
-"Această permisiune permite înregistrarea oricărei gazde existente la care "
-"utilizatorul este o persoană de contact."
-
-msgid "This permission allows the registration of any existing host."
-msgstr "Această permisiune permite înregistrarea oricărei gazde existente."
-
-msgid ""
-"This permission allows the registration of any new host in a folder the user "
-"is a contact of."
-msgstr ""
-"Această permisiune permite înregistrarea oricărei gazde noi într-un dosar în "
-"care utilizatorul este persoană de contact."
-
-msgid "This permission allows the registration of any new host."
-msgstr "Această permisiune permite înregistrarea oricărei gazde noi."
-
-msgid ""
 "This permission allows to change the state classification of an event (e.g. "
 "from CRIT to WARN)."
 msgstr ""
@@ -76482,6 +76519,34 @@ msgid ""
 msgstr ""
 "Această permisiune permite configurarea setărilor globale ale consolei de "
 "evenimente."
+
+#, fuzzy
+msgid ""
+"This permission allows to register the Agent Controller for any existing "
+"host the user is a contact of."
+msgstr ""
+"Această permisiune permite înregistrarea oricărei gazde existente la care "
+"utilizatorul este o persoană de contact."
+
+#, fuzzy
+msgid ""
+"This permission allows to register the Agent Controller for any existing "
+"host."
+msgstr "Această permisiune permite înregistrarea oricărei gazde existente."
+
+msgid ""
+"This permission allows to register the Agent Controller for any new host in "
+"a folder the user is a contact of.<br>Note: This permission is not "
+"sufficient for registering the Agent Updater. This requires the additional "
+"permission <i>Enable agent updates on hosts & download monitoring agents</i>."
+msgstr ""
+
+msgid ""
+"This permission allows to register the Agent Controller for any new host."
+"<br>Note: This permission is not sufficient for registering the Agent "
+"Updater. This requires the additional permission <i>Enable agent updates on "
+"all hosts & download all monitoring agents</i>."
+msgstr ""
 
 #, fuzzy
 msgid ""
@@ -88034,6 +88099,10 @@ msgstr ""
 msgid "Verify the certificate"
 msgstr "Verificarea certificatului"
 
+#, fuzzy
+msgid "Verify the server certificate"
+msgstr "Verificarea certificatului serverului"
+
 msgid "Veritas Cluster Server"
 msgstr "Serverul Veritas Cluster"
 
@@ -96555,6 +96624,11 @@ msgstr "Adaugă filtre"
 msgid "See all"
 msgstr "Eliminați toate"
 
+#, fuzzy
+msgid "Minimum must be less than maximum"
+msgstr ""
+"Intervalul de afișare: Minimul trebuie să fie strict mai mic decât maximul"
+
 msgid "% (Decimal, auto precision, 2 digits)"
 msgstr ""
 
@@ -96951,7 +97025,7 @@ msgstr "Clonarea graficului personalizat"
 msgid "Select a custom graph"
 msgstr "Clonarea graficului personalizat"
 
-msgid "Only me (private)"
+msgid "Owner (private)"
 msgstr ""
 
 #, fuzzy
@@ -97096,6 +97170,20 @@ msgstr "Introduceți un comentariu pentru a programa timpul de oprire"
 #, fuzzy
 msgid "Save changes"
 msgstr "Schimbare de stare"
+
+#, fuzzy
+msgid "Public link can't be generated"
+msgstr "Fără dată de expirare"
+
+msgid ""
+"Public dashboards are view-only and don't support runtime filters.nRemove "
+"runtime filters or convert them to default filters to continue."
+msgstr ""
+
+# georgem ##############
+#, fuzzy
+msgid "Review filters"
+msgstr "Filtre de service"
 
 #, fuzzy
 msgid "Event selection"
@@ -99339,6 +99427,28 @@ msgid ""
 msgstr ""
 
 #, fuzzy
+#~ msgid "Device statuses <b>[deprecated]</b>"
+#~ msgstr "Starea serviciului"
+
+#, fuzzy
+#~ msgid "Organizations"
+#~ msgstr "Organizația"
+
+#~ msgid "Register host & download monitoring agents of your hosts"
+#~ msgstr ""
+#~ "Înregistrați gazda & descărcați agenții de monitorizare a gazdelor dvs."
+
+#~ msgid ""
+#~ "This permission allows the registration of any new host in a folder the "
+#~ "user is a contact of."
+#~ msgstr ""
+#~ "Această permisiune permite înregistrarea oricărei gazde noi într-un dosar "
+#~ "în care utilizatorul este persoană de contact."
+
+#~ msgid "This permission allows the registration of any new host."
+#~ msgstr "Această permisiune permite înregistrarea oricărei gazde noi."
+
+#, fuzzy
 #~ msgid "Only me"
 #~ msgstr "Doar timpul"
 
@@ -99628,10 +99738,6 @@ msgstr ""
 #~ msgstr "dezactivați această secțiune"
 
 #, fuzzy
-#~ msgid "Device statuses"
-#~ msgstr "Starea serviciului"
-
-#, fuzzy
 #~ msgid "HW/SW inventory property"
 #~ msgstr "Inventarul HW/SW"
 
@@ -99880,10 +99986,6 @@ msgstr ""
 
 #~ msgid "Missing needed custom_graph parameter."
 #~ msgstr "Lipsește parametrul necesar custom_graph."
-
-#, fuzzy
-#~ msgid "Select the subscriptions you want to monitor."
-#~ msgstr "Selectați tipul de element de conținut"
 
 #, fuzzy
 #~ msgid ""
@@ -100169,10 +100271,6 @@ msgstr ""
 #~ msgid "Display axis labels for the selected/automatic data range"
 #~ msgstr ""
 #~ "Afișarea etichetelor axei pentru intervalul de date selectat/automat"
-
-#~ msgid "Display range: Minimum must be strictly less than maximum"
-#~ msgstr ""
-#~ "Intervalul de afișare: Minimul trebuie să fie strict mai mic decât maximul"
 
 #, fuzzy
 #~ msgid "Do not show the service state"
@@ -104391,10 +104489,6 @@ msgstr ""
 
 #~ msgid "Inventory: History"
 #~ msgstr "Inventar: Istorie"
-
-#, fuzzy
-#~ msgid "Recent HW/SW Inventory"
-#~ msgstr "Inventarul HW/SW"
 
 #~ msgid "Do hardware/software inventory"
 #~ msgstr "Efectuați un inventar hardware/software"
