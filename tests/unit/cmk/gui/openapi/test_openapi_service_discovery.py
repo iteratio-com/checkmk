@@ -23,8 +23,8 @@ from cmk.checkengine.plugins import AutocheckEntry, CheckPluginName, SectionName
 from cmk.utils.automation_config import LocalAutomationConfig
 from cmk.utils.labels import HostLabel
 from cmk.utils.servicename import ServiceName
-from tests.testlib.unit.gui.web_test_app import WebTestAppForCMK
 from tests.testlib.unit.rest_api_client import ClientRegistry
+from tests.unit.cmk.web_test_app import WebTestAppForCMK
 
 mock_discovery_result = ServiceDiscoveryPreviewResult(
     check_table=[

@@ -5,10 +5,7 @@ py_library(
     name = "cmk_bi",
     srcs = glob(["**/*.py"]),
     imports = ["../.."],
-    visibility = [
-        "//cmk:__subpackages__",
-        "//tests/unit:__subpackages__",
-    ],
+    visibility = ["//cmk:__subpackages__"],
     deps = [
         "//cmk/checkengine:cmk_checkengine",
         "//cmk/fields:cmk_fields",

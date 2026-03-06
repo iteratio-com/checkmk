@@ -141,10 +141,7 @@ py_library(
         "@//:gpl_repo": [],
     }),
     imports = ["../.."],
-    visibility = [
-        "//cmk:__subpackages__",
-        "//tests:__subpackages__",
-    ],
+    visibility = ["//cmk:__subpackages__"],
     deps = [
         ":cmk_gui",
         requirement("jinja2"),
@@ -188,10 +185,7 @@ py_library(
         "@//:gpl_repo": [],
     }),
     imports = ["../.."],
-    visibility = [
-        "//cmk:__subpackages__",
-        "//tests:__subpackages__",
-    ],
+    visibility = ["//cmk:__subpackages__"],
     deps = [
         ":cmk_gui",
         requirement("python-dateutil"),
@@ -214,10 +208,7 @@ py_library(
         allow_empty = True,
     ),
     imports = ["../.."],
-    visibility = [
-        "//cmk:__subpackages__",
-        "//tests:__subpackages__",
-    ],
+    visibility = ["//cmk:__subpackages__"],
     deps = [
         ":cmk_gui",
         requirement("pyjwt"),
@@ -243,10 +234,7 @@ py_library(
         allow_empty = True,
     ),
     imports = ["../.."],
-    visibility = [
-        "//cmk:__subpackages__",
-        "//tests:__subpackages__",
-    ],
+    visibility = ["//cmk:__subpackages__"],
     deps = [
         ":cmk_gui",
         requirement("python-dateutil"),

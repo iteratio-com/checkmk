@@ -8,7 +8,6 @@
 
 from __future__ import annotations
 
-import time
 from base64 import b64encode
 from collections.abc import Callable, Generator, Iterator
 from datetime import datetime
@@ -38,40 +37,9 @@ from cmk.gui.utils import saveint
 from cmk.gui.utils.roles import UserPermissions
 from cmk.gui.utils.script_helpers import application_and_request_context
 from cmk.livestatus_client.testing import MockLiveStatusConnection
-from tests.testlib.unit.gui.users import create_and_destroy_user
-from tests.testlib.unit.gui.web_test_app import WebTestAppForCMK
-
-
-# copied from testlib.
-# NOTE: you should not need this function in a unit test.
-def wait_until(
-    condition: Callable[[], bool],
-    timeout: float = 1,
-    interval: float = 0.1,
-    condition_name: str = "",
-) -> None:
-    """Waits until a given condition is met (or timeout was reached -> TimeoutError).
-
-    Args:
-        condition (Callable[[], bool]): condition to be met. Will be called repeatedly until true.
-        timeout (float, optional): Timeout in seconds. Defaults to 1.
-        interval (float, optional): Time to wait (sleep) between checks. Defaults to 0.1.
-        condition_name (str, optional): Name of the condition. Used for logging.
-
-    Raises:
-        TimeoutError: If the condition was not met within the given timeout.
-    """
-    condition_name = condition_name or repr(condition)
-
-    start = now = time.time()
-    while now - start <= timeout:
-        if condition():
-            return
-        time.sleep(interval)
-        now = time.time()
-
-    error_message = f"Timeout waiting for '{condition_name}' to finish (Timeout: {timeout} sec)"
-    raise TimeoutError(error_message)
+from tests.testlib.common.utils import wait_until
+from tests.unit.cmk.gui.users import create_and_destroy_user
+from tests.unit.cmk.web_test_app import WebTestAppForCMK
 
 
 @pytest.fixture(name="user_id")

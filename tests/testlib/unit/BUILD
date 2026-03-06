@@ -23,10 +23,7 @@ py_library(
         "//cmk/gui:cmk_gui",
         "//packages/cmk-ccc:crash-reporting",
         "//tests/testlib/common",
-        requirement("flask"),
-        requirement("pytest-mock"),
         requirement("pytest"),
-        requirement("werkzeug"),
     ],
 )
 
@@ -42,20 +39,10 @@ py_library(
         exclude = ["**/*.py"],
     ),
     imports = ["../../.."],
-    target_compatible_with = select({
-        "@//:gpl+nonfree_repo": [],
-        "@//:gpl_repo": ["@platforms//:incompatible"],
-    }),
     visibility = ["//tests:__subpackages__"],
     deps = [
         "//cmk/utils:cmk_utils",
         "//cmk/utils:cmk_utils_pro",
         "//packages/cmk-crypto",
-        requirement("requests"),
-    ] + select({
-        "@//:gpl+nonfree_repo": [
-            "//cmk/nonfree/pro/dcd",
-        ],
-        "@//:gpl_repo": [],
-    }),
+    ],
 )

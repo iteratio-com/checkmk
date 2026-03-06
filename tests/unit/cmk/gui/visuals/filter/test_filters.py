@@ -26,7 +26,7 @@ from cmk.gui.visuals.filter import filter_registry
 from cmk.inventory.structured_data import deserialize_tree
 from cmk.livestatus_client.testing import MockLiveStatusConnection
 from cmk.utils import paths
-from tests.testlib.unit.gui.web_test_app import SetConfig
+from tests.unit.cmk.web_test_app import SetConfig
 
 
 @pytest.fixture(name="live")

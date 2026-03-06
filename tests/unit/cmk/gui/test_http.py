@@ -19,7 +19,7 @@ from cmk.gui import http
 from cmk.gui.exceptions import MKUserError
 from cmk.gui.http import ContentDispositionType, request, response
 from cmk.gui.utils.script_helpers import application_and_request_context
-from tests.testlib.unit.gui.web_test_app import WebTestAppForCMK
+from tests.unit.cmk.web_test_app import WebTestAppForCMK
 
 global_request = request
 MAX_FORM_SIZE = 20  # MBs, as seen in cmk.gui.http::Request.max_form_memory_size

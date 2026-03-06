@@ -35,7 +35,8 @@ from cmk.gui.permissions import permission_registry
 from cmk.gui.utils.roles import UserPermissions
 from cmk.gui.watolib.hosts_and_folders import folder_tree
 from cmk.livestatus_client.testing import MockLiveStatusConnection
-from tests.testlib.unit.gui.common_fixtures import (
+from tests.testlib.unit.rest_api_client import ClientRegistry, get_client_registry
+from tests.unit.cmk.gui.common_fixtures import (
     create_aut_user_auth_wsgi_app,
     create_flask_app,
     create_wsgi_app,
@@ -44,13 +45,13 @@ from tests.testlib.unit.gui.common_fixtures import (
     perform_load_plugins,
     validate_background_job_annotation,
 )
-from tests.testlib.unit.gui.users import create_and_destroy_user
-from tests.testlib.unit.gui.web_test_app import (
+from tests.unit.cmk.web_test_app import (
     SetConfig,
     WebTestAppForCMK,
     WebTestAppRequestHandler,
 )
-from tests.testlib.unit.rest_api_client import ClientRegistry, get_client_registry
+
+from .users import create_and_destroy_user
 
 
 class RemoteAutomation(NamedTuple):

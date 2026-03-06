@@ -30,7 +30,7 @@ from cmk.gui.watolib.rulespecs import (
 )
 from cmk.utils.check_utils import ParametersTypeAlias
 from cmk.utils.rulesets.definition import RuleGroup
-from tests.testlib.unit.gui.common_fixtures import perform_load_plugins
+from tests.unit.cmk.gui.common_fixtures import perform_load_plugins
 
 logger = logging.getLogger(__name__)
 
