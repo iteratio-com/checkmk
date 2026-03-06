@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 
 import pytest
+from pytest import MonkeyPatch
 from pytest_mock import MockerFixture
 
 from cmk.ccc.user import UserId
@@ -43,6 +44,7 @@ class TestAggregationRawdataGeneratorLocal:
     def test_init(
         self,
         mocker: MockerFixture,
+        monkeypatch: MonkeyPatch,
         config: AgentBiConfig,
         expected_username: str,
         expected_site_url: str,
@@ -55,11 +57,11 @@ class TestAggregationRawdataGeneratorLocal:
         )
         mocker.patch("cmk.ccc.site.get_apache_port", return_value=5002)
 
-        secret = AutomationUserSecret(UserId(expected_username))
-        secret.path.parent.mkdir(parents=True, exist_ok=True)
-        secret.save("lala")
+        _create_automation_user_secret(UserId(expected_username))
 
+        monkeypatch.setenv("OMD_SITE", "NO_SITE")
         agg_gen = AggregationRawdataGenerator(config)
+
         assert "InternalToken" in agg_gen._get_authentication_token()
         assert agg_gen._config == config
         assert agg_gen._site_url == expected_site_url
