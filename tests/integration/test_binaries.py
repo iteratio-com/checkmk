@@ -92,7 +92,8 @@ NONFREE_PRO_BINARIES: Sequence[BinarySmoke] = [
     BinarySmoke("servicenow", expected_stderr=r"KeyError.*NOTIF", path=_NOTIF_PATH),
 ]
 
-# Non-free binaries available in ultimate and above (skip on community and pro)
+# Non-free binaries available in ultimate and ultimatemt only (not cloud, community, or pro).
+# Cloud ships cmk-otel-collector but NOT the otel-collector package with this cleanup script.
 NONFREE_ULTIMATE_BINARIES: Sequence[BinarySmoke] = [
     BinarySmoke(
         "cmk-cleanup-otel-collector-files",
@@ -147,7 +148,7 @@ def test_binary_smoke_pro(binary: BinarySmoke, site: Site) -> None:
     assert re.search(binary.expected_stderr, p.stderr, re.DOTALL)
 
 
-@pytest.mark.skip_if_not_edition("ultimate", "ultimatemt", "cloud")
+@pytest.mark.skip_if_not_edition("ultimate", "ultimatemt")
 @pytest.mark.parametrize(
     "binary",
     (pytest.param(b, id=b.name) for b in NONFREE_ULTIMATE_BINARIES),
