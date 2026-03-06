@@ -201,7 +201,6 @@ def _load_users(lock: bool = False) -> Users:
                 "ui_theme",
                 "two_factor_credentials",
                 "ui_sidebar_position",
-                "ui_saas_onboarding_button_toggle",
                 "last_login",
             ],
             Callable,
@@ -216,7 +215,6 @@ def _load_users(lock: bool = False) -> Users:
         ("ui_theme", lambda x: x),
         ("two_factor_credentials", ast.literal_eval),
         ("ui_sidebar_position", lambda x: None if x == "None" else x),
-        ("ui_saas_onboarding_button_toggle", lambda x: None if x == "None" else x),
         ("last_login", ast.literal_eval),
     ]
 
@@ -520,15 +518,6 @@ def _save_user_profiles(
         else:
             remove_custom_attr(user_id, "ui_sidebar_position")
 
-        if "ui_saas_onboarding_button_toggle" in user:
-            save_custom_attr(
-                user_id,
-                "ui_saas_onboarding_button_toggle",
-                user["ui_saas_onboarding_button_toggle"],
-            )
-        else:
-            remove_custom_attr(user_id, "ui_saas_onboarding_button_toggle")
-
         _save_cached_profile(user_id, user, multisite_keys, non_contact_keys)
 
 
@@ -697,8 +686,7 @@ def _multisite_keys(user_attributes: Sequence[tuple[str, UserAttribute]]) -> lis
     multisite_variables = [
         var
         for var in _get_multisite_custom_variable_names(user_attributes)
-        if var
-        not in ("start_url", "ui_theme", "ui_sidebar_position", "ui_saas_onboarding_button_toggle")
+        if var not in ("start_url", "ui_theme", "ui_sidebar_position")
     ]
     return [
         "roles",

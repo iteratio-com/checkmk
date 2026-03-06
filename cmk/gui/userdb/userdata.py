@@ -132,7 +132,6 @@ class UserData:
     nav_hide_icons_title: Literal["hide"] | None | _MissingValueSentinel
     icons_per_item: Literal["entry"] | None | _MissingValueSentinel
     ui_sidebar_position: Literal["left"] | None  # I think None means right, which is the default?
-    ui_saas_onboarding_button_toggle: Literal["invisible"] | None
     ui_theme: Literal["modern-dark", "facelift"] | None
     # contextual_help_icon: NotRequired[Literal["hide_icon"] | None]
 
@@ -185,7 +184,6 @@ class UserData:
             ("last_login", self.last_login),
             # UI
             ("temperature_unit", self.temperature_unit),
-            ("ui_saas_onboarding_button_toggle", self.ui_saas_onboarding_button_toggle),
             ("ui_sidebar_position", self.ui_sidebar_position),
             ("ui_theme", self.ui_theme),
             ("start_url", self.start_url),
@@ -289,7 +287,6 @@ class UserData:
             temperature_unit=userspec.get("temperature_unit"),
             two_factor_credentials=userspec.get("two_factor_credentials"),
             ui_sidebar_position=userspec.get("ui_sidebar_position"),
-            ui_saas_onboarding_button_toggle=userspec.get("ui_saas_onboarding_button_toggle"),
             ui_theme=userspec.get("ui_theme"),
             created_on_version=userspec.get("created_on_version"),
             user_id=user_id,
