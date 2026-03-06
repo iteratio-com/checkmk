@@ -233,9 +233,7 @@ def _parse_auth(raw: Mapping[str, object]) -> MailboxAuth:
         case {"protocol": "SMTP"}:
             return None
         case _:
-            raise RuntimeError(
-                "Either Username/Passwort or ClientID/ClientSecret/TenantID have to be set"
-            )
+            raise RuntimeError(f"Incomplete auth credentials for {raw['protocol']} protocol.")
 
 
 def _parse_secret(secret: str | None, reference: str | None) -> str:
