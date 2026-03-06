@@ -220,6 +220,38 @@ def test_edit_user_change_password_errors(
 
 
 @pytest.mark.parametrize(
+    "new_pw, new_pw_conf, expect_error_contains",
+    [
+        # Wordlist contains 012345
+        pytest.param(
+            "alphabetiser",
+            "alphabetiser",
+            "The password was found in the common password list",
+            id="password_denied",
+        ),
+    ],
+)
+def test_default_wordlist(
+    dashboard_page: MainDashboard,
+    new_pw: str,
+    new_pw_conf: str,
+    expect_error_contains: str,
+) -> None:
+    """Test the password and repeat-password fields in the edit users menu"""
+    pw_field_suffix = "Y21rYWRtaW4="  # base64 'cmkadmin'
+    navigate_to_edit_user_page(dashboard_page, ADMIN_USER)
+
+    logger.info("Change current password on 'Edit user' page")
+    dashboard_page.main_area.locator(f"input[name='_password_{pw_field_suffix}']").fill(new_pw)
+    dashboard_page.main_area.locator(f"input[name='_password2_{pw_field_suffix}']").fill(
+        new_pw_conf
+    )
+    dashboard_page.main_area.locator("#suggestions >> text=Save").click()
+
+    dashboard_page.main_area.check_error(re.compile(f".*{expect_error_contains}.*"))
+
+
+@pytest.mark.parametrize(
     "char_groups_number_password_policy, expected_groups_number, password",
     [
         pytest.param("2", 2, "cmkcmkcmkcmk", id="2_groups-lowercase"),
@@ -236,6 +268,7 @@ def test_setting_password_incompatible_with_policy(
     Activate a password policy that requires at least 2 groups of characters (via fixture)
     and fail setting a password that doesn't comply with that.
     """
+
     pw_field_suffix = "Y21rYWRtaW4="  # base64 'cmkadmin'
     navigate_to_edit_user_page(dashboard_page, ADMIN_USER)
 

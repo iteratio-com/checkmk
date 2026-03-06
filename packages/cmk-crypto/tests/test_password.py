@@ -4,6 +4,8 @@
 # conditions defined in the file COPYING, which is part of this source code package.
 """Tests for the Password type"""
 
+from pathlib import Path
+
 import pytest
 from cryptography.hazmat.primitives import hashes
 
@@ -78,4 +80,7 @@ TooSimple = PasswordPolicy.Result.TooSimple
 def test_password_policy(
     password: str, min_len: int, min_grp: int, expected: PasswordPolicy.Result
 ) -> None:
-    assert Password(password).verify_policy(PasswordPolicy(min_len, min_grp)) == expected
+    assert (
+        Password(password).verify_policy(PasswordPolicy(min_len, min_grp, False, Path("")))
+        == expected
+    )

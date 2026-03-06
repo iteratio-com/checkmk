@@ -2239,6 +2239,17 @@ ConfigVariablePasswordPolicy = ConfigVariable(
                     default_value=365 * 86400,
                 ),
             ),
+            (
+                "wordlist_check",
+                Checkbox(
+                    title=_("Common password wordlist"),
+                    help=_(
+                        "Prevent users from setting new passwords which are within the Checkmk common password list or include their username."
+                    ),
+                    default_value=True,
+                    label="Prevent passwords within wordlist",
+                ),
+            ),
         ],
     ),
 )

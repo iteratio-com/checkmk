@@ -102,6 +102,8 @@ auth_secret_file = omd_root / "etc/auth.secret"
 # the path for password_store.secret is also duplicated in omd cmk_password_store.h!
 password_store_secret_file = omd_root / "etc/password_store.secret"
 site_internal_secret_file = omd_root / "etc/site_internal.secret"
+# security wordlist path
+wordlist_file = omd_root / "etc/passwordlist.txt"
 
 share_dir = _omd_path("share/check_mk")
 checks_dir = _omd_path("share/check_mk/checks")

@@ -441,6 +441,12 @@ def test_automation_get_config_sync_state(request_context: None) -> None:
                 None,
                 "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
             ),
+            "etc/passwordlist.txt": (
+                33200,
+                0,
+                None,
+                "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            ),
             "etc/omd/site.conf": (
                 33200,
                 1010,

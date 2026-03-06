@@ -259,7 +259,7 @@ def patch_omd_site(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
         makedirs(cmk.utils.paths.local_reports_dir)
     _touch(cmk.utils.paths.default_config_dir / "mkeventd.mk")
     _touch(cmk.utils.paths.default_config_dir / "multisite.mk")
-
+    _touch(cmk.utils.paths.omd_root / "etc/passwordlist.txt")
     _dump(
         Path(cmk.utils.paths.omd_root, "etc/omd/site.conf"),
         """CONFIG_ADMIN_MAIL=''

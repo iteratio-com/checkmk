@@ -53,6 +53,7 @@ from cmk.gui.watolib.users import (
     verify_password_policy,
 )
 from cmk.gui.watolib.users import edit_user as wato_edit_user
+from cmk.utils import paths
 
 TIMESTAMP_RANGE = tuple[float, float]
 
@@ -158,6 +159,8 @@ def create_user(params: Mapping[str, Any]) -> Response:
         PasswordPolicy(
             active_config.password_policy.get("min_length"),
             active_config.password_policy.get("num_groups"),
+            active_config.password_policy.get("wordlist_check", True),
+            paths.wordlist_file,
         ),
         new_user=True,
     )
@@ -221,6 +224,8 @@ def edit_user(params: Mapping[str, Any]) -> Response:
         PasswordPolicy(
             active_config.password_policy.get("min_length"),
             active_config.password_policy.get("num_groups"),
+            active_config.password_policy.get("wordlist_check", True),
+            paths.wordlist_file,
         ),
     )
 

@@ -452,7 +452,9 @@ class CREConfig:
     # 2. with every successful login, all previous sessions of the user will be removed, only
     # one session (the one resulting from the successful login) will be kept
     single_user_session: int | None = None
-    password_policy: PasswordPolicy = field(default_factory=lambda: PasswordPolicy(min_length=12))
+    password_policy: PasswordPolicy = field(
+        default_factory=lambda: PasswordPolicy(min_length=12, wordlist_check=True)
+    )
 
     # Individual changes to user's authentication security will trigger either emails or use notifications
     # Default is 7 days

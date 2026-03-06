@@ -565,7 +565,12 @@ def test_openapi_user_internal_auth_handling(
         updated_internal_attributes = _api_to_internal_format(
             _load_user(name),
             {"auth_option": {"secret": "QWXWBFUCSUOXNCPJUMS@", "auth_type": "automation"}},
-            PasswordPolicy(12, None),
+            PasswordPolicy(
+                12,
+                None,
+                False,
+                paths.wordlist_file,
+            ),
         )
         edit_user(
             name,
@@ -587,7 +592,12 @@ def test_openapi_user_internal_auth_handling(
         updated_internal_attributes = _api_to_internal_format(
             _load_user(name),
             {"auth_option": {"auth_type": "remove"}},
-            PasswordPolicy(12, None),
+            PasswordPolicy(
+                12,
+                None,
+                False,
+                paths.wordlist_file,
+            ),
         )
         edit_user(
             name,

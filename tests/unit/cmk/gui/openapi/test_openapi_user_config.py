@@ -5,6 +5,7 @@
 
 # mypy: disable-error-code="misc"
 
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -19,7 +20,7 @@ from cmk.gui.openapi.endpoints.user_config import _auth_options_to_internal_form
 def test_automation_secret(mock_hash: None, mock_time: None) -> None:
     result = _auth_options_to_internal_format(
         {"auth_type": "automation", "secret": "TNBJCkwane3$cfn0XLf6p6a"},
-        PasswordPolicy(12, None),
+        PasswordPolicy(12, None, False, Path("")),
     )
 
     expected = {
@@ -35,7 +36,7 @@ def test_automation_secret(mock_hash: None, mock_time: None) -> None:
 def test_enforce_password_change_only() -> None:
     result = _auth_options_to_internal_format(
         {"auth_type": "password", "enforce_password_change": True},
-        PasswordPolicy(12, None),
+        PasswordPolicy(12, None, False, Path("")),
     )
 
     expected = {"enforce_pw_change": True}
@@ -46,7 +47,7 @@ def test_empty_password_not_allowed() -> None:
     with pytest.raises(MKUserError, match="Password must not be empty"):
         _auth_options_to_internal_format(
             {"auth_type": "password", "enforce_password_change": True, "password": ""},
-            PasswordPolicy(12, None),
+            PasswordPolicy(12, None, False, Path("")),
         )
 
 
@@ -54,5 +55,5 @@ def test_null_bytes_in_password_not_allowed() -> None:
     with pytest.raises(MKUserError, match="Password must not contain null bytes"):
         _auth_options_to_internal_format(
             {"auth_type": "password", "enforce_password_change": True, "password": "\0"},
-            PasswordPolicy(12, None),
+            PasswordPolicy(12, None, False, Path("")),
         )

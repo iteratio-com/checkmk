@@ -10,6 +10,7 @@ import secrets
 import string
 from dataclasses import dataclass
 from enum import Enum
+from pathlib import Path
 from typing import Final, override
 
 
@@ -19,8 +20,10 @@ class PasswordPolicy:
 
     min_length: int | None
     min_groups: int | None
+    wordlist_check: bool
+    wordlist_path: Path
 
-    Result = Enum("Result", ["OK", "TooShort", "TooSimple"])
+    Result = Enum("Result", ["OK", "TooShort", "TooSimple", "WordlistMatch"])
 
 
 class Password:
@@ -72,7 +75,18 @@ class Password:
             if len(groups) < min_groups:
                 return PasswordPolicy.Result.TooSimple
 
-        return PasswordPolicy.Result.OK
+        try:
+            if policy.wordlist_check is not False and any(
+                self.raw.lower() == line.strip()
+                for line in policy.wordlist_path.read_text().lower().splitlines()
+            ):
+                return PasswordPolicy.Result.WordlistMatch
+
+            return PasswordPolicy.Result.OK
+        except FileNotFoundError:
+            raise ValueError(
+                "Unable to validate your password against the Common password wordlist as the file cannot be found. Please contact your site administrator to resolve this issue."
+            )
 
     @property
     def raw_bytes(self) -> bytes:

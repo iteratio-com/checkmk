@@ -850,6 +850,7 @@ class PasswordPolicy(TypedDict):
     min_length: NotRequired[int]
     num_groups: NotRequired[int]
     max_age: NotRequired[int]
+    wordlist_check: NotRequired[bool]
 
 
 class GraphTimerange(TypedDict):

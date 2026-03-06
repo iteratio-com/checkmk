@@ -467,7 +467,9 @@ def notification_script_choices() -> list[tuple[str, str]]:
 
 
 def verify_password_policy(
-    password: Password, varname: str, password_policy: PasswordPolicy
+    password: Password,
+    varname: str,
+    password_policy: PasswordPolicy,
 ) -> None:
     result = password.verify_policy(password_policy)
     if result == PasswordPolicy.Result.TooShort:
@@ -488,6 +490,15 @@ def verify_password_policy(
                 "uppercase letters, digits or special characters."
             )
             % password_policy.min_groups,
+        )
+
+    if result == PasswordPolicy.Result.WordlistMatch:
+        raise MKUserError(
+            varname,
+            _(
+                "The password was found in the common password list. Please choose "
+                "a different password."
+            ),
         )
 
 

@@ -37,6 +37,7 @@ from cmk.gui.watolib.users import (
     get_enabled_remote_sites_for_logged_in_user,
     verify_password_policy,
 )
+from cmk.utils import paths
 from cmk.utils.security_event import log_security_event
 
 from .page_menu import user_profile_page_menu
@@ -115,6 +116,8 @@ class UserChangePasswordPage(Page):
             PasswordPolicy(
                 config.password_policy.get("min_length"),
                 config.password_policy.get("num_groups"),
+                config.password_policy.get("wordlist_check", True),
+                paths.wordlist_file,
             ),
         )
         user_spec["password"] = hash_password(password)

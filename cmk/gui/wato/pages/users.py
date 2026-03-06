@@ -921,6 +921,8 @@ class ModeEditUser(WatoMode):
                 PasswordPolicy(
                     config.password_policy.get("min_length"),
                     config.password_policy.get("num_groups"),
+                    config.password_policy.get("wordlist_check", True),
+                    paths.wordlist_file,
                 ),
             )
 
