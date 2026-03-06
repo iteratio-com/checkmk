@@ -6,7 +6,7 @@
 import pytest
 
 from cmk.agent_based.v2 import Metric, Result, State
-from cmk.checkengine.plugins import AgentBasedPlugins, CheckPluginName
+from cmk.legacy_checks.fortigate_ipsecvpn import check_fortigate_ipsecvpn
 
 SECTION = [
     ["up1", "2"],
@@ -28,8 +28,7 @@ SECTION = [
                 Metric("active_vpn_tunnels", 3.0, boundaries=(0.0, 6.0)),
                 Result(
                     state=State.OK,
-                    summary="4 additional details available",
-                    details="Down and not ignored:\ndown1, down2, down3\nDown:\ndown1, down2, down3",
+                    notice="Down and not ignored:\ndown1, down2, down3\nDown:\ndown1, down2, down3",
                 ),
             ],
             id="empty ignore",
@@ -41,8 +40,7 @@ SECTION = [
                 Metric("active_vpn_tunnels", 3.0, boundaries=(0.0, 6.0)),
                 Result(
                     state=State.OK,
-                    summary="4 additional details available",
-                    details="Down and not ignored:\ndown1, down2, down3\nDown:\ndown1, down2, down3",
+                    notice="Down and not ignored:\ndown1, down2, down3\nDown:\ndown1, down2, down3",
                 ),
             ],
             id="ignore up2",
@@ -54,8 +52,7 @@ SECTION = [
                 Metric("active_vpn_tunnels", 3.0, boundaries=(0.0, 6.0)),
                 Result(
                     state=State.OK,
-                    summary="6 additional details available",
-                    details="Down and not ignored:\ndown1, down3\nDown:\ndown1, down2, down3\nIgnored:\ndown2",
+                    notice="Down and not ignored:\ndown1, down3\nDown:\ndown1, down2, down3\nIgnored:\ndown2",
                 ),
             ],
             id="ignore down2",
@@ -67,8 +64,7 @@ SECTION = [
                 Metric("active_vpn_tunnels", 3.0, boundaries=(0.0, 6.0)),
                 Result(
                     state=State.OK,
-                    summary="6 additional details available",
-                    details="Down and not ignored:\ndown1, down3\nDown:\ndown1, down2, down3\nIgnored:\ndown2",
+                    notice="Down and not ignored:\ndown1, down3\nDown:\ndown1, down2, down3\nIgnored:\ndown2",
                 ),
             ],
             id="ignore down2 and up2",
@@ -76,17 +72,13 @@ SECTION = [
     ],
 )
 def test_fortigate_ipsecvpn_simple(
-    agent_based_plugins: AgentBasedPlugins,
     tunnels_ignore_levels: list[str],
     expected_check_result: list[Result | Metric],
 ) -> None:
-    plugin = agent_based_plugins.check_plugins[CheckPluginName("fortigate_ipsecvpn")]
-    assert plugin
     assert (
         list(
-            plugin.check_function(
+            check_fortigate_ipsecvpn(
                 params={"levels": (10, 20), "tunnels_ignore_levels": tunnels_ignore_levels},
-                item=None,
                 section=SECTION,
             )
         )
