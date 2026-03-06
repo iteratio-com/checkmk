@@ -6,7 +6,7 @@
 import pytest
 
 from cmk.agent_based.v2 import Metric, Result, State
-from cmk.legacy_checks.fortigate_ipsecvpn import check_fortigate_ipsecvpn
+from cmk.plugins.fortinet.agent_based.fortigate_ipsecvpn import check_fortigate_ipsecvpn
 
 SECTION = [
     ["up1", "2"],
