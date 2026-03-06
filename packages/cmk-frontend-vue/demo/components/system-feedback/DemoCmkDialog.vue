@@ -66,7 +66,7 @@ function handleAction() {
   />
 </template>`
 
-type DialogVariant = 'info' | 'error'
+type DialogVariant = 'info' | 'error' | 'success' | 'warning'
 
 const panelConfig = {
   variant: {
@@ -74,6 +74,8 @@ const panelConfig = {
     title: 'Variant',
     options: [
       { title: 'Info', name: 'info' },
+      { title: 'Success', name: 'success' },
+      { title: 'Warning', name: 'warning' },
       { title: 'Error', name: 'error' }
     ] satisfies Options<DialogVariant>[],
     initialState: 'info' as DialogVariant
