@@ -1,11 +1,10 @@
-load("@aspect_rules_js//js:defs.bzl", "js_run_binary", "js_run_devserver")
+load("@aspect_rules_js//js:defs.bzl", "js_library", "js_run_binary", "js_run_devserver")
 load("@aspect_rules_js//npm:defs.bzl", "npm_link_package")
 load("@aspect_rules_py//py:defs.bzl", "py_test")
 load("@bazel_skylib//rules:build_test.bzl", "build_test")
 load("@cmk_requirements//:requirements.bzl", "requirement")
 load("@npm//:defs.bzl", "npm_link_all_packages")
 load("@npm//:eslint/package_json.bzl", eslint_bin = "bin")
-load("@npm//:stylelint/package_json.bzl", stylelint_bin = "bin")
 load("@npm//:vitest/package_json.bzl", vitest_bin = "bin")
 load("@npm//:vue-tsc/package_json.bzl", vue_tsc_bin = "bin")
 load("@npm//:vue3-gettext/package_json.bzl", vue_gettext_bin = "bin")
@@ -13,7 +12,17 @@ load("@npm//packages/cmk-frontend-vue:vite/package_json.bzl", vite_bin = "bin")
 load("@rules_pkg//pkg:mappings.bzl", "pkg_files")
 load("@rules_pkg//pkg:tar.bzl", "pkg_tar")
 
-exports_files(["package.json"])
+exports_files([
+    "package.json",
+    "scripts/stylelint-vue-bem-naming-convention.js",
+])
+
+js_library(
+    name = "stylelint_plugin",
+    srcs = ["scripts/stylelint-vue-bem-naming-convention.js"],
+    visibility = ["//visibility:public"],
+    deps = ["//:node_modules/stylelint"],
+)
 
 npm_link_all_packages(name = "node_modules")
 
@@ -49,16 +58,40 @@ LOCALE_OUTS = [
     "src/assets/locale/ro.json",
 ]
 
+filegroup(
+    name = "src_vue",
+    srcs = glob(["src/**/*.vue"]),
+    tags = ["stylelint"],
+)
+
+filegroup(
+    name = "src_css",
+    srcs = glob(["src/**/*.css"]),
+    tags = ["stylelint"],
+)
+
+filegroup(
+    name = "demo_vue",
+    srcs = glob(["demo/**/*.vue"]),
+    tags = ["stylelint"],
+)
+
+filegroup(
+    name = "demo_css",
+    srcs = glob(["demo/**/*.css"]),
+    tags = ["stylelint"],
+)
+
 js_run_binary(
     name = "extract_pot_file",
     srcs = glob([
         "src/**/*.ts",
-        "src/**/*.vue",
         "demo/**/*.ts",
-        "demo/**/*.vue",
     ]) + [
         "gettext.config.js",
+        ":demo_vue",
         ":node_modules/vue3-gettext",
+        ":src_vue",
     ],
     outs = ["locale/messages.pot"],
     tool = ":gettext-extract",
@@ -121,7 +154,6 @@ SRCS = [
     "//packages/cmk-frontend:dist",
     "env.d.ts",
     "weaki18nString.d.ts",
-    ".stylelintrc.js",
     "scripts/stylelint-vue-bem-naming-convention.js",
     "eslint.config.js",
     "index.html",
@@ -134,6 +166,10 @@ SRCS = [
     "vite.config.demo.ts",
     "vite.config.ts",
     "demo/index.html",
+    ":demo_vue",
+    ":demo_css",
+    ":src_vue",
+    ":src_css",
     ":compile_i18n",
     ":node_modules/@testing-library",
     ":node_modules/@tsconfig",
@@ -157,20 +193,21 @@ SRCS = [
     ":node_modules/vue-router",
 ] + LOCALE_OUTS + glob([
     "src/**/*.ts",
-    "src/**/*.vue",
-    "src/**/*.css",
     "src/**/*.svg",
     "demo/**/*.ts",
-    "demo/**/*.vue",
-    "demo/**/*.css",
     "demo/**/*.png",
     "demo/**/*.svg",
     "demo/public/*",
 ])
 
+filegroup(
+    name = "test_vue",
+    srcs = glob(["tests/**/*.vue"]),
+    tags = ["stylelint"],
+)
+
 SRCS_AND_TESTS = SRCS + glob([
     "tests/**/*.ts",
-    "tests/**/*.vue",
 ])
 
 npm_link_package(
@@ -209,7 +246,7 @@ vitest_bin.vitest_test(
     name = "unit-test",
     args = ["run"],
     chdir = package_name(),
-    data = TOOLING + SRCS_AND_TESTS,
+    data = TOOLING + SRCS_AND_TESTS + [":test_vue"],
 )
 
 vue_tsc_bin.vue_tsc_test(
@@ -219,7 +256,7 @@ vue_tsc_bin.vue_tsc_test(
         "--force",
     ],
     chdir = package_name(),
-    data = TOOLING + SRCS_AND_TESTS,
+    data = TOOLING + SRCS_AND_TESTS + [":test_vue"],
     include_types = True,
 )
 
@@ -236,7 +273,7 @@ js_run_devserver(
 vitest_bin.vitest_binary(
     name = "vitest",
     chdir = package_name(),
-    data = TOOLING + SRCS_AND_TESTS,
+    data = TOOLING + SRCS_AND_TESTS + [":test_vue"],
 )
 
 alias(
@@ -260,16 +297,7 @@ eslint_bin.eslint_test(
         ".",
     ],
     chdir = package_name(),
-    data = TOOLING + SRCS_AND_TESTS,
-)
-
-stylelint_bin.stylelint_test(
-    name = "stylelint",
-    args = [
-        "**/*.{vue,css}",
-    ],
-    chdir = package_name(),
-    data = TOOLING + SRCS,
+    data = TOOLING + SRCS_AND_TESTS + [":test_vue"],
 )
 
 pkg_files(

@@ -1,4 +1,5 @@
 load("@aspect_bazel_lib//lib:copy_to_directory.bzl", "copy_to_directory")
+load("@aspect_rules_js//js:defs.bzl", "js_library")
 load("@bazel_skylib//rules:common_settings.bzl", "bool_flag", "string_flag")
 load("@bazel_skylib//rules:write_file.bzl", "write_file")
 load("@gazelle//:def.bzl", "gazelle")
@@ -23,8 +24,24 @@ exports_files(
         "pyproject.toml",
         "requirements.txt",
         ".shellcheckrc",
+        ".stylelintrc.js",
+        ".stylelintignore",
     ],
     visibility = ["//:__subpackages__"],
+)
+
+js_library(
+    name = "stylelintrc",
+    srcs = [
+        ".stylelintignore",
+        ".stylelintrc.js",
+    ],
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//:node_modules/postcss-html",
+        "//:node_modules/stylelint-config-standard",
+        "//packages/cmk-frontend-vue:stylelint_plugin",
+    ],
 )
 
 filegroup(

@@ -161,9 +161,9 @@ run_lint() {
         --quiet \
         --fixes=false \
         :all
-    # The following targets will be part of `bazel lint`
-    # after CMK-26334 and CMK-25906.
-    bazel test :eslint :stylelint
+    # The following target will be part of `bazel lint`
+    # after CMK-25906.
+    bazel test :eslint
 }
 
 run_tsc() {

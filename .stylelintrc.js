@@ -4,7 +4,7 @@ export default {
   rules: {
     'selector-class-pattern': null
   },
-  plugins: ['./scripts/stylelint-vue-bem-naming-convention.js'],
+  plugins: ['./packages/cmk-frontend-vue/scripts/stylelint-vue-bem-naming-convention.js'],
   overrides: [
     {
       files: ['*.css', '**/*.css'],
@@ -15,6 +15,16 @@ export default {
             message: 'Expected no selectors in css files, only variable definitions.'
           }
         ]
+      }
+    },
+    {
+      files: ['*.scss', '**/*.scss'],
+      rules: {
+        // css-tree@3.1.0 does not define <cursor-predefined>, crashing the rule.
+        // The fix is tracked in @csstools/css-syntax-patches-for-csstree but
+        // cursor-predefined is not yet included. Re-enable when it is.
+        // See: stylelint/stylelint#8100, stylelint/stylelint#8850
+        'declaration-property-value-no-unknown': null
       }
     },
     // https://github.com/ota-meshi/stylelint-config-standard-vue/blob/main/lib/index.js
@@ -36,12 +46,11 @@ export default {
         ],
         'keyframes-name-pattern': ['^([a-z][a-z0-9]*)((-|_|--|__)[a-z0-9]+)*$'],
         // https://github.com/ota-meshi/stylelint-config-recommended-vue/blob/main/lib/vue-specific-rules.js
-        'declaration-property-value-no-unknown': [
-          true,
-          {
-            ignoreProperties: { '/.*/': '/v-bind\\(.+\\)/' }
-          }
-        ],
+        // css-tree@3.1.0 does not define <cursor-predefined>, crashing the rule.
+        // Re-enable when @csstools/css-syntax-patches-for-csstree includes cursor-predefined.
+        // See: stylelint/stylelint#8100, stylelint/stylelint#8850
+        'declaration-property-value-no-unknown': null,
+        'selector-pseudo-class-no-unknown': [true, { ignorePseudoClasses: ['slotted'] }],
         'value-keyword-case': [
           'lower',
           {

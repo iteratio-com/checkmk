@@ -80,10 +80,16 @@ webpack_cli_bin.webpack_cli_binary(
     ],
 )
 
+filegroup(
+    name = "themes_css",
+    srcs = glob(["src/themes/**/*.scss"]),
+    tags = ["stylelint"],
+)
+
 py_test(
     name = "scss_content",
     srcs = ["scripts/test_scss_content.py"],
-    data = glob(["src/themes/**/*.scss"]),
+    data = [":themes_css"],
     main = "test_scss_content.py",
 )
 

@@ -4,12 +4,22 @@ load("@bazel_skylib//rules:native_binary.bzl", "native_binary")
 load("@cmk_requirements//:requirements.bzl", "requirement")
 load("@npm//:defs.bzl", "npm_link_all_packages")
 load("@npm//bazel/tools:npm-groovy-lint/package_json.bzl", groovy_bin = "bin")
+load("@npm//bazel/tools:stylelint/package_json.bzl", stylelint_bin = "bin")
 load("@rules_mypy//mypy:mypy.bzl", "mypy_cli")
 load("@rules_python//python:defs.bzl", "py_binary")
 load("@rules_python//python/entry_points:py_console_script_binary.bzl", "py_console_script_binary")
 load("//bazel/rules:sh_expand_template.bzl", "sh_expand_template")
 
 npm_link_all_packages(name = "node_modules")
+
+stylelint_bin.stylelint_binary(
+    name = "stylelint",
+    data = [
+        ":node_modules/stylelint-config-standard",
+        ":node_modules/stylelint-scss",
+        "//:node_modules/postcss-html",
+    ],
+)
 
 js_library(
     name = "prettierrc",
@@ -96,6 +106,7 @@ bazel_env(
         "osslsigncode": "@osslsigncode",
         "pnpm": "@pnpm",
         "py_import_cycles": ":py-import-cycles",
+        "stylelint": ":stylelint",
         "uv": "@multitool//tools/uv",
     },
 )
