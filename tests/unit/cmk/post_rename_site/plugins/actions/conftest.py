@@ -15,15 +15,15 @@ from werkzeug.test import create_environ
 from cmk.ccc.user import UserId
 from cmk.gui import http
 from cmk.gui.config import Config
-from tests.unit.cmk.gui.common_fixtures import (
+from tests.testlib.unit.gui.common_fixtures import (
     create_flask_app,
     create_wsgi_app,
     perform_gui_cleanup_after_test,
     perform_load_config,
     perform_load_plugins,
 )
-from tests.unit.cmk.gui.users import create_and_destroy_user
-from tests.unit.cmk.web_test_app import (
+from tests.testlib.unit.gui.users import create_and_destroy_user
+from tests.testlib.unit.gui.web_test_app import (
     WebTestAppForCMK,
 )
 

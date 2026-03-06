@@ -12,8 +12,8 @@ import cmk.gui.mkeventd.wato as mkeventd
 from cmk.gui.utils.script_helpers import session_wsgi_app
 from cmk.gui.watolib import groups
 from cmk.gui.wsgi.blueprints import checkmk, rest_api
+from tests.testlib.unit.gui.web_test_app import WebTestAppForCMK, WebTestAppRequestHandler
 from tests.testlib.unit.rest_api_client import RestApiClient
-from tests.unit.cmk.web_test_app import WebTestAppForCMK, WebTestAppRequestHandler
 
 
 @pytest.fixture()
