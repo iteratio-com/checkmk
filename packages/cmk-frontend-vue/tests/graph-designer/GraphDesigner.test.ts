@@ -573,7 +573,7 @@ describe('Adding a Query graph line', { timeout: 10_000 }, () => {
     server.resetHandlers()
   })
 
-  test.skip('works as expected', async () => {
+  test('works as expected', async () => {
     const graphLines: GraphLines = []
     render(GraphDesignerApp, {
       props: {
@@ -596,47 +596,54 @@ describe('Adding a Query graph line', { timeout: 10_000 }, () => {
     // Metric name
     const metricNameDropdown = screen.getByRole('combobox', { name: 'Metric name' })
     await fireEvent.click(metricNameDropdown)
-    await userEvent.keyboard('[Space][Enter]')
+    await screen.findByRole('option', { name: 'Dummy Metric Name' })
+    await userEvent.keyboard('[Enter]')
 
     // Resource attribute key
     const resourceAttributeKeyDropdown = screen.getByRole('combobox', {
       name: 'Resource attributes key'
     })
     await fireEvent.click(resourceAttributeKeyDropdown)
-    await userEvent.keyboard('[Space][Enter]')
+    await screen.findByRole('option', { name: 'Dummy Resource Attribute key' })
+    await userEvent.keyboard('[Enter]')
 
     // Resource attribute value
     const resourceValueDropdown = screen.getByRole('combobox', {
       name: 'Resource attributes value'
     })
     await fireEvent.click(resourceValueDropdown)
-    await userEvent.keyboard('[Space][Enter]')
+    await screen.findByRole('option', { name: 'Dummy Resource Attribute value' })
+    await userEvent.keyboard('[Enter]')
 
     // Scope attribute key
     const scopeAttributeKeyDropdown = screen.getByRole('combobox', { name: 'Scope attributes key' })
     await fireEvent.click(scopeAttributeKeyDropdown)
-    await userEvent.keyboard('[Space][Enter]')
+    await screen.findByRole('option', { name: 'Dummy Scope Attribute key' })
+    await userEvent.keyboard('[Enter]')
 
     // Scope attribute value
     const scopeAttributeValueDropdown = screen.getByRole('combobox', {
       name: 'Scope attributes value'
     })
     await fireEvent.click(scopeAttributeValueDropdown)
-    await userEvent.keyboard('[Space][Enter]')
+    await screen.findByRole('option', { name: 'Dummy Scope Attribute value' })
+    await userEvent.keyboard('[Enter]')
 
     // Data point attribute key
     const dataPointAttributeKeyDropdown = screen.getByRole('combobox', {
       name: 'Data point attributes key'
     })
     await fireEvent.click(dataPointAttributeKeyDropdown)
-    await userEvent.keyboard('[Space][Enter]')
+    await screen.findByRole('option', { name: 'Dummy Data Point Attribute key' })
+    await userEvent.keyboard('[Enter]')
 
     // Data point attribute value
     const dataPointAttributeValueDropdown = screen.getByRole('combobox', {
       name: 'Data point attributes value'
     })
     await fireEvent.click(dataPointAttributeValueDropdown)
-    await userEvent.keyboard('[Space][Enter]')
+    await screen.findByRole('option', { name: 'Dummy Data Point Attribute value' })
+    await userEvent.keyboard('[Enter]')
 
     // Add the graph line
     const addButton = screen.getByRole('button', { name: 'Add query' })
