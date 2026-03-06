@@ -125,6 +125,8 @@ single_version_override(
         # For astrein and other internal tooling.
         "//bazel/patches:rules_lint_export_helpers.patch",
         "//bazel/patches:rules_lint-fix_format_args_too_long.patch",
+        # https://github.com/aspect-build/rules_lint/pull/799
+        "//bazel/patches:rules_lint-stylelint-capture-stdout.patch",
     ],
     version = "2.0.0",
 )
