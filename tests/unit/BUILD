@@ -324,11 +324,39 @@ py_test(
     name = "repo",
     # https://bazel.build/reference/be/common-definitions#test.size
     size = "large",
-    srcs = ["__test__.py"] + glob(
-        include = ["**/*.py"],
-        exclude = [
-            "omdlib/**/*.py",
-            "cmk/gui/**/*.py",
+    srcs = [
+        "__init__.py",
+        "__test__.py",
+    ] + glob(
+        # This is the "catch all" target. Don't add new stuff here.
+        include = [
+            "agents/**/*.py",
+            "cmk/*.py",
+            "cmk/automations/**/*.py",
+            "cmk/base/**/*.py",
+            "cmk/bi/**/*.py",
+            "cmk/checkengine/**/*.py",
+            "cmk/diagnostics/**/*.py",
+            "cmk/diskspace/**/*.py",
+            "cmk/fetchers/**/*.py",
+            "cmk/fields/**/*.py",
+            "cmk/inventory/**/*.py",
+            "cmk/legacy_checks/**/*.py",
+            "cmk/legacy_includes/**/*.py",
+            "cmk/nonfree/**/*.py",
+            "cmk/notifications/**/*.py",
+            "cmk/piggyback_hub/**/*.py",
+            "cmk/piggyback/**/*.py",
+            "cmk/plugins/**/*.py",
+            "cmk/post_rename_site/**/*.py",
+            "cmk/product_usage/**/*.py",
+            "cmk/server_side_calls_backend/**/*.py",
+            "cmk/snmplib/**/*.py",
+            "cmk/special_agents/**/*.py",
+            "cmk/update_config/**/*.py",
+            "cmk/utils/**/*.py",
+            "livestatus/**/*.py",
+            "testlib/**/*.py",
         ],
     ),
     args = [
