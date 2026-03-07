@@ -221,6 +221,7 @@ class TestEventsQuerier:
         events_querier: EventsQuerier,
         events: Sequence[Event],
     ) -> None:
+        events_querier.id_store.write([])
         assert list(events_querier.query_events([])) == events
         assert events_querier.id_store.read() == frozenset({1, 2, 3})
 
@@ -365,6 +366,7 @@ class TestLogsQuerier:
         logs_querier: LogsQuerier,
         logs: Sequence[Log],
     ) -> None:
+        logs_querier.id_store.write([])
         assert list(logs_querier.query_logs()) == logs
         assert logs_querier.id_store.read() == frozenset({"1", "2", "3", "4"})
 
