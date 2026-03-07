@@ -17,7 +17,6 @@ DATA0: dict[str, str] = {
 }
 
 
-@pytest.mark.usefixtures("agent_based_plugins")
 def test_ups_power_detect() -> None:
     assert evaluate_snmp_detection(
         detect_spec=ups_power.snmp_section_ups_power.detect, oid_value_getter=DATA0.get

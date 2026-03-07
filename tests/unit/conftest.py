@@ -178,21 +178,6 @@ def enable_debug_fixture() -> Generator[None]:
 
 
 @pytest.fixture
-def as_path(tmp_path: Path) -> Callable[[str], Path]:
-    """See Also:
-    * https://docs.pytest.org/en/7.2.x/how-to/fixtures.html#factories-as-fixtures
-
-    """
-
-    def _as_path(walk: str) -> Path:
-        data = tmp_path / "data"
-        data.write_text(walk)
-        return data
-
-    return _as_path
-
-
-@pytest.fixture
 def disable_debug() -> Generator[None]:
     debug_mode = cmk.ccc.debug.debug_mode
     cmk.ccc.debug.disable()

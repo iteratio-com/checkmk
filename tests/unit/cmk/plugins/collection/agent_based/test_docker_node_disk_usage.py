@@ -5,8 +5,6 @@
 
 # mypy: disable-error-code="no-untyped-call"
 
-import pytest
-
 from cmk.legacy_checks.docker_node_disk_usage import (
     check_docker_node_disk_usage,
     parse_docker_node_disk_usage,
@@ -24,7 +22,6 @@ AGENT_OUTPUT = [
 ]
 
 
-@pytest.mark.usefixtures("agent_based_plugins")
 def test_check_docker_node_disk_usage() -> None:
     result = list(
         check_docker_node_disk_usage("volumes", {}, parse_docker_node_disk_usage(AGENT_OUTPUT))

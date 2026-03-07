@@ -3,8 +3,7 @@
 # This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 # conditions defined in the file COPYING, which is part of this source code package.
 
-from collections.abc import Callable, Sequence
-from pathlib import Path
+from collections.abc import Sequence
 
 import pytest
 
@@ -51,7 +50,6 @@ STRING_TABLE_SUP_25829 = [
     ],
 )
 def test_ibm_storage_ts_info(
-    as_path: Callable[[str], Path],
     string_table: Sequence[StringTable],
     expected_result: CheckResult,
 ) -> None:
@@ -77,7 +75,6 @@ def test_ibm_storage_ts_info(
     ],
 )
 def test_ibm_storage_ts_status(
-    as_path: Callable[[str], Path],
     string_table: Sequence[StringTable],
     expected_result: CheckResult,
 ) -> None:
@@ -111,7 +108,6 @@ def test_ibm_storage_ts_status(
     ],
 )
 def test_ibm_storage_ts_library(
-    as_path: Callable[[str], Path],
     string_table: Sequence[StringTable],
     expected_result: CheckResult,
 ) -> None:
@@ -159,7 +155,6 @@ def test_ibm_storage_ts_library(
     ],
 )
 def test_ibm_storage_ts_drive(
-    as_path: Callable[[str], Path],
     string_table: Sequence[StringTable],
     expected_result: CheckResult,
 ) -> None:
