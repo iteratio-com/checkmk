@@ -18,10 +18,10 @@ py_library(
     imports = [".."],
     visibility = ["//:__subpackages__"],
     deps = [
-        "//cmk/base:cmk_base",
+        "//cmk/base",
         "//cmk/checkengine:cmk_checkengine",
-        "//cmk/gui:cmk_gui",
-        "//cmk/utils:cmk_utils",
+        "//cmk/gui",
+        "//cmk/utils",
         "//packages/cmk-relay-protocols",
         "//tests/testlib/common",
         requirement("beautifulsoup4"),
@@ -39,7 +39,7 @@ py_library(
         requirement("pytest-check"),
         requirement("requests"),
     ] + select({
-        "//:gpl+nonfree_repo": ["//cmk:cmk_cloud"],
+        "//:gpl+nonfree_repo": ["//cmk:cloud"],
         "//:gpl_repo": [],
     }),
 )
@@ -71,10 +71,10 @@ py_library(
     ),
     imports = [".."],
     deps = [
-        "//cmk/base:cmk_base",
+        "//cmk/base",
         "//cmk/checkengine:cmk_checkengine",
-        "//cmk/gui:cmk_gui",
-        "//cmk/utils:cmk_utils",
+        "//cmk/gui",
+        "//cmk/utils",
         "//packages/cmk-relay-protocols",
         "//tests/testlib/common",
         requirement("beautifulsoup4"),
@@ -92,7 +92,7 @@ py_library(
         requirement("pyyaml"),
         requirement("requests"),
     ] + select({
-        "//:gpl+nonfree_repo": ["//cmk:cmk_cloud"],
+        "//:gpl+nonfree_repo": ["//cmk:cloud"],
         "//:gpl_repo": [],
     }),
 )

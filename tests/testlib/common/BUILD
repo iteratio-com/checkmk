@@ -7,8 +7,8 @@ py_library(
     imports = ["../../.."],
     visibility = ["//tests:__subpackages__"],
     deps = [
-        "//cmk/base:cmk_base",
-        "//cmk/utils:cmk_utils",
+        "//cmk/base",
+        "//cmk/utils",
         "//packages/cmk-trace",
         requirement("beautifulsoup4"),
         requirement("pexpect"),

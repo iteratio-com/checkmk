@@ -20,7 +20,7 @@ py_library(
     ],
     deps = [
         "//cmk/bi:cmk_bi",
-        "//cmk/utils:cmk_utils",
+        "//cmk/utils",
         "//packages/cmk-ccc:debug",
         "//packages/cmk-ccc:exceptions",
         "//packages/cmk-ccc:hostaddress",
@@ -81,7 +81,7 @@ py_library(
 )
 
 # Robotmk nonfree files import from cmk.nonfree.pro.robotmk.* - their sources are added
-# directly to cmk_pro so type checking happens with the nonfree packages available.
+# directly to //cmk:pro so type checking happens with the nonfree packages available.
 py_library(
     name = "cmk_plugins_robotmk_nonfree_srcs",
     srcs = glob(
@@ -104,7 +104,7 @@ py_library(
 )
 
 # Otel and custom_query_metric_backend nonfree files import from cmk.metric_backend.*,
-# cmk.otel_collector.*, etc. - their sources are added directly to cmk_ultimate
+# cmk.otel_collector.*, etc. - their sources are added directly to //cmk:ultimate
 # so type checking happens with the nonfree packages available.
 py_library(
     name = "cmk_plugins_otel_nonfree_srcs",
@@ -121,8 +121,8 @@ py_library(
         "@//:gpl_repo": ["@platforms//:incompatible"],
     }),
     deps = [
-        "//cmk/gui:cmk_gui_ultimate",
-        "//cmk/utils:cmk_utils",
+        "//cmk/gui:ultimate",
+        "//cmk/utils",
         "//non-free/packages/cmk-metric-backend",
         "//non-free/packages/cmk-metric-backend:cmk-metric-backend-fetcher",
         "//non-free/packages/cmk-otel-collector",
@@ -160,7 +160,7 @@ py_library(
             "**/nonfree/**/ultimate/**",
             "**/nonfree/**/ultimatemt/**",
             # Exclude robotmk nonfree files - they import from cmk.nonfree.pro.robotmk.*
-            # which lives in cmk/nonfree/pro/robotmk/ and is part of //cmk:cmk_pro
+            # which lives in cmk/nonfree/pro/robotmk/ and is part of //cmk:pro
             "robotmk/**/nonfree/**",
         ],
     ),
@@ -185,7 +185,7 @@ py_library(
         allow_empty = True,
         exclude = [
             # Exclude otel and custom_query_metric_backend nonfree files - they import from
-            # cmk.metric_backend.*, cmk.otel_collector.*, etc. which are in //cmk:cmk_ultimate
+            # cmk.metric_backend.*, cmk.otel_collector.*, etc. which are in //cmk:ultimate
             "otel/**/nonfree/**",
             "custom_query_metric_backend/**/nonfree/**",
         ],

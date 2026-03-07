@@ -15,7 +15,7 @@ py_library(
     visibility = ["//cmk:__subpackages__"],
     deps = [
         "//cmk/checkengine:cmk_checkengine",
-        "//cmk/utils:cmk_utils",
+        "//cmk/utils",
         "//packages/cmk-ccc:exceptions",
         "//packages/cmk-ccc:i18n",
         "//packages/cmk-ccc:plugin-registry",

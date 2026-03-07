@@ -9,7 +9,7 @@ py_library(
     deps = [
         "//cmk/checkengine:cmk_checkengine",
         "//cmk/fields:cmk_fields",
-        "//cmk/utils:cmk_utils",
+        "//cmk/utils",
         "//packages/cmk-ccc:plugin-registry",
         "//packages/cmk-livestatus-client:py_livestatus",
         requirement("marshmallow"),

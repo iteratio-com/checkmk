@@ -4,7 +4,7 @@ load("@cmk_requirements//:requirements.bzl", "requirement")
 exports_files([".f12"])
 
 py_library(
-    name = "cmk_base",
+    name = "base",
     srcs = glob(
         include = ["**/*.py"],
         exclude = [
@@ -26,7 +26,7 @@ py_library(
         "//cmk/piggyback:backend",
         "//cmk/rrd:cmk_rrd",
         "//cmk/server_side_calls_backend:cmk_server_side_calls_backend",
-        "//cmk/utils:cmk_utils",
+        "//cmk/utils",
         "//packages/cmk-ccc:cleanup",
         "//packages/cmk-ccc:config-path",
         "//packages/cmk-ccc:cpu-tracking",

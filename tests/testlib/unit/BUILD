@@ -19,8 +19,8 @@ py_library(
     imports = ["../../.."],
     visibility = ["//tests:__subpackages__"],
     deps = [
-        "//cmk/base:cmk_base",
-        "//cmk/gui:cmk_gui",
+        "//cmk/base",
+        "//cmk/gui",
         "//packages/cmk-ccc:crash-reporting",
         "//tests/testlib/common",
         requirement("pytest"),
@@ -41,8 +41,8 @@ py_library(
     imports = ["../../.."],
     visibility = ["//tests:__subpackages__"],
     deps = [
-        "//cmk/utils:cmk_utils",
-        "//cmk/utils:cmk_utils_pro",
+        "//cmk/utils",
+        "//cmk/utils:pro",
         "//packages/cmk-crypto",
     ],
 )

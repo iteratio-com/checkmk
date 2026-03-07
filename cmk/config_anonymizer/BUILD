@@ -9,8 +9,8 @@ py_library(
     visibility = ["//cmk:__subpackages__"],
     deps = [
         "//cmk/checkengine:cmk_checkengine",
-        "//cmk/gui:cmk_gui",
-        "//cmk/utils:cmk_utils",
+        "//cmk/gui",
+        "//cmk/utils",
         "//packages/cmk-ccc:hostaddress",
         "//packages/cmk-ccc:site",
         "//packages/cmk-ccc:store",

@@ -7,7 +7,7 @@ py_library(
     imports = ["../.."],
     visibility = ["//cmk:__subpackages__"],
     deps = [
-        "//cmk/utils:cmk_utils",
+        "//cmk/utils",
         requirement("jinja2"),
         requirement("opsgenie-sdk"),
         requirement("requests"),

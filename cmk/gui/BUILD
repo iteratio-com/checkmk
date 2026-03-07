@@ -9,7 +9,7 @@ exports_files([
 ])
 
 py_library(
-    name = "cmk_gui",
+    name = "gui",
     srcs = glob(
         include = ["**/*.py"],
         exclude = [
@@ -37,7 +37,7 @@ py_library(
         "//cmk/product_usage:cmk_product_usage",
         "//cmk/rrd:cmk_rrd",
         "//cmk/server_side_calls_backend:cmk_server_side_calls_backend",
-        "//cmk/utils:cmk_utils",
+        "//cmk/utils",
         "//packages/cmk-ccc:archive",
         "//packages/cmk-ccc:cleanup",
         "//packages/cmk-ccc:config-path",
@@ -114,7 +114,7 @@ py_library(
 )
 
 py_library(
-    name = "cmk_gui_pro",
+    name = "pro",
     srcs = glob(
         include = [
             "**/nonfree/**/pro/**/*.py",
@@ -135,7 +135,7 @@ py_library(
     imports = ["../.."],
     visibility = ["//cmk:__subpackages__"],
     deps = [
-        ":cmk_gui",
+        ":gui",
         requirement("jinja2"),
         requirement("lxml"),
         requirement("marshmallow"),
@@ -155,7 +155,7 @@ py_library(
             "//cmk/nonfree/pro/bakery",
             "//cmk/nonfree/pro/robotmk",
             "//cmk/nonfree/pro/robotmk:bakery",
-            "//cmk/utils:cmk_utils_pro",
+            "//cmk/utils:pro",
             "//non-free/packages/cmk-dcd:gui",
             "//non-free/packages/cmk-dcd:protocols",
             "//non-free/packages/cmk-mknotifyd",
@@ -165,7 +165,7 @@ py_library(
 )
 
 py_library(
-    name = "cmk_gui_ultimate",
+    name = "ultimate",
     srcs = glob(
         include = [
             "**/nonfree/**/ultimate/**/*.py",
@@ -180,14 +180,14 @@ py_library(
     imports = ["../.."],
     visibility = ["//cmk:__subpackages__"],
     deps = [
-        ":cmk_gui",
+        ":gui",
         requirement("python-dateutil"),
     ] + select({
         "@//:gpl+nonfree_repo": [
-            ":cmk_gui_pro",
+            ":pro",
             "//cmk/nonfree/ultimate/metric_backend",
             "//cmk/nonfree/ultimate/otel",
-            "//cmk/utils:cmk_utils_pro",
+            "//cmk/utils:pro",
             "//non-free/packages/cmk-otel-collector",
         ],
         "@//:gpl_repo": [],
@@ -195,7 +195,7 @@ py_library(
 )
 
 py_library(
-    name = "cmk_gui_cloud",
+    name = "cloud",
     srcs = glob(
         include = ["**/nonfree/**/cloud/**/*.py"],
         allow_empty = True,
@@ -203,7 +203,7 @@ py_library(
     imports = ["../.."],
     visibility = ["//cmk:__subpackages__"],
     deps = [
-        ":cmk_gui",
+        ":gui",
         requirement("pyjwt"),
         requirement("redis"),
         requirement("requests"),
@@ -211,17 +211,17 @@ py_library(
         requirement("werkzeug"),
     ] + select({
         "@//:gpl+nonfree_repo": [
-            ":cmk_gui_pro",
-            ":cmk_gui_ultimate",
-            "//cmk/utils:cmk_utils_cloud",
-            "//cmk/utils:cmk_utils_pro",
+            ":pro",
+            ":ultimate",
+            "//cmk/utils:cloud",
+            "//cmk/utils:pro",
         ],
         "@//:gpl_repo": [],
     }),
 )
 
 py_library(
-    name = "cmk_gui_ultimatemt",
+    name = "ultimatemt",
     srcs = glob(
         include = ["**/nonfree/**/ultimatemt/**/*.py"],
         allow_empty = True,
@@ -229,14 +229,14 @@ py_library(
     imports = ["../.."],
     visibility = ["//cmk:__subpackages__"],
     deps = [
-        ":cmk_gui",
+        ":gui",
         requirement("python-dateutil"),
     ] + select({
         "@//:gpl+nonfree_repo": [
-            ":cmk_gui_pro",
-            ":cmk_gui_ultimate",
-            "//cmk/utils:cmk_utils_pro",
-            "//cmk/utils:cmk_utils_ultimatemt",
+            ":pro",
+            ":ultimate",
+            "//cmk/utils:pro",
+            "//cmk/utils:ultimatemt",
         ],
         "@//:gpl_repo": [],
     }),
@@ -249,28 +249,28 @@ py_binary(
     visibility = ["//:__subpackages__"],
     deps = select({
         "@cmk//edition:cloud": [
-            "//cmk:cmk_cloud",
-            "//cmk:cmk_community",
-            "//cmk:cmk_pro",
-            "//cmk:cmk_ultimate",
+            "//cmk:cloud",
+            "//cmk:community",
+            "//cmk:pro",
+            "//cmk:ultimate",
         ],
         "@cmk//edition:community": [
-            "//cmk:cmk_community",
+            "//cmk:community",
         ],
         "@cmk//edition:pro": [
-            "//cmk:cmk_community",
-            "//cmk:cmk_pro",
+            "//cmk:community",
+            "//cmk:pro",
         ],
         "@cmk//edition:ultimate": [
-            "//cmk:cmk_community",
-            "//cmk:cmk_pro",
-            "//cmk:cmk_ultimate",
+            "//cmk:community",
+            "//cmk:pro",
+            "//cmk:ultimate",
         ],
         "@cmk//edition:ultimatemt": [
-            "//cmk:cmk_community",
-            "//cmk:cmk_pro",
-            "//cmk:cmk_ultimate",
-            "//cmk:cmk_ultimatemt",
+            "//cmk:community",
+            "//cmk:pro",
+            "//cmk:ultimate",
+            "//cmk:ultimatemt",
         ],
     }) + [
         requirement("pyyaml"),
@@ -289,11 +289,11 @@ py_binary(
     visibility = ["//:__subpackages__"],
     deps = select({
         "@//:gpl+nonfree_repo": [
-            "//cmk:cmk_community",
-            "//cmk:cmk_pro",
+            "//cmk:community",
+            "//cmk:pro",
         ],
         "@//:gpl_repo": [
-            "//cmk:cmk_community",
+            "//cmk:community",
         ],
     }) + [
         requirement("pyyaml"),

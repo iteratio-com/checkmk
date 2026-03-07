@@ -15,8 +15,8 @@ py_library(
         "//tests:__subpackages__",
     ],
     deps = [
-        "//cmk/gui:cmk_gui",
-        "//cmk/utils:cmk_utils",
+        "//cmk/gui",
+        "//cmk/utils",
         "//packages/cmk-ccc:debug",
         "//packages/cmk-ccc:i18n",
         "//packages/cmk-ccc:plugin-registry",
@@ -36,7 +36,7 @@ py_library(
     visibility = ["//cmk:__subpackages__"],
     deps = [
         ":cmk_post_rename_site",
-        "//cmk/gui:cmk_gui_pro",
+        "//cmk/gui:pro",
     ],
 )
 
@@ -50,6 +50,6 @@ py_library(
     visibility = ["//cmk:__subpackages__"],
     deps = [
         ":cmk_post_rename_site",
-        "//cmk/gui:cmk_gui_ultimate",
+        "//cmk/gui:ultimate",
     ],
 )

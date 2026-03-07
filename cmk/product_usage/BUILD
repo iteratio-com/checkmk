@@ -15,7 +15,7 @@ py_library(
     imports = ["../.."],
     visibility = ["//cmk:__subpackages__"],
     deps = [
-        "//cmk/utils:cmk_utils",
+        "//cmk/utils",
         "//packages/cmk-ccc:version",
         "//packages/cmk-livestatus-client:py_livestatus",
         requirement("requests"),
@@ -29,9 +29,9 @@ py_library(
     imports = ["../.."],
     visibility = ["//:__subpackages__"],
     deps = [
-        "//cmk/base:cmk_base",
+        "//cmk/base",
         "//cmk/product_usage:cmk_product_usage",
-        "//cmk/utils:cmk_utils",
+        "//cmk/utils",
         "//packages/cmk-ccc:version",
     ],
 )

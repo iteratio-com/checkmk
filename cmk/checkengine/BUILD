@@ -11,7 +11,7 @@ py_library(
     deps = [
         "//cmk/inventory:cmk_inventory",
         "//cmk/piggyback:backend",
-        "//cmk/utils:cmk_utils",
+        "//cmk/utils",
         "//packages/cmk-ccc:cpu-tracking",
         "//packages/cmk-ccc:timeout",
         "//packages/cmk-ccc:translations",

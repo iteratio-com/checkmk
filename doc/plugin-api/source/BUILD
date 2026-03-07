@@ -11,28 +11,28 @@ py_binary(
     tags = ["no-mypy"],
     deps = select({
         "@cmk//edition:cloud": [
-            "//cmk:cmk_cloud",
-            "//cmk:cmk_community",
-            "//cmk:cmk_pro",
-            "//cmk:cmk_ultimate",
+            "//cmk:cloud",
+            "//cmk:community",
+            "//cmk:pro",
+            "//cmk:ultimate",
         ],
         "@cmk//edition:community": [
-            "//cmk:cmk_community",
+            "//cmk:community",
         ],
         "@cmk//edition:pro": [
-            "//cmk:cmk_community",
-            "//cmk:cmk_pro",
+            "//cmk:community",
+            "//cmk:pro",
         ],
         "@cmk//edition:ultimate": [
-            "//cmk:cmk_community",
-            "//cmk:cmk_pro",
-            "//cmk:cmk_ultimate",
+            "//cmk:community",
+            "//cmk:pro",
+            "//cmk:ultimate",
         ],
         "@cmk//edition:ultimatemt": [
-            "//cmk:cmk_community",
-            "//cmk:cmk_pro",
-            "//cmk:cmk_ultimate",
-            "//cmk:cmk_ultimatemt",
+            "//cmk:community",
+            "//cmk:pro",
+            "//cmk:ultimate",
+            "//cmk:ultimatemt",
         ],
     }) + [
         requirement("sphinx"),

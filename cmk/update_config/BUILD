@@ -15,10 +15,10 @@ py_library(
     deps = [
         "//cmk:message_broker_certs",
         "//cmk:validate_config",
-        "//cmk/base:cmk_base",
+        "//cmk/base",
         "//cmk/checkengine:cmk_checkengine",
-        "//cmk/gui:cmk_gui",
-        "//cmk/utils:cmk_utils",
+        "//cmk/gui",
+        "//cmk/utils",
         "//packages/cmk-ccc:debug",
         "//packages/cmk-ccc:exceptions",
         "//packages/cmk-ccc:hostaddress",
@@ -50,8 +50,8 @@ py_library(
     visibility = ["//cmk:__subpackages__"],
     deps = [
         ":cmk_update_config",
-        "//cmk/gui:cmk_gui_pro",
-        "//cmk/utils:cmk_utils_pro",
+        "//cmk/gui:pro",
+        "//cmk/utils:pro",
     ] + select({
         "@//:gpl+nonfree_repo": [
             "//cmk/nonfree/pro/robotmk",
@@ -70,8 +70,8 @@ py_library(
     visibility = ["//cmk:__subpackages__"],
     deps = [
         ":cmk_update_config",
-        "//cmk/gui:cmk_gui_pro",
-        "//cmk/gui:cmk_gui_ultimate",
+        "//cmk/gui:pro",
+        "//cmk/gui:ultimate",
     ] + select({
         "@//:gpl+nonfree_repo": [
             "//non-free/packages/cmk-metric-backend",

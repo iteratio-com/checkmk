@@ -8,7 +8,7 @@ exports_files([
 ])
 
 py_library(
-    name = "cmk_utils",
+    name = "utils",
     srcs = glob(
         include = ["**/*.py"],
         exclude = [
@@ -61,7 +61,7 @@ py_library(
 )
 
 py_library(
-    name = "cmk_utils_community",
+    name = "community",
     srcs = glob(
         include = ["**/community/**/*.py"],
         allow_empty = True,
@@ -70,7 +70,7 @@ py_library(
 )
 
 py_library(
-    name = "cmk_utils_pro",
+    name = "pro",
     srcs = glob(
         include = ["**/nonfree/**/pro/**/*.py"],
         allow_empty = True,
@@ -82,7 +82,7 @@ py_library(
         "//tests:__subpackages__",
     ],
     deps = [
-        ":cmk_utils",
+        ":utils",
         "//packages/cmk-ccc:exceptions",
         "//packages/cmk-ccc:i18n",
         "//packages/cmk-ccc:resulttype",
@@ -96,14 +96,14 @@ py_library(
 )
 
 py_library(
-    name = "cmk_utils_cloud",
+    name = "cloud",
     srcs = glob(
         include = ["**/nonfree/**/cloud/**/*.py"],
         allow_empty = True,
     ),
     imports = ["../.."],
     deps = [
-        ":cmk_utils",
+        ":utils",
         "//packages/cmk-ccc:resulttype",
         "//packages/cmk-crypto",
         requirement("python-dateutil"),
@@ -112,28 +112,28 @@ py_library(
 )
 
 py_library(
-    name = "cmk_utils_ultimate",
+    name = "ultimate",
     srcs = glob(
         include = ["**/nonfree/**/ultimate/**/*.py"],
         allow_empty = True,
     ),
     imports = ["../.."],
     deps = [
-        ":cmk_utils",
+        ":utils",
         "//packages/cmk-ccc:resulttype",
         requirement("python-dateutil"),
     ],
 )
 
 py_library(
-    name = "cmk_utils_ultimatemt",
+    name = "ultimatemt",
     srcs = glob(
         include = ["**/nonfree/**/ultimatemt/**/*.py"],
         allow_empty = True,
     ),
     imports = ["../.."],
     deps = [
-        ":cmk_utils",
+        ":utils",
         "//packages/cmk-ccc:resulttype",
         requirement("python-dateutil"),
     ],
