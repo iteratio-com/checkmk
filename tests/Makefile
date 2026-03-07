@@ -304,7 +304,7 @@ test-packaging:
 
 test-doctest:
 	mkdir -p ../results; \
-	bazel test //cmk:doctest | tee ../results/$@.txt; \
+	bazel test //cmk/editions/... --test_tag_filters=doctest | tee ../results/$@.txt; \
 	exit $${PIPESTATUS[0]}
 
 test-unit:

@@ -2,7 +2,6 @@ load("@aspect_rules_py//py:defs.bzl", "py_library", "py_pytest_main")
 load("@bazel_skylib//rules:build_test.bzl", "build_test")
 load("@cmk_requirements//:requirements.bzl", "requirement")
 load("@rules_python//python:packaging.bzl", "py_wheel")
-load("//bazel/rules:doctest.bzl", "py_doc_test")
 load("//bazel/rules:package_wheel.bzl", "package_wheel")
 
 exports_files(["requirements.in"])
@@ -465,21 +464,6 @@ py_pytest_main(
         # pytest-xdist for `--numprocesses=NPROC`
         requirement("pytest-xdist"),
     ],
-)
-
-py_doc_test(
-    name = "doctest",
-    srcs = [
-        "//cmk/editions:community",
-        "//cmk/editions/nonfree:cloud",
-        "//cmk/editions/nonfree:pro",
-        "//cmk/editions/nonfree:ultimate",
-        "//cmk/editions/nonfree:ultimatemt",
-    ],
-    env = {
-        "PYTHONWARNINGS": "ignore",
-    },
-    tags = ["no-mypy"],
 )
 
 sh_library(
