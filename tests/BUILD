@@ -39,7 +39,7 @@ py_library(
         requirement("pytest-check"),
         requirement("requests"),
     ] + select({
-        "//:gpl+nonfree_repo": ["//cmk:cloud"],
+        "//:gpl+nonfree_repo": ["//cmk/editions/nonfree:cloud"],
         "//:gpl_repo": [],
     }),
 )
@@ -92,7 +92,7 @@ py_library(
         requirement("pyyaml"),
         requirement("requests"),
     ] + select({
-        "//:gpl+nonfree_repo": ["//cmk:cloud"],
+        "//:gpl+nonfree_repo": ["//cmk/editions/nonfree:cloud"],
         "//:gpl_repo": [],
     }),
 )
