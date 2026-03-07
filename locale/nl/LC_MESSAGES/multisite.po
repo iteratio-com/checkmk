@@ -1519,6 +1519,12 @@ msgid ""
 "sites, please visit the %s."
 msgstr ""
 
+#, python-format
+msgid ""
+"<b>Display limit reached:</b> This table shows only %s entries. Additional "
+"records are not included in this view. Sort order may not be correct."
+msgstr ""
+
 msgid ""
 "<b>Gather all service instances and restrict by overall tags:</b><br>If "
 "overall tags are specified above, then all service instances will be "
@@ -2252,6 +2258,12 @@ msgstr "A"
 
 msgid "A BI pack with this ID already exists."
 msgstr "Er bestaat al een BI pack met deze ID."
+
+msgid ""
+"A Checkmk Ultimate central site can only have remote sites with Checkmk "
+"Ultimate or Checkmk Pro/Community remote sites without configuration "
+"replication."
+msgstr ""
 
 msgid ""
 "A Pod's status depends on an array of conditions through which the Pod has "
@@ -6640,9 +6652,6 @@ msgstr ""
 "Hiermee kan een gebruiker geplande rapporten van andere gebruikers wijzigen "
 "en ook willekeurige e-mailadressen opgeven als rapportbestemming."
 
-msgid "Allows access to the SaaS onboarding."
-msgstr ""
-
 #, fuzzy
 msgid ""
 "Allows the assignment of the Robotmk plan/test services to another host."
@@ -7336,6 +7345,10 @@ msgstr "Oracle Prestaties"
 #, fuzzy
 msgid "Appliance uplink statuses"
 msgstr "Apache status"
+
+#, fuzzy
+msgid "Appliance utilization"
+msgstr "Encodergebruik"
 
 #, fuzzy
 msgid "Appliances"
@@ -21498,7 +21511,7 @@ msgid "Disable undecided services"
 msgstr "Schakel onbesliste diensten uit"
 
 #, fuzzy
-msgid "Disable unique piggyback host names"
+msgid "Disable unique piggyback host name computation"
 msgstr "Voorvoegsel voor piggyback hostname"
 
 msgid "Disable vanished services"
@@ -24610,7 +24623,7 @@ msgid "Enable trend computation"
 msgstr "Trendberekening inschakelen"
 
 #, fuzzy
-msgid "Enable unique piggyback host names"
+msgid "Enable unique piggyback host name computation"
 msgstr "Voorvoegsel voor piggyback hostname"
 
 #, fuzzy
@@ -24691,13 +24704,11 @@ msgstr ""
 "korte tijd voordoen."
 
 msgid ""
-"Enabling this option lets Checkmk create unique host names for piggyback "
-"hosts. This avoids conflicts caused by entities having the same name in "
-"Azure, which could lead to monitoring data being overwritten or lost. The "
-"option works by appending a unique hash to the Checkmk piggyback host names "
-"(Example: 'my-vm-1a2b3c4d'). Enable this if you have subscriptions, "
-"resources, or resource groups with the same name across multiple Azure "
-"tenants or subscriptions."
+"Enabling this option excludes VMs from the host name computation and lets VM "
+"piggyback hosts keep their original Azure name. This is needed when using "
+"Automated host creation in order to monitor VMs by installing the agent, "
+"performing TLS registration on the agent, or wanting to ping VMs by their "
+"DNS name."
 msgstr ""
 
 #, fuzzy
@@ -24737,6 +24748,24 @@ msgstr ""
 "verschaffen over de verdeling van pakketgroottes die over de poort worden "
 "overgedragen. Opmerking: momenteel honoreert deze extra RMON controle niet "
 "de inventarisatie instellingen voor switch poorten."
+
+msgid ""
+"Enabling unique host name computation lets Checkmk create unique host names "
+"for piggyback hosts. This avoids conflicts caused by entities having the "
+"same name in Azure, which could lead to monitoring data being overwritten or "
+"lost. Enable this if you have subscriptions, resources, or resource groups "
+"with the same name across multiple Azure tenants or subscriptions. "
+"<b>Changing this option later after saving it will cause all piggyback hosts "
+"to be renamed.</b><hr>When enabling unique host name computation, you can "
+"select between two templates: <b>Short</b> or <b>Long</b>. This controls the "
+"information that is contained in the host name.<ul>  <li>    <b>Short:</b> "
+"<tt>[object name from Azure]_[unique id]</tt>    <ul>      <li>example: "
+"<b><tt>myresourcegroup_3f40ba0d</tt></b>, <b><tt>myvm1_86824be2</tt></b>    "
+"</ul>  </li>  <li>    <b>Long:</b> <tt>azr_[object type]_[object name from "
+"Azure]_[unique id]</tt>    <ul>      <li>example: "
+"<b><tt>azr_rg_myresourcegroup_3f40ba0d</tt></b>, "
+"<b><tt>azr_vm_myvm1_86824be2</tt></b>    </ul>  </li></ul>"
+msgstr ""
 
 msgid "Enc-In frames rate"
 msgstr "Enc-in framesnelheid"
@@ -24960,7 +24989,7 @@ msgid "Enter a plugin output to define what to filter for."
 msgstr ""
 
 #, fuzzy
-msgid "Enter a valid IP address or hostname."
+msgid "Enter a valid IP address or host name."
 msgstr "IP-adres van gastheer"
 
 msgid "Enter a valid port number (example: 1234)."
@@ -24972,10 +25001,6 @@ msgstr "Voer adres in"
 #, fuzzy
 msgid "Enter alias (optional)"
 msgstr "Externe ID (facultatief)"
-
-#, fuzzy
-msgid "Enter credentials for basic authentication."
-msgstr "Inloggegevens voor HTTP Basis Authenticatie"
 
 msgid "Enter group"
 msgstr "Voer groep in"
@@ -29000,10 +29025,6 @@ msgstr "Bestand van SFTP-server halen"
 
 msgid "Get header only"
 msgstr ""
-
-#, fuzzy
-msgid "Getting started"
-msgstr "Resulterende staat"
 
 msgid "GiB"
 msgstr "GiB"
@@ -33595,6 +33616,10 @@ msgid "IP address or FQDN of JVM web server"
 msgstr "IP-adres of FQDN van JVM webserver"
 
 #, fuzzy
+msgid "IP address or host name"
+msgstr "IP-adres van gastheer"
+
+#, fuzzy
 msgid "IP address or hostname"
 msgstr "IP-adres van gastheer"
 
@@ -38014,10 +38039,6 @@ msgstr "Inventaris Boom"
 msgid "Invert matching"
 msgstr "Omgekeerde koppeling"
 
-#, fuzzy
-msgid "Invisible"
-msgstr "Zichtbaar"
-
 msgid "Invocations"
 msgstr "Invocaties"
 
@@ -38536,6 +38557,10 @@ msgstr "Duur van de baan"
 
 msgid "Job name"
 msgstr "Naam van de baan"
+
+#, fuzzy
+msgid "Job name should not be empty."
+msgstr "Geheime sleutel"
 
 #, fuzzy
 msgid "Job scheduler"
@@ -41586,6 +41611,10 @@ msgid "Logwatch state"
 msgstr "Logwatch-status"
 
 #, fuzzy
+msgid "Long"
+msgstr "Langste"
+
+#, fuzzy
 msgid "Long - Use the full Docker container ID"
 msgstr "Lang - Gebruik de volledige docker container ID"
 
@@ -42412,10 +42441,6 @@ msgid "Make own published %s override built-in %s for all users."
 msgstr ""
 "Laat eigen gepubliceerde %s de ingebouwde %s overschrijven voor alle "
 "gebruikers."
-
-#, fuzzy
-msgid "Make piggyback host names globally unique"
-msgstr "Piggybacked hostnaam expressies"
 
 msgid "Make stored reports available for other users"
 msgstr "Maak opgeslagen rapporten beschikbaar voor andere gebruikers"
@@ -44666,6 +44691,11 @@ msgstr ""
 
 msgid "Missing host name"
 msgstr "Ontbrekende hostnaam"
+
+msgid ""
+"Missing hostname attribute. Please configure a resource attribute (e.g., "
+"host.name) so the system can determine the hostname"
+msgstr ""
 
 msgid ""
 "Missing hostname attribute. Please configure a resource attribute (e.g., "
@@ -47865,7 +47895,7 @@ msgstr ""
 
 msgid ""
 "Normally, the Windows Time Service (being an NTP client) follows the NTP "
-"convention of maintaining a 'reachbility' register, which remembers the "
+"convention of maintaining a 'reachability' register, which remembers the "
 "result (success or failure) of the last (up to) 8 transactions with the "
 "peer. This setting looks into the reachability register and checks for "
 "consecutive, recent failures, alerting after too many consecutive failures "
@@ -47876,7 +47906,7 @@ msgstr ""
 
 msgid ""
 "Normally, the Windows Time Service (being an NTP client) follows the NTP "
-"convention of maintaining a 'reachbility' register, which remembers the "
+"convention of maintaining a 'reachability' register, which remembers the "
 "result (success or failure) of the last (up to) 8 transactions with the "
 "peer. This setting looks into the reachability register and counts the total "
 "number of failed attempts, alerting when there have been too many. If "
@@ -49908,11 +49938,6 @@ msgid "Only A-Z, a-z, 0-9 and minus (-) are allowed."
 msgstr "Alleen A-Z, a-z, 0-9 en min (-) zijn toegestaan."
 
 msgid ""
-"Only Checkmk Ultimate remote sites can be added to a Checkmk Ultimate "
-"central site"
-msgstr ""
-
-msgid ""
 "Only accepting HTTPS connections with a server which certificate is signed "
 "with one of the CAs that are listed here. That way it is guaranteed that it "
 "is communicating only with the authentic server. If you use self signed "
@@ -49926,6 +49951,10 @@ msgstr ""
 
 msgid "Only add matching hosts"
 msgstr "Alleen overeenkomende hosts toevoegen"
+
+#, fuzzy
+msgid "Only alert if all peers are failed"
+msgstr "Alleen hoofdletters zijn toegestaan"
 
 #, fuzzy
 msgid ""
@@ -52834,10 +52863,6 @@ msgstr "Wachtwoordbeleid voor lokale accounts"
 msgid "Password properties"
 msgstr "Eigenschappen van het dashboard"
 
-#, fuzzy
-msgid "Password should not be empty"
-msgstr "Toegangssleutel"
-
 msgid "Password:"
 msgstr "Wachtwoord:"
 
@@ -53669,6 +53694,10 @@ msgstr "Piggyback creatie opties"
 
 msgid "Piggyback data"
 msgstr "Piggyback gegevens"
+
+#, fuzzy
+msgid "Piggyback host names"
+msgstr "Piggyback namen"
 
 msgid "Piggyback information for other hosts"
 msgstr "Piggyback informatie voor andere hosts"
@@ -60086,9 +60115,6 @@ msgstr "SNMP-traps niet geconfigureerd"
 msgid "SNMP walk download timeout"
 msgstr ""
 
-msgid "SNMP walks are not supported for hosts monitored through a relay yet. "
-msgstr ""
-
 #, python-format
 msgid "SNMP-Retries (<a href=\"%s\">Rules</a>)"
 msgstr "SNMP-Retries (<a href=\"%s\">Rules</a>)"
@@ -60878,9 +60904,6 @@ msgstr ""
 "Zie <a href=\"https://pushover.net/api#sounds\" target=\"_blank\">Pushover "
 "geluiden</a> voor meer informatie en het uitproberen van de beschikbare "
 "geluiden."
-
-msgid "See SaaS onboarding"
-msgstr ""
 
 msgid "See all events"
 msgstr "Bekijk alle evenementen"
@@ -62368,6 +62391,10 @@ msgstr "Absolute niveaus instellen"
 msgid "Set an individual idle timeout"
 msgstr "Stel een individuele idle timeout in"
 
+#, fuzzy
+msgid "Set at least one target."
+msgstr "Selecteer ten minste één element"
+
 msgid "Set by rule pack"
 msgstr "Ingesteld per regelpakket"
 
@@ -63108,6 +63135,10 @@ msgstr "Gedeeld met"
 #, fuzzy
 msgid "Shipped Checkmk plug-ins"
 msgstr "Controleer plugin"
+
+#, fuzzy
+msgid "Short"
+msgstr "Haven"
 
 #, fuzzy
 msgid "Short - Use the first 12 characters of the Docker container ID"
@@ -70540,6 +70571,11 @@ msgstr ""
 "gebruikersobjecten bevat, is niet geconfigureerd. Gelieve dit te herstellen "
 "in de <a href=\"wato.py?mode=ldap_config\">LDAP Gebruikersinstellingen</a>."
 
+msgid ""
+"The download of SNMP walks is not yet supported for hosts monitored via a "
+"Checkmk Relay."
+msgstr ""
+
 #, fuzzy
 msgid "The duration in minutes of the ad hoc downtime."
 msgstr "De duur in minuten van de adhoc downtime."
@@ -72990,6 +73026,10 @@ msgstr "Het schema dat u probeert te verwijderen bestaat niet."
 
 msgid "The schedule you are trying to edit does not exist."
 msgstr "De agenda die u probeert te bewerken bestaat niet."
+
+#, fuzzy
+msgid "The scrape interval must be an integer higher than 0."
+msgstr "Het cluster moet ten minste één knooppunt hebben"
 
 msgid "The secret access key for your AWS account"
 msgstr "De geheime toegangssleutel voor uw AWS account"
@@ -79894,10 +79934,6 @@ msgstr "Titel van de kolom. Dit veld is verplicht."
 msgid "Title of the tree"
 msgstr "Titel van de boom"
 
-#, fuzzy
-msgid "Title should not be empty."
-msgstr "Geheime sleutel"
-
 msgid "Title to show for the group"
 msgstr "Titel die voor de groep moet worden getoond"
 
@@ -80104,14 +80140,6 @@ msgstr "Naar:"
 
 msgid "Today"
 msgstr "Vandaag"
-
-#, fuzzy
-msgid "Toggle 'Getting Started' button"
-msgstr "Resulterende staat"
-
-#, fuzzy
-msgid "Toggle 'Getting started' button"
-msgstr "Resulterende staat"
 
 msgid "Toggle elements"
 msgstr "Schakel elementen"
@@ -84070,10 +84098,6 @@ msgstr "Unieke ID"
 msgid "Unique ID %s already exists."
 msgstr "Een regelpakket met deze ID bestaat al."
 
-#, fuzzy
-msgid "Unique ID should not be empty."
-msgstr "Geheime sleutel"
-
 msgid "Unique ID used to identify the instance on the host within Checkmk."
 msgstr ""
 "Unieke ID die wordt gebruikt om de instantie op de host binnen Checkmk te "
@@ -84085,6 +84109,10 @@ msgid ""
 msgstr ""
 "Unieke klant-ID gebruikt voor de makelaar. Wordt willekeurig gegenereerd als "
 "het niet is ingesteld."
+
+#, fuzzy
+msgid "Unique host name template"
+msgstr "Sjabloon hostnaam"
 
 msgid "Unit"
 msgstr "Eenheid"
@@ -86668,10 +86696,6 @@ msgstr "Gebruikersnaam voor inloggen"
 msgid "Username is unknown"
 msgstr "Gebruikersnaam is onbekend"
 
-#, fuzzy
-msgid "Username should not be empty"
-msgstr "Geheime sleutel"
-
 msgid "Username:"
 msgstr "Gebruikersnaam:"
 
@@ -88121,9 +88145,6 @@ msgstr "Zichtbaarheid"
 msgid "Visibility of hosts/services"
 msgstr "Zichtbaarheid van hosts/diensten"
 
-msgid "Visible"
-msgstr "Zichtbaar"
-
 msgid "Visit Checkmk exchange"
 msgstr "Bezoek Checkmk exchange"
 
@@ -88911,6 +88932,11 @@ msgstr ""
 "grafieken introduceren. "
 
 msgid ""
+"When checked, alert if <i>all</i> peers exceed the defined thresholds. "
+"Otherwise, alert only if <i>any</i> peer exceeds the defined thresholds."
+msgstr ""
+
+msgid ""
 "When checked, the anchors \"^\" and \"$\" match on every line, while \"*\" "
 "doesn't match on newline characters"
 msgstr ""
@@ -89091,12 +89117,6 @@ msgstr ""
 "Indien ingeschakeld, wordt deze site gemarkeerd voor synchronisatie telkens "
 "wanneer een Web GUI gerelateerde optie wordt gewijzigd en gebruikers mogen "
 "inloggen op de Web GUI van deze site."
-
-msgid ""
-"When enabled, virtual machines will keep their original name without the "
-"appended unique hash. All other resource types will still use unique "
-"piggyback host names."
-msgstr ""
 
 msgid ""
 "When forwarding mails from the mailbox to the event console, the body of the "
@@ -90108,6 +90128,10 @@ msgstr "Windows Taakplanner"
 
 #, fuzzy
 msgid "Windows time service peers"
+msgstr "Windows Diensten"
+
+#, fuzzy
+msgid "Windows time service peers summary"
 msgstr "Windows Diensten"
 
 #, fuzzy
@@ -92540,11 +92564,6 @@ msgstr "U moet ten minste één element opgeven."
 #, python-format
 msgid "You must not provide more than %d characters."
 msgstr "U mag niet meer dan %d tekens opgeven."
-
-msgid ""
-"You must set a resource attribute (e.g., service.name) so the system can "
-"determine the hostname."
-msgstr ""
 
 msgid ""
 "You must specify a name for your Kubernetes cluster. The provided name will "
@@ -95647,6 +95666,10 @@ msgstr "Toegepaste filters:"
 msgid "Not available on shared dashboards"
 msgstr "U mag dashboards niet bewerken."
 
+#, fuzzy
+msgid "Failed to fetch top list data:"
+msgstr "Het decoderen van certificaatgegevens is mislukt"
+
 msgid ""
 "Due to a limitation in how Checkmk handles metrics internally, the results "
 "contain conflicting metrics and this top list may be incorrect or "
@@ -96829,6 +96852,9 @@ msgid ""
 "Runtime filtering isn't available. Set default filter values before sharing."
 msgstr ""
 
+msgid "View widgets may not render all rows, if they exceed the soft limit."
+msgstr ""
+
 #, fuzzy
 msgid "Sidebar widgets are not available on shared dashboards."
 msgstr "U mag dashboards niet bewerken."
@@ -97319,6 +97345,9 @@ msgstr ""
 #, fuzzy
 msgid "Graph lines"
 msgstr "Grafiek afstemmingen"
+
+msgid "Visible"
+msgstr "Zichtbaar"
 
 #, fuzzy
 msgid "Mirrored"
@@ -97890,6 +97919,9 @@ msgstr "Succesvol bakken"
 #, fuzzy
 msgid "Your login was not successful. Please try again."
 msgstr "Geen overeenkomende rijen gevonden. Probeer een andere zoekterm."
+
+msgid "Please copy the code, then you can close this tab."
+msgstr ""
 
 #, fuzzy
 msgid "You can now close this tab."
@@ -99108,6 +99140,42 @@ msgstr ""
 msgid ""
 "You can still access it later via Help > Learning Checkmk > Welcome page"
 msgstr ""
+
+#, fuzzy
+#~ msgid "Getting started"
+#~ msgstr "Resulterende staat"
+
+#, fuzzy
+#~ msgid "Invisible"
+#~ msgstr "Zichtbaar"
+
+#, fuzzy
+#~ msgid "Make piggyback host names globally unique"
+#~ msgstr "Piggybacked hostnaam expressies"
+
+#, fuzzy
+#~ msgid "Toggle 'Getting Started' button"
+#~ msgstr "Resulterende staat"
+
+#, fuzzy
+#~ msgid "Toggle 'Getting started' button"
+#~ msgstr "Resulterende staat"
+
+#, fuzzy
+#~ msgid "Enter credentials for basic authentication."
+#~ msgstr "Inloggegevens voor HTTP Basis Authenticatie"
+
+#, fuzzy
+#~ msgid "Password should not be empty"
+#~ msgstr "Toegangssleutel"
+
+#, fuzzy
+#~ msgid "Title should not be empty."
+#~ msgstr "Geheime sleutel"
+
+#, fuzzy
+#~ msgid "Unique ID should not be empty."
+#~ msgstr "Geheime sleutel"
 
 #, fuzzy
 #~ msgid "Device statuses <b>[deprecated]</b>"

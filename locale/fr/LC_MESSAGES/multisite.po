@@ -1526,6 +1526,12 @@ msgid ""
 "sites, please visit the %s."
 msgstr ""
 
+#, python-format
+msgid ""
+"<b>Display limit reached:</b> This table shows only %s entries. Additional "
+"records are not included in this view. Sort order may not be correct."
+msgstr ""
+
 msgid ""
 "<b>Gather all service instances and restrict by overall tags:</b><br>If "
 "overall tags are specified above, then all service instances will be "
@@ -2283,6 +2289,12 @@ msgstr "A"
 
 msgid "A BI pack with this ID already exists."
 msgstr "Un pack BI avec cet ID existe déjà."
+
+msgid ""
+"A Checkmk Ultimate central site can only have remote sites with Checkmk "
+"Ultimate or Checkmk Pro/Community remote sites without configuration "
+"replication."
+msgstr ""
 
 msgid ""
 "A Pod's status depends on an array of conditions through which the Pod has "
@@ -6691,9 +6703,6 @@ msgstr ""
 "utilisateurs et de spécifier des adresses électroniques arbitraires comme "
 "destination des rapports."
 
-msgid "Allows access to the SaaS onboarding."
-msgstr ""
-
 msgid ""
 "Allows the assignment of the Robotmk plan/test services to another host."
 msgstr ""
@@ -7389,6 +7398,10 @@ msgstr "Oracle Performance"
 #, fuzzy
 msgid "Appliance uplink statuses"
 msgstr "Statut d'Apache"
+
+#, fuzzy
+msgid "Appliance utilization"
+msgstr "Utilisation du codeur"
 
 #, fuzzy
 msgid "Appliances"
@@ -21643,7 +21656,7 @@ msgid "Disable undecided services"
 msgstr "Désactiver les services indécis"
 
 #, fuzzy
-msgid "Disable unique piggyback host names"
+msgid "Disable unique piggyback host name computation"
 msgstr "Préfixe pour le nom d'hôte de ferroutage"
 
 msgid "Disable vanished services"
@@ -24799,7 +24812,7 @@ msgid "Enable trend computation"
 msgstr "Activer le calcul des tendances"
 
 #, fuzzy
-msgid "Enable unique piggyback host names"
+msgid "Enable unique piggyback host name computation"
 msgstr "Préfixe pour le nom d'hôte de ferroutage"
 
 #, fuzzy
@@ -24881,13 +24894,11 @@ msgstr ""
 "nombreux problèmes (liés) surviennent dans un court laps de temps."
 
 msgid ""
-"Enabling this option lets Checkmk create unique host names for piggyback "
-"hosts. This avoids conflicts caused by entities having the same name in "
-"Azure, which could lead to monitoring data being overwritten or lost. The "
-"option works by appending a unique hash to the Checkmk piggyback host names "
-"(Example: 'my-vm-1a2b3c4d'). Enable this if you have subscriptions, "
-"resources, or resource groups with the same name across multiple Azure "
-"tenants or subscriptions."
+"Enabling this option excludes VMs from the host name computation and lets VM "
+"piggyback hosts keep their original Azure name. This is needed when using "
+"Automated host creation in order to monitor VMs by installing the agent, "
+"performing TLS registration on the agent, or wanting to ping VMs by their "
+"DNS name."
 msgstr ""
 
 #, fuzzy
@@ -24928,6 +24939,24 @@ msgstr ""
 "transférés sur le port. Remarque : actuellement, ce contrôle RMON "
 "supplémentaire n'honore pas les paramètres d'inventaire des ports de "
 "commutateur."
+
+msgid ""
+"Enabling unique host name computation lets Checkmk create unique host names "
+"for piggyback hosts. This avoids conflicts caused by entities having the "
+"same name in Azure, which could lead to monitoring data being overwritten or "
+"lost. Enable this if you have subscriptions, resources, or resource groups "
+"with the same name across multiple Azure tenants or subscriptions. "
+"<b>Changing this option later after saving it will cause all piggyback hosts "
+"to be renamed.</b><hr>When enabling unique host name computation, you can "
+"select between two templates: <b>Short</b> or <b>Long</b>. This controls the "
+"information that is contained in the host name.<ul>  <li>    <b>Short:</b> "
+"<tt>[object name from Azure]_[unique id]</tt>    <ul>      <li>example: "
+"<b><tt>myresourcegroup_3f40ba0d</tt></b>, <b><tt>myvm1_86824be2</tt></b>    "
+"</ul>  </li>  <li>    <b>Long:</b> <tt>azr_[object type]_[object name from "
+"Azure]_[unique id]</tt>    <ul>      <li>example: "
+"<b><tt>azr_rg_myresourcegroup_3f40ba0d</tt></b>, "
+"<b><tt>azr_vm_myvm1_86824be2</tt></b>    </ul>  </li></ul>"
+msgstr ""
 
 msgid "Enc-In frames rate"
 msgstr "Fréquence d'images Enc-In"
@@ -25152,7 +25181,7 @@ msgid "Enter a plugin output to define what to filter for."
 msgstr ""
 
 #, fuzzy
-msgid "Enter a valid IP address or hostname."
+msgid "Enter a valid IP address or host name."
 msgstr "Adresse IP de l'hôte"
 
 msgid "Enter a valid port number (example: 1234)."
@@ -25164,10 +25193,6 @@ msgstr "Entrez l'adresse"
 #, fuzzy
 msgid "Enter alias (optional)"
 msgstr "ID externe (facultatif)"
-
-#, fuzzy
-msgid "Enter credentials for basic authentication."
-msgstr "Informations d'identification pour l'authentification HTTP de base"
 
 msgid "Enter group"
 msgstr "Entrer le groupe"
@@ -29222,10 +29247,6 @@ msgstr "Obtenir un fichier du serveur SFTP"
 
 msgid "Get header only"
 msgstr ""
-
-#, fuzzy
-msgid "Getting started"
-msgstr "État résultant"
 
 msgid "GiB"
 msgstr "GiB"
@@ -33861,6 +33882,10 @@ msgid "IP address or FQDN of JVM web server"
 msgstr "Adresse IP ou FQDN du serveur web de la JVM"
 
 #, fuzzy
+msgid "IP address or host name"
+msgstr "Adresse IP de l'hôte"
+
+#, fuzzy
 msgid "IP address or hostname"
 msgstr "Adresse IP de l'hôte"
 
@@ -38326,10 +38351,6 @@ msgstr "Arbre d'inventaire"
 msgid "Invert matching"
 msgstr "Inverser la correspondance"
 
-#, fuzzy
-msgid "Invisible"
-msgstr "Visible"
-
 msgid "Invocations"
 msgstr "Invocations"
 
@@ -38847,6 +38868,10 @@ msgstr "Durée de l'emploi"
 
 msgid "Job name"
 msgstr "Nom de l'emploi"
+
+#, fuzzy
+msgid "Job name should not be empty."
+msgstr "Clé secrète"
 
 #, fuzzy
 msgid "Job scheduler"
@@ -41902,6 +41927,10 @@ msgid "Logwatch state"
 msgstr "État de Logwatch"
 
 #, fuzzy
+msgid "Long"
+msgstr "Le plus long"
+
+#, fuzzy
 msgid "Long - Use the full Docker container ID"
 msgstr "Long - Utiliser l'ID complet du conteneur docker"
 
@@ -42739,10 +42768,6 @@ msgid "Make own published %s override built-in %s for all users."
 msgstr ""
 "Faire en sorte que les %s publiés par les utilisateurs remplacent les %s "
 "intégrés pour tous les utilisateurs."
-
-#, fuzzy
-msgid "Make piggyback host names globally unique"
-msgstr "Expressions de nom d'hôte en ferroutage"
 
 msgid "Make stored reports available for other users"
 msgstr "Mettre les rapports stockés à la disposition des autres utilisateurs"
@@ -45005,6 +45030,11 @@ msgstr ""
 
 msgid "Missing host name"
 msgstr "Nom d'hôte manquant"
+
+msgid ""
+"Missing hostname attribute. Please configure a resource attribute (e.g., "
+"host.name) so the system can determine the hostname"
+msgstr ""
 
 msgid ""
 "Missing hostname attribute. Please configure a resource attribute (e.g., "
@@ -48227,7 +48257,7 @@ msgstr ""
 
 msgid ""
 "Normally, the Windows Time Service (being an NTP client) follows the NTP "
-"convention of maintaining a 'reachbility' register, which remembers the "
+"convention of maintaining a 'reachability' register, which remembers the "
 "result (success or failure) of the last (up to) 8 transactions with the "
 "peer. This setting looks into the reachability register and checks for "
 "consecutive, recent failures, alerting after too many consecutive failures "
@@ -48238,7 +48268,7 @@ msgstr ""
 
 msgid ""
 "Normally, the Windows Time Service (being an NTP client) follows the NTP "
-"convention of maintaining a 'reachbility' register, which remembers the "
+"convention of maintaining a 'reachability' register, which remembers the "
 "result (success or failure) of the last (up to) 8 transactions with the "
 "peer. This setting looks into the reachability register and counts the total "
 "number of failed attempts, alerting when there have been too many. If "
@@ -50285,12 +50315,6 @@ msgstr "La procédure de vérification en ligne a réussi"
 msgid "Only A-Z, a-z, 0-9 and minus (-) are allowed."
 msgstr "Seuls les caractères A-Z, a-z, 0-9 et moins (-) sont autorisés."
 
-#, fuzzy
-msgid ""
-"Only Checkmk Ultimate remote sites can be added to a Checkmk Ultimate "
-"central site"
-msgstr "Seuls les sites distants CCE peuvent être ajoutés au site central CCE"
-
 msgid ""
 "Only accepting HTTPS connections with a server which certificate is signed "
 "with one of the CAs that are listed here. That way it is guaranteed that it "
@@ -50305,6 +50329,10 @@ msgstr ""
 
 msgid "Only add matching hosts"
 msgstr "Ajouter uniquement les hôtes correspondants"
+
+#, fuzzy
+msgid "Only alert if all peers are failed"
+msgstr "Seules les lettres majuscules sont autorisées"
 
 #, fuzzy
 msgid ""
@@ -53233,10 +53261,6 @@ msgstr "Politique de mot de passe pour les comptes locaux"
 msgid "Password properties"
 msgstr "Propriétés du tableau de bord"
 
-#, fuzzy
-msgid "Password should not be empty"
-msgstr "Clé d'accès"
-
 msgid "Password:"
 msgstr "Mot de passe :"
 
@@ -54075,6 +54099,10 @@ msgstr "Options de création par ferroutage"
 
 msgid "Piggyback data"
 msgstr "Données de ferroutage"
+
+#, fuzzy
+msgid "Piggyback host names"
+msgstr "Noms de cochons"
 
 msgid "Piggyback information for other hosts"
 msgstr "Information en retour pour les autres hôtes"
@@ -60580,9 +60608,6 @@ msgstr "Les pièges SNMP ne sont pas configurés"
 msgid "SNMP walk download timeout"
 msgstr ""
 
-msgid "SNMP walks are not supported for hosts monitored through a relay yet. "
-msgstr ""
-
 #, python-format
 msgid "SNMP-Retries (<a href=\"%s\">Rules</a>)"
 msgstr "SNMP-Retries (<a href=\"%s\">Règles</a>)"
@@ -61377,9 +61402,6 @@ msgid ""
 msgstr ""
 "Voir <a href=\"https://pushover.net/api#sounds\" target=\"_blank\">Sons de "
 "poussée</a> pour plus d'informations et pour essayer les sons disponibles."
-
-msgid "See SaaS onboarding"
-msgstr ""
 
 msgid "See all events"
 msgstr "Voir tous les événements"
@@ -62871,6 +62893,10 @@ msgstr "Définir des niveaux absolus"
 msgid "Set an individual idle timeout"
 msgstr "Définir un délai d'inactivité individuel"
 
+#, fuzzy
+msgid "Set at least one target."
+msgstr "Veuillez sélectionner au moins un élément"
+
 msgid "Set by rule pack"
 msgstr "Défini par un ensemble de règles"
 
@@ -63627,6 +63653,10 @@ msgstr "Partagé avec"
 #, fuzzy
 msgid "Shipped Checkmk plug-ins"
 msgstr "Vérifier le plugin"
+
+#, fuzzy
+msgid "Short"
+msgstr "Port"
 
 #, fuzzy
 msgid "Short - Use the first 12 characters of the Docker container ID"
@@ -71129,6 +71159,11 @@ msgstr ""
 "authentifier, n'est pas configuré. Veuillez corriger cela dans le <a "
 "href=\"wato.py?mode=ldap_config\">Paramètres utilisateurLDAP</a>."
 
+msgid ""
+"The download of SNMP walks is not yet supported for hosts monitored via a "
+"Checkmk Relay."
+msgstr ""
+
 #, fuzzy
 msgid "The duration in minutes of the ad hoc downtime."
 msgstr "La durée en minutes du temps d'arrêt adhoc."
@@ -73599,6 +73634,10 @@ msgstr "Le programme que vous essayez de supprimer n'existe pas."
 
 msgid "The schedule you are trying to edit does not exist."
 msgstr "Le programme que vous essayez de modifier n'existe pas."
+
+#, fuzzy
+msgid "The scrape interval must be an integer higher than 0."
+msgstr "Le cluster doit avoir au moins un nœud"
 
 msgid "The secret access key for your AWS account"
 msgstr "La clé d'accès secrète pour votre compte AWS"
@@ -80590,10 +80629,6 @@ msgstr "Titre de la colonne. Ce champ est obligatoire."
 msgid "Title of the tree"
 msgstr "Titre de l'arbre"
 
-#, fuzzy
-msgid "Title should not be empty."
-msgstr "Clé secrète"
-
 msgid "Title to show for the group"
 msgstr "Titre à afficher pour le groupe"
 
@@ -80802,14 +80837,6 @@ msgstr "A :"
 
 msgid "Today"
 msgstr "Aujourd'hui"
-
-#, fuzzy
-msgid "Toggle 'Getting Started' button"
-msgstr "État résultant"
-
-#, fuzzy
-msgid "Toggle 'Getting started' button"
-msgstr "État résultant"
 
 msgid "Toggle elements"
 msgstr "Éléments de basculement"
@@ -84777,10 +84804,6 @@ msgstr "ID unique"
 msgid "Unique ID %s already exists."
 msgstr "Un paquet de règles avec cet ID existe déjà."
 
-#, fuzzy
-msgid "Unique ID should not be empty."
-msgstr "Clé secrète"
-
 msgid "Unique ID used to identify the instance on the host within Checkmk."
 msgstr "ID unique utilisé pour identifier l'instance sur l'hôte dans Checkmk."
 
@@ -84790,6 +84813,10 @@ msgid ""
 msgstr ""
 "ID client unique utilisé pour le courtier. S'il n'est pas défini, il sera "
 "généré de manière aléatoire."
+
+#, fuzzy
+msgid "Unique host name template"
+msgstr "Modèle de nom d'hôte"
 
 msgid "Unit"
 msgstr "Unité"
@@ -87415,10 +87442,6 @@ msgstr "Nom d'utilisateur pour la connexion"
 msgid "Username is unknown"
 msgstr "Le nom d'utilisateur est inconnu"
 
-#, fuzzy
-msgid "Username should not be empty"
-msgstr "Clé secrète"
-
 msgid "Username:"
 msgstr "Nom d'utilisateur :"
 
@@ -88885,9 +88908,6 @@ msgstr "Visibilité"
 msgid "Visibility of hosts/services"
 msgstr "Visibilité des hôtes/services"
 
-msgid "Visible"
-msgstr "Visible"
-
 msgid "Visit Checkmk exchange"
 msgstr "Visitez la bourse Checkmk"
 
@@ -89677,6 +89697,11 @@ msgstr ""
 "vos graphiques. "
 
 msgid ""
+"When checked, alert if <i>all</i> peers exceed the defined thresholds. "
+"Otherwise, alert only if <i>any</i> peer exceeds the defined thresholds."
+msgstr ""
+
+msgid ""
 "When checked, the anchors \"^\" and \"$\" match on every line, while \"*\" "
 "doesn't match on newline characters"
 msgstr ""
@@ -89866,12 +89891,6 @@ msgstr ""
 "qu'une option liée à l'interface graphique Web est modifiée et que les "
 "utilisateurs sont autorisés à se connecter à l'interface graphique Web de ce "
 "site."
-
-msgid ""
-"When enabled, virtual machines will keep their original name without the "
-"appended unique hash. All other resource types will still use unique "
-"piggyback host names."
-msgstr ""
 
 msgid ""
 "When forwarding mails from the mailbox to the event console, the body of the "
@@ -90895,6 +90914,10 @@ msgstr "Planificateur de tâches de Windows"
 
 #, fuzzy
 msgid "Windows time service peers"
+msgstr "Services Windows"
+
+#, fuzzy
+msgid "Windows time service peers summary"
 msgstr "Services Windows"
 
 #, fuzzy
@@ -93375,11 +93398,6 @@ msgstr "Vous devez spécifier au moins un élément."
 #, python-format
 msgid "You must not provide more than %d characters."
 msgstr "Vous ne devez pas fournir plus de %d caractères."
-
-msgid ""
-"You must set a resource attribute (e.g., service.name) so the system can "
-"determine the hostname."
-msgstr ""
 
 msgid ""
 "You must specify a name for your Kubernetes cluster. The provided name will "
@@ -96486,6 +96504,10 @@ msgstr "Filtres appliqués :"
 msgid "Not available on shared dashboards"
 msgstr "Vous n'êtes pas autorisé à modifier les tableaux de bord."
 
+#, fuzzy
+msgid "Failed to fetch top list data:"
+msgstr "Échec du décodage des données du certificat"
+
 msgid ""
 "Due to a limitation in how Checkmk handles metrics internally, the results "
 "contain conflicting metrics and this top list may be incorrect or "
@@ -97675,6 +97697,9 @@ msgid ""
 "Runtime filtering isn't available. Set default filter values before sharing."
 msgstr ""
 
+msgid "View widgets may not render all rows, if they exceed the soft limit."
+msgstr ""
+
 #, fuzzy
 msgid "Sidebar widgets are not available on shared dashboards."
 msgstr "Vous n'êtes pas autorisé à modifier les tableaux de bord."
@@ -98165,6 +98190,9 @@ msgstr ""
 #, fuzzy
 msgid "Graph lines"
 msgstr "Accords graphiques"
+
+msgid "Visible"
+msgstr "Visible"
 
 #, fuzzy
 msgid "Mirrored"
@@ -98737,6 +98765,9 @@ msgstr "Cuisson réussie"
 msgid "Your login was not successful. Please try again."
 msgstr ""
 "Aucune ligne ne correspond. Veuillez essayer un autre terme de recherche."
+
+msgid "Please copy the code, then you can close this tab."
+msgstr ""
 
 #, fuzzy
 msgid "You can now close this tab."
@@ -99959,6 +99990,49 @@ msgstr ""
 msgid ""
 "You can still access it later via Help > Learning Checkmk > Welcome page"
 msgstr ""
+
+#, fuzzy
+#~ msgid "Getting started"
+#~ msgstr "État résultant"
+
+#, fuzzy
+#~ msgid "Invisible"
+#~ msgstr "Visible"
+
+#, fuzzy
+#~ msgid "Make piggyback host names globally unique"
+#~ msgstr "Expressions de nom d'hôte en ferroutage"
+
+#, fuzzy
+#~ msgid ""
+#~ "Only Checkmk Ultimate remote sites can be added to a Checkmk Ultimate "
+#~ "central site"
+#~ msgstr ""
+#~ "Seuls les sites distants CCE peuvent être ajoutés au site central CCE"
+
+#, fuzzy
+#~ msgid "Toggle 'Getting Started' button"
+#~ msgstr "État résultant"
+
+#, fuzzy
+#~ msgid "Toggle 'Getting started' button"
+#~ msgstr "État résultant"
+
+#, fuzzy
+#~ msgid "Enter credentials for basic authentication."
+#~ msgstr "Informations d'identification pour l'authentification HTTP de base"
+
+#, fuzzy
+#~ msgid "Password should not be empty"
+#~ msgstr "Clé d'accès"
+
+#, fuzzy
+#~ msgid "Title should not be empty."
+#~ msgstr "Clé secrète"
+
+#, fuzzy
+#~ msgid "Unique ID should not be empty."
+#~ msgstr "Clé secrète"
 
 #, fuzzy
 #~ msgid "Device statuses <b>[deprecated]</b>"
