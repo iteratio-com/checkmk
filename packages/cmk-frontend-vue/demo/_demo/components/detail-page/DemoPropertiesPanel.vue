@@ -46,6 +46,13 @@ const state = defineModel<PanelState>({ required: true })
         :model-value="state[key] as string"
         @update:model-value="state[key] = $event ?? ''"
       />
+      <CmkInput
+        v-else-if="def.type === 'number'"
+        :id="`ctrl-${key}`"
+        type="number"
+        :model-value="state[key] as number"
+        @update:model-value="state[key] = $event ?? 0"
+      />
       <CmkDropdown
         v-else-if="def.type === 'list'"
         :component-id="`ctrl-${key}`"

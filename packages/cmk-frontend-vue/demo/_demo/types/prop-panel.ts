@@ -29,19 +29,28 @@ export interface ListPropDef<T extends string = string> {
   help?: string
 }
 
-export type PropDef = BoolPropDef | StringPropDef | ListPropDef<string>
+export interface NumberPropDef {
+  type: 'number'
+  title: string
+  initialState: number
+  help?: string
+}
+
+export type PropDef = BoolPropDef | StringPropDef | NumberPropDef | ListPropDef<string>
 
 export type PanelConfig = Record<string, PropDef>
 
-export type PanelState = Record<string, boolean | string>
+export type PanelState = Record<string, boolean | string | number>
 
 type InferStateFromDef<T extends PropDef> = T extends BoolPropDef
   ? boolean
   : T extends StringPropDef
     ? string
-    : T extends ListPropDef<infer U>
-      ? NonNullable<U>
-      : never
+    : T extends NumberPropDef
+      ? number
+      : T extends ListPropDef<infer U>
+        ? NonNullable<U>
+        : never
 
 export type InferPanelState<T extends PanelConfig> = {
   [K in keyof T]: InferStateFromDef<T[K]>
