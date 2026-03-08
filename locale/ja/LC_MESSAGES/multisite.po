@@ -165,18 +165,6 @@ msgstr " および%s '%s'"
 msgid " and the %s '%s'."
 msgstr " および %s '%s'."
 
-msgid " batch is"
-msgstr " 一括"
-
-msgid " batches are"
-msgstr " 一括"
-
-msgid " changes"
-msgstr " 変更"
-
-msgid " current cycle to complete"
-msgstr " 現在のサイクルを完了する"
-
 #, python-format
 msgid " for %d of %d recipients."
 msgstr " 受信者%dのうち%dに対して。"
@@ -202,9 +190,6 @@ msgstr " より大きい"
 msgid " left in your free trial"
 msgstr " 無料トライアルの残り"
 
-msgid " next cycle start"
-msgstr " 次のサイクル開始"
-
 msgid " next week"
 msgstr " 来週"
 
@@ -222,14 +207,8 @@ msgstr " または "
 msgid " or int"
 msgstr " またはint"
 
-msgid " seconds remaining)"
-msgstr " 秒 残)"
-
 msgid " to:"
 msgstr " まで:"
-
-msgid " waiting for the "
-msgstr " 待ち "
 
 #, python-brace-format
 msgid " {iofile.name} {size_text} {io_text}"
@@ -253,10 +232,6 @@ msgstr ""
 "\"%s\" は正規表現グループ %s内では許可されていません。プロセスは一致するすべ"
 "てのグループに対してインスタンス化されるため、グループ内の境界文字は検出後に"
 "消えます。したがって、グループ外で区切り文字を適用します。"
-
-#, python-format
-msgid "# %s - cycle details"
-msgstr "#%s - サイクルの詳細"
 
 #, python-format
 msgid "#%s of unknown rule set %r"
@@ -990,9 +965,6 @@ msgstr "(無効)"
 msgid "(don't send notifications to Event Console)"
 msgstr "(イベントコンソールに通知を送信しないでください)"
 
-msgid "(finished)"
-msgstr "(終了しました)"
-
 msgid "(ignore)"
 msgstr "(無視)"
 
@@ -1045,9 +1017,6 @@ msgstr "(オーバーライド <b>ユーザー名</b>)"
 msgid "(please select)"
 msgstr "(選んでください)"
 
-msgid "(running)"
-msgstr "(稼働中)"
-
 msgid "(select target folder)"
 msgstr "(対象フォルダを選択)"
 
@@ -1087,9 +1056,6 @@ msgstr "、ただし、以前のルールパックの一致によって無効に
 msgid ", elapsed cache lifespan: %s"
 msgstr ",経過キャッシュ寿命: %s"
 
-msgid ", errors occurred"
-msgstr "、エラーが発生しました"
-
 msgid ", first match is a cancelling match"
 msgstr "、最初の一致ははキャンセルした一致です"
 
@@ -1103,9 +1069,6 @@ msgstr "、最後の %.1f チェック期間内にデータが受信されてい
 
 msgid ", the first match skips this rule pack"
 msgstr ",最初の一致はこのルールパックをスキップします"
-
-msgid "-"
-msgstr "-"
 
 msgid "-.-- %"
 msgstr "-.--%"
@@ -1377,34 +1340,6 @@ msgstr "< 削除する"
 
 msgid "<< Remove all"
 msgstr "<< すべて削除する"
-
-msgid ""
-"<a href='wato.py?mode=edit_ruleset&varname=piggyback_translation'>Piggyback "
-"translations</a> are performed before the piggyback connector creates hosts. "
-"Use this, for example, in a setup with multiple Docker nodes to prefix "
-"containers with the name of the corresponding Docker node. Otherwise, name "
-"collisions can occur if containers with the same name exist on more than one "
-"Docker Node."
-msgstr ""
-"<a href='wato.py?mode=edit_ruleset&varname=piggyback_translation'>ピギーバッ"
-"ク翻訳</a>はpiggybackコネクタがホストを作成する前に実行されます。これは、例え"
-"ば複数のDockerノードがあるセットアップで、コンテナの前に対応するDockerノード"
-"の名前を付けるために使用します。そうしないと同じ名前のコンテナが複数のDocker"
-"ノードに存在する場合、名前の衝突が発生する可能性があります。"
-
-msgid ""
-"<a href='wato.py?mode=edit_ruleset&varname=piggyback_translation'>Piggyback "
-"translations</a>are performed before the piggyback connector creates hosts. "
-"Use this, for example, in a setup with multiple Docker nodes to prefix "
-"containers with the name of the corresponding Docker node. Otherwise, name "
-"collisions can occur if containers with the same name exist on more than one "
-"Docker node."
-msgstr ""
-"<a href='wato.py?mode=edit_ruleset&varname=piggyback_translation'>ピギーバッ"
-"ク翻訳</a>はpiggybackコネクタがホストを作成する前に実行されます。これは、例え"
-"ば複数のDockerノードが存在する環境では、コンテナ名に対応するDockerノード名を"
-"接頭辞として付けるためにこれを使用します。そうしないと、複数のDockerノードに"
-"同じ名前のコンテナが存在する場合、名前衝突が発生する可能性があります。"
 
 msgid ""
 "<b>Beware:</b> Deleting this key means that you will not be able to create "
@@ -3107,9 +3042,6 @@ msgstr "変更を中止します。"
 msgid "About Checkmk"
 msgstr "Checkmkについて"
 
-msgid "About the processing cycle"
-msgstr "処理サイクルについて"
-
 msgid "Absolut level for total number of used file descriptors"
 msgstr "使用されたファイル記述子の総数の絶対レベル"
 
@@ -3627,9 +3559,6 @@ msgstr ""
 msgid "Activate automatic locking of user accounts"
 msgstr "ユーザーアカウントの自動ロックを有効にする"
 
-msgid "Activate changes"
-msgstr "変更をアクティブにする"
-
 msgid "Activate changes finished"
 msgstr "変更事項のアクティベートが完了しました"
 
@@ -3644,9 +3573,6 @@ msgstr "変更をアクティブにする スケジューラー"
 
 msgid "Activate changes scheduler started"
 msgstr "変更のアクティブ化スケジュールを開始"
-
-msgid "Activate changes timeout"
-msgstr "変更の有効化タイムアウト"
 
 msgid "Activate configuration"
 msgstr "構成を有効化する"
@@ -3719,9 +3645,6 @@ msgstr "%s によるアクティブ化された変更。"
 
 msgid "Activating"
 msgstr "アクティベート"
-
-msgid "Activating changes: "
-msgstr "変更のアクティブ化: "
 
 msgid "Activation"
 msgstr "アクティベーション"
@@ -4705,10 +4628,6 @@ msgstr "接続 %s を追加または編集しました"
 #, python-format
 msgid "Added the %s '%s'"
 msgstr "%s '%s' を追加しました"
-
-#, python-format
-msgid "Added the connection '%s'"
-msgstr "接続 %s を追加"
 
 msgid "Added to stack"
 msgstr "スタックに追加"
@@ -6598,9 +6517,6 @@ msgstr "SaaS認証中にエラーが発生しました： "
 msgid "An error occurred during the last update"
 msgstr "前回の更新中にエラーが発生しました"
 
-msgid "An exception occurred"
-msgstr "例外が発生しました"
-
 #, python-format
 msgid "An exception occurred: %s"
 msgstr "例外が発生しました: %s"
@@ -7887,9 +7803,6 @@ msgstr "監視エージェントを自動的に作成する"
 
 msgid "Automatically delete hosts with no recent OpenTelemetry data"
 msgstr "最近のOpenTelemetryデータがないホストを自動的に削除する"
-
-msgid "Automatically delete hosts without piggyback data"
-msgstr "ピギーバックデータなしでホストを自動的に削除します"
 
 msgid "Automatically detects changes in the formular and fetches new data"
 msgstr "書式の変更を自動的に検出し、新しいデータを取得します"
@@ -9423,14 +9336,8 @@ msgstr "Basic認証設定"
 msgid "BasicAuth settings (optional)"
 msgstr "BasicAuth設定(オプション)"
 
-msgid "Batch ID"
-msgstr "バッチID"
-
 msgid "Batch Requests/sec"
 msgstr "バッチリクエスト/秒"
-
-msgid "Batches"
-msgstr "バッチ"
 
 msgid "Battery Levels"
 msgstr "バッテリーレベル"
@@ -11402,10 +11309,6 @@ msgid "Can still edit"
 msgstr "まだ編集できます"
 
 #, python-format
-msgid "Can't contact the remote site using '%s'"
-msgstr "%sを使用してリモートサイトに接続できません"
-
-#, python-format
 msgid "Can't parse version %r"
 msgstr "バージョン%rは使用できません"
 
@@ -12024,9 +11927,6 @@ msgstr "%s を%sから%sに変更"
 msgid "Changed Configuration variable %s to %s."
 msgstr "構成変数 %s を%s に変更しました。"
 
-msgid "Changed DCD global settings"
-msgstr "DCDグローバル設定の変更"
-
 #, python-format
 msgid "Changed alert handler rule %d"
 msgstr "アラートハンドラルール%dを変更しました"
@@ -12128,9 +12028,6 @@ msgstr "サイト固有の構成変数 %s を %sに変更しました。"
 
 msgid "Changes"
 msgstr "変更"
-
-msgid "Changes activated on"
-msgstr "有効化された変更点"
 
 msgid "Changes since last dump"
 msgstr "前回ダンプ時からの変更点"
@@ -14327,9 +14224,6 @@ msgstr "完全なツリー"
 msgid "Complete variable list (for testing)"
 msgstr "完全な変数リスト(テスト用)"
 
-msgid "Completion"
-msgstr "完了"
-
 msgid "Completion time over threshold occurred"
 msgstr "しきい値を超える完了時間が発生しました"
 
@@ -15164,10 +15058,6 @@ msgstr "コネクターサイトとコネクティーサイトは異なる必要
 msgid "Connection"
 msgstr "接続"
 
-#, python-format
-msgid "Connection '%s' isn't found: consider activating changes"
-msgstr "接続 '%s' が見つかりません：変更の適用をしてください"
-
 msgid "Connection ID"
 msgstr "接続ID"
 
@@ -15187,9 +15077,6 @@ msgstr "接続時間"
 msgid "Connection established. The connection settings seem to be OK."
 msgstr "接続が確立されました。接続設定は問題ないようです。"
 
-msgid "Connection is disabled"
-msgstr "接続が無効になっています"
-
 msgid "Connection lost occurred"
 msgstr "接続が切れました"
 
@@ -15198,10 +15085,6 @@ msgstr "接続名"
 
 msgid "Connection options"
 msgstr "接続オプション"
-
-#, python-format
-msgid "Connection representation: %s"
-msgstr "接続表現: %s"
 
 msgid "Connection settings"
 msgstr "接続設定"
@@ -15309,16 +15192,9 @@ msgstr "コネクタアウトレット"
 msgid "Connector type"
 msgstr "コネクタタイプ"
 
-msgid "Connector: Adding host changes to queue"
-msgstr "コネクター：ホストの変更をキューに追加する"
-
 #, python-format
 msgid "Connector: Collecting metric backend hosts on site  \"%s\""
 msgstr "コネクタ: サイトのメトリック収集バックエンドホスト  \"%s\""
-
-#, python-format
-msgid "Connector: Collecting piggyback hosts on site  \"%s\""
-msgstr "コネクター：サイト \"%s\"でピギーバックホストを習得しています"
 
 msgid "Connectors"
 msgstr "コネクター"
@@ -15643,9 +15519,6 @@ msgstr "大文字に変換する"
 msgid "Cooldown before retrying failed remote or local delivery"
 msgstr "失敗したリモートまたはローカル配信を再試行する前のクールダウン"
 
-msgid "Cooldown time after processing cycle"
-msgstr "処理サイクル後のクールダウン時間"
-
 msgid "Cooldown time before trying to reconnect after failure"
 msgstr "失敗後再接続を試みるまでのクールダウン時間"
 
@@ -15679,9 +15552,6 @@ msgstr "セントラルサイトからすべてのイベントルールをコピ
 
 msgid "Copy codes to clipboard"
 msgstr "コードをクリップボードにコピーする"
-
-msgid "Copy connection value representation to clipboard"
-msgstr "接続値の表現をクリップボードにコピーする"
 
 msgid "Copy rule value representation to clipboard"
 msgstr "ルール値表記をクリップボードにコピーする"
@@ -16022,17 +15892,6 @@ msgid ""
 msgstr ""
 "host_address '%s'のifidを照会できませんでした。ntopngユーザーには、この情報を"
 "照会するための十分な権限がない可能性があります。"
-
-#, python-format
-msgid "Could not reload DCD: %s. See web.log for further information."
-msgstr ""
-"DCDをリロードできませんでした: %s 。詳細については、web.logを参照してくださ"
-"い。"
-
-msgid ""
-"Could not reload DCD: It is not running. See web.log for further information."
-msgstr ""
-"DCDをリロードできませんでした：詳細については、web.logを参照してください。"
 
 #, python-format
 msgid ""
@@ -16626,10 +16485,6 @@ msgstr "リレー '%s'を作成しました"
 msgid "Created with Checkmk Version $CHECK_MK_VERSION$"
 msgstr "Checkmkバージョン$ CHECK_MK_VERSION $で作成"
 
-#, python-format
-msgid "Created: %d, modified: %d, deleted: %d"
-msgstr "作成：%d、変更：%d、削除：%d"
-
 msgid ""
 "Creates a new service that displays information about disk I/O of database "
 "files. This service displays the number of bytes read and written to "
@@ -16878,9 +16733,6 @@ msgstr "Crontabの状態"
 
 msgid "Current"
 msgstr "電流"
-
-msgid "Current DCD state."
-msgstr "現在のDCD の状態。"
 
 msgid "Current O2 percentage"
 msgstr "現在のO2パーセンテージ"
@@ -17361,33 +17213,6 @@ msgstr "カスタマイズ"
 msgid "Cut everything after first space"
 msgstr "最初のスペースの後にすべてをカットします"
 
-#, python-format
-msgid ""
-"Cycle %d not found, the information is expired, please return back to select "
-"a cycle"
-msgstr ""
-"サイクル %d が見つかりません。情報が期限切れです。サイクルを選択するために"
-"戻ってください"
-
-msgid "Cycle id"
-msgstr "サイクルID"
-
-msgid "Cycle not found"
-msgstr "サイクルが見つかりません"
-
-msgid ""
-"Cycle not found, the information is expired, please return back to select a "
-"cycle"
-msgstr ""
-"サイクルIDが見つかりません。情報の有効期限が切れています。サイクルを選択する"
-"ために戻ってください"
-
-msgid "Cycle steps"
-msgstr "サイクルステップ"
-
-msgid "Cycles"
-msgstr "サイクル"
-
 msgid "DATAPROXY - Throttled server connections"
 msgstr "DATAPROXY - スロットルされたサーバー接続"
 
@@ -17463,30 +17288,11 @@ msgstr "DB2メモリー使用量"
 msgid "DB2 time since last database backup"
 msgstr "最後のデータベースバックアップからのDB2時間"
 
-#, python-format
-msgid "DCD Manager: Fetching piggyback hosts from site \"%s\""
-msgstr "DCDマネージャ：サイト\"%s\"からピギーバックホストを取得しています"
-
-msgid "DCD batch"
-msgstr "DCDバッチ"
-
-msgid "DCD batch history"
-msgstr "DCDバッチ履歴"
-
-msgid "DCD batches"
-msgstr "DCDバッチ"
-
 msgid "DCD cycles and batches."
 msgstr "DCDサイクルとバッチ処理。"
 
-msgid "DCD global settings"
-msgstr "DCDグローバル設定"
-
 msgid "DCD status"
 msgstr "DCDステータス"
-
-msgid "DCD work state"
-msgstr "DCDワーク状態"
 
 msgid "DD.MM.YYYY"
 msgstr "DD.MM.YYYY"
@@ -18846,13 +18652,6 @@ msgid ""
 msgstr ""
 "この接続によって作成されたホストのうち、Open Telemetryのデータが存在しないホ"
 "ストを削除します。"
-
-msgid ""
-"Delete the hosts created by this connection whose piggyback data is no "
-"longer present."
-msgstr ""
-"この接続によって作成され他ホストのうち、ピギーバックデータが存在しないホスト"
-"を削除します。"
 
 #, python-format
 msgid "Delete this %s"
@@ -21067,9 +20866,6 @@ msgstr "監視しない"
 msgid "Do not monitor failovers"
 msgstr "フェイルオーバーを監視しない"
 
-msgid "Do not monitor hosts without discovered services"
-msgstr "検出サービスのないホストを監視しない"
-
 msgid "Do not monitor limits"
 msgstr "監視を制限しない"
 
@@ -21686,12 +21482,6 @@ msgstr "Dw"
 
 msgid "Dynamic MAC enabled"
 msgstr "動的MAC有効化"
-
-msgid "Dynamic configuration"
-msgstr "動的構成"
-
-msgid "Dynamic configuration logging"
-msgstr "動的構成ロギング"
 
 msgid "Dynamic host configuration connections"
 msgstr "動的ホスト構成接続"
@@ -24017,9 +23807,6 @@ msgstr "Exchanges"
 msgid "Exclude"
 msgstr "除外する"
 
-msgid "Exclude \"Activate changes\" for time ranges"
-msgstr "時間範囲の\"変更のアクティブ化\"を除外する"
-
 msgid "Exclude Nodes based on their role"
 msgstr "役割に応じたノードの除外"
 
@@ -24189,20 +23976,6 @@ msgstr "実行モード"
 
 msgid "Execution configuration"
 msgstr "実行構成"
-
-msgid "Execution has been triggered"
-msgstr "実行がトリガーされました"
-
-msgid "Execution history"
-msgstr "実行履歴"
-
-#, python-format
-msgid "Execution history of %s"
-msgstr "%sの実行履歴"
-
-#, python-format
-msgid "Execution history of this %s"
-msgstr "この %s の実行履歴"
 
 msgid "Execution interval"
 msgstr "実行間隔"
@@ -24539,10 +24312,6 @@ msgstr "CSVエクスポートでビューのデータをエクスポート"
 msgid ""
 "Export file to create, containing <tt>&lt;HOST&gt;</tt> for the host name"
 msgstr "作成するエクスポートファイル、ホスト名に<tt>&lt;HOST&gt;</tt>を含む"
-
-#, python-format
-msgid "Export this %s for API"
-msgstr "%s をAPI用にエクスポートする"
 
 msgid "Export this rule for API"
 msgstr "このルールをAPI用にエクスポートする"
@@ -24922,10 +24691,6 @@ msgid "Failed to estimate the Apache process size"
 msgstr "Apacheプロセスサイズの見積もりに失敗しました"
 
 #, python-format
-msgid "Failed to execute DCD connection (%s)"
-msgstr "DCD接続の実行に失敗しました(%s)"
-
-#, python-format
 msgid "Failed to execute the test %s: See web.log for further details"
 msgstr "テスト %s の実行に失敗しました: 詳細はweb.logを参照してください"
 
@@ -24943,10 +24708,6 @@ msgstr "ピア証明書のフェッチに失敗しました(%s)"
 
 msgid "Failed to find matching certificate in chain"
 msgstr "チェーン内の一致する証明書を見つけることができませんでした"
-
-#, python-format
-msgid "Failed to get the status from DCD (%s)"
-msgstr "DCDからステータスを取得できませんでした(%s)"
 
 #, python-format
 msgid "Failed to load legacy host attribute from local plug-ins: %r"
@@ -30315,9 +30076,6 @@ msgstr "ホストルックアップエレメント"
 msgid "Host management"
 msgstr "ホスト管理"
 
-msgid "Host manager settings"
-msgstr "ホスト管理設定"
-
 msgid "Host memory usage"
 msgstr "ホストのメモリ使用量"
 
@@ -30469,12 +30227,6 @@ msgstr "ホストの問題(未処理)"
 
 msgid "Host problems for NagStaMon"
 msgstr "NagStaMonのホストの問題"
-
-msgid "Host processing"
-msgstr "ホスト処理"
-
-msgid "Host processing: "
-msgstr "ホストプロセス: "
 
 msgid "Host properties"
 msgstr "ホストのプロパティ"
@@ -30647,10 +30399,6 @@ msgstr "ホストとフォルダー"
 msgid "Hosts and folders"
 msgstr "ホストとフォルダー"
 
-#, python-format
-msgid "Hosts assigned with this %s"
-msgstr "この %s が割り当てられたホスト"
-
 msgid ""
 "Hosts can be grouped together into host groups. The most common use case is "
 "to put hosts which belong together in a host group to make it possible to "
@@ -30814,10 +30562,6 @@ msgstr ""
 
 msgid "Hosts: "
 msgstr "ホスト: "
-
-#, python-format
-msgid "Hosts: %d created, %d modified, %d deleted"
-msgstr "ホスト: %d が作成され、 %d が変更され、 %d が削除されました"
 
 #, python-format
 msgid "Hosts: %d total (%d succeeded, %d skipped, %d failed)"
@@ -34946,10 +34690,6 @@ msgstr "無効なCRC"
 #, python-format
 msgid "Invalid CSRF token (%r) for session (%r)"
 msgstr "セッション (%r) の無効な CSRF トークン (%r)"
-
-#, python-format
-msgid "Invalid DCD command: %r"
-msgstr "無効なDCDコマンド: %r"
 
 msgid "Invalid IP address"
 msgstr "無効なIPアドレス"
@@ -39802,9 +39542,6 @@ msgstr ""
 "Linux, Windows, その他のオペレーティングシステム用にカスタマイズされたパッ"
 "ケージ監視エージェントの管理"
 
-msgid "Manage dynamic configuration"
-msgstr "動的構成の管理"
-
 msgid "Manage event classification and correlation rules for the Event Console"
 msgstr "イベントコンソールのイベント分類と相関ルールを管理する"
 
@@ -39840,15 +39577,8 @@ msgstr "サービス管理"
 msgid "Manage tags"
 msgstr "タグ管理"
 
-msgid "Manage the Dynamic configuration connections"
-msgstr "動的な構成接続を管理する"
-
 msgid "Manage the controllers auto-registration"
 msgstr "コントローラーの自動登録の管理"
-
-#, fuzzy
-msgid "Manage the dynamic configuration connections"
-msgstr "動的な構成接続を管理する"
 
 msgid "Manage users of the monitoring system."
 msgstr "監視システムのユーザーを管理します。"
@@ -39917,10 +39647,6 @@ msgstr "手動スナップショット"
 
 msgid "Manually added"
 msgstr "手動追加"
-
-#, python-format
-msgid "Manually execute this %s"
-msgstr "この %s を手動で実行する"
 
 msgid ""
 "Manually let the core send a notification to a host or service in order to "
@@ -40474,9 +40200,6 @@ msgstr "ログファイルの最大サイズ"
 
 msgid "Maximal number of daemon threads"
 msgstr "デーモンスレッドの最大数"
-
-msgid "Maximal number of hosts per bulk discovery"
-msgstr "一括検出あたりの最大ホスト数"
 
 msgid "Maximal number of log files to backup"
 msgstr "バックアップするログファイルの最大数"
@@ -43965,9 +43688,6 @@ msgstr "次の実行"
 msgid "Next check"
 msgstr "次のチェック"
 
-msgid "Next cycle"
-msgstr "次のサイクル"
-
 msgid "Next notification"
 msgstr "次の通知"
 
@@ -44358,9 +44078,6 @@ msgstr "追加するタグはありません"
 msgid "No names defined"
 msgstr "名前が定義されていません"
 
-msgid "No next cycle available"
-msgstr "次のサイクルは利用できません"
-
 #, python-format
 msgid "No notification parameters for method '%s' found"
 msgstr "メソッド'%s'に対する通知パラメータが見つかりません"
@@ -44382,9 +44099,6 @@ msgstr "パスワードが選択されていません"
 
 msgid "No pending changes."
 msgstr "保留中の変更はありません。"
-
-msgid "No previous cycle available"
-msgstr "以前のサイクルは利用できません"
 
 msgid "No proxy"
 msgstr "プロキシなし"
@@ -44545,9 +44259,6 @@ msgstr "%s'という名前で定義されたビューはありません。"
 
 msgid "No view name provided."
 msgstr "ビュー名が指定されていません。"
-
-msgid "No waiting batches"
-msgstr "待機中のバッチはありません"
 
 msgid "No, adjust settings"
 msgstr "いいえ、設定を調整してください"
@@ -45177,12 +44888,6 @@ msgstr "サービスのノート(URL)"
 
 msgid "Notes URL"
 msgstr "備考URL"
-
-msgid "Nothing changed"
-msgstr "何も変わっていません"
-
-msgid "Nothing logged"
-msgstr "何も記録されません"
 
 msgid "Nothing was changed."
 msgstr "何も変更されていません。"
@@ -46844,14 +46549,6 @@ msgstr ""
 msgid "Only bulk notifications during the following time period"
 msgstr "次の期間中の一括通知のみ"
 
-#, fuzzy
-msgid ""
-"Only care about hosts that receive piggyback data from hosts whose names "
-"match one of these regular expressions."
-msgstr ""
-"名前がこれらの正規表現の1つと一致するホストからピギーバックデータを受信するホ"
-"ストのみを対象とします。"
-
 msgid "Only discover monitors in the following states"
 msgstr "以下の状態のモニターのみ検出可能"
 
@@ -47435,15 +47132,6 @@ msgstr ""
 "オプションで、このオブジェクトの目的を説明するコメントを追加します。コメント"
 "はこのダイアログでのみ表示され、他のユーザーが設定された属性の意図を理解する"
 "のに役立ちます。"
-
-msgid ""
-"Optionally, restrict host creation using regular expressions."
-"<br><b>Important:</b><br>This only applies to hosts created by this "
-"connection, not the monitoring host ('Dummy host').<br><br>"
-msgstr ""
-"オプションで、正規表現を使ってホストの作成を制限します。<br><b>重要:</b><br>"
-"これはこの接続によって作成されたホストにのみ適用され、監視ホスト('Dummy "
-"host')には適用されません。<br><br>"
 
 msgid ""
 "Optionally, restrict host creation using regular expressions."
@@ -50195,12 +49883,6 @@ msgstr "ピアノバー"
 msgid "Piggyback"
 msgstr "ピギーバック"
 
-msgid "Piggyback creation options"
-msgstr "ピギーバック作成オプション"
-
-msgid "Piggyback data"
-msgstr "ピギーバックデータ"
-
 #, fuzzy
 msgid "Piggyback host names"
 msgstr "ピギーバック名"
@@ -50925,9 +50607,6 @@ msgstr "少なくとも1つのアドレスを指定してください"
 msgid "Please specify at least one \"OpenTelemetry hosts creation option\""
 msgstr "\"Open telemetry ホストの作成オプション\"を1つ以上指定してください"
 
-msgid "Please specify at least one \"Piggyback creation option\""
-msgstr "\"ピギーバック作成オプション\"を1つ以上指定してください"
-
 msgid "Please specify at least one condition or this rule will never match."
 msgstr ""
 "少なくとも1つの条件を指定してください。指定しないと、このルールは一致しませ"
@@ -51535,9 +51214,6 @@ msgstr "イベントコンソールの設定ファイルにプリティプリン
 msgid "Prevent DNS lookups by use of a cache file"
 msgstr "キャッシュファイルを使用してDNSルックアップを防止する"
 
-msgid "Prevent host deletion after initialization"
-msgstr "初期化後のホストの削除を防ぐ"
-
 msgid "Prevent loading HTML from service output or log messages"
 msgstr "サービス出力またはログメッセージからのHTMLのロードを防止します"
 
@@ -51560,9 +51236,6 @@ msgstr ""
 
 msgid "Preview this report"
 msgstr "このレポートをプレビューする"
-
-msgid "Previous cycle"
-msgstr "前のサイクル"
 
 msgid "PrimSeq erros"
 msgstr "PrimSeqエラー"
@@ -52525,9 +52198,6 @@ msgstr ""
 msgid "REST API"
 msgstr "REST API"
 
-msgid "REST API communication"
-msgstr "REST API通信"
-
 msgid "REST API documentation"
 msgstr "REST API ドキュメント"
 
@@ -53103,12 +52773,6 @@ msgstr "トレース受信が無効になっています"
 
 msgid "Recent event history"
 msgstr "最近のイベント履歴"
-
-msgid "Recent processing batches"
-msgstr "最近の処理バッチ"
-
-msgid "Recent processing cycles"
-msgstr "最近の加工サイクル"
 
 msgid "Recently changed services"
 msgstr "最近変更されたサービス"
@@ -54090,10 +53754,6 @@ msgid "Removed the %s '%s'"
 msgstr "%s '%s'を削除しました"
 
 #, python-format
-msgid "Removed the connection '%s'"
-msgstr "接続を削除しました '%s'"
-
-#, python-format
 msgid "Removed unpackaged extension file %s: %s"
 msgstr "パッケージ化されていない拡張ファイル %sを削除しました: %s"
 
@@ -55002,9 +54662,6 @@ msgstr "重大度を最悪の場合に制限する"
 
 msgid "Restrict single values"
 msgstr "単一の値を制限"
-
-msgid "Restrict source hosts"
-msgstr "ソースホストを制限する"
 
 msgid "Restrict subcategories"
 msgstr "サブカテゴリの制限"
@@ -57944,23 +57601,11 @@ msgstr "BIサービスの詳細"
 msgid "Service discovery"
 msgstr "サービスディスカバリ"
 
-msgid "Service discovery and activation: "
-msgstr "サービスディスカバリとアクティベーション: "
-
-msgid "Service discovery ran on"
-msgstr "サービスディスカバリ実行"
-
 msgid "Service discovery rules"
 msgstr "サービス検出ルール"
 
-msgid "Service discovery timeout"
-msgstr "サービスディスカバリ タイムアウト"
-
 msgid "Service discovery triggers service discovery check"
 msgstr "サービス検出がサービス検出チェックをトリガーします"
-
-msgid "Service discovery: "
-msgstr "サービスディスカバリ: "
 
 msgid "Service discovery: Check type"
 msgstr "サービスディスカバリ: チェックタイプ"
@@ -59272,9 +58917,6 @@ msgid "Show alias if set, else description"
 msgstr ""
 "設定されている場合はエイリアスを表示し、そうでない場合は説明を表示します"
 
-msgid "Show all cycles"
-msgstr "すべてのサイクルを表示"
-
 msgid "Show all hosts"
 msgstr "すべてのホストを表示"
 
@@ -59311,9 +58953,6 @@ msgstr "コントロールを表示"
 
 msgid "Show current / last state of this backup job"
 msgstr "このバックアップジョブの現在/最後の状態を表示する"
-
-msgid "Show cycle details"
-msgstr "サイクルの詳細を表示"
 
 msgid "Show data only on search"
 msgstr "検索時にのみデータを表示"
@@ -60234,9 +59873,6 @@ msgstr ""
 
 msgid "Skip verification (insecure)"
 msgstr "検証をスキップする（安全ではない）"
-
-msgid "Skipped"
-msgstr "スキップ"
 
 #, python-format
 msgid "Skipped %s: %s"
@@ -61374,13 +61010,6 @@ msgid ""
 msgstr ""
 "この接続が開始されるべきサイトを指定します。そのサイト上で監視されているフォ"
 "ルダにホストを作成するためのマッチングルールが必要です。"
-
-msgid ""
-"Specify the site where you want this connector to run. Only this site will "
-"process the piggyback data."
-msgstr ""
-"このコネクタを実行するサイトを指定します。このサイトのみがピギーバック・デー"
-"タを処理します。"
 
 msgid ""
 "Specify the threshold levels for the free memory space. The free memory "
@@ -62770,31 +62399,12 @@ msgstr "Steal"
 msgid "Steelhead connections"
 msgstr "スチールヘッド接続"
 
-msgid "Step"
-msgstr "ステップ"
-
 #, python-format
 msgid "Step %d"
 msgstr "ステップ%d"
 
 msgid "Step (precision)"
 msgstr "ステップ(精度)"
-
-msgid "Step has been finished"
-msgstr "ステップが終了しました"
-
-msgid "Step has been initialized"
-msgstr "ステップが初期化されました"
-
-msgid "Step has been started"
-msgstr "ステップが開始されました"
-
-msgid "Steps"
-msgstr "ステップ"
-
-#, python-format
-msgid "Still no data in '%s'"
-msgstr "'%s'にまだデータがありません"
 
 msgid "Still nothing happened."
 msgstr "それでも何も起こりませんでした。"
@@ -65952,10 +65562,6 @@ msgid ""
 "The connect timeout in seconds when establishing a connection with the PLC."
 msgstr "PLCとの接続を確立する際の接続タイムアウトを秒数で指定します。"
 
-#, python-format
-msgid "The connection %r does not exist"
-msgstr "接続 %r が存在しません"
-
 msgid ""
 "The connection creates hosts in this particular folder. Once created, you "
 "can choose to move the host to another folder."
@@ -66302,18 +65908,6 @@ msgstr ""
 
 msgid "The duration in minutes of the ad hoc downtime."
 msgstr "アドホックダウンタイムの時間（分）。"
-
-msgid ""
-"The dynamic configuration will interrupt the service discovery and force an "
-"activation after this time. The time is counted from the start of the "
-"processing cycle. This is useful to ensure that changes are activated in a "
-"timely manner and allow changes to the config, which will then be activated "
-"as well. Default is 10 minutes."
-msgstr ""
-"動的構成は、この時間経過後にサービス検出を中断し、強制的にアクティベーション"
-"を実行します。時間は処理サイクルの開始時からカウントされます。これにより、変"
-"更が適時にアクティベーションされ、構成の変更も同様にアクティベーションされる"
-"ようにします。デフォルトは10分です。"
 
 #, fuzzy
 msgid ""
@@ -67003,12 +66597,6 @@ msgstr ""
 "間隔。"
 
 msgid ""
-"The interval the connection will be executed to check the available "
-"piggyback and update the configuration."
-msgstr ""
-"使用可能なピギーバックを確認し、構成を更新するために接続が実行される間隔。"
-
-msgid ""
 "The interval the connection will be executed to poll the data source and "
 "update the configuration."
 msgstr "データソースをポーリングして構成を更新するために接続が実行される間隔。"
@@ -67395,29 +66983,12 @@ msgstr ""
 "アラームはターゲットホストにのみ適用され、その間のホップには適用されません。"
 
 msgid ""
-"The maximum time for an individual bulk discovery operation. After this, the "
-"processing cycle will continue irregardless of the outcome of the bulk "
-"discovery. Default is 1 minute."
-msgstr ""
-"個々のバッチ検出操作の最大実行時間。この時間経過後は、バッチ検出の結果に関わ"
-"らず処理サイクルが継続されます。デフォルトは1分です。"
-
-msgid ""
 "The maximum time that the Robotmk scheduler allows for a single Robot "
 "Framework execution. This time, when multiplied by the number of executions, "
 "sets the total runtime limit for the execution of a plan."
 msgstr ""
 "Robotmkスケジューラが単一のの実行を許可する最大時間を指定する。この時間を実行"
 "回数で乗算した値が、プランの実行における総実行時間制限を設定します。"
-
-#, fuzzy
-msgid ""
-"The maximum time the dynamic configuration will wait for 'activate changes' "
-"to be completed. After this, the processing cycle will continue or finish. "
-"Default is 2 minutes."
-msgstr ""
-"動的構成がアクティブ化変更の完了を待つ最大時間です。この時間が経過すると、処"
-"理サイクルは継続または終了します。デフォルトは2分です。"
 
 msgid "The maximum value length is 256 characters."
 msgstr "最大値の長さは256文字です。"
@@ -68170,10 +67741,6 @@ msgstr ""
 "ここで指定するパターンは、センサーの状態の始まりと正確に一致する必要がありま"
 "す（大文字と小文字を区別します）。"
 
-#, fuzzy
-msgid "The piggyback mechanism"
-msgstr "ピギーバックメカニズム"
-
 msgid ""
 "The piggyback-hub cannot be enabled for a remote site if it is disabled for "
 "the central site"
@@ -68876,23 +68443,6 @@ msgid ""
 msgstr ""
 "データベースのサイズがこれらのレベルを超えると、サービスは警告またはクリティ"
 "カル状態をトリガーします。"
-
-msgid ""
-"The services are discovered for a bulk of hosts for higher performance "
-"versus individual service discovery. A too large number here can extend the "
-"cycle time of the dynamic configuration as an activation can only be forced, "
-"when no service discovery is running. Decrease this value, if long service "
-"discoveries block the forced activation. Default is 50 and optimized for the "
-"hosts typically being handled by dynamic configuration, where no network "
-"communication happens."
-msgstr ""
-"サービスは、個々のサービス検出に比べて高いパフォーマンスを実現するため、多数"
-"のホストに対して一括で検出されます。この値が過度に大きい場合、動的構成のサイ"
-"クル時間が延長される可能性があります。これは、サービス検出が実行されていない"
-"場合にのみ強制アクティベーションを実行できるためです。サービス検出が長時間か"
-"かり、強制アクティベーションをブロックする場合、この値を減少させてください。"
-"デフォルト値は50で、動的構成で通常処理されるホスト向けに最適化されており、"
-"ネットワーク通信が発生しない環境を想定しています。"
 
 msgid ""
 "The sidebar can be configured to regularly check for pending popup "
@@ -70732,13 +70282,6 @@ msgid ""
 msgstr ""
 "このコネクターを使用し、自身のデータをもとにホストを自動作成することができま"
 "す。"
-
-msgid ""
-"This connector can be used to automatically create hosts based on piggyback "
-"data."
-msgstr ""
-"このコネクタを使用して、ピギーバックデータに基づいてホストを自動的に作成でき"
-"ます。"
 
 msgid "This crash report"
 msgstr "このクラッシュレポート"
@@ -73998,14 +73541,6 @@ msgstr ""
 #, fuzzy, python-format
 msgid ""
 "This setting decides which types of messages to log into the log of the "
-"Dynamic Configuration Daemon (%s)."
-msgstr ""
-"この設定は、動的構成デーモン (%s)のログにログインするメッセージのタイプを決定"
-"します。"
-
-#, fuzzy, python-format
-msgid ""
-"This setting decides which types of messages to log into the log of the "
 "Livestatus proxy (%s)."
 msgstr ""
 "この設定は、Livestatusプロキシのログにログインするメッセージのタイプを決定し"
@@ -74784,16 +74319,6 @@ msgid "Time between new classical active checks"
 msgstr "新しい古典派のアクティブチェック間の時間"
 
 msgid ""
-"Time between the end of one processing cycle and the start of the next one. "
-"You can increase the cooldown time to throttle the processing of new data. "
-"This can reduce the load of the dynamic configuration on your system. "
-"Default is 30 seconds."
-msgstr ""
-"1つの処理サイクルの終了から次の処理サイクルの開始までの時間。このクールダウン"
-"時間を延長することで、新しいデータの処理を制限できます。これにより、システム"
-"における動的構成の負荷を軽減できます。デフォルトは30秒です。"
-
-msgid ""
 "Time between the last operation on primary's oplog and on secondary above"
 msgstr "プライマリのoplogと上記のセカンダリの最後の操作の間の時間"
 
@@ -74954,28 +74479,8 @@ msgid ""
 "Time range to continue to consider outdated OpenTelemetry data as valid."
 msgstr "古いオープンテレメトリデータを有効なデータとして継続して扱う期間。"
 
-msgid "Time range to continue to consider outdated piggyback data as valid."
-msgstr "古いピギーバックデータを有効なものだとみなしつづける時間範囲。"
-
 msgid "Time range to create report for"
 msgstr "レポートを作成する時間範囲"
-
-msgid ""
-"Time range to keep hosts when piggyback source only sends piggyback data for "
-"other hosts."
-msgstr ""
-"ピギーバック元が他のホストのピギーバックデータのみを送信する間、ホストを保持"
-"する時間範囲。"
-
-msgid ""
-"Time range to prevent host deletion after site startup, e.g. when booting "
-"the Checkmk server. This is caused by the 'tmp' directory which needs more "
-"time to initialize and can result in missing piggyback information from some "
-"sources."
-msgstr ""
-"Checkmk サーバの起動時など、サイト起動後にホストが削除されないようにするため"
-"の時間範囲。これは'tmp'ディレクトリが初期化により多くの時間を必要とし、いくつ"
-"かのソースからのピギーバック情報が欠落することが原因です。"
 
 msgid "Time series graph"
 msgstr "時系列グラフ"
@@ -75184,9 +74689,6 @@ msgstr "視覚情報の有効期限までの時間"
 
 msgid "Time until credentials expiration"
 msgstr "視覚情報の有効期限までの時間"
-
-msgid "Time until forced activation of changes after cycle start"
-msgstr "サイクル開始後、変更が強制的にアクティブ化されるまでの時間"
 
 msgid "Time until license expiration"
 msgstr "ライセンスの有効期限が切れるまでの時間"
@@ -75528,21 +75030,6 @@ msgstr ""
 
 #, fuzzy
 msgid ""
-"To set the value of a connection using the REST API, you need to set the "
-"<tt>value_raw</tt> field. The value of this field is individual for each "
-"connection set. To help you understand what kind of data structure you need "
-"to provide, this connection export mechanism is showing you the value you "
-"need to set for a given connection. The value needs to be a string "
-"representation of a compatible Python data structure."
-msgstr ""
-"REST API を使用してルールの値を設定するには<tt>value_raw</tt>フィールドを設定"
-"する必要があります。このフィールドの値は、各接続設定に対して個別に設定されま"
-"す。どのようなデータ構造を提供するべきか理解する助けとして、このエクスポート"
-"機能は与えられたルール設定に記載すべき値を示しています。この値は、互換性のあ"
-"るPythonデータ構造の文字列表現である必要があります。"
-
-#, fuzzy
-msgid ""
 "To set the value of a rule using the REST API, you need to set the "
 "<tt>value_raw</tt> field. The value of this field is individual for each "
 "rule set. To help you understand what kind of data structure you need to "
@@ -75583,9 +75070,6 @@ msgstr "今日"
 
 msgid "Toggle elements"
 msgstr "エレメントを切り替えます"
-
-msgid "Toggle log entries"
-msgstr "ログエントリを切り替えます"
 
 msgid "Toggle names"
 msgstr "名前を切り替える"
@@ -75864,9 +75348,6 @@ msgstr "総所要直"
 msgid "Total duration of SIP/H323 calls"
 msgstr "SIP/H323通話の総所要時間"
 
-msgid "Total duration: "
-msgstr "総所要時間: "
-
 msgid "Total error rate"
 msgstr "総エラー率"
 
@@ -75914,9 +75395,6 @@ msgstr "総ヒット率"
 
 msgid "Total host problems"
 msgstr "ホストの問題総数"
-
-msgid "Total hosts: "
-msgstr "総ホスト数: "
 
 msgid "Total index failure count upper levels"
 msgstr "合計インデックス障害カウントの上位レベル"
@@ -78367,23 +77845,6 @@ msgstr "タイプ: %s"
 
 msgid "Types of events that are being processed"
 msgstr "処理されているイベントの種類"
-
-#, fuzzy
-msgid ""
-"Typically hosts without discovered services bear little value for monitoring "
-"and can cause false alerts. In case an activation is forced or the dynamic "
-"configuration is forcefully interrupted, there might be hosts without "
-"discovered services. With this option, hosts will receive a hidden attribute "
-"so that they will not be monitored until the service discovery has been "
-"executed by the dynamic configuration. Only activate, if the dynamic "
-"configuration cannot finish before a forced activation. Default is 'False'."
-msgstr ""
-"通常、発見されたサービスのないホストは、監視の価値が低く、誤ったアラートを発"
-"する可能性があります。起動が強制されたり、動的設定が強制的に中断されたりした"
-"場合、発見されたサービスのないホストが存在するかもしれません。このオプション"
-"を使用すると、ホストはhidden属性を受け取り、動的設定によってサービスの発見が"
-"終了するまで監視されなくなります。強制起動の前に動的構成が終了できない場合に"
-"のみ起動します。"
 
 msgid "U"
 msgstr "U"
@@ -81231,10 +80692,6 @@ msgstr "ユーザー"
 msgid "User %s does not exist."
 msgstr "%s は存在しません。"
 
-#, python-format
-msgid "User %s of DCD connection was modified"
-msgstr "DCD接続のユーザー%sが変更されました"
-
 #, fuzzy
 msgid "User & Password"
 msgstr "ユーザーパスワード"
@@ -82149,12 +81606,6 @@ msgstr "ポート照会時にサーバ証明書を検証する"
 msgid "Validity"
 msgstr "有効性"
 
-msgid "Validity of missing data"
-msgstr "欠測データの有効性"
-
-msgid "Validity of outdated data"
-msgstr "古いデータの有効性"
-
 msgid "Value"
 msgstr "値"
 
@@ -82620,9 +82071,6 @@ msgstr "仮想マシン(ESXなど)のハートビートステータス"
 msgid "Virtual machine snapshots"
 msgstr "仮想マシンのスナップショット"
 
-msgid "Virtual machines may take a few minutes to show up."
-msgstr "仮想マシンが表示されるまで数分かかる場合があります。"
-
 #, fuzzy
 msgid "Virtual memory"
 msgstr "仮想メモリサイズ"
@@ -82887,9 +82335,6 @@ msgstr "接続を待機しています"
 msgid "Waiting containers"
 msgstr "待機中コンテナ"
 
-msgid "Waiting for completion of previous run"
-msgstr "前回の実行が完了するのを待っています"
-
 msgid "Waiting for discovery"
 msgstr "検出を待っています"
 
@@ -82912,9 +82357,6 @@ msgstr "レプリケーションの開始を待機しています"
 
 msgid "Waiting to acquire lock"
 msgstr "ロックを取得するのを待っています"
-
-msgid "Waiting..."
-msgstr "待機..."
 
 msgid "Waitlocks"
 msgstr "ウェイトロック"
@@ -84285,17 +83727,6 @@ msgid ""
 msgstr ""
 "イベントコンソールでSNMPトラップを処理する場合は、着信トラップを復号化するた"
 "めの資格情報を構成する必要があります。"
-
-msgid ""
-"Whenever Checkmk creates, modifies or deletes hosts via this connection, it "
-"will only consider hosts that receive piggyback data from hosts with names "
-"matching one of these regular expressions. Please note: The attribution of "
-"piggyback data to existing hosts is not affected by this setting."
-msgstr ""
-"Checkmkがこの接続経由でホストを作成、変更、または削除する際、この設定では、こ"
-"れらの正規表現のいずれかと一致する名前を持つホストからピギーバックデータを受"
-"信するホストのみが対象となります。ご注意ください：既存のホストへのピギーバッ"
-"クデータの割り当てはこの設定の影響を受けません。"
 
 #, python-format
 msgid ""
@@ -88071,9 +87502,6 @@ msgstr "ファイルシステム"
 msgid "files"
 msgstr "ファイル"
 
-msgid "finished for "
-msgstr "終了 "
-
 msgid "firing"
 msgstr "発射"
 
@@ -88116,9 +87544,6 @@ msgstr "強制コマンドのみ"
 
 msgid "forecast trend only"
 msgstr "予測トレンドのみ"
-
-msgid "found "
-msgstr "発見 "
 
 msgid "fourth week"
 msgstr "4週目"
@@ -93230,6 +92655,587 @@ msgstr ""
 msgid ""
 "You can still access it later via Help > Learning Checkmk > Welcome page"
 msgstr ""
+
+#~ msgid " batch is"
+#~ msgstr " 一括"
+
+#~ msgid " batches are"
+#~ msgstr " 一括"
+
+#~ msgid " changes"
+#~ msgstr " 変更"
+
+#~ msgid " current cycle to complete"
+#~ msgstr " 現在のサイクルを完了する"
+
+#~ msgid " next cycle start"
+#~ msgstr " 次のサイクル開始"
+
+#~ msgid " seconds remaining)"
+#~ msgstr " 秒 残)"
+
+#~ msgid " waiting for the "
+#~ msgstr " 待ち "
+
+#, python-format
+#~ msgid "# %s - cycle details"
+#~ msgstr "#%s - サイクルの詳細"
+
+#~ msgid "(finished)"
+#~ msgstr "(終了しました)"
+
+#~ msgid "(running)"
+#~ msgstr "(稼働中)"
+
+#~ msgid ", errors occurred"
+#~ msgstr "、エラーが発生しました"
+
+#~ msgid "-"
+#~ msgstr "-"
+
+#~ msgid ""
+#~ "<a href='wato.py?"
+#~ "mode=edit_ruleset&varname=piggyback_translation'>Piggyback translations</"
+#~ "a> are performed before the piggyback connector creates hosts. Use this, "
+#~ "for example, in a setup with multiple Docker nodes to prefix containers "
+#~ "with the name of the corresponding Docker node. Otherwise, name "
+#~ "collisions can occur if containers with the same name exist on more than "
+#~ "one Docker Node."
+#~ msgstr ""
+#~ "<a href='wato.py?mode=edit_ruleset&varname=piggyback_translation'>ピギー"
+#~ "バック翻訳</a>はpiggybackコネクタがホストを作成する前に実行されます。これ"
+#~ "は、例えば複数のDockerノードがあるセットアップで、コンテナの前に対応する"
+#~ "Dockerノードの名前を付けるために使用します。そうしないと同じ名前のコンテナ"
+#~ "が複数のDockerノードに存在する場合、名前の衝突が発生する可能性があります。"
+
+#~ msgid ""
+#~ "<a href='wato.py?"
+#~ "mode=edit_ruleset&varname=piggyback_translation'>Piggyback translations</"
+#~ "a>are performed before the piggyback connector creates hosts. Use this, "
+#~ "for example, in a setup with multiple Docker nodes to prefix containers "
+#~ "with the name of the corresponding Docker node. Otherwise, name "
+#~ "collisions can occur if containers with the same name exist on more than "
+#~ "one Docker node."
+#~ msgstr ""
+#~ "<a href='wato.py?mode=edit_ruleset&varname=piggyback_translation'>ピギー"
+#~ "バック翻訳</a>はpiggybackコネクタがホストを作成する前に実行されます。これ"
+#~ "は、例えば複数のDockerノードが存在する環境では、コンテナ名に対応するDocker"
+#~ "ノード名を接頭辞として付けるためにこれを使用します。そうしないと、複数の"
+#~ "Dockerノードに同じ名前のコンテナが存在する場合、名前衝突が発生する可能性が"
+#~ "あります。"
+
+#~ msgid "About the processing cycle"
+#~ msgstr "処理サイクルについて"
+
+#~ msgid "Activate changes"
+#~ msgstr "変更をアクティブにする"
+
+#~ msgid "Activate changes timeout"
+#~ msgstr "変更の有効化タイムアウト"
+
+#~ msgid "Activating changes: "
+#~ msgstr "変更のアクティブ化: "
+
+#, python-format
+#~ msgid "Added the connection '%s'"
+#~ msgstr "接続 %s を追加"
+
+#~ msgid "An exception occurred"
+#~ msgstr "例外が発生しました"
+
+#~ msgid "Automatically delete hosts without piggyback data"
+#~ msgstr "ピギーバックデータなしでホストを自動的に削除します"
+
+#~ msgid "Batch ID"
+#~ msgstr "バッチID"
+
+#~ msgid "Batches"
+#~ msgstr "バッチ"
+
+#, python-format
+#~ msgid "Can't contact the remote site using '%s'"
+#~ msgstr "%sを使用してリモートサイトに接続できません"
+
+#~ msgid "Changed DCD global settings"
+#~ msgstr "DCDグローバル設定の変更"
+
+#~ msgid "Changes activated on"
+#~ msgstr "有効化された変更点"
+
+#~ msgid "Completion"
+#~ msgstr "完了"
+
+#, python-format
+#~ msgid "Connection '%s' isn't found: consider activating changes"
+#~ msgstr "接続 '%s' が見つかりません：変更の適用をしてください"
+
+#~ msgid "Connection is disabled"
+#~ msgstr "接続が無効になっています"
+
+#, python-format
+#~ msgid "Connection representation: %s"
+#~ msgstr "接続表現: %s"
+
+#~ msgid "Connector: Adding host changes to queue"
+#~ msgstr "コネクター：ホストの変更をキューに追加する"
+
+#, python-format
+#~ msgid "Connector: Collecting piggyback hosts on site  \"%s\""
+#~ msgstr "コネクター：サイト \"%s\"でピギーバックホストを習得しています"
+
+#~ msgid "Cooldown time after processing cycle"
+#~ msgstr "処理サイクル後のクールダウン時間"
+
+#~ msgid "Copy connection value representation to clipboard"
+#~ msgstr "接続値の表現をクリップボードにコピーする"
+
+#, python-format
+#~ msgid "Could not reload DCD: %s. See web.log for further information."
+#~ msgstr ""
+#~ "DCDをリロードできませんでした: %s 。詳細については、web.logを参照してくだ"
+#~ "さい。"
+
+#~ msgid ""
+#~ "Could not reload DCD: It is not running. See web.log for further "
+#~ "information."
+#~ msgstr ""
+#~ "DCDをリロードできませんでした：詳細については、web.logを参照してください。"
+
+#, python-format
+#~ msgid "Created: %d, modified: %d, deleted: %d"
+#~ msgstr "作成：%d、変更：%d、削除：%d"
+
+#~ msgid "Current DCD state."
+#~ msgstr "現在のDCD の状態。"
+
+#, python-format
+#~ msgid ""
+#~ "Cycle %d not found, the information is expired, please return back to "
+#~ "select a cycle"
+#~ msgstr ""
+#~ "サイクル %d が見つかりません。情報が期限切れです。サイクルを選択するために"
+#~ "戻ってください"
+
+#~ msgid "Cycle id"
+#~ msgstr "サイクルID"
+
+#~ msgid "Cycle not found"
+#~ msgstr "サイクルが見つかりません"
+
+#~ msgid ""
+#~ "Cycle not found, the information is expired, please return back to select "
+#~ "a cycle"
+#~ msgstr ""
+#~ "サイクルIDが見つかりません。情報の有効期限が切れています。サイクルを選択す"
+#~ "るために戻ってください"
+
+#~ msgid "Cycle steps"
+#~ msgstr "サイクルステップ"
+
+#~ msgid "Cycles"
+#~ msgstr "サイクル"
+
+#, python-format
+#~ msgid "DCD Manager: Fetching piggyback hosts from site \"%s\""
+#~ msgstr "DCDマネージャ：サイト\"%s\"からピギーバックホストを取得しています"
+
+#~ msgid "DCD batch"
+#~ msgstr "DCDバッチ"
+
+#~ msgid "DCD batch history"
+#~ msgstr "DCDバッチ履歴"
+
+#~ msgid "DCD batches"
+#~ msgstr "DCDバッチ"
+
+#~ msgid "DCD global settings"
+#~ msgstr "DCDグローバル設定"
+
+#~ msgid "DCD work state"
+#~ msgstr "DCDワーク状態"
+
+#~ msgid ""
+#~ "Delete the hosts created by this connection whose piggyback data is no "
+#~ "longer present."
+#~ msgstr ""
+#~ "この接続によって作成され他ホストのうち、ピギーバックデータが存在しないホス"
+#~ "トを削除します。"
+
+#~ msgid "Do not monitor hosts without discovered services"
+#~ msgstr "検出サービスのないホストを監視しない"
+
+#~ msgid "Dynamic configuration"
+#~ msgstr "動的構成"
+
+#~ msgid "Dynamic configuration logging"
+#~ msgstr "動的構成ロギング"
+
+#~ msgid "Exclude \"Activate changes\" for time ranges"
+#~ msgstr "時間範囲の\"変更のアクティブ化\"を除外する"
+
+#~ msgid "Execution has been triggered"
+#~ msgstr "実行がトリガーされました"
+
+#~ msgid "Execution history"
+#~ msgstr "実行履歴"
+
+#, python-format
+#~ msgid "Execution history of %s"
+#~ msgstr "%sの実行履歴"
+
+#, python-format
+#~ msgid "Execution history of this %s"
+#~ msgstr "この %s の実行履歴"
+
+#, python-format
+#~ msgid "Export this %s for API"
+#~ msgstr "%s をAPI用にエクスポートする"
+
+#, python-format
+#~ msgid "Failed to execute DCD connection (%s)"
+#~ msgstr "DCD接続の実行に失敗しました(%s)"
+
+#, python-format
+#~ msgid "Failed to get the status from DCD (%s)"
+#~ msgstr "DCDからステータスを取得できませんでした(%s)"
+
+#~ msgid "Host manager settings"
+#~ msgstr "ホスト管理設定"
+
+#~ msgid "Host processing"
+#~ msgstr "ホスト処理"
+
+#~ msgid "Host processing: "
+#~ msgstr "ホストプロセス: "
+
+#, python-format
+#~ msgid "Hosts assigned with this %s"
+#~ msgstr "この %s が割り当てられたホスト"
+
+#, python-format
+#~ msgid "Hosts: %d created, %d modified, %d deleted"
+#~ msgstr "ホスト: %d が作成され、 %d が変更され、 %d が削除されました"
+
+#, python-format
+#~ msgid "Invalid DCD command: %r"
+#~ msgstr "無効なDCDコマンド: %r"
+
+#~ msgid "Manage dynamic configuration"
+#~ msgstr "動的構成の管理"
+
+#~ msgid "Manage the Dynamic configuration connections"
+#~ msgstr "動的な構成接続を管理する"
+
+#, fuzzy
+#~ msgid "Manage the dynamic configuration connections"
+#~ msgstr "動的な構成接続を管理する"
+
+#, python-format
+#~ msgid "Manually execute this %s"
+#~ msgstr "この %s を手動で実行する"
+
+#~ msgid "Maximal number of hosts per bulk discovery"
+#~ msgstr "一括検出あたりの最大ホスト数"
+
+#~ msgid "Next cycle"
+#~ msgstr "次のサイクル"
+
+#~ msgid "No next cycle available"
+#~ msgstr "次のサイクルは利用できません"
+
+#~ msgid "No previous cycle available"
+#~ msgstr "以前のサイクルは利用できません"
+
+#~ msgid "No waiting batches"
+#~ msgstr "待機中のバッチはありません"
+
+#~ msgid "Nothing changed"
+#~ msgstr "何も変わっていません"
+
+#~ msgid "Nothing logged"
+#~ msgstr "何も記録されません"
+
+#, fuzzy
+#~ msgid ""
+#~ "Only care about hosts that receive piggyback data from hosts whose names "
+#~ "match one of these regular expressions."
+#~ msgstr ""
+#~ "名前がこれらの正規表現の1つと一致するホストからピギーバックデータを受信す"
+#~ "るホストのみを対象とします。"
+
+#~ msgid ""
+#~ "Optionally, restrict host creation using regular expressions."
+#~ "<br><b>Important:</b><br>This only applies to hosts created by this "
+#~ "connection, not the monitoring host ('Dummy host').<br><br>"
+#~ msgstr ""
+#~ "オプションで、正規表現を使ってホストの作成を制限します。<br><b>重要:</"
+#~ "b><br>これはこの接続によって作成されたホストにのみ適用され、監視ホスト"
+#~ "('Dummy host')には適用されません。<br><br>"
+
+#~ msgid "Piggyback creation options"
+#~ msgstr "ピギーバック作成オプション"
+
+#~ msgid "Piggyback data"
+#~ msgstr "ピギーバックデータ"
+
+#~ msgid "Please specify at least one \"Piggyback creation option\""
+#~ msgstr "\"ピギーバック作成オプション\"を1つ以上指定してください"
+
+#~ msgid "Prevent host deletion after initialization"
+#~ msgstr "初期化後のホストの削除を防ぐ"
+
+#~ msgid "Previous cycle"
+#~ msgstr "前のサイクル"
+
+#~ msgid "REST API communication"
+#~ msgstr "REST API通信"
+
+#~ msgid "Recent processing batches"
+#~ msgstr "最近の処理バッチ"
+
+#~ msgid "Recent processing cycles"
+#~ msgstr "最近の加工サイクル"
+
+#, python-format
+#~ msgid "Removed the connection '%s'"
+#~ msgstr "接続を削除しました '%s'"
+
+#~ msgid "Restrict source hosts"
+#~ msgstr "ソースホストを制限する"
+
+#~ msgid "Service discovery and activation: "
+#~ msgstr "サービスディスカバリとアクティベーション: "
+
+#~ msgid "Service discovery ran on"
+#~ msgstr "サービスディスカバリ実行"
+
+#~ msgid "Service discovery timeout"
+#~ msgstr "サービスディスカバリ タイムアウト"
+
+#~ msgid "Service discovery: "
+#~ msgstr "サービスディスカバリ: "
+
+#~ msgid "Show all cycles"
+#~ msgstr "すべてのサイクルを表示"
+
+#~ msgid "Show cycle details"
+#~ msgstr "サイクルの詳細を表示"
+
+#~ msgid "Skipped"
+#~ msgstr "スキップ"
+
+#~ msgid ""
+#~ "Specify the site where you want this connector to run. Only this site "
+#~ "will process the piggyback data."
+#~ msgstr ""
+#~ "このコネクタを実行するサイトを指定します。このサイトのみがピギーバック・"
+#~ "データを処理します。"
+
+#~ msgid "Step"
+#~ msgstr "ステップ"
+
+#~ msgid "Step has been finished"
+#~ msgstr "ステップが終了しました"
+
+#~ msgid "Step has been initialized"
+#~ msgstr "ステップが初期化されました"
+
+#~ msgid "Step has been started"
+#~ msgstr "ステップが開始されました"
+
+#~ msgid "Steps"
+#~ msgstr "ステップ"
+
+#, python-format
+#~ msgid "Still no data in '%s'"
+#~ msgstr "'%s'にまだデータがありません"
+
+#, python-format
+#~ msgid "The connection %r does not exist"
+#~ msgstr "接続 %r が存在しません"
+
+#~ msgid ""
+#~ "The dynamic configuration will interrupt the service discovery and force "
+#~ "an activation after this time. The time is counted from the start of the "
+#~ "processing cycle. This is useful to ensure that changes are activated in "
+#~ "a timely manner and allow changes to the config, which will then be "
+#~ "activated as well. Default is 10 minutes."
+#~ msgstr ""
+#~ "動的構成は、この時間経過後にサービス検出を中断し、強制的にアクティベーショ"
+#~ "ンを実行します。時間は処理サイクルの開始時からカウントされます。これによ"
+#~ "り、変更が適時にアクティベーションされ、構成の変更も同様にアクティベーショ"
+#~ "ンされるようにします。デフォルトは10分です。"
+
+#~ msgid ""
+#~ "The interval the connection will be executed to check the available "
+#~ "piggyback and update the configuration."
+#~ msgstr ""
+#~ "使用可能なピギーバックを確認し、構成を更新するために接続が実行される間隔。"
+
+#~ msgid ""
+#~ "The maximum time for an individual bulk discovery operation. After this, "
+#~ "the processing cycle will continue irregardless of the outcome of the "
+#~ "bulk discovery. Default is 1 minute."
+#~ msgstr ""
+#~ "個々のバッチ検出操作の最大実行時間。この時間経過後は、バッチ検出の結果に関"
+#~ "わらず処理サイクルが継続されます。デフォルトは1分です。"
+
+#, fuzzy
+#~ msgid ""
+#~ "The maximum time the dynamic configuration will wait for 'activate "
+#~ "changes' to be completed. After this, the processing cycle will continue "
+#~ "or finish. Default is 2 minutes."
+#~ msgstr ""
+#~ "動的構成がアクティブ化変更の完了を待つ最大時間です。この時間が経過すると、"
+#~ "処理サイクルは継続または終了します。デフォルトは2分です。"
+
+#, fuzzy
+#~ msgid "The piggyback mechanism"
+#~ msgstr "ピギーバックメカニズム"
+
+#~ msgid ""
+#~ "The services are discovered for a bulk of hosts for higher performance "
+#~ "versus individual service discovery. A too large number here can extend "
+#~ "the cycle time of the dynamic configuration as an activation can only be "
+#~ "forced, when no service discovery is running. Decrease this value, if "
+#~ "long service discoveries block the forced activation. Default is 50 and "
+#~ "optimized for the hosts typically being handled by dynamic configuration, "
+#~ "where no network communication happens."
+#~ msgstr ""
+#~ "サービスは、個々のサービス検出に比べて高いパフォーマンスを実現するため、多"
+#~ "数のホストに対して一括で検出されます。この値が過度に大きい場合、動的構成の"
+#~ "サイクル時間が延長される可能性があります。これは、サービス検出が実行されて"
+#~ "いない場合にのみ強制アクティベーションを実行できるためです。サービス検出が"
+#~ "長時間かかり、強制アクティベーションをブロックする場合、この値を減少させて"
+#~ "ください。デフォルト値は50で、動的構成で通常処理されるホスト向けに最適化さ"
+#~ "れており、ネットワーク通信が発生しない環境を想定しています。"
+
+#~ msgid ""
+#~ "This connector can be used to automatically create hosts based on "
+#~ "piggyback data."
+#~ msgstr ""
+#~ "このコネクタを使用して、ピギーバックデータに基づいてホストを自動的に作成で"
+#~ "きます。"
+
+#, fuzzy, python-format
+#~ msgid ""
+#~ "This setting decides which types of messages to log into the log of the "
+#~ "Dynamic Configuration Daemon (%s)."
+#~ msgstr ""
+#~ "この設定は、動的構成デーモン (%s)のログにログインするメッセージのタイプを"
+#~ "決定します。"
+
+#~ msgid ""
+#~ "Time between the end of one processing cycle and the start of the next "
+#~ "one. You can increase the cooldown time to throttle the processing of new "
+#~ "data. This can reduce the load of the dynamic configuration on your "
+#~ "system. Default is 30 seconds."
+#~ msgstr ""
+#~ "1つの処理サイクルの終了から次の処理サイクルの開始までの時間。このクールダ"
+#~ "ウン時間を延長することで、新しいデータの処理を制限できます。これにより、シ"
+#~ "ステムにおける動的構成の負荷を軽減できます。デフォルトは30秒です。"
+
+#~ msgid "Time range to continue to consider outdated piggyback data as valid."
+#~ msgstr "古いピギーバックデータを有効なものだとみなしつづける時間範囲。"
+
+#~ msgid ""
+#~ "Time range to keep hosts when piggyback source only sends piggyback data "
+#~ "for other hosts."
+#~ msgstr ""
+#~ "ピギーバック元が他のホストのピギーバックデータのみを送信する間、ホストを保"
+#~ "持する時間範囲。"
+
+#~ msgid ""
+#~ "Time range to prevent host deletion after site startup, e.g. when booting "
+#~ "the Checkmk server. This is caused by the 'tmp' directory which needs "
+#~ "more time to initialize and can result in missing piggyback information "
+#~ "from some sources."
+#~ msgstr ""
+#~ "Checkmk サーバの起動時など、サイト起動後にホストが削除されないようにするた"
+#~ "めの時間範囲。これは'tmp'ディレクトリが初期化により多くの時間を必要とし、"
+#~ "いくつかのソースからのピギーバック情報が欠落することが原因です。"
+
+#~ msgid "Time until forced activation of changes after cycle start"
+#~ msgstr "サイクル開始後、変更が強制的にアクティブ化されるまでの時間"
+
+#, fuzzy
+#~ msgid ""
+#~ "To set the value of a connection using the REST API, you need to set the "
+#~ "<tt>value_raw</tt> field. The value of this field is individual for each "
+#~ "connection set. To help you understand what kind of data structure you "
+#~ "need to provide, this connection export mechanism is showing you the "
+#~ "value you need to set for a given connection. The value needs to be a "
+#~ "string representation of a compatible Python data structure."
+#~ msgstr ""
+#~ "REST API を使用してルールの値を設定するには<tt>value_raw</tt>フィールドを"
+#~ "設定する必要があります。このフィールドの値は、各接続設定に対して個別に設定"
+#~ "されます。どのようなデータ構造を提供するべきか理解する助けとして、このエク"
+#~ "スポート機能は与えられたルール設定に記載すべき値を示しています。この値は、"
+#~ "互換性のあるPythonデータ構造の文字列表現である必要があります。"
+
+#~ msgid "Toggle log entries"
+#~ msgstr "ログエントリを切り替えます"
+
+#~ msgid "Total duration: "
+#~ msgstr "総所要時間: "
+
+#~ msgid "Total hosts: "
+#~ msgstr "総ホスト数: "
+
+#, fuzzy
+#~ msgid ""
+#~ "Typically hosts without discovered services bear little value for "
+#~ "monitoring and can cause false alerts. In case an activation is forced or "
+#~ "the dynamic configuration is forcefully interrupted, there might be hosts "
+#~ "without discovered services. With this option, hosts will receive a "
+#~ "hidden attribute so that they will not be monitored until the service "
+#~ "discovery has been executed by the dynamic configuration. Only activate, "
+#~ "if the dynamic configuration cannot finish before a forced activation. "
+#~ "Default is 'False'."
+#~ msgstr ""
+#~ "通常、発見されたサービスのないホストは、監視の価値が低く、誤ったアラートを"
+#~ "発する可能性があります。起動が強制されたり、動的設定が強制的に中断されたり"
+#~ "した場合、発見されたサービスのないホストが存在するかもしれません。このオプ"
+#~ "ションを使用すると、ホストはhidden属性を受け取り、動的設定によってサービス"
+#~ "の発見が終了するまで監視されなくなります。強制起動の前に動的構成が終了でき"
+#~ "ない場合にのみ起動します。"
+
+#, python-format
+#~ msgid "User %s of DCD connection was modified"
+#~ msgstr "DCD接続のユーザー%sが変更されました"
+
+#~ msgid "Validity of missing data"
+#~ msgstr "欠測データの有効性"
+
+#~ msgid "Validity of outdated data"
+#~ msgstr "古いデータの有効性"
+
+#~ msgid "Virtual machines may take a few minutes to show up."
+#~ msgstr "仮想マシンが表示されるまで数分かかる場合があります。"
+
+#~ msgid "Waiting for completion of previous run"
+#~ msgstr "前回の実行が完了するのを待っています"
+
+#~ msgid "Waiting..."
+#~ msgstr "待機..."
+
+#~ msgid ""
+#~ "Whenever Checkmk creates, modifies or deletes hosts via this connection, "
+#~ "it will only consider hosts that receive piggyback data from hosts with "
+#~ "names matching one of these regular expressions. Please note: The "
+#~ "attribution of piggyback data to existing hosts is not affected by this "
+#~ "setting."
+#~ msgstr ""
+#~ "Checkmkがこの接続経由でホストを作成、変更、または削除する際、この設定で"
+#~ "は、これらの正規表現のいずれかと一致する名前を持つホストからピギーバック"
+#~ "データを受信するホストのみが対象となります。ご注意ください：既存のホストへ"
+#~ "のピギーバックデータの割り当てはこの設定の影響を受けません。"
+
+#~ msgid "finished for "
+#~ msgstr "終了 "
+
+#~ msgid "found "
+#~ msgstr "発見 "
 
 #~ msgid "Allows access to the SaaS onboarding."
 #~ msgstr "SaaSオンボーディングへのアクセスを許可する。"

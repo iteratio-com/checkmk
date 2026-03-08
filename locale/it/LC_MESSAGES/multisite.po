@@ -172,18 +172,6 @@ msgstr " e %s '%s'"
 msgid " and the %s '%s'."
 msgstr " e il %s \"%s\"."
 
-msgid " batch is"
-msgstr " lotto è"
-
-msgid " batches are"
-msgstr " lotti sono"
-
-msgid " changes"
-msgstr " modifiche"
-
-msgid " current cycle to complete"
-msgstr " completamento del ciclo corrente"
-
 #, python-format
 msgid " for %d of %d recipients."
 msgstr " per %d di %d destinatari."
@@ -209,9 +197,6 @@ msgstr " più grande di"
 msgid " left in your free trial"
 msgstr " lasciato in prova gratuita"
 
-msgid " next cycle start"
-msgstr " inizio del prossimo ciclo"
-
 msgid " next week"
 msgstr " la prossima settimana"
 
@@ -229,14 +214,8 @@ msgstr " o "
 msgid " or int"
 msgstr " o int"
 
-msgid " seconds remaining)"
-msgstr " secondi rimanenti)"
-
 msgid " to:"
 msgstr " a:"
-
-msgid " waiting for the "
-msgstr " in attesa del "
 
 #, fuzzy, python-brace-format
 msgid " {iofile.name} {size_text} {io_text}"
@@ -262,10 +241,6 @@ msgstr ""
 "scoperta, perché i processi sono istanziati per ogni gruppo corrispondente. "
 "Per questo motivo è necessario applicare i delimitatori al di fuori del "
 "gruppo."
-
-#, fuzzy, python-format
-msgid "# %s - cycle details"
-msgstr "# %s - Dettagli del ciclo"
 
 #, fuzzy, python-format
 msgid "#%s of unknown rule set %r"
@@ -1007,9 +982,6 @@ msgstr "(disattivato)"
 msgid "(don't send notifications to Event Console)"
 msgstr "(non inviare notifiche a Event Console)"
 
-msgid "(finished)"
-msgstr "(Terminato)"
-
 msgid "(ignore)"
 msgstr "(ignorare)"
 
@@ -1063,9 +1035,6 @@ msgstr "(sovrascrive <b>username</b>)"
 msgid "(please select)"
 msgstr "(per favore selezionare)"
 
-msgid "(running)"
-msgstr "(in esecuzione)"
-
 msgid "(select target folder)"
 msgstr "(selezionare la cartella di destinazione)"
 
@@ -1106,9 +1075,6 @@ msgstr ""
 msgid ", elapsed cache lifespan: %s"
 msgstr ", durata della cache trascorsa: %s"
 
-msgid ", errors occurred"
-msgstr ", errori rilevati"
-
 msgid ", first match is a cancelling match"
 msgstr "la prima partita è una partita di annullamento"
 
@@ -1122,9 +1088,6 @@ msgstr "nessun dato è stato ricevuto negli ultimi %.1f periodi di controllo"
 
 msgid ", the first match skips this rule pack"
 msgstr "la prima partita salta questo pacchetto di regole"
-
-msgid "-"
-msgstr "-"
 
 msgid "-.-- %"
 msgstr "-.-- %"
@@ -1404,39 +1367,6 @@ msgstr "< Rimuovi"
 
 msgid "<< Remove all"
 msgstr "<< Rimuovi tutti"
-
-msgid ""
-"<a href='wato.py?mode=edit_ruleset&varname=piggyback_translation'>Piggyback "
-"translations</a> are performed before the piggyback connector creates hosts. "
-"Use this, for example, in a setup with multiple Docker nodes to prefix "
-"containers with the name of the corresponding Docker node. Otherwise, name "
-"collisions can occur if containers with the same name exist on more than one "
-"Docker Node."
-msgstr ""
-"Le <a href='wato.py?"
-"mode=edit_ruleset&varname=piggyback_translation'>Traduzioni piggyback</a> "
-"sono eseguite prima che il connettore piggyback crei gli host. Utilizzale, "
-"ad esempio, in una configurazione con più nodi Docker per anteporre ai "
-"containers il nome del nodo Docker corrispondente. Altrimenti, possono "
-"verificarsi collisioni di nomi se dei containers con lo stesso nome esistono "
-"su più di un nodo Docker."
-
-#, fuzzy
-msgid ""
-"<a href='wato.py?mode=edit_ruleset&varname=piggyback_translation'>Piggyback "
-"translations</a>are performed before the piggyback connector creates hosts. "
-"Use this, for example, in a setup with multiple Docker nodes to prefix "
-"containers with the name of the corresponding Docker node. Otherwise, name "
-"collisions can occur if containers with the same name exist on more than one "
-"Docker node."
-msgstr ""
-"Le <a href='wato.py?"
-"mode=edit_ruleset&varname=piggyback_translation'>Traduzioni piggyback</a> "
-"sono eseguite prima che il connettore piggyback crei gli host. Utilizzale, "
-"ad esempio, in una configurazione con più nodi Docker per anteporre ai "
-"containers il nome del nodo Docker corrispondente. Altrimenti, possono "
-"verificarsi collisioni di nomi se dei containers con lo stesso nome esistono "
-"su più di un nodo Docker."
 
 msgid ""
 "<b>Beware:</b> Deleting this key means that you will not be able to create "
@@ -3227,9 +3157,6 @@ msgstr "Interrompere il cambiamento."
 msgid "About Checkmk"
 msgstr "Informazioni su Checkmk"
 
-msgid "About the processing cycle"
-msgstr "Relativi al ciclo di lavorazione"
-
 msgid "Absolut level for total number of used file descriptors"
 msgstr "Livello assoluto per il numero totale di descrittori di file usati"
 
@@ -3749,9 +3676,6 @@ msgstr ""
 msgid "Activate automatic locking of user accounts"
 msgstr "Attivare il blocco automatico degli account utente"
 
-msgid "Activate changes"
-msgstr "Attivare le modifiche"
-
 msgid "Activate changes finished"
 msgstr "Attivare le modifiche finite"
 
@@ -3768,9 +3692,6 @@ msgstr "Attivare lo Scheduler delle modifiche"
 #, fuzzy
 msgid "Activate changes scheduler started"
 msgstr "Attivare le modifiche Scheduler avviato"
-
-msgid "Activate changes timeout"
-msgstr "Timeout per l'attivazione delle modifiche"
 
 msgid "Activate configuration"
 msgstr "Attivare la configurazione"
@@ -3848,9 +3769,6 @@ msgstr "Cambiamenti attivati da %s."
 
 msgid "Activating"
 msgstr "Attivare"
-
-msgid "Activating changes: "
-msgstr "Attivazione delle modifiche: "
 
 msgid "Activation"
 msgstr "Attivazione"
@@ -4867,10 +4785,6 @@ msgstr "Aggiunta o modificata connessione %s"
 #, python-format
 msgid "Added the %s '%s'"
 msgstr "Aggiunto il %s '%s'"
-
-#, python-format
-msgid "Added the connection '%s'"
-msgstr "Aggiunta la connessione '%s'"
 
 msgid "Added to stack"
 msgstr "Aggiunto alla pila"
@@ -6897,10 +6811,6 @@ msgstr "Si è verificato un errore durante l'autenticazione SaaS: "
 msgid "An error occurred during the last update"
 msgstr "Si è verificato un errore durante l'ultimo aggiornamento"
 
-#, fuzzy
-msgid "An exception occurred"
-msgstr "Si è verificata un'eccezione"
-
 #, fuzzy, python-format
 msgid "An exception occurred: %s"
 msgstr "Si è verificata un'eccezione: %s"
@@ -8259,9 +8169,6 @@ msgstr "Creare automaticamente agenti di monitoraggio"
 
 #, fuzzy
 msgid "Automatically delete hosts with no recent OpenTelemetry data"
-msgstr "Elimina automaticamente gli host senza dati di piggyback"
-
-msgid "Automatically delete hosts without piggyback data"
 msgstr "Elimina automaticamente gli host senza dati di piggyback"
 
 msgid "Automatically detects changes in the formular and fetches new data"
@@ -10073,16 +9980,8 @@ msgstr "Impostazioni di base"
 msgid "BasicAuth settings (optional)"
 msgstr "Impostazioni di BasicAuth (opzionale)"
 
-#, fuzzy
-msgid "Batch ID"
-msgstr "ID del percorso"
-
 msgid "Batch Requests/sec"
 msgstr "Richieste batch/sec"
-
-#, fuzzy
-msgid "Batches"
-msgstr "Abbinamenti"
 
 msgid "Battery Levels"
 msgstr "Livelli della batteria"
@@ -12168,10 +12067,6 @@ msgstr "Non si può usare un ID tag vuoto con una sola scelta."
 msgid "Can still edit"
 msgstr "Può ancora modificare"
 
-#, fuzzy, python-format
-msgid "Can't contact the remote site using '%s'"
-msgstr "Impossibile connettersi al sito remoto: %s"
-
 #, python-format
 msgid "Can't parse version %r"
 msgstr "Impossibile caricare l'icona: %r"
@@ -12819,10 +12714,6 @@ msgstr "Cambiato %s da %s a %s"
 msgid "Changed Configuration variable %s to %s."
 msgstr "Cambiata la variabile di configurazione %s in %s."
 
-#, fuzzy
-msgid "Changed DCD global settings"
-msgstr "Modifica dell'impostazione globale"
-
 #, python-format
 msgid "Changed alert handler rule %d"
 msgstr "Modificata regola di gestione degli avvisi %d"
@@ -12927,10 +12818,6 @@ msgstr "Cambiata la variabile di configurazione specifica del sito %s in %s."
 
 msgid "Changes"
 msgstr "Cambiamenti"
-
-#, fuzzy
-msgid "Changes activated on"
-msgstr "Non è mai stato attivato"
 
 msgid "Changes since last dump"
 msgstr "Cambiamenti dall'ultimo dump"
@@ -15271,9 +15158,6 @@ msgstr "Albero completo"
 msgid "Complete variable list (for testing)"
 msgstr "Elenco completo delle variabili (per i test)"
 
-msgid "Completion"
-msgstr "Completamento"
-
 #, fuzzy
 msgid "Completion time over threshold occurred"
 msgstr "Si è verificato un tempo di completamento oltre la soglia"
@@ -16177,10 +16061,6 @@ msgstr ""
 msgid "Connection"
 msgstr "Connessione"
 
-#, fuzzy, python-format
-msgid "Connection '%s' isn't found: consider activating changes"
-msgstr "Commento per l'attivazione delle modifiche"
-
 msgid "Connection ID"
 msgstr "ID della connessione"
 
@@ -16203,9 +16083,6 @@ msgid "Connection established. The connection settings seem to be OK."
 msgstr ""
 "Connessione stabilita. Le impostazioni di connessione sembrano essere ok."
 
-msgid "Connection is disabled"
-msgstr "La connessione è disabilitata"
-
 #, fuzzy
 msgid "Connection lost occurred"
 msgstr "Connessione persa si è verificata"
@@ -16216,10 +16093,6 @@ msgstr "Nome della connessione"
 #, fuzzy
 msgid "Connection options"
 msgstr "Durata della connessione"
-
-#, fuzzy, python-format
-msgid "Connection representation: %s"
-msgstr "Rappresentazione della regola: %s"
 
 msgid "Connection settings"
 msgstr "Impostazioni di connessione"
@@ -16333,16 +16206,9 @@ msgstr "Prese del connettore"
 msgid "Connector type"
 msgstr "Tipo di connettore"
 
-msgid "Connector: Adding host changes to queue"
-msgstr ""
-
 #, fuzzy, python-format
 msgid "Connector: Collecting metric backend hosts on site  \"%s\""
 msgstr "Fase 1.1: Recupero dal sito \"%s\""
-
-#, python-format
-msgid "Connector: Collecting piggyback hosts on site  \"%s\""
-msgstr ""
 
 #, fuzzy
 msgid "Connectors"
@@ -16678,10 +16544,6 @@ msgstr "Convertire %s in maiuscolo"
 msgid "Cooldown before retrying failed remote or local delivery"
 msgstr "Cooldown prima di riprovare una consegna remota o locale fallita"
 
-#, fuzzy
-msgid "Cooldown time after processing cycle"
-msgstr "Tempo di elaborazione degli eventi"
-
 msgid "Cooldown time before trying to reconnect after failure"
 msgstr ""
 "Tempo di raffreddamento prima di provare a riconnettersi dopo un fallimento"
@@ -16719,10 +16581,6 @@ msgstr "Copiare tutte le regole degli eventi dal sito centrale"
 
 msgid "Copy codes to clipboard"
 msgstr "Copiare i codici negli appunti"
-
-#, fuzzy
-msgid "Copy connection value representation to clipboard"
-msgstr "Copiare la rappresentazione del valore della regola negli appunti"
 
 msgid "Copy rule value representation to clipboard"
 msgstr "Copiare la rappresentazione del valore della regola negli appunti"
@@ -17091,17 +16949,6 @@ msgid ""
 msgstr ""
 "Impossibile interrogare ifid per host_address '%s'. Il tuo utente ntopng "
 "potrebbe non avere diritti sufficienti per interrogare questa informazione."
-
-#, python-format
-msgid "Could not reload DCD: %s. See web.log for further information."
-msgstr ""
-"Impossibile ricaricare il DCD: %s. Vedere web.log per ulteriori informazioni."
-
-#, fuzzy
-msgid ""
-"Could not reload DCD: It is not running. See web.log for further information."
-msgstr ""
-"Impossibile ricaricare il DCD: %s. Vedere web.log per ulteriori informazioni."
 
 #, fuzzy, python-format
 msgid ""
@@ -17727,10 +17574,6 @@ msgstr "Creato nuovo ruolo '%s'"
 msgid "Created with Checkmk Version $CHECK_MK_VERSION$"
 msgstr "Creato con la versione di Checkmk $CHECK_MK_VERSION$"
 
-#, fuzzy, python-format
-msgid "Created: %d, modified: %d, deleted: %d"
-msgstr "Host: %d creato, %d modificato, %d cancellato"
-
 msgid ""
 "Creates a new service that displays information about disk I/O of database "
 "files. This service displays the number of bytes read and written to "
@@ -17996,9 +17839,6 @@ msgstr "Stato di Crontab"
 
 msgid "Current"
 msgstr "Corrente"
-
-msgid "Current DCD state."
-msgstr "Stato DCD attuale."
 
 msgid "Current O2 percentage"
 msgstr "Percentuale di O2 attuale"
@@ -18506,30 +18346,6 @@ msgstr "personalizzato"
 msgid "Cut everything after first space"
 msgstr "Tagliare tutto dopo il primo spazio"
 
-#, python-format
-msgid ""
-"Cycle %d not found, the information is expired, please return back to select "
-"a cycle"
-msgstr ""
-
-msgid "Cycle id"
-msgstr ""
-
-#, fuzzy
-msgid "Cycle not found"
-msgstr "Pagina non trovata"
-
-msgid ""
-"Cycle not found, the information is expired, please return back to select a "
-"cycle"
-msgstr ""
-
-msgid "Cycle steps"
-msgstr ""
-
-msgid "Cycles"
-msgstr ""
-
 #, fuzzy
 msgid "DATAPROXY - Throttled server connections"
 msgstr "DATAPROXY - Connessioni server strozzate"
@@ -18610,35 +18426,11 @@ msgstr "Utilizzo della memoria DB2"
 msgid "DB2 time since last database backup"
 msgstr "DB2 Tempo trascorso dall'ultimo backup del database"
 
-#, fuzzy, python-format
-msgid "DCD Manager: Fetching piggyback hosts from site \"%s\""
-msgstr "Fase 1.1: Recupero dal sito \"%s\""
-
-#, fuzzy
-msgid "DCD batch"
-msgstr "Stato del DCD"
-
-#, fuzzy
-msgid "DCD batch history"
-msgstr "Storia della ricerca"
-
-#, fuzzy
-msgid "DCD batches"
-msgstr "Abbinamenti"
-
 msgid "DCD cycles and batches."
 msgstr "Cicli e batch DCD."
 
-#, fuzzy
-msgid "DCD global settings"
-msgstr "Modifica dell'impostazione globale"
-
 msgid "DCD status"
 msgstr "Stato del DCD"
-
-#, fuzzy
-msgid "DCD work state"
-msgstr "stato peggiore"
 
 msgid "DD.MM.YYYY"
 msgstr "GG.MM.AAAA"
@@ -20053,13 +19845,6 @@ msgstr "Regola cancellata #%d"
 #, fuzzy
 msgid ""
 "Delete the hosts created by this connection whose OpenTelemetry data is no "
-"longer present."
-msgstr ""
-"Elimina gli host creati da questa connessione i cui dati di piggyback non "
-"sono più presenti."
-
-msgid ""
-"Delete the hosts created by this connection whose piggyback data is no "
 "longer present."
 msgstr ""
 "Elimina gli host creati da questa connessione i cui dati di piggyback non "
@@ -22559,10 +22344,6 @@ msgid "Do not monitor failovers"
 msgstr "Non monitorare"
 
 #, fuzzy
-msgid "Do not monitor hosts without discovered services"
-msgstr "Nessun host da scoprire"
-
-#, fuzzy
 msgid "Do not monitor limits"
 msgstr "Non monitorare"
 
@@ -23228,12 +23009,6 @@ msgstr "Dw"
 #, fuzzy
 msgid "Dynamic MAC enabled"
 msgstr "Sincronizzazione attivata"
-
-msgid "Dynamic configuration"
-msgstr "Configurazione dinamica dell'host"
-
-msgid "Dynamic configuration logging"
-msgstr "Registrazione dinamica della configurazione"
 
 msgid "Dynamic host configuration connections"
 msgstr "Connessioni di configurazione dinamica dell'host"
@@ -25650,9 +25425,6 @@ msgstr "Scambi"
 msgid "Exclude"
 msgstr "Escludi"
 
-msgid "Exclude \"Activate changes\" for time ranges"
-msgstr "Escludere \"Attivare le modifiche\" per gli intervalli di tempo"
-
 msgid "Exclude Nodes based on their role"
 msgstr "Escludere i nodi in base al loro ruolo"
 
@@ -25832,20 +25604,6 @@ msgstr "Modalità di esecuzione"
 
 msgid "Execution configuration"
 msgstr "Configurazione dell'esecuzione"
-
-msgid "Execution has been triggered"
-msgstr "L'esecuzione è stata attivata"
-
-msgid "Execution history"
-msgstr "Storia dell'esecuzione"
-
-#, python-format
-msgid "Execution history of %s"
-msgstr "Storia dell'esecuzione di %s"
-
-#, python-format
-msgid "Execution history of this %s"
-msgstr "Storia dell'esecuzione di questo %s"
 
 msgid "Execution interval"
 msgstr "Intervallo di esecuzione"
@@ -26200,10 +25958,6 @@ msgid ""
 msgstr ""
 "File di esportazione da creare, contenente <tt>&lt;HOST&gt;</tt> per "
 "l'hostname"
-
-#, fuzzy, python-format
-msgid "Export this %s for API"
-msgstr "Esportazione di questa regola per API"
 
 msgid "Export this rule for API"
 msgstr "Esportazione di questa regola per API"
@@ -26611,10 +26365,6 @@ msgstr "Livelli per le connessioni stabilite"
 msgid "Failed to estimate the Apache process size"
 msgstr "Impossibile stimare la dimensione del processo Apache"
 
-#, python-format
-msgid "Failed to execute DCD connection (%s)"
-msgstr "Impossibile eseguire la connessione DCD (%s)"
-
 #, fuzzy, python-format
 msgid "Failed to execute the test %s: See web.log for further details"
 msgstr "Fallita l'esecuzione del test %s: %s"
@@ -26633,10 +26383,6 @@ msgstr "Fallito il recupero del certificato peer (%s)"
 
 msgid "Failed to find matching certificate in chain"
 msgstr "Impossibile trovare il certificato corrispondente nella catena"
-
-#, python-format
-msgid "Failed to get the status from DCD (%s)"
-msgstr "Impossibile ottenere lo stato dal DCD (%s)"
 
 #, fuzzy, python-format
 msgid "Failed to load legacy host attribute from local plug-ins: %r"
@@ -32454,10 +32200,6 @@ msgstr "Elemento di ricerca dell'host"
 msgid "Host management"
 msgstr "Gestione degli host"
 
-#, fuzzy
-msgid "Host manager settings"
-msgstr "Impostazioni dell'host"
-
 msgid "Host memory usage"
 msgstr "Utilizzo della memoria dell'host"
 
@@ -32633,13 +32375,6 @@ msgstr "Problemi con l'host (non gestiti)"
 
 msgid "Host problems for NagStaMon"
 msgstr "Problemi di host per NagStaMon"
-
-#, fuzzy
-msgid "Host processing"
-msgstr "Elaborazione RRD"
-
-msgid "Host processing: "
-msgstr "Elaborazione host: "
 
 msgid "Host properties"
 msgstr "Proprietà dell'host"
@@ -32818,10 +32553,6 @@ msgstr "Host e cartelle"
 msgid "Hosts and folders"
 msgstr "Host e cartelle"
 
-#, python-format
-msgid "Hosts assigned with this %s"
-msgstr "Gli host assegnati con questo %s"
-
 msgid ""
 "Hosts can be grouped together into host groups. The most common use case is "
 "to put hosts which belong together in a host group to make it possible to "
@@ -32988,10 +32719,6 @@ msgstr ""
 
 msgid "Hosts: "
 msgstr "Hosts: "
-
-#, python-format
-msgid "Hosts: %d created, %d modified, %d deleted"
-msgstr "Host: %d creato, %d modificato, %d cancellato"
 
 #, python-format
 msgid "Hosts: %d total (%d succeeded, %d skipped, %d failed)"
@@ -37293,10 +37020,6 @@ msgstr "CRC non valido"
 #, fuzzy, python-format
 msgid "Invalid CSRF token (%r) for session (%r)"
 msgstr "Token CSRF non valido (%r) per Sessione (%r)"
-
-#, python-format
-msgid "Invalid DCD command: %r"
-msgstr "Comando DCD non valido: %r"
 
 #, fuzzy
 msgid "Invalid IP address"
@@ -42373,9 +42096,6 @@ msgstr ""
 "Gestire agenti di monitoraggio confezionati su misura per Linux, Windows e "
 "altri sistemi operativi"
 
-msgid "Manage dynamic configuration"
-msgstr "Gestire la configurazione dinamica"
-
 msgid "Manage event classification and correlation rules for the Event Console"
 msgstr ""
 "Gestire la classificazione degli eventi e le regole di correlazione per la "
@@ -42414,15 +42134,8 @@ msgstr "Gestire i servizi"
 msgid "Manage tags"
 msgstr "Gestisci i tag"
 
-msgid "Manage the Dynamic configuration connections"
-msgstr "Gestire le connessioni di configurazione dinamica"
-
 msgid "Manage the controllers auto-registration"
 msgstr "Gestione della registrazione automatica dei controllori"
-
-#, fuzzy
-msgid "Manage the dynamic configuration connections"
-msgstr "Gestire le connessioni di configurazione dinamica"
 
 msgid "Manage users of the monitoring system."
 msgstr "Gestire gli utenti del sistema di monitoraggio."
@@ -42497,10 +42210,6 @@ msgstr "Istantanee manuali"
 #, fuzzy
 msgid "Manually added"
 msgstr "Controllo manuale"
-
-#, python-format
-msgid "Manually execute this %s"
-msgstr "Eseguire manualmente questo %s"
 
 msgid ""
 "Manually let the core send a notification to a host or service in order to "
@@ -43071,10 +42780,6 @@ msgstr "Dimensione massima del file di log"
 
 msgid "Maximal number of daemon threads"
 msgstr "Numero massimo di thread del demone"
-
-#, fuzzy
-msgid "Maximal number of hosts per bulk discovery"
-msgstr "Numero previsto di descrittori di file aperti"
 
 msgid "Maximal number of log files to backup"
 msgstr "Numero massimo di file di log di cui eseguire il backup"
@@ -46735,10 +46440,6 @@ msgstr "Prossima corsa"
 msgid "Next check"
 msgstr "Prossimo controllo"
 
-#, fuzzy
-msgid "Next cycle"
-msgstr "Prossimo controllo"
-
 msgid "Next notification"
 msgstr "Prossima notifica"
 
@@ -47156,10 +46857,6 @@ msgstr ""
 msgid "No names defined"
 msgstr "Nessuna connessione definita"
 
-#, fuzzy
-msgid "No next cycle available"
-msgstr "Non disponibile"
-
 #, fuzzy, python-format
 msgid "No notification parameters for method '%s' found"
 msgstr "Regola di notifica modificata %d"
@@ -47184,10 +46881,6 @@ msgstr "Dal negozio di password"
 
 msgid "No pending changes."
 msgstr "Nessuna modifica in corso."
-
-#, fuzzy
-msgid "No previous cycle available"
-msgstr "Nessuna informazione disponibile"
 
 msgid "No proxy"
 msgstr "Nessuna delega"
@@ -47358,10 +47051,6 @@ msgstr "Nessuna vista definita con il nome '%s'."
 #, fuzzy
 msgid "No view name provided."
 msgstr "Dal negozio di password"
-
-#, fuzzy
-msgid "No waiting batches"
-msgstr "Mostra tutti gli argomenti"
 
 msgid "No, adjust settings"
 msgstr "No, regolare le impostazioni"
@@ -48001,12 +47690,6 @@ msgstr "Note URL per i servizi"
 
 msgid "Notes URL"
 msgstr "Note URL"
-
-msgid "Nothing changed"
-msgstr "Niente è cambiato"
-
-msgid "Nothing logged"
-msgstr "Niente di registrato"
 
 msgid "Nothing was changed."
 msgstr "Non è stato cambiato nulla."
@@ -49773,14 +49456,6 @@ msgstr ""
 msgid "Only bulk notifications during the following time period"
 msgstr "Solo notifiche di massa nel seguente periodo di tempo"
 
-#, fuzzy
-msgid ""
-"Only care about hosts that receive piggyback data from hosts whose names "
-"match one of these regular expressions."
-msgstr ""
-"Si preoccupa solo degli host che ricevono dati piggyback da host il cui nome "
-"corrisponde a una di queste espressioni regolari."
-
 msgid "Only discover monitors in the following states"
 msgstr "Scoprire solo i monitor nei seguenti stati"
 
@@ -50370,15 +50045,6 @@ msgstr ""
 "È possibile aggiungere un commento per spiegare lo scopo di questo oggetto. "
 "Il commento è visibile solo in questa finestra di dialogo e può aiutare gli "
 "altri utenti a comprendere le intenzioni degli attributi configurati."
-
-msgid ""
-"Optionally, restrict host creation using regular expressions."
-"<br><b>Important:</b><br>This only applies to hosts created by this "
-"connection, not the monitoring host ('Dummy host').<br><br>"
-msgstr ""
-"Facoltativamente, limitare la creazione di host usando espressioni regolari."
-"<br><b>Importante:</b><br>Questo si applica solo agli host creati da questa "
-"connessione, non all'host di monitoraggio ('Dummy host').<br><br>"
 
 #, fuzzy
 msgid ""
@@ -53452,12 +53118,6 @@ msgstr "Piano Bar"
 msgid "Piggyback"
 msgstr "Piggyback"
 
-msgid "Piggyback creation options"
-msgstr "Opzioni di creazione di piggyback"
-
-msgid "Piggyback data"
-msgstr "Dati piggyback"
-
 #, fuzzy
 msgid "Piggyback host names"
 msgstr "Nomi di fantasia"
@@ -54253,9 +53913,6 @@ msgstr "Specificare almeno un indirizzo"
 msgid "Please specify at least one \"OpenTelemetry hosts creation option\""
 msgstr "Si prega di specificare almeno una \"opzione di creazione Piggyback\""
 
-msgid "Please specify at least one \"Piggyback creation option\""
-msgstr "Si prega di specificare almeno una \"opzione di creazione Piggyback\""
-
 msgid "Please specify at least one condition or this rule will never match."
 msgstr ""
 "Si prega di specificare almeno una condizione o questa regola non "
@@ -54908,9 +54565,6 @@ msgstr "Regole Pretty-Print nel file di configurazione di Event Console"
 msgid "Prevent DNS lookups by use of a cache file"
 msgstr "Prevenire le ricerche DNS tramite l'uso di un file di cache"
 
-msgid "Prevent host deletion after initialization"
-msgstr "Prevenire la cancellazione dell'host dopo l'inizializzazione"
-
 msgid "Prevent loading HTML from service output or log messages"
 msgstr ""
 "Impedire il caricamento di HTML dall'output del servizio o dai messaggi di "
@@ -54936,10 +54590,6 @@ msgstr ""
 
 msgid "Preview this report"
 msgstr "Anteprima di questo rapporto"
-
-#, fuzzy
-msgid "Previous cycle"
-msgstr "Scoperto in precedenza"
 
 msgid "PrimSeq erros"
 msgstr "Errori di PrimSeq"
@@ -55927,9 +55577,6 @@ msgstr ""
 msgid "REST API"
 msgstr "API REST"
 
-msgid "REST API communication"
-msgstr "Comunicazione API REST"
-
 msgid "REST API documentation"
 msgstr "Documentazione API REST"
 
@@ -56549,14 +56196,6 @@ msgstr "Il sito è disabilitato"
 
 msgid "Recent event history"
 msgstr "Storia recente degli eventi"
-
-#, fuzzy
-msgid "Recent processing batches"
-msgstr "Tempo di elaborazione degli eventi"
-
-#, fuzzy
-msgid "Recent processing cycles"
-msgstr "Tempo di elaborazione degli eventi"
 
 msgid "Recently changed services"
 msgstr "Servizi cambiati di recente"
@@ -57580,10 +57219,6 @@ msgid "Removed the %s '%s'"
 msgstr "Rimosso il %s '%s'"
 
 #, python-format
-msgid "Removed the connection '%s'"
-msgstr "Rimosso il collegamento '%s'."
-
-#, python-format
 msgid "Removed unpackaged extension file %s: %s"
 msgstr "Rimosso il file di estensione non confezionato %s: %s"
 
@@ -58532,9 +58167,6 @@ msgstr "Limitare la gravità al peggio"
 
 msgid "Restrict single values"
 msgstr "Limitare i valori singoli"
-
-msgid "Restrict source hosts"
-msgstr "Limitare gli host di origine"
 
 msgid "Restrict subcategories"
 msgstr "Limitare le sottocategorie"
@@ -61587,24 +61219,12 @@ msgstr "Dettagli del servizio BI"
 msgid "Service discovery"
 msgstr "Scoperta del servizio"
 
-msgid "Service discovery and activation: "
-msgstr "Scoperta dei servizi e attivazione: "
-
-msgid "Service discovery ran on"
-msgstr "Scoperta del servizi eseguta su"
-
 msgid "Service discovery rules"
 msgstr "Regole di scoperta del servizio"
-
-msgid "Service discovery timeout"
-msgstr "Timeout della scoperta dei servizi"
 
 msgid "Service discovery triggers service discovery check"
 msgstr ""
 "La scoperta del servizio fa scattare il controllo della scoperta del servizio"
-
-msgid "Service discovery: "
-msgstr "Scoperta del servizio: "
 
 msgid "Service discovery: Check type"
 msgstr "Scoperta del servizio: Controllare il tipo"
@@ -62985,10 +62605,6 @@ msgstr "Mostra alias e descrizione"
 msgid "Show alias if set, else description"
 msgstr "Mostra l'alias se impostato, altrimenti la descrizione"
 
-#, fuzzy
-msgid "Show all cycles"
-msgstr "Mostra tutte le regole"
-
 msgid "Show all hosts"
 msgstr "Mostra tutti gli host"
 
@@ -63026,10 +62642,6 @@ msgstr "Mostra i controlli"
 
 msgid "Show current / last state of this backup job"
 msgstr "Mostra lo stato attuale/ultimo di questo lavoro di backup"
-
-#, fuzzy
-msgid "Show cycle details"
-msgstr "Mostra i dettagli"
 
 msgid "Show data only on search"
 msgstr "Mostra i dati solo sulla ricerca"
@@ -63991,10 +63603,6 @@ msgstr ""
 #, fuzzy
 msgid "Skip verification (insecure)"
 msgstr "Ignorare gli errori del certificato (non sicuro)"
-
-#, fuzzy
-msgid "Skipped"
-msgstr "Fermato"
 
 #, python-format
 msgid "Skipped %s: %s"
@@ -65187,13 +64795,6 @@ msgstr ""
 "Specificare il sito con cui devono essere iniziate le connessioni. È "
 "necessario disporre di una regola corrispondente per creare l'host in una "
 "cartella monitorata in quel sito."
-
-msgid ""
-"Specify the site where you want this connector to run. Only this site will "
-"process the piggyback data."
-msgstr ""
-"Specificare il sito in cui si desidera che venga eseguito il connettore. "
-"Solo questo sito elaborerà i dati di piggyback."
 
 msgid ""
 "Specify the threshold levels for the free memory space. The free memory "
@@ -66666,31 +66267,12 @@ msgstr "Ruba"
 msgid "Steelhead connections"
 msgstr "Connessioni Steelhead"
 
-msgid "Step"
-msgstr "Passo"
-
 #, python-format
 msgid "Step %d"
 msgstr "Passo %d"
 
 msgid "Step (precision)"
 msgstr "Passo (precisione)"
-
-msgid "Step has been finished"
-msgstr "Il passo è stato terminato"
-
-msgid "Step has been initialized"
-msgstr "Il passo è stato inizializzato"
-
-msgid "Step has been started"
-msgstr "Il passo è stato avviato"
-
-msgid "Steps"
-msgstr "Passi"
-
-#, python-format
-msgid "Still no data in '%s'"
-msgstr ""
 
 msgid "Still nothing happened."
 msgstr "Ancora non è successo niente."
@@ -69973,10 +69555,6 @@ msgstr ""
 "Il timeout di connessione in secondi quando si stabilisce una connessione "
 "con il PLC."
 
-#, python-format
-msgid "The connection %r does not exist"
-msgstr "La connessione %r non esiste"
-
 msgid ""
 "The connection creates hosts in this particular folder. Once created, you "
 "can choose to move the host to another folder."
@@ -70320,14 +69898,6 @@ msgstr ""
 
 msgid "The duration in minutes of the ad hoc downtime."
 msgstr "La durata in minuti del tempo di inattività ad hoc."
-
-msgid ""
-"The dynamic configuration will interrupt the service discovery and force an "
-"activation after this time. The time is counted from the start of the "
-"processing cycle. This is useful to ensure that changes are activated in a "
-"timely manner and allow changes to the config, which will then be activated "
-"as well. Default is 10 minutes."
-msgstr ""
 
 #, fuzzy
 msgid ""
@@ -71023,13 +70593,6 @@ msgstr ""
 "piggyback disponibile e aggiornare la configurazione."
 
 msgid ""
-"The interval the connection will be executed to check the available "
-"piggyback and update the configuration."
-msgstr ""
-"L'intervallo in cui la connessione verrà eseguita per controllare il "
-"piggyback disponibile e aggiornare la configurazione."
-
-msgid ""
 "The interval the connection will be executed to poll the data source and "
 "update the configuration."
 msgstr ""
@@ -71446,21 +71009,9 @@ msgstr ""
 "all'host di destinazione, non alle tappe intermedie."
 
 msgid ""
-"The maximum time for an individual bulk discovery operation. After this, the "
-"processing cycle will continue irregardless of the outcome of the bulk "
-"discovery. Default is 1 minute."
-msgstr ""
-
-msgid ""
 "The maximum time that the Robotmk scheduler allows for a single Robot "
 "Framework execution. This time, when multiplied by the number of executions, "
 "sets the total runtime limit for the execution of a plan."
-msgstr ""
-
-msgid ""
-"The maximum time the dynamic configuration will wait for 'activate changes' "
-"to be completed. After this, the processing cycle will continue or finish. "
-"Default is 2 minutes."
 msgstr ""
 
 msgid "The maximum value length is 256 characters."
@@ -72240,10 +71791,6 @@ msgstr ""
 "stato del sensore (case sensitive)."
 
 #, fuzzy
-msgid "The piggyback mechanism"
-msgstr "Il meccanismo Piggyback"
-
-#, fuzzy
 msgid ""
 "The piggyback-hub cannot be enabled for a remote site if it is disabled for "
 "the central site"
@@ -72975,16 +72522,6 @@ msgid ""
 msgstr ""
 "Il servizio attiverà un avviso o uno stato critico se le dimensioni del "
 "database superano questi livelli."
-
-msgid ""
-"The services are discovered for a bulk of hosts for higher performance "
-"versus individual service discovery. A too large number here can extend the "
-"cycle time of the dynamic configuration as an activation can only be forced, "
-"when no service discovery is running. Decrease this value, if long service "
-"discoveries block the forced activation. Default is 50 and optimized for the "
-"hosts typically being handled by dynamic configuration, where no network "
-"communication happens."
-msgstr ""
 
 #, fuzzy
 msgid ""
@@ -74872,13 +74409,6 @@ msgid ""
 msgstr ""
 "Questo connettore può essere utilizzato per creare automaticamente gli host "
 "in base ai miei dati."
-
-msgid ""
-"This connector can be used to automatically create hosts based on piggyback "
-"data."
-msgstr ""
-"Questo connettore può essere usato per creare automaticamente degli host "
-"basati su dati piggyback."
 
 msgid "This crash report"
 msgstr "Questo rapporto sull'incidente"
@@ -78280,14 +77810,6 @@ msgstr ""
 #, fuzzy, python-format
 msgid ""
 "This setting decides which types of messages to log into the log of the "
-"Dynamic Configuration Daemon (%s)."
-msgstr ""
-"Questa impostazione decide quali tipi di messaggi registrare nel registro "
-"del demone di configurazione dinamica (%s)."
-
-#, fuzzy, python-format
-msgid ""
-"This setting decides which types of messages to log into the log of the "
 "Livestatus proxy (%s)."
 msgstr ""
 "Questa impostazione decide quali tipi di messaggi registrare nel log del "
@@ -79113,13 +78635,6 @@ msgid "Time between new classical active checks"
 msgstr "Tempo tra i nuovi controlli attivi classici"
 
 msgid ""
-"Time between the end of one processing cycle and the start of the next one. "
-"You can increase the cooldown time to throttle the processing of new data. "
-"This can reduce the load of the dynamic configuration on your system. "
-"Default is 30 seconds."
-msgstr ""
-
-msgid ""
 "Time between the last operation on primary's oplog and on secondary above"
 msgstr ""
 "Tempo tra l'ultima operazione sull'oplog del primario e sul secondario sopra"
@@ -79298,31 +78813,8 @@ msgstr ""
 "Intervallo di tempo per continuare a considerare validi i dati piggyback "
 "obsoleti."
 
-msgid "Time range to continue to consider outdated piggyback data as valid."
-msgstr ""
-"Intervallo di tempo per continuare a considerare validi i dati piggyback "
-"obsoleti."
-
 msgid "Time range to create report for"
 msgstr "Intervallo di tempo per cui creare il rapporto"
-
-msgid ""
-"Time range to keep hosts when piggyback source only sends piggyback data for "
-"other hosts."
-msgstr ""
-"Intervallo di tempo per mantenere gli host quando la sorgente piggyback "
-"invia solo dati piggyback per altri host."
-
-msgid ""
-"Time range to prevent host deletion after site startup, e.g. when booting "
-"the Checkmk server. This is caused by the 'tmp' directory which needs more "
-"time to initialize and can result in missing piggyback information from some "
-"sources."
-msgstr ""
-"Intervallo di tempo per evitare la cancellazione dell'host dopo l'avvio del "
-"sito, ad esempio quando si avvia il server Checkmk. Questo è causato dalla "
-"directory 'tmp' che ha bisogno di più tempo per inizializzarsi e può causare "
-"la mancanza di informazioni piggyback da alcune fonti."
 
 msgid "Time series graph"
 msgstr "Grafico della serie temporale"
@@ -79541,10 +79033,6 @@ msgstr "Tempo fino alla scadenza delle credenziali"
 
 msgid "Time until credentials expiration"
 msgstr "Tempo fino alla scadenza delle credenziali"
-
-#, fuzzy
-msgid "Time until forced activation of changes after cycle start"
-msgstr "Commento per l'attivazione delle modifiche"
 
 msgid "Time until license expiration"
 msgstr "Tempo fino alla scadenza della licenza"
@@ -79896,23 +79384,6 @@ msgstr ""
 
 #, fuzzy
 msgid ""
-"To set the value of a connection using the REST API, you need to set the "
-"<tt>value_raw</tt> field. The value of this field is individual for each "
-"connection set. To help you understand what kind of data structure you need "
-"to provide, this connection export mechanism is showing you the value you "
-"need to set for a given connection. The value needs to be a string "
-"representation of a compatible Python data structure."
-msgstr ""
-"Per impostare il valore di una regola utilizzando l'API REST, è necessario "
-"impostare il campo <tt>value_raw</tt>. Il valore di questo campo è "
-"individuale per ogni set di regole. Per aiutarvi a capire che tipo di "
-"struttura di dati dovete fornire, questo meccanismo di esportazione delle "
-"regole vi mostra il valore che dovete impostare per una determinata regola. "
-"Il valore deve essere una rappresentazione stringa di una struttura dati "
-"Python compatibile."
-
-#, fuzzy
-msgid ""
 "To set the value of a rule using the REST API, you need to set the "
 "<tt>value_raw</tt> field. The value of this field is individual for each "
 "rule set. To help you understand what kind of data structure you need to "
@@ -79955,9 +79426,6 @@ msgstr "Oggi"
 
 msgid "Toggle elements"
 msgstr "Elementi a ginocchiera"
-
-msgid "Toggle log entries"
-msgstr "Allineare le voci del registro"
 
 msgid "Toggle names"
 msgstr "Nomi a ginocchiera"
@@ -80241,9 +79709,6 @@ msgstr "Durata totale"
 msgid "Total duration of SIP/H323 calls"
 msgstr "Durata totale"
 
-msgid "Total duration: "
-msgstr "Durata totale: "
-
 msgid "Total error rate"
 msgstr "Tasso di errore totale"
 
@@ -80291,9 +79756,6 @@ msgstr "Totale hitratio"
 
 msgid "Total host problems"
 msgstr "Problemi totali dell'ospite"
-
-msgid "Total hosts: "
-msgstr "Host totali: "
 
 msgid "Total index failure count upper levels"
 msgstr "Conteggio totale dei fallimenti dell'indice livelli superiori"
@@ -83213,16 +82675,6 @@ msgstr "Tipo: %s"
 
 msgid "Types of events that are being processed"
 msgstr "Tipi di eventi che vengono elaborati"
-
-msgid ""
-"Typically hosts without discovered services bear little value for monitoring "
-"and can cause false alerts. In case an activation is forced or the dynamic "
-"configuration is forcefully interrupted, there might be hosts without "
-"discovered services. With this option, hosts will receive a hidden attribute "
-"so that they will not be monitored until the service discovery has been "
-"executed by the dynamic configuration. Only activate, if the dynamic "
-"configuration cannot finish before a forced activation. Default is 'False'."
-msgstr ""
 
 msgid "U"
 msgstr "U"
@@ -86243,10 +85695,6 @@ msgstr "Utente"
 msgid "User %s does not exist."
 msgstr "Il %s non esiste."
 
-#, python-format
-msgid "User %s of DCD connection was modified"
-msgstr "L'utente %s della connessione DCD è stato modificato"
-
 #, fuzzy
 msgid "User & Password"
 msgstr "Password utente"
@@ -87323,12 +86771,6 @@ msgstr ""
 msgid "Validity"
 msgstr "Valido fino a"
 
-msgid "Validity of missing data"
-msgstr "Validità dei dati mancanti"
-
-msgid "Validity of outdated data"
-msgstr "Validità dei dati superati"
-
 msgid "Value"
 msgstr "Valore"
 
@@ -87807,9 +87249,6 @@ msgstr "Stato dell'heartbeat della macchina virtuale (per esempio ESX)"
 msgid "Virtual machine snapshots"
 msgstr "Istantanee della macchina virtuale"
 
-msgid "Virtual machines may take a few minutes to show up."
-msgstr ""
-
 #, fuzzy
 msgid "Virtual memory"
 msgstr "Utilizzo della memoria virtuale"
@@ -88092,10 +87531,6 @@ msgid "Waiting containers"
 msgstr "Contenitori in attesa"
 
 #, fuzzy
-msgid "Waiting for completion of previous run"
-msgstr "In attesa dell'avvio della replica"
-
-#, fuzzy
 msgid "Waiting for discovery"
 msgstr "Scoperta della porta Netapp"
 
@@ -88119,10 +87554,6 @@ msgstr "In attesa dell'avvio della replica"
 
 msgid "Waiting to acquire lock"
 msgstr ""
-
-#, fuzzy
-msgid "Waiting..."
-msgstr "In attesa"
 
 msgid "Waitlocks"
 msgstr "Camicie"
@@ -89566,13 +88997,6 @@ msgid ""
 msgstr ""
 "Quando vuoi elaborare le trappole SNMP con la Event Console è necessario "
 "configurare le credenziali per decifrare le trappole in arrivo."
-
-msgid ""
-"Whenever Checkmk creates, modifies or deletes hosts via this connection, it "
-"will only consider hosts that receive piggyback data from hosts with names "
-"matching one of these regular expressions. Please note: The attribution of "
-"piggyback data to existing hosts is not affected by this setting."
-msgstr ""
 
 #, python-format
 msgid ""
@@ -93541,9 +92965,6 @@ msgstr "filesystem"
 msgid "files"
 msgstr "file"
 
-msgid "finished for "
-msgstr "Terminato per "
-
 msgid "firing"
 msgstr "licenziamento"
 
@@ -93586,9 +93007,6 @@ msgstr "forced-commands-only"
 
 msgid "forecast trend only"
 msgstr "solo tendenza previsionale"
-
-msgid "found "
-msgstr "trovato "
 
 msgid "fourth week"
 msgstr "quarta settimana"
@@ -98851,6 +98269,507 @@ msgstr ""
 msgid ""
 "You can still access it later via Help > Learning Checkmk > Welcome page"
 msgstr ""
+
+#~ msgid " batch is"
+#~ msgstr " lotto è"
+
+#~ msgid " batches are"
+#~ msgstr " lotti sono"
+
+#~ msgid " changes"
+#~ msgstr " modifiche"
+
+#~ msgid " current cycle to complete"
+#~ msgstr " completamento del ciclo corrente"
+
+#~ msgid " next cycle start"
+#~ msgstr " inizio del prossimo ciclo"
+
+#~ msgid " seconds remaining)"
+#~ msgstr " secondi rimanenti)"
+
+#~ msgid " waiting for the "
+#~ msgstr " in attesa del "
+
+#, fuzzy, python-format
+#~ msgid "# %s - cycle details"
+#~ msgstr "# %s - Dettagli del ciclo"
+
+#~ msgid "(finished)"
+#~ msgstr "(Terminato)"
+
+#~ msgid "(running)"
+#~ msgstr "(in esecuzione)"
+
+#~ msgid ", errors occurred"
+#~ msgstr ", errori rilevati"
+
+#~ msgid "-"
+#~ msgstr "-"
+
+#~ msgid ""
+#~ "<a href='wato.py?"
+#~ "mode=edit_ruleset&varname=piggyback_translation'>Piggyback translations</"
+#~ "a> are performed before the piggyback connector creates hosts. Use this, "
+#~ "for example, in a setup with multiple Docker nodes to prefix containers "
+#~ "with the name of the corresponding Docker node. Otherwise, name "
+#~ "collisions can occur if containers with the same name exist on more than "
+#~ "one Docker Node."
+#~ msgstr ""
+#~ "Le <a href='wato.py?"
+#~ "mode=edit_ruleset&varname=piggyback_translation'>Traduzioni piggyback</a> "
+#~ "sono eseguite prima che il connettore piggyback crei gli host. "
+#~ "Utilizzale, ad esempio, in una configurazione con più nodi Docker per "
+#~ "anteporre ai containers il nome del nodo Docker corrispondente. "
+#~ "Altrimenti, possono verificarsi collisioni di nomi se dei containers con "
+#~ "lo stesso nome esistono su più di un nodo Docker."
+
+#, fuzzy
+#~ msgid ""
+#~ "<a href='wato.py?"
+#~ "mode=edit_ruleset&varname=piggyback_translation'>Piggyback translations</"
+#~ "a>are performed before the piggyback connector creates hosts. Use this, "
+#~ "for example, in a setup with multiple Docker nodes to prefix containers "
+#~ "with the name of the corresponding Docker node. Otherwise, name "
+#~ "collisions can occur if containers with the same name exist on more than "
+#~ "one Docker node."
+#~ msgstr ""
+#~ "Le <a href='wato.py?"
+#~ "mode=edit_ruleset&varname=piggyback_translation'>Traduzioni piggyback</a> "
+#~ "sono eseguite prima che il connettore piggyback crei gli host. "
+#~ "Utilizzale, ad esempio, in una configurazione con più nodi Docker per "
+#~ "anteporre ai containers il nome del nodo Docker corrispondente. "
+#~ "Altrimenti, possono verificarsi collisioni di nomi se dei containers con "
+#~ "lo stesso nome esistono su più di un nodo Docker."
+
+#~ msgid "About the processing cycle"
+#~ msgstr "Relativi al ciclo di lavorazione"
+
+#~ msgid "Activate changes"
+#~ msgstr "Attivare le modifiche"
+
+#~ msgid "Activate changes timeout"
+#~ msgstr "Timeout per l'attivazione delle modifiche"
+
+#~ msgid "Activating changes: "
+#~ msgstr "Attivazione delle modifiche: "
+
+#, python-format
+#~ msgid "Added the connection '%s'"
+#~ msgstr "Aggiunta la connessione '%s'"
+
+#, fuzzy
+#~ msgid "An exception occurred"
+#~ msgstr "Si è verificata un'eccezione"
+
+#~ msgid "Automatically delete hosts without piggyback data"
+#~ msgstr "Elimina automaticamente gli host senza dati di piggyback"
+
+#, fuzzy
+#~ msgid "Batch ID"
+#~ msgstr "ID del percorso"
+
+#, fuzzy
+#~ msgid "Batches"
+#~ msgstr "Abbinamenti"
+
+#, fuzzy, python-format
+#~ msgid "Can't contact the remote site using '%s'"
+#~ msgstr "Impossibile connettersi al sito remoto: %s"
+
+#, fuzzy
+#~ msgid "Changed DCD global settings"
+#~ msgstr "Modifica dell'impostazione globale"
+
+#, fuzzy
+#~ msgid "Changes activated on"
+#~ msgstr "Non è mai stato attivato"
+
+#~ msgid "Completion"
+#~ msgstr "Completamento"
+
+#, fuzzy, python-format
+#~ msgid "Connection '%s' isn't found: consider activating changes"
+#~ msgstr "Commento per l'attivazione delle modifiche"
+
+#~ msgid "Connection is disabled"
+#~ msgstr "La connessione è disabilitata"
+
+#, fuzzy, python-format
+#~ msgid "Connection representation: %s"
+#~ msgstr "Rappresentazione della regola: %s"
+
+#, fuzzy
+#~ msgid "Cooldown time after processing cycle"
+#~ msgstr "Tempo di elaborazione degli eventi"
+
+#, fuzzy
+#~ msgid "Copy connection value representation to clipboard"
+#~ msgstr "Copiare la rappresentazione del valore della regola negli appunti"
+
+#, python-format
+#~ msgid "Could not reload DCD: %s. See web.log for further information."
+#~ msgstr ""
+#~ "Impossibile ricaricare il DCD: %s. Vedere web.log per ulteriori "
+#~ "informazioni."
+
+#, fuzzy
+#~ msgid ""
+#~ "Could not reload DCD: It is not running. See web.log for further "
+#~ "information."
+#~ msgstr ""
+#~ "Impossibile ricaricare il DCD: %s. Vedere web.log per ulteriori "
+#~ "informazioni."
+
+#, fuzzy, python-format
+#~ msgid "Created: %d, modified: %d, deleted: %d"
+#~ msgstr "Host: %d creato, %d modificato, %d cancellato"
+
+#~ msgid "Current DCD state."
+#~ msgstr "Stato DCD attuale."
+
+#, fuzzy
+#~ msgid "Cycle not found"
+#~ msgstr "Pagina non trovata"
+
+#, fuzzy, python-format
+#~ msgid "DCD Manager: Fetching piggyback hosts from site \"%s\""
+#~ msgstr "Fase 1.1: Recupero dal sito \"%s\""
+
+#, fuzzy
+#~ msgid "DCD batch"
+#~ msgstr "Stato del DCD"
+
+#, fuzzy
+#~ msgid "DCD batch history"
+#~ msgstr "Storia della ricerca"
+
+#, fuzzy
+#~ msgid "DCD batches"
+#~ msgstr "Abbinamenti"
+
+#, fuzzy
+#~ msgid "DCD global settings"
+#~ msgstr "Modifica dell'impostazione globale"
+
+#, fuzzy
+#~ msgid "DCD work state"
+#~ msgstr "stato peggiore"
+
+#~ msgid ""
+#~ "Delete the hosts created by this connection whose piggyback data is no "
+#~ "longer present."
+#~ msgstr ""
+#~ "Elimina gli host creati da questa connessione i cui dati di piggyback non "
+#~ "sono più presenti."
+
+#, fuzzy
+#~ msgid "Do not monitor hosts without discovered services"
+#~ msgstr "Nessun host da scoprire"
+
+#~ msgid "Dynamic configuration"
+#~ msgstr "Configurazione dinamica dell'host"
+
+#~ msgid "Dynamic configuration logging"
+#~ msgstr "Registrazione dinamica della configurazione"
+
+#~ msgid "Exclude \"Activate changes\" for time ranges"
+#~ msgstr "Escludere \"Attivare le modifiche\" per gli intervalli di tempo"
+
+#~ msgid "Execution has been triggered"
+#~ msgstr "L'esecuzione è stata attivata"
+
+#~ msgid "Execution history"
+#~ msgstr "Storia dell'esecuzione"
+
+#, python-format
+#~ msgid "Execution history of %s"
+#~ msgstr "Storia dell'esecuzione di %s"
+
+#, python-format
+#~ msgid "Execution history of this %s"
+#~ msgstr "Storia dell'esecuzione di questo %s"
+
+#, fuzzy, python-format
+#~ msgid "Export this %s for API"
+#~ msgstr "Esportazione di questa regola per API"
+
+#, python-format
+#~ msgid "Failed to execute DCD connection (%s)"
+#~ msgstr "Impossibile eseguire la connessione DCD (%s)"
+
+#, python-format
+#~ msgid "Failed to get the status from DCD (%s)"
+#~ msgstr "Impossibile ottenere lo stato dal DCD (%s)"
+
+#, fuzzy
+#~ msgid "Host manager settings"
+#~ msgstr "Impostazioni dell'host"
+
+#, fuzzy
+#~ msgid "Host processing"
+#~ msgstr "Elaborazione RRD"
+
+#~ msgid "Host processing: "
+#~ msgstr "Elaborazione host: "
+
+#, python-format
+#~ msgid "Hosts assigned with this %s"
+#~ msgstr "Gli host assegnati con questo %s"
+
+#, python-format
+#~ msgid "Hosts: %d created, %d modified, %d deleted"
+#~ msgstr "Host: %d creato, %d modificato, %d cancellato"
+
+#, python-format
+#~ msgid "Invalid DCD command: %r"
+#~ msgstr "Comando DCD non valido: %r"
+
+#~ msgid "Manage dynamic configuration"
+#~ msgstr "Gestire la configurazione dinamica"
+
+#~ msgid "Manage the Dynamic configuration connections"
+#~ msgstr "Gestire le connessioni di configurazione dinamica"
+
+#, fuzzy
+#~ msgid "Manage the dynamic configuration connections"
+#~ msgstr "Gestire le connessioni di configurazione dinamica"
+
+#, python-format
+#~ msgid "Manually execute this %s"
+#~ msgstr "Eseguire manualmente questo %s"
+
+#, fuzzy
+#~ msgid "Maximal number of hosts per bulk discovery"
+#~ msgstr "Numero previsto di descrittori di file aperti"
+
+#, fuzzy
+#~ msgid "Next cycle"
+#~ msgstr "Prossimo controllo"
+
+#, fuzzy
+#~ msgid "No next cycle available"
+#~ msgstr "Non disponibile"
+
+#, fuzzy
+#~ msgid "No previous cycle available"
+#~ msgstr "Nessuna informazione disponibile"
+
+#, fuzzy
+#~ msgid "No waiting batches"
+#~ msgstr "Mostra tutti gli argomenti"
+
+#~ msgid "Nothing changed"
+#~ msgstr "Niente è cambiato"
+
+#~ msgid "Nothing logged"
+#~ msgstr "Niente di registrato"
+
+#, fuzzy
+#~ msgid ""
+#~ "Only care about hosts that receive piggyback data from hosts whose names "
+#~ "match one of these regular expressions."
+#~ msgstr ""
+#~ "Si preoccupa solo degli host che ricevono dati piggyback da host il cui "
+#~ "nome corrisponde a una di queste espressioni regolari."
+
+#~ msgid ""
+#~ "Optionally, restrict host creation using regular expressions."
+#~ "<br><b>Important:</b><br>This only applies to hosts created by this "
+#~ "connection, not the monitoring host ('Dummy host').<br><br>"
+#~ msgstr ""
+#~ "Facoltativamente, limitare la creazione di host usando espressioni "
+#~ "regolari.<br><b>Importante:</b><br>Questo si applica solo agli host "
+#~ "creati da questa connessione, non all'host di monitoraggio ('Dummy host')."
+#~ "<br><br>"
+
+#~ msgid "Piggyback creation options"
+#~ msgstr "Opzioni di creazione di piggyback"
+
+#~ msgid "Piggyback data"
+#~ msgstr "Dati piggyback"
+
+#~ msgid "Please specify at least one \"Piggyback creation option\""
+#~ msgstr ""
+#~ "Si prega di specificare almeno una \"opzione di creazione Piggyback\""
+
+#~ msgid "Prevent host deletion after initialization"
+#~ msgstr "Prevenire la cancellazione dell'host dopo l'inizializzazione"
+
+#, fuzzy
+#~ msgid "Previous cycle"
+#~ msgstr "Scoperto in precedenza"
+
+#~ msgid "REST API communication"
+#~ msgstr "Comunicazione API REST"
+
+#, fuzzy
+#~ msgid "Recent processing batches"
+#~ msgstr "Tempo di elaborazione degli eventi"
+
+#, fuzzy
+#~ msgid "Recent processing cycles"
+#~ msgstr "Tempo di elaborazione degli eventi"
+
+#, python-format
+#~ msgid "Removed the connection '%s'"
+#~ msgstr "Rimosso il collegamento '%s'."
+
+#~ msgid "Restrict source hosts"
+#~ msgstr "Limitare gli host di origine"
+
+#~ msgid "Service discovery and activation: "
+#~ msgstr "Scoperta dei servizi e attivazione: "
+
+#~ msgid "Service discovery ran on"
+#~ msgstr "Scoperta del servizi eseguta su"
+
+#~ msgid "Service discovery timeout"
+#~ msgstr "Timeout della scoperta dei servizi"
+
+#~ msgid "Service discovery: "
+#~ msgstr "Scoperta del servizio: "
+
+#, fuzzy
+#~ msgid "Show all cycles"
+#~ msgstr "Mostra tutte le regole"
+
+#, fuzzy
+#~ msgid "Show cycle details"
+#~ msgstr "Mostra i dettagli"
+
+#, fuzzy
+#~ msgid "Skipped"
+#~ msgstr "Fermato"
+
+#~ msgid ""
+#~ "Specify the site where you want this connector to run. Only this site "
+#~ "will process the piggyback data."
+#~ msgstr ""
+#~ "Specificare il sito in cui si desidera che venga eseguito il connettore. "
+#~ "Solo questo sito elaborerà i dati di piggyback."
+
+#~ msgid "Step"
+#~ msgstr "Passo"
+
+#~ msgid "Step has been finished"
+#~ msgstr "Il passo è stato terminato"
+
+#~ msgid "Step has been initialized"
+#~ msgstr "Il passo è stato inizializzato"
+
+#~ msgid "Step has been started"
+#~ msgstr "Il passo è stato avviato"
+
+#~ msgid "Steps"
+#~ msgstr "Passi"
+
+#, python-format
+#~ msgid "The connection %r does not exist"
+#~ msgstr "La connessione %r non esiste"
+
+#~ msgid ""
+#~ "The interval the connection will be executed to check the available "
+#~ "piggyback and update the configuration."
+#~ msgstr ""
+#~ "L'intervallo in cui la connessione verrà eseguita per controllare il "
+#~ "piggyback disponibile e aggiornare la configurazione."
+
+#, fuzzy
+#~ msgid "The piggyback mechanism"
+#~ msgstr "Il meccanismo Piggyback"
+
+#~ msgid ""
+#~ "This connector can be used to automatically create hosts based on "
+#~ "piggyback data."
+#~ msgstr ""
+#~ "Questo connettore può essere usato per creare automaticamente degli host "
+#~ "basati su dati piggyback."
+
+#, fuzzy, python-format
+#~ msgid ""
+#~ "This setting decides which types of messages to log into the log of the "
+#~ "Dynamic Configuration Daemon (%s)."
+#~ msgstr ""
+#~ "Questa impostazione decide quali tipi di messaggi registrare nel registro "
+#~ "del demone di configurazione dinamica (%s)."
+
+#~ msgid "Time range to continue to consider outdated piggyback data as valid."
+#~ msgstr ""
+#~ "Intervallo di tempo per continuare a considerare validi i dati piggyback "
+#~ "obsoleti."
+
+#~ msgid ""
+#~ "Time range to keep hosts when piggyback source only sends piggyback data "
+#~ "for other hosts."
+#~ msgstr ""
+#~ "Intervallo di tempo per mantenere gli host quando la sorgente piggyback "
+#~ "invia solo dati piggyback per altri host."
+
+#~ msgid ""
+#~ "Time range to prevent host deletion after site startup, e.g. when booting "
+#~ "the Checkmk server. This is caused by the 'tmp' directory which needs "
+#~ "more time to initialize and can result in missing piggyback information "
+#~ "from some sources."
+#~ msgstr ""
+#~ "Intervallo di tempo per evitare la cancellazione dell'host dopo l'avvio "
+#~ "del sito, ad esempio quando si avvia il server Checkmk. Questo è causato "
+#~ "dalla directory 'tmp' che ha bisogno di più tempo per inizializzarsi e "
+#~ "può causare la mancanza di informazioni piggyback da alcune fonti."
+
+#, fuzzy
+#~ msgid "Time until forced activation of changes after cycle start"
+#~ msgstr "Commento per l'attivazione delle modifiche"
+
+#, fuzzy
+#~ msgid ""
+#~ "To set the value of a connection using the REST API, you need to set the "
+#~ "<tt>value_raw</tt> field. The value of this field is individual for each "
+#~ "connection set. To help you understand what kind of data structure you "
+#~ "need to provide, this connection export mechanism is showing you the "
+#~ "value you need to set for a given connection. The value needs to be a "
+#~ "string representation of a compatible Python data structure."
+#~ msgstr ""
+#~ "Per impostare il valore di una regola utilizzando l'API REST, è "
+#~ "necessario impostare il campo <tt>value_raw</tt>. Il valore di questo "
+#~ "campo è individuale per ogni set di regole. Per aiutarvi a capire che "
+#~ "tipo di struttura di dati dovete fornire, questo meccanismo di "
+#~ "esportazione delle regole vi mostra il valore che dovete impostare per "
+#~ "una determinata regola. Il valore deve essere una rappresentazione "
+#~ "stringa di una struttura dati Python compatibile."
+
+#~ msgid "Toggle log entries"
+#~ msgstr "Allineare le voci del registro"
+
+#~ msgid "Total duration: "
+#~ msgstr "Durata totale: "
+
+#~ msgid "Total hosts: "
+#~ msgstr "Host totali: "
+
+#, python-format
+#~ msgid "User %s of DCD connection was modified"
+#~ msgstr "L'utente %s della connessione DCD è stato modificato"
+
+#~ msgid "Validity of missing data"
+#~ msgstr "Validità dei dati mancanti"
+
+#~ msgid "Validity of outdated data"
+#~ msgstr "Validità dei dati superati"
+
+#, fuzzy
+#~ msgid "Waiting for completion of previous run"
+#~ msgstr "In attesa dell'avvio della replica"
+
+#, fuzzy
+#~ msgid "Waiting..."
+#~ msgstr "In attesa"
+
+#~ msgid "finished for "
+#~ msgstr "Terminato per "
+
+#~ msgid "found "
+#~ msgstr "trovato "
 
 #, fuzzy
 #~ msgid "Getting started"

@@ -166,22 +166,6 @@ msgstr " și %s '%s'"
 msgid " and the %s '%s'."
 msgstr " și %s \"%s\"."
 
-#, fuzzy
-msgid " batch is"
-msgstr "ID-ul căii"
-
-#, fuzzy
-msgid " batches are"
-msgstr "se potrivește cu regex"
-
-#, fuzzy
-msgid " changes"
-msgstr "%d schimbări"
-
-#, fuzzy
-msgid " current cycle to complete"
-msgstr "Așteptând ca alte comutatoare să fie puse în funcțiune"
-
 #, python-format
 msgid " for %d of %d recipients."
 msgstr " pentru %d din %d destinatari."
@@ -207,10 +191,6 @@ msgstr " mai mare decât"
 msgid " left in your free trial"
 msgstr " rămasă în procesul gratuit"
 
-#, fuzzy
-msgid " next cycle start"
-msgstr "Următoarea verificare"
-
 msgid " next week"
 msgstr " săptămâna viitoare"
 
@@ -228,16 +208,8 @@ msgstr " sau "
 msgid " or int"
 msgstr " sau int"
 
-#, fuzzy
-msgid " seconds remaining)"
-msgstr "Credite rămase"
-
 msgid " to:"
 msgstr " către:"
-
-#, fuzzy
-msgid " waiting for the "
-msgstr "Un titlu pentru view"
 
 #, python-brace-format
 msgid " {iofile.name} {size_text} {io_text}"
@@ -262,10 +234,6 @@ msgstr ""
 "Caracterele de delimitare din interiorul grupurilor vor dispărea după "
 "descoperire, deoarece procesele sunt instanțiate pentru fiecare grup care "
 "corespunde. Prin urmare, impuneți delimitatori în afara grupului."
-
-#, fuzzy, python-format
-msgid "# %s - cycle details"
-msgstr "Detalii despre serviciul BI"
 
 #, fuzzy, python-format
 msgid "#%s of unknown rule set %r"
@@ -1021,10 +989,6 @@ msgstr "(dezactivat)"
 msgid "(don't send notifications to Event Console)"
 msgstr "(nu trimite notificări câtre Event Console)"
 
-#, fuzzy
-msgid "(finished)"
-msgstr "Finalizat"
-
 msgid "(ignore)"
 msgstr "(ignoră)"
 
@@ -1078,10 +1042,6 @@ msgstr "(suprapune <b>username</b>)"
 msgid "(please select)"
 msgstr "(vă rugăm să selectați)"
 
-#, fuzzy
-msgid "(running)"
-msgstr "pornit"
-
 msgid "(select target folder)"
 msgstr "(selectați folderul țintă)"
 
@@ -1123,10 +1083,6 @@ msgstr ", dar este anulată de o potrivire dintr-un pachet de reguli anterior."
 msgid ", elapsed cache lifespan: %s"
 msgstr ", durata de viață scursă a cache-ului: %s."
 
-#, fuzzy
-msgid ", errors occurred"
-msgstr ", au apărut erori"
-
 msgid ", first match is a cancelling match"
 msgstr ", primul meci este un meci de anulare"
 
@@ -1140,9 +1096,6 @@ msgstr ", date nu au fost primite în ultimele %.1f intervale de verificate"
 
 msgid ", the first match skips this rule pack"
 msgstr ", prima potrivire sare peste acest pachet de reguli"
-
-msgid "-"
-msgstr ""
 
 msgid "-.-- %"
 msgstr "-.-- %"
@@ -1437,40 +1390,6 @@ msgstr "Eliminați"
 #, fuzzy
 msgid "<< Remove all"
 msgstr "Eliminați toate"
-
-#, fuzzy
-msgid ""
-"<a href='wato.py?mode=edit_ruleset&varname=piggyback_translation'>Piggyback "
-"translations</a> are performed before the piggyback connector creates hosts. "
-"Use this, for example, in a setup with multiple Docker nodes to prefix "
-"containers with the name of the corresponding Docker node. Otherwise, name "
-"collisions can occur if containers with the same name exist on more than one "
-"Docker Node."
-msgstr ""
-"<a href='wato.py?"
-"mode=edit_ruleset&varname=piggyback_translation'>Piggybacktranslations</"
-"a>sunt efectuate înainte ca conectorul piggyback să creeze gazde. Utilizați "
-"acest lucru, de exemplu, într-o configurație cu mai multe noduri Docker "
-"pentru a prefixa containerele cu numele nodului Docker corespunzător. În caz "
-"contrar, pot apărea coliziuni de nume dacă există containere cu același nume "
-"pe mai multe noduri Docker."
-
-#, fuzzy
-msgid ""
-"<a href='wato.py?mode=edit_ruleset&varname=piggyback_translation'>Piggyback "
-"translations</a>are performed before the piggyback connector creates hosts. "
-"Use this, for example, in a setup with multiple Docker nodes to prefix "
-"containers with the name of the corresponding Docker node. Otherwise, name "
-"collisions can occur if containers with the same name exist on more than one "
-"Docker node."
-msgstr ""
-"<a href='wato.py?"
-"mode=edit_ruleset&varname=piggyback_translation'>Piggybacktranslations</"
-"a>sunt efectuate înainte ca conectorul piggyback să creeze gazde. Utilizați "
-"acest lucru, de exemplu, într-o configurație cu mai multe noduri Docker "
-"pentru a prefixa containerele cu numele nodului Docker corespunzător. În caz "
-"contrar, pot apărea coliziuni de nume dacă există containere cu același nume "
-"pe mai multe noduri Docker."
 
 msgid ""
 "<b>Beware:</b> Deleting this key means that you will not be able to create "
@@ -3253,10 +3172,6 @@ msgstr "Renunț la modificări."
 msgid "About Checkmk"
 msgstr "Despre Checkmk"
 
-#, fuzzy
-msgid "About the processing cycle"
-msgstr "Timpul de procesare a evenimentelor"
-
 msgid "Absolut level for total number of used file descriptors"
 msgstr ""
 "Nivelul absolut pentru numărul total de descriptori de fișiere utilizați"
@@ -3807,10 +3722,6 @@ msgstr ""
 msgid "Activate automatic locking of user accounts"
 msgstr "Activați blocarea automată a conturilor de utilizator"
 
-#, fuzzy
-msgid "Activate changes"
-msgstr "A activat modificările"
-
 msgid "Activate changes finished"
 msgstr "Activarea modificărilor finalizată"
 
@@ -3827,10 +3738,6 @@ msgstr "Activarea modificării Scheduler"
 #, fuzzy
 msgid "Activate changes scheduler started"
 msgstr "Activarea modificărilor Scheduler pornit"
-
-#, fuzzy
-msgid "Activate changes timeout"
-msgstr "A activat modificările"
 
 msgid "Activate configuration"
 msgstr "Activați configurația"
@@ -3907,10 +3814,6 @@ msgstr "Modificări activate de %s."
 
 msgid "Activating"
 msgstr "Activarea"
-
-#, fuzzy
-msgid "Activating changes: "
-msgstr "A activat modificările"
 
 msgid "Activation"
 msgstr "Activare"
@@ -4954,10 +4857,6 @@ msgstr "Conexiune adăugată sau editată %s"
 #, python-format
 msgid "Added the %s '%s'"
 msgstr "A fost adăugat %s \"%s"
-
-#, python-format
-msgid "Added the connection '%s'"
-msgstr "A fost adăugată conexiunea '%s'"
 
 msgid "Added to stack"
 msgstr "Adăugat la stivă"
@@ -7015,10 +6914,6 @@ msgstr "S-a produs o eroare în timpul autentificării SaaS: "
 msgid "An error occurred during the last update"
 msgstr "A apărut o eroare în timpul ultimei actualizări"
 
-#, fuzzy
-msgid "An exception occurred"
-msgstr "S-a produs o excepție"
-
 #, fuzzy, python-format
 msgid "An exception occurred: %s"
 msgstr "S-a produs o excepție: %s"
@@ -8382,9 +8277,6 @@ msgstr "Crearea automată a agenților de monitorizare"
 
 #, fuzzy
 msgid "Automatically delete hosts with no recent OpenTelemetry data"
-msgstr "Ștergeți automat gazdele fără date piggyback"
-
-msgid "Automatically delete hosts without piggyback data"
 msgstr "Ștergeți automat gazdele fără date piggyback"
 
 msgid "Automatically detects changes in the formular and fetches new data"
@@ -10196,16 +10088,8 @@ msgstr "Setări de bază"
 msgid "BasicAuth settings (optional)"
 msgstr "Setări BasicAuth (opțional)"
 
-#, fuzzy
-msgid "Batch ID"
-msgstr "ID-ul căii"
-
 msgid "Batch Requests/sec"
 msgstr "Solicitări de loturi/sec"
-
-#, fuzzy
-msgid "Batches"
-msgstr "Potriviri"
 
 msgid "Battery Levels"
 msgstr "Nivelurile bateriei"
@@ -12357,10 +12241,6 @@ msgstr "Nu se poate utiliza un ID de etichetă gol cu o singură alegere."
 msgid "Can still edit"
 msgstr "Încă se poate edita"
 
-#, fuzzy, python-format
-msgid "Can't contact the remote site using '%s'"
-msgstr "Nu se poate conecta la site-ul la distanță: %s."
-
 #, python-format
 msgid "Can't parse version %r"
 msgstr "Nu se poate analiza versiunea %r"
@@ -13001,10 +12881,6 @@ msgstr "A schimbat %s din %s în %s"
 msgid "Changed Configuration variable %s to %s."
 msgstr "A fost schimbată variabila de configurare %s în %s."
 
-#, fuzzy
-msgid "Changed DCD global settings"
-msgstr "Editarea setării globale"
-
 #, python-format
 msgid "Changed alert handler rule %d"
 msgstr "Regula de gestionare a alertelor a fost modificată %d"
@@ -13116,10 +12992,6 @@ msgstr ""
 
 msgid "Changes"
 msgstr "Modificări"
-
-#, fuzzy
-msgid "Changes activated on"
-msgstr "Nu a fost niciodată activat"
 
 msgid "Changes since last dump"
 msgstr "Modificări de la ultima descărcare de gestiune"
@@ -15473,9 +15345,6 @@ msgstr "Arbore complet"
 msgid "Complete variable list (for testing)"
 msgstr "Lista completă de variabile (pentru testare)"
 
-msgid "Completion"
-msgstr "Finalizare"
-
 #, fuzzy
 msgid "Completion time over threshold occurred"
 msgstr "A apărut timpul de finalizare peste treshold"
@@ -16378,10 +16247,6 @@ msgstr ""
 msgid "Connection"
 msgstr "Conexiune"
 
-#, fuzzy, python-format
-msgid "Connection '%s' isn't found: consider activating changes"
-msgstr "Comentariu pentru activarea modificărilor"
-
 msgid "Connection ID"
 msgstr "ID-ul conexiunii"
 
@@ -16403,9 +16268,6 @@ msgstr "Duratele de conectare"
 msgid "Connection established. The connection settings seem to be OK."
 msgstr "Conexiune stabilită. Setările de conectare par a fi în regulă."
 
-msgid "Connection is disabled"
-msgstr "Conexiunea este dezactivată"
-
 #, fuzzy
 msgid "Connection lost occurred"
 msgstr "A avut loc pierderea conexiunii"
@@ -16416,10 +16278,6 @@ msgstr "Numele conexiunii"
 #, fuzzy
 msgid "Connection options"
 msgstr "Duratele de conectare"
-
-#, fuzzy, python-format
-msgid "Connection representation: %s"
-msgstr "Reprezentarea regulilor: %s"
 
 msgid "Connection settings"
 msgstr "Setări de conectare"
@@ -16533,16 +16391,9 @@ msgstr "Prizele de conectare"
 msgid "Connector type"
 msgstr "Tipul de conector"
 
-msgid "Connector: Adding host changes to queue"
-msgstr ""
-
 #, fuzzy, python-format
 msgid "Connector: Collecting metric backend hosts on site  \"%s\""
 msgstr "Faza 1.1: Preluarea de pe site-ul \"%s\""
-
-#, python-format
-msgid "Connector: Collecting piggyback hosts on site  \"%s\""
-msgstr ""
 
 #, fuzzy
 msgid "Connectors"
@@ -16885,10 +16736,6 @@ msgstr ""
 "Perioada de răcire înainte de a încerca din nou o livrare locală sau la "
 "distanță eșuată"
 
-#, fuzzy
-msgid "Cooldown time after processing cycle"
-msgstr "Timpul de procesare a evenimentelor"
-
 msgid "Cooldown time before trying to reconnect after failure"
 msgstr "Timp de răcire înainte de a încerca să se reconecteze după eșec"
 
@@ -16924,10 +16771,6 @@ msgstr "Copiați toate regulile de eveniment de pe site-ul central"
 
 msgid "Copy codes to clipboard"
 msgstr "Copiați codurile în clipboard"
-
-#, fuzzy
-msgid "Copy connection value representation to clipboard"
-msgstr "Copiați reprezentarea valorii regulii în clipboard"
 
 msgid "Copy rule value representation to clipboard"
 msgstr "Copiați reprezentarea valorii regulii în clipboard"
@@ -17299,19 +17142,6 @@ msgstr ""
 "Nu a putut interoga ifid pentru host_address '%s'. Este posibil ca "
 "utilizatorul dvs. ntopng să nu aibă drepturi suficiente pentru a interoga "
 "aceste informații."
-
-#, python-format
-msgid "Could not reload DCD: %s. See web.log for further information."
-msgstr ""
-"Nu s-a putut reîncărca DCD: %s. Consultați web.log pentru informații "
-"suplimentare."
-
-#, fuzzy
-msgid ""
-"Could not reload DCD: It is not running. See web.log for further information."
-msgstr ""
-"Nu s-a putut reîncărca DCD: %s. Consultați web.log pentru informații "
-"suplimentare."
 
 #, fuzzy, python-format
 msgid ""
@@ -17942,10 +17772,6 @@ msgstr "A creat un nou rol '%s'"
 msgid "Created with Checkmk Version $CHECK_MK_VERSION$"
 msgstr "Creat cu versiunea Checkmk $CHECK_MK_VERSION$."
 
-#, fuzzy, python-format
-msgid "Created: %d, modified: %d, deleted: %d"
-msgstr "Gazde: %d creat, %d modificat, %d șters"
-
 msgid ""
 "Creates a new service that displays information about disk I/O of database "
 "files. This service displays the number of bytes read and written to "
@@ -18215,10 +18041,6 @@ msgstr "Crontab status"
 
 msgid "Current"
 msgstr "Curent"
-
-#, fuzzy
-msgid "Current DCD state."
-msgstr "Starea actuală"
 
 msgid "Current O2 percentage"
 msgstr "Procentul actual de O2"
@@ -18728,30 +18550,6 @@ msgstr "Personalizat"
 msgid "Cut everything after first space"
 msgstr "Tăiați totul după primul spațiu"
 
-#, python-format
-msgid ""
-"Cycle %d not found, the information is expired, please return back to select "
-"a cycle"
-msgstr ""
-
-msgid "Cycle id"
-msgstr ""
-
-#, fuzzy
-msgid "Cycle not found"
-msgstr "Pagina nu a fost găsită"
-
-msgid ""
-"Cycle not found, the information is expired, please return back to select a "
-"cycle"
-msgstr ""
-
-msgid "Cycle steps"
-msgstr ""
-
-msgid "Cycles"
-msgstr ""
-
 #, fuzzy
 msgid "DATAPROXY - Throttled server connections"
 msgstr "DATAPROXY - Conexiuni de server restricționate"
@@ -18832,36 +18630,12 @@ msgstr "Utilizarea memoriei DB2"
 msgid "DB2 time since last database backup"
 msgstr "DB2 Timp de la ultima copie de rezervă a bazei de date"
 
-#, fuzzy, python-format
-msgid "DCD Manager: Fetching piggyback hosts from site \"%s\""
-msgstr "Faza 1.1: Preluarea de pe site-ul \"%s\""
-
-#, fuzzy
-msgid "DCD batch"
-msgstr "Starea DCD"
-
-#, fuzzy
-msgid "DCD batch history"
-msgstr "Istoric de căutare"
-
-#, fuzzy
-msgid "DCD batches"
-msgstr "Potriviri"
-
 #, fuzzy
 msgid "DCD cycles and batches."
 msgstr "Roluri și stări de discuri DR:BD"
 
-#, fuzzy
-msgid "DCD global settings"
-msgstr "Editarea setării globale"
-
 msgid "DCD status"
 msgstr "Starea DCD"
-
-#, fuzzy
-msgid "DCD work state"
-msgstr "cea mai rea stare"
 
 msgid "DD.MM.YYYY"
 msgstr "DD.MM.AAAA"
@@ -20290,13 +20064,6 @@ msgstr "Ștergeți ținta #%d"
 #, fuzzy
 msgid ""
 "Delete the hosts created by this connection whose OpenTelemetry data is no "
-"longer present."
-msgstr ""
-"Șterge gazdele create de această conexiune ale căror date de piggyback nu "
-"mai sunt prezente."
-
-msgid ""
-"Delete the hosts created by this connection whose piggyback data is no "
 "longer present."
 msgstr ""
 "Șterge gazdele create de această conexiune ale căror date de piggyback nu "
@@ -22804,10 +22571,6 @@ msgid "Do not monitor failovers"
 msgstr "Nu monitorizați"
 
 #, fuzzy
-msgid "Do not monitor hosts without discovered services"
-msgstr "Nu există gazde care să fie descoperite"
-
-#, fuzzy
 msgid "Do not monitor limits"
 msgstr "Nu monitorizați"
 
@@ -23453,12 +23216,6 @@ msgstr "Dw"
 #, fuzzy
 msgid "Dynamic MAC enabled"
 msgstr "Sincronizare activată"
-
-msgid "Dynamic configuration"
-msgstr "Configurație dinamică"
-
-msgid "Dynamic configuration logging"
-msgstr "Înregistrarea configurației dinamice"
 
 msgid "Dynamic host configuration connections"
 msgstr "Conexiuni de configurare dinamică a gazdei"
@@ -25911,9 +25668,6 @@ msgstr "Schimburi"
 msgid "Exclude"
 msgstr "Excludeți"
 
-msgid "Exclude \"Activate changes\" for time ranges"
-msgstr "Excludeți \"Activare modificări\" pentru intervale de timp"
-
 msgid "Exclude Nodes based on their role"
 msgstr "Excludeți nodurile pe baza rolului lor"
 
@@ -26099,20 +25853,6 @@ msgstr "Modul de execuție"
 
 msgid "Execution configuration"
 msgstr "Configurația de execuție"
-
-msgid "Execution has been triggered"
-msgstr "Execuția a fost declanșată"
-
-msgid "Execution history"
-msgstr "Istoricul execuției"
-
-#, python-format
-msgid "Execution history of %s"
-msgstr "Istoricul execuției lui %s"
-
-#, python-format
-msgid "Execution history of this %s"
-msgstr "Istoricul de execuție al acestui %s"
 
 msgid "Execution interval"
 msgstr "Interval de execuție"
@@ -26467,10 +26207,6 @@ msgid ""
 msgstr ""
 "Fișier de export care urmează să fie creat, conținând <tt>&lt;HOST&gt;</tt> "
 "pentru numele de gazdă"
-
-#, fuzzy, python-format
-msgid "Export this %s for API"
-msgstr "Exportați această regulă pentru API"
 
 msgid "Export this rule for API"
 msgstr "Exportați această regulă pentru API"
@@ -26880,10 +26616,6 @@ msgstr "Niveluri pentru conexiunile stabilite"
 msgid "Failed to estimate the Apache process size"
 msgstr "Nu a reușit să estimeze dimensiunea procesului Apache"
 
-#, python-format
-msgid "Failed to execute DCD connection (%s)"
-msgstr "Nu s-a reușit executarea conexiunii DCD (%s)"
-
 #, fuzzy, python-format
 msgid "Failed to execute the test %s: See web.log for further details"
 msgstr "Nu a reușit să execute testul %s: %s."
@@ -26902,10 +26634,6 @@ msgstr "Nu s-a reușit să se obțină certificatul peer (%s)"
 
 msgid "Failed to find matching certificate in chain"
 msgstr "Nu a reușit să găsească certificatul corespunzător în lanț"
-
-#, python-format
-msgid "Failed to get the status from DCD (%s)"
-msgstr "Nu a reușit să obțină starea de la DCD (%s)"
 
 #, fuzzy, python-format
 msgid "Failed to load legacy host attribute from local plug-ins: %r"
@@ -32740,10 +32468,6 @@ msgstr "Element de căutare a gazdei"
 msgid "Host management"
 msgstr "Gestionarea gazdei"
 
-#, fuzzy
-msgid "Host manager settings"
-msgstr "Setări gazdă"
-
 msgid "Host memory usage"
 msgstr "Utilizarea memoriei gazdă"
 
@@ -32924,14 +32648,6 @@ msgstr "Probleme ale gazdei (netransferate)"
 msgid "Host problems for NagStaMon"
 msgstr "Probleme cu gazdele pentru NagStaMon"
 
-#, fuzzy
-msgid "Host processing"
-msgstr "Prelucrarea RRD"
-
-#, fuzzy
-msgid "Host processing: "
-msgstr "Prelucrarea RRD"
-
 msgid "Host properties"
 msgstr "Proprietăți gazdă"
 
@@ -33110,10 +32826,6 @@ msgstr "Gazde și dosare"
 msgid "Hosts and folders"
 msgstr "Gazde și dosare"
 
-#, python-format
-msgid "Hosts assigned with this %s"
-msgstr "Gazdele alocate cu acest %s."
-
 msgid ""
 "Hosts can be grouped together into host groups. The most common use case is "
 "to put hosts which belong together in a host group to make it possible to "
@@ -33281,10 +32993,6 @@ msgstr ""
 #, fuzzy
 msgid "Hosts: "
 msgstr "Gazde"
-
-#, python-format
-msgid "Hosts: %d created, %d modified, %d deleted"
-msgstr "Gazde: %d creat, %d modificat, %d șters"
 
 #, python-format
 msgid "Hosts: %d total (%d succeeded, %d skipped, %d failed)"
@@ -37608,10 +37316,6 @@ msgstr "CRC-uri invalide"
 #, fuzzy, python-format
 msgid "Invalid CSRF token (%r) for session (%r)"
 msgstr "Token CSRF invalid (%r) pentru sesiune (%r)"
-
-#, python-format
-msgid "Invalid DCD command: %r"
-msgstr "Comandă DCD invalidă: %r."
 
 #, fuzzy
 msgid "Invalid IP address"
@@ -42698,9 +42402,6 @@ msgstr ""
 "Gestionați agenți de monitorizare personalizați pentru Linux, Windows și "
 "alte sisteme de operare"
 
-msgid "Manage dynamic configuration"
-msgstr "Gestionați configurația dinamică"
-
 msgid "Manage event classification and correlation rules for the Event Console"
 msgstr ""
 "Gestionați regulile de clasificare și corelare a evenimentelor pentru "
@@ -42738,15 +42439,8 @@ msgstr "Gestionați serviciile"
 msgid "Manage tags"
 msgstr "Gestionați etichetele"
 
-msgid "Manage the Dynamic configuration connections"
-msgstr "Gestionați conexiunile de configurare dinamică"
-
 msgid "Manage the controllers auto-registration"
 msgstr "Gestionați auto-înregistrarea controlorilor"
-
-#, fuzzy
-msgid "Manage the dynamic configuration connections"
-msgstr "Gestionați conexiunile de configurare dinamică"
 
 msgid "Manage users of the monitoring system."
 msgstr "Gestionarea utilizatorilor sistemului de monitorizare."
@@ -42821,10 +42515,6 @@ msgstr "Instantanee manuale"
 #, fuzzy
 msgid "Manually added"
 msgstr "Verificare manuală"
-
-#, python-format
-msgid "Manually execute this %s"
-msgstr "Executați manual acest %s."
 
 msgid ""
 "Manually let the core send a notification to a host or service in order to "
@@ -43399,10 +43089,6 @@ msgstr "Dimensiunea maximă a fișierului jurnal"
 
 msgid "Maximal number of daemon threads"
 msgstr "Numărul maxim de fire de execuție ale demonului"
-
-#, fuzzy
-msgid "Maximal number of hosts per bulk discovery"
-msgstr "Numărul așteptat de descriptori de fișiere deschise"
 
 msgid "Maximal number of log files to backup"
 msgstr "Numărul maxim de fișiere de jurnal pentru backup"
@@ -47084,10 +46770,6 @@ msgstr "Următoarea cursă"
 msgid "Next check"
 msgstr "Următoarea verificare"
 
-#, fuzzy
-msgid "Next cycle"
-msgstr "Următoarea verificare"
-
 msgid "Next notification"
 msgstr "Următoarea notificare"
 
@@ -47507,10 +47189,6 @@ msgstr ""
 msgid "No names defined"
 msgstr "Nu sunt definite conexiuni"
 
-#, fuzzy
-msgid "No next cycle available"
-msgstr "nu este disponibil"
-
 #, fuzzy, python-format
 msgid "No notification parameters for method '%s' found"
 msgstr "Regula de notificare modificată %d"
@@ -47535,10 +47213,6 @@ msgstr "Din magazinul de parole"
 
 msgid "No pending changes."
 msgstr "Nu există modificări în așteptare."
-
-#, fuzzy
-msgid "No previous cycle available"
-msgstr "Nu există informații disponibile"
 
 msgid "No proxy"
 msgstr "Fără proxy"
@@ -47711,10 +47385,6 @@ msgstr "Nu există nicio vizualizare definită cu numele '%s'."
 #, fuzzy
 msgid "No view name provided."
 msgstr "Din magazinul de parole"
-
-#, fuzzy
-msgid "No waiting batches"
-msgstr "Afișați toate subiectele"
 
 msgid "No, adjust settings"
 msgstr "Nu, reglați setările"
@@ -48361,12 +48031,6 @@ msgstr "Note URL pentru servicii"
 
 msgid "Notes URL"
 msgstr "Note URL"
-
-msgid "Nothing changed"
-msgstr "Nimic nu s-a schimbat"
-
-msgid "Nothing logged"
-msgstr "Nimic înregistrat"
 
 msgid "Nothing was changed."
 msgstr "Nu s-a schimbat nimic."
@@ -50139,14 +49803,6 @@ msgstr ""
 msgid "Only bulk notifications during the following time period"
 msgstr "Numai notificări în masă în următoarea perioadă de timp"
 
-#, fuzzy
-msgid ""
-"Only care about hosts that receive piggyback data from hosts whose names "
-"match one of these regular expressions."
-msgstr ""
-"Aveți grijă doar de gazdele care primesc date piggyback de la gazde al căror "
-"nume se potrivește cu una dintre aceste expresii regulate."
-
 msgid "Only discover monitors in the following states"
 msgstr "Descoperiți numai monitoarele din următoarele state"
 
@@ -50742,15 +50398,6 @@ msgstr ""
 "Opțional, adăugați un comentariu pentru a explica scopul acestui obiect. "
 "Comentariul este vizibil numai în această fereastră de dialog și poate ajuta "
 "alți utilizatori să înțeleagă intențiile atributelor configurate."
-
-msgid ""
-"Optionally, restrict host creation using regular expressions."
-"<br><b>Important:</b><br>This only applies to hosts created by this "
-"connection, not the monitoring host ('Dummy host').<br><br>"
-msgstr ""
-"Opțional, restricționați crearea de gazde folosind expresii regulate."
-"<br><b>Important:</b><br><br>Acest lucru se aplică numai gazdelor create de "
-"această conexiune, nu și gazdei de monitorizare ('Gazda fictivă').<br><br>"
 
 #, fuzzy
 msgid ""
@@ -53814,12 +53461,6 @@ msgstr "Piano Bar"
 msgid "Piggyback"
 msgstr "Piggyback"
 
-msgid "Piggyback creation options"
-msgstr "Opțiuni de creare Piggyback"
-
-msgid "Piggyback data"
-msgstr "Date Piggyback"
-
 #, fuzzy
 msgid "Piggyback host names"
 msgstr "Nume Piggyback"
@@ -54628,9 +54269,6 @@ msgstr "Vă rugăm să specificați cel puțin o adresă"
 msgid "Please specify at least one \"OpenTelemetry hosts creation option\""
 msgstr "Vă rugăm să specificați cel puțin o \"opțiune de creare Piggyback\""
 
-msgid "Please specify at least one \"Piggyback creation option\""
-msgstr "Vă rugăm să specificați cel puțin o \"opțiune de creare Piggyback\""
-
 msgid "Please specify at least one condition or this rule will never match."
 msgstr ""
 "Vă rugăm să specificați cel puțin o condiție, altfel această regulă nu se va "
@@ -55286,9 +54924,6 @@ msgstr ""
 msgid "Prevent DNS lookups by use of a cache file"
 msgstr "Prevenirea căutărilor DNS prin utilizarea unui fișier cache"
 
-msgid "Prevent host deletion after initialization"
-msgstr "Împiedicați ștergerea gazdei după inițializare"
-
 msgid "Prevent loading HTML from service output or log messages"
 msgstr ""
 "Împiedicați încărcarea HTML din mesajele de ieșire a serviciului sau din "
@@ -55313,10 +54948,6 @@ msgstr ""
 
 msgid "Preview this report"
 msgstr "Previzualizați acest raport"
-
-#, fuzzy
-msgid "Previous cycle"
-msgstr "Descoperit anterior"
 
 msgid "PrimSeq erros"
 msgstr "Erori PrimSeq"
@@ -56317,9 +55948,6 @@ msgstr ""
 msgid "REST API"
 msgstr "REST API"
 
-msgid "REST API communication"
-msgstr "Comunicarea REST API"
-
 msgid "REST API documentation"
 msgstr "Documentație REST API"
 
@@ -56939,14 +56567,6 @@ msgstr "Site-ul este dezactivat"
 
 msgid "Recent event history"
 msgstr "Istoricul evenimentelor recente"
-
-#, fuzzy
-msgid "Recent processing batches"
-msgstr "Timpul de procesare a evenimentelor"
-
-#, fuzzy
-msgid "Recent processing cycles"
-msgstr "Timpul de procesare a evenimentelor"
 
 msgid "Recently changed services"
 msgstr "Servicii schimbate recent"
@@ -57974,10 +57594,6 @@ msgid "Removed the %s '%s'"
 msgstr "Eliminat %s \"%s"
 
 #, python-format
-msgid "Removed the connection '%s'"
-msgstr "A fost eliminată conexiunea '%s'"
-
-#, python-format
 msgid "Removed unpackaged extension file %s: %s"
 msgstr "A fost eliminat fișierul de extensie neambalat %s: %s."
 
@@ -58917,9 +58533,6 @@ msgstr "Limitați severitatea la cel mult"
 
 msgid "Restrict single values"
 msgstr "Limitarea valorilor unice"
-
-msgid "Restrict source hosts"
-msgstr "Restricționați gazdele sursă"
 
 msgid "Restrict subcategories"
 msgstr "Restricționarea subcategoriilor"
@@ -61999,27 +61612,12 @@ msgstr "Detalii despre serviciul BI"
 msgid "Service discovery"
 msgstr "Descoperirea serviciilor"
 
-#, fuzzy
-msgid "Service discovery and activation: "
-msgstr "Descoperirea serviciilor: "
-
-#, fuzzy
-msgid "Service discovery ran on"
-msgstr "Descoperirea serviciilor: "
-
 msgid "Service discovery rules"
 msgstr "Reguli de descoperire a serviciilor"
-
-#, fuzzy
-msgid "Service discovery timeout"
-msgstr "Descoperirea serviciilor: "
 
 msgid "Service discovery triggers service discovery check"
 msgstr ""
 "Descoperirea serviciilor declanșează verificarea descoperirii serviciilor"
-
-msgid "Service discovery: "
-msgstr "Descoperirea serviciilor: "
 
 msgid "Service discovery: Check type"
 msgstr "Descoperirea serviciilor: Verificați tipul"
@@ -63441,10 +63039,6 @@ msgstr "Afișați aliasul și descrierea"
 msgid "Show alias if set, else description"
 msgstr "Afișează aliasul dacă este setat, altfel descriere"
 
-#, fuzzy
-msgid "Show all cycles"
-msgstr "Afișați toate regulile"
-
 msgid "Show all hosts"
 msgstr "Afișați toate gazdele"
 
@@ -63482,10 +63076,6 @@ msgstr "Afișați comenzile"
 
 msgid "Show current / last state of this backup job"
 msgstr "Afișează starea curentă / ultima stare a acestei sarcini de backup"
-
-#, fuzzy
-msgid "Show cycle details"
-msgstr "Arată detalii"
 
 msgid "Show data only on search"
 msgstr "Afișați datele numai la căutare"
@@ -64450,10 +64040,6 @@ msgstr ""
 #, fuzzy
 msgid "Skip verification (insecure)"
 msgstr "Ignoră erorile de certificat (nesigur)"
-
-#, fuzzy
-msgid "Skipped"
-msgstr "S-a oprit"
 
 #, python-format
 msgid "Skipped %s: %s"
@@ -65654,13 +65240,6 @@ msgstr ""
 "Specificați site-ul cu care trebuie inițiate aceste conexiuni. Trebuie să "
 "aveți o regulă corespunzătoare pentru a crea gazda într-un dosar monitorizat "
 "pe site-ul respectiv."
-
-msgid ""
-"Specify the site where you want this connector to run. Only this site will "
-"process the piggyback data."
-msgstr ""
-"Specificați site-ul în care doriți ca acest conector să funcționeze. Numai "
-"acest site va procesa datele de piggyback."
 
 msgid ""
 "Specify the threshold levels for the free memory space. The free memory "
@@ -67144,31 +66723,12 @@ msgstr "Furați"
 msgid "Steelhead connections"
 msgstr "Conexiuni Steelhead"
 
-msgid "Step"
-msgstr "Pasul"
-
 #, python-format
 msgid "Step %d"
 msgstr "Pasul %d"
 
 msgid "Step (precision)"
 msgstr "Pas (precizie)"
-
-msgid "Step has been finished"
-msgstr "Etapa a fost finalizată"
-
-msgid "Step has been initialized"
-msgstr "Etapa a fost inițializată"
-
-msgid "Step has been started"
-msgstr "Etapa a fost începută"
-
-msgid "Steps"
-msgstr "Pași"
-
-#, python-format
-msgid "Still no data in '%s'"
-msgstr ""
 
 msgid "Still nothing happened."
 msgstr "Tot nu s-a întâmplat nimic."
@@ -70461,10 +70021,6 @@ msgstr ""
 "Timpul de așteptare a conectării în secunde la stabilirea unei conexiuni cu "
 "PLC."
 
-#, python-format
-msgid "The connection %r does not exist"
-msgstr "Conexiunea %r nu există"
-
 msgid ""
 "The connection creates hosts in this particular folder. Once created, you "
 "can choose to move the host to another folder."
@@ -70810,14 +70366,6 @@ msgstr ""
 
 msgid "The duration in minutes of the ad hoc downtime."
 msgstr "Durata în minute a timpului de nefuncționare adhoc."
-
-msgid ""
-"The dynamic configuration will interrupt the service discovery and force an "
-"activation after this time. The time is counted from the start of the "
-"processing cycle. This is useful to ensure that changes are activated in a "
-"timely manner and allow changes to the config, which will then be activated "
-"as well. Default is 10 minutes."
-msgstr ""
 
 #, fuzzy
 msgid ""
@@ -71528,13 +71076,6 @@ msgstr ""
 "disponibil și pentru a actualiza configurația."
 
 msgid ""
-"The interval the connection will be executed to check the available "
-"piggyback and update the configuration."
-msgstr ""
-"Intervalul la care va fi executată conexiunea pentru a verifica piggyback-ul "
-"disponibil și pentru a actualiza configurația."
-
-msgid ""
 "The interval the connection will be executed to poll the data source and "
 "update the configuration."
 msgstr ""
@@ -71946,21 +71487,9 @@ msgstr ""
 "la gazda țintă, nu și la salturile intermediare."
 
 msgid ""
-"The maximum time for an individual bulk discovery operation. After this, the "
-"processing cycle will continue irregardless of the outcome of the bulk "
-"discovery. Default is 1 minute."
-msgstr ""
-
-msgid ""
 "The maximum time that the Robotmk scheduler allows for a single Robot "
 "Framework execution. This time, when multiplied by the number of executions, "
 "sets the total runtime limit for the execution of a plan."
-msgstr ""
-
-msgid ""
-"The maximum time the dynamic configuration will wait for 'activate changes' "
-"to be completed. After this, the processing cycle will continue or finish. "
-"Default is 2 minutes."
 msgstr ""
 
 msgid "The maximum value length is 256 characters."
@@ -72739,10 +72268,6 @@ msgstr ""
 "senzorului (sensibil la majuscule și minuscule)."
 
 #, fuzzy
-msgid "The piggyback mechanism"
-msgstr "Mecanismul Piggyback"
-
-#, fuzzy
 msgid ""
 "The piggyback-hub cannot be enabled for a remote site if it is disabled for "
 "the central site"
@@ -73452,16 +72977,6 @@ msgid ""
 msgstr ""
 "Serviciul va declanșa o avertizare sau o stare critică dacă dimensiunea "
 "bazei de date depășește aceste niveluri."
-
-msgid ""
-"The services are discovered for a bulk of hosts for higher performance "
-"versus individual service discovery. A too large number here can extend the "
-"cycle time of the dynamic configuration as an activation can only be forced, "
-"when no service discovery is running. Decrease this value, if long service "
-"discoveries block the forced activation. Default is 50 and optimized for the "
-"hosts typically being handled by dynamic configuration, where no network "
-"communication happens."
-msgstr ""
 
 #, fuzzy
 msgid ""
@@ -75371,13 +74886,6 @@ msgid ""
 msgstr ""
 "Acest conector poate fi utilizat pentru a crea automat gazde pe baza datelor "
 "mele."
-
-msgid ""
-"This connector can be used to automatically create hosts based on piggyback "
-"data."
-msgstr ""
-"Acest conector poate fi utilizat pentru a crea automat gazde pe baza datelor "
-"piggyback."
 
 msgid "This crash report"
 msgstr "Acest raport de accident"
@@ -78813,14 +78321,6 @@ msgstr ""
 #, fuzzy, python-format
 msgid ""
 "This setting decides which types of messages to log into the log of the "
-"Dynamic Configuration Daemon (%s)."
-msgstr ""
-"Această setare decide ce tipuri de mesaje se înregistrează în jurnalul "
-"demonului de configurare dinamică (%s)."
-
-#, fuzzy, python-format
-msgid ""
-"This setting decides which types of messages to log into the log of the "
 "Livestatus proxy (%s)."
 msgstr ""
 "Această setare decide ce tipuri de mesaje se înregistrează în jurnalul proxy-"
@@ -79646,13 +79146,6 @@ msgid "Time between new classical active checks"
 msgstr "Timpul dintre noile controale active clasice"
 
 msgid ""
-"Time between the end of one processing cycle and the start of the next one. "
-"You can increase the cooldown time to throttle the processing of new data. "
-"This can reduce the load of the dynamic configuration on your system. "
-"Default is 30 seconds."
-msgstr ""
-
-msgid ""
 "Time between the last operation on primary's oplog and on secondary above"
 msgstr ""
 "Timpul dintre ultima operațiune pe oplogul primarului și pe cel secundar de "
@@ -79828,31 +79321,8 @@ msgstr ""
 "Intervalul de timp pentru a continua să se considere valabile datele de "
 "piggyback învechite."
 
-msgid "Time range to continue to consider outdated piggyback data as valid."
-msgstr ""
-"Intervalul de timp pentru a continua să se considere valabile datele de "
-"piggyback învechite."
-
 msgid "Time range to create report for"
 msgstr "Intervalul de timp pentru care se creează raportul"
-
-msgid ""
-"Time range to keep hosts when piggyback source only sends piggyback data for "
-"other hosts."
-msgstr ""
-"Intervalul de timp pentru a păstra gazdele atunci când sursa de piggyback "
-"trimite date de piggyback numai pentru alte gazde."
-
-msgid ""
-"Time range to prevent host deletion after site startup, e.g. when booting "
-"the Checkmk server. This is caused by the 'tmp' directory which needs more "
-"time to initialize and can result in missing piggyback information from some "
-"sources."
-msgstr ""
-"Interval de timp pentru a preveni ștergerea gazdei după pornirea site-ului, "
-"de exemplu, la pornirea serverului Checkmk. Acest lucru este cauzat de "
-"directorul 'tmp' care are nevoie de mai mult timp pentru a se inițializa și "
-"poate duce la lipsa informațiilor piggyback din unele surse."
 
 msgid "Time series graph"
 msgstr "Graficul seriilor de timp"
@@ -80079,10 +79549,6 @@ msgstr "Timpul până la expirarea acreditărilor"
 
 msgid "Time until credentials expiration"
 msgstr "Timpul până la expirarea acreditărilor"
-
-#, fuzzy
-msgid "Time until forced activation of changes after cycle start"
-msgstr "Comentariu pentru activarea modificărilor"
 
 msgid "Time until license expiration"
 msgstr "Timp până la expirarea licenței"
@@ -80434,23 +79900,6 @@ msgstr ""
 
 #, fuzzy
 msgid ""
-"To set the value of a connection using the REST API, you need to set the "
-"<tt>value_raw</tt> field. The value of this field is individual for each "
-"connection set. To help you understand what kind of data structure you need "
-"to provide, this connection export mechanism is showing you the value you "
-"need to set for a given connection. The value needs to be a string "
-"representation of a compatible Python data structure."
-msgstr ""
-"Pentru a seta valoarea unei reguli utilizând REST API, trebuie să setați "
-"câmpul <tt>value_raw</tt>. Valoarea acestui câmp este individuală pentru "
-"fiecare set de reguli. Pentru a vă ajuta să înțelegeți ce tip de structură "
-"de date trebuie să furnizați, acest mecanism de export al regulilor vă arată "
-"valoarea pe care trebuie să o setați pentru o anumită regulă. Valoarea "
-"trebuie să fie o reprezentare sub formă de șir de caractere a unei structuri "
-"de date Python compatibile."
-
-#, fuzzy
-msgid ""
 "To set the value of a rule using the REST API, you need to set the "
 "<tt>value_raw</tt> field. The value of this field is individual for each "
 "rule set. To help you understand what kind of data structure you need to "
@@ -80493,9 +79942,6 @@ msgstr "Astăzi"
 
 msgid "Toggle elements"
 msgstr "Elemente de comutare"
-
-msgid "Toggle log entries"
-msgstr "Comutarea intrărilor din jurnal"
 
 msgid "Toggle names"
 msgstr "Schimbă numele"
@@ -80779,10 +80225,6 @@ msgstr "Durata totală"
 msgid "Total duration of SIP/H323 calls"
 msgstr "Durata totală"
 
-#, fuzzy
-msgid "Total duration: "
-msgstr "Durata totală"
-
 msgid "Total error rate"
 msgstr "Rata totală de eroare"
 
@@ -80830,10 +80272,6 @@ msgstr "Rata totală de succes"
 
 msgid "Total host problems"
 msgstr "Total probleme cu gazdele"
-
-#, fuzzy
-msgid "Total hosts: "
-msgstr "Gazde învechite"
 
 msgid "Total index failure count upper levels"
 msgstr "Numărul total de eșecuri ale indicelui niveluri superioare"
@@ -83748,16 +83186,6 @@ msgstr "Tip: %s."
 
 msgid "Types of events that are being processed"
 msgstr "Tipuri de evenimente care sunt prelucrate"
-
-msgid ""
-"Typically hosts without discovered services bear little value for monitoring "
-"and can cause false alerts. In case an activation is forced or the dynamic "
-"configuration is forcefully interrupted, there might be hosts without "
-"discovered services. With this option, hosts will receive a hidden attribute "
-"so that they will not be monitored until the service discovery has been "
-"executed by the dynamic configuration. Only activate, if the dynamic "
-"configuration cannot finish before a forced activation. Default is 'False'."
-msgstr ""
 
 msgid "U"
 msgstr "U"
@@ -86790,10 +86218,6 @@ msgstr "Utilizator"
 msgid "User %s does not exist."
 msgstr "%s nu există."
 
-#, python-format
-msgid "User %s of DCD connection was modified"
-msgstr "Utilizatorul %s a fost modificată conexiunea DCD"
-
 #, fuzzy
 msgid "User & Password"
 msgstr "Parola utilizatorului"
@@ -87875,12 +87299,6 @@ msgstr "Validarea certificatului serverului în timpul interogării portului"
 msgid "Validity"
 msgstr "Valabil până la"
 
-msgid "Validity of missing data"
-msgstr "Validitatea datelor lipsă"
-
-msgid "Validity of outdated data"
-msgstr "Valabilitatea datelor depășite"
-
 msgid "Value"
 msgstr "Valoare"
 
@@ -88362,9 +87780,6 @@ msgstr "Starea heartbeat a mașinii virtuale (de exemplu, ESX)"
 msgid "Virtual machine snapshots"
 msgstr "Instantanee de mașină virtuală"
 
-msgid "Virtual machines may take a few minutes to show up."
-msgstr ""
-
 #, fuzzy
 msgid "Virtual memory"
 msgstr "Utilizarea memoriei virtuale"
@@ -88647,10 +88062,6 @@ msgid "Waiting containers"
 msgstr "Containere în așteptare"
 
 #, fuzzy
-msgid "Waiting for completion of previous run"
-msgstr "Așteptare pentru începerea replicării"
-
-#, fuzzy
 msgid "Waiting for discovery"
 msgstr "Descoperirea portului Netapp"
 
@@ -88674,10 +88085,6 @@ msgstr "Așteptare pentru începerea replicării"
 
 msgid "Waiting to acquire lock"
 msgstr ""
-
-#, fuzzy
-msgid "Waiting..."
-msgstr "Așteptare"
 
 msgid "Waitlocks"
 msgstr "Blocuri de așteptare"
@@ -90138,13 +89545,6 @@ msgid ""
 msgstr ""
 "Atunci când doriți să procesați capcane SNMP cu Consola de evenimente, este "
 "necesar să configurați acreditările pentru decriptarea capcanelor primite."
-
-msgid ""
-"Whenever Checkmk creates, modifies or deletes hosts via this connection, it "
-"will only consider hosts that receive piggyback data from hosts with names "
-"matching one of these regular expressions. Please note: The attribution of "
-"piggyback data to existing hosts is not affected by this setting."
-msgstr ""
 
 #, python-format
 msgid ""
@@ -94097,10 +93497,6 @@ msgstr "sistem de fișiere"
 msgid "files"
 msgstr "fișiere"
 
-#, fuzzy
-msgid "finished for "
-msgstr "Finalizat"
-
 msgid "firing"
 msgstr "ardere"
 
@@ -94143,10 +93539,6 @@ msgstr "forced-commands-only"
 
 msgid "forecast trend only"
 msgstr "doar tendința de prognoză"
-
-#, fuzzy
-msgid "found "
-msgstr "Rotund"
 
 msgid "fourth week"
 msgstr "a patra săptămână"
@@ -99455,6 +98847,527 @@ msgstr ""
 msgid ""
 "You can still access it later via Help > Learning Checkmk > Welcome page"
 msgstr ""
+
+#, fuzzy
+#~ msgid " batch is"
+#~ msgstr "ID-ul căii"
+
+#, fuzzy
+#~ msgid " batches are"
+#~ msgstr "se potrivește cu regex"
+
+#, fuzzy
+#~ msgid " changes"
+#~ msgstr "%d schimbări"
+
+#, fuzzy
+#~ msgid " current cycle to complete"
+#~ msgstr "Așteptând ca alte comutatoare să fie puse în funcțiune"
+
+#, fuzzy
+#~ msgid " next cycle start"
+#~ msgstr "Următoarea verificare"
+
+#, fuzzy
+#~ msgid " seconds remaining)"
+#~ msgstr "Credite rămase"
+
+#, fuzzy
+#~ msgid " waiting for the "
+#~ msgstr "Un titlu pentru view"
+
+#, fuzzy, python-format
+#~ msgid "# %s - cycle details"
+#~ msgstr "Detalii despre serviciul BI"
+
+#, fuzzy
+#~ msgid "(finished)"
+#~ msgstr "Finalizat"
+
+#, fuzzy
+#~ msgid "(running)"
+#~ msgstr "pornit"
+
+#, fuzzy
+#~ msgid ", errors occurred"
+#~ msgstr ", au apărut erori"
+
+#, fuzzy
+#~ msgid ""
+#~ "<a href='wato.py?"
+#~ "mode=edit_ruleset&varname=piggyback_translation'>Piggyback translations</"
+#~ "a> are performed before the piggyback connector creates hosts. Use this, "
+#~ "for example, in a setup with multiple Docker nodes to prefix containers "
+#~ "with the name of the corresponding Docker node. Otherwise, name "
+#~ "collisions can occur if containers with the same name exist on more than "
+#~ "one Docker Node."
+#~ msgstr ""
+#~ "<a href='wato.py?"
+#~ "mode=edit_ruleset&varname=piggyback_translation'>Piggybacktranslations</"
+#~ "a>sunt efectuate înainte ca conectorul piggyback să creeze gazde. "
+#~ "Utilizați acest lucru, de exemplu, într-o configurație cu mai multe "
+#~ "noduri Docker pentru a prefixa containerele cu numele nodului Docker "
+#~ "corespunzător. În caz contrar, pot apărea coliziuni de nume dacă există "
+#~ "containere cu același nume pe mai multe noduri Docker."
+
+#, fuzzy
+#~ msgid ""
+#~ "<a href='wato.py?"
+#~ "mode=edit_ruleset&varname=piggyback_translation'>Piggyback translations</"
+#~ "a>are performed before the piggyback connector creates hosts. Use this, "
+#~ "for example, in a setup with multiple Docker nodes to prefix containers "
+#~ "with the name of the corresponding Docker node. Otherwise, name "
+#~ "collisions can occur if containers with the same name exist on more than "
+#~ "one Docker node."
+#~ msgstr ""
+#~ "<a href='wato.py?"
+#~ "mode=edit_ruleset&varname=piggyback_translation'>Piggybacktranslations</"
+#~ "a>sunt efectuate înainte ca conectorul piggyback să creeze gazde. "
+#~ "Utilizați acest lucru, de exemplu, într-o configurație cu mai multe "
+#~ "noduri Docker pentru a prefixa containerele cu numele nodului Docker "
+#~ "corespunzător. În caz contrar, pot apărea coliziuni de nume dacă există "
+#~ "containere cu același nume pe mai multe noduri Docker."
+
+#, fuzzy
+#~ msgid "About the processing cycle"
+#~ msgstr "Timpul de procesare a evenimentelor"
+
+#, fuzzy
+#~ msgid "Activate changes"
+#~ msgstr "A activat modificările"
+
+#, fuzzy
+#~ msgid "Activate changes timeout"
+#~ msgstr "A activat modificările"
+
+#, fuzzy
+#~ msgid "Activating changes: "
+#~ msgstr "A activat modificările"
+
+#, python-format
+#~ msgid "Added the connection '%s'"
+#~ msgstr "A fost adăugată conexiunea '%s'"
+
+#, fuzzy
+#~ msgid "An exception occurred"
+#~ msgstr "S-a produs o excepție"
+
+#~ msgid "Automatically delete hosts without piggyback data"
+#~ msgstr "Ștergeți automat gazdele fără date piggyback"
+
+#, fuzzy
+#~ msgid "Batch ID"
+#~ msgstr "ID-ul căii"
+
+#, fuzzy
+#~ msgid "Batches"
+#~ msgstr "Potriviri"
+
+#, fuzzy, python-format
+#~ msgid "Can't contact the remote site using '%s'"
+#~ msgstr "Nu se poate conecta la site-ul la distanță: %s."
+
+#, fuzzy
+#~ msgid "Changed DCD global settings"
+#~ msgstr "Editarea setării globale"
+
+#, fuzzy
+#~ msgid "Changes activated on"
+#~ msgstr "Nu a fost niciodată activat"
+
+#~ msgid "Completion"
+#~ msgstr "Finalizare"
+
+#, fuzzy, python-format
+#~ msgid "Connection '%s' isn't found: consider activating changes"
+#~ msgstr "Comentariu pentru activarea modificărilor"
+
+#~ msgid "Connection is disabled"
+#~ msgstr "Conexiunea este dezactivată"
+
+#, fuzzy, python-format
+#~ msgid "Connection representation: %s"
+#~ msgstr "Reprezentarea regulilor: %s"
+
+#, fuzzy
+#~ msgid "Cooldown time after processing cycle"
+#~ msgstr "Timpul de procesare a evenimentelor"
+
+#, fuzzy
+#~ msgid "Copy connection value representation to clipboard"
+#~ msgstr "Copiați reprezentarea valorii regulii în clipboard"
+
+#, python-format
+#~ msgid "Could not reload DCD: %s. See web.log for further information."
+#~ msgstr ""
+#~ "Nu s-a putut reîncărca DCD: %s. Consultați web.log pentru informații "
+#~ "suplimentare."
+
+#, fuzzy
+#~ msgid ""
+#~ "Could not reload DCD: It is not running. See web.log for further "
+#~ "information."
+#~ msgstr ""
+#~ "Nu s-a putut reîncărca DCD: %s. Consultați web.log pentru informații "
+#~ "suplimentare."
+
+#, fuzzy, python-format
+#~ msgid "Created: %d, modified: %d, deleted: %d"
+#~ msgstr "Gazde: %d creat, %d modificat, %d șters"
+
+#, fuzzy
+#~ msgid "Current DCD state."
+#~ msgstr "Starea actuală"
+
+#, fuzzy
+#~ msgid "Cycle not found"
+#~ msgstr "Pagina nu a fost găsită"
+
+#, fuzzy, python-format
+#~ msgid "DCD Manager: Fetching piggyback hosts from site \"%s\""
+#~ msgstr "Faza 1.1: Preluarea de pe site-ul \"%s\""
+
+#, fuzzy
+#~ msgid "DCD batch"
+#~ msgstr "Starea DCD"
+
+#, fuzzy
+#~ msgid "DCD batch history"
+#~ msgstr "Istoric de căutare"
+
+#, fuzzy
+#~ msgid "DCD batches"
+#~ msgstr "Potriviri"
+
+#, fuzzy
+#~ msgid "DCD global settings"
+#~ msgstr "Editarea setării globale"
+
+#, fuzzy
+#~ msgid "DCD work state"
+#~ msgstr "cea mai rea stare"
+
+#~ msgid ""
+#~ "Delete the hosts created by this connection whose piggyback data is no "
+#~ "longer present."
+#~ msgstr ""
+#~ "Șterge gazdele create de această conexiune ale căror date de piggyback nu "
+#~ "mai sunt prezente."
+
+#, fuzzy
+#~ msgid "Do not monitor hosts without discovered services"
+#~ msgstr "Nu există gazde care să fie descoperite"
+
+#~ msgid "Dynamic configuration"
+#~ msgstr "Configurație dinamică"
+
+#~ msgid "Dynamic configuration logging"
+#~ msgstr "Înregistrarea configurației dinamice"
+
+#~ msgid "Exclude \"Activate changes\" for time ranges"
+#~ msgstr "Excludeți \"Activare modificări\" pentru intervale de timp"
+
+#~ msgid "Execution has been triggered"
+#~ msgstr "Execuția a fost declanșată"
+
+#~ msgid "Execution history"
+#~ msgstr "Istoricul execuției"
+
+#, python-format
+#~ msgid "Execution history of %s"
+#~ msgstr "Istoricul execuției lui %s"
+
+#, python-format
+#~ msgid "Execution history of this %s"
+#~ msgstr "Istoricul de execuție al acestui %s"
+
+#, fuzzy, python-format
+#~ msgid "Export this %s for API"
+#~ msgstr "Exportați această regulă pentru API"
+
+#, python-format
+#~ msgid "Failed to execute DCD connection (%s)"
+#~ msgstr "Nu s-a reușit executarea conexiunii DCD (%s)"
+
+#, python-format
+#~ msgid "Failed to get the status from DCD (%s)"
+#~ msgstr "Nu a reușit să obțină starea de la DCD (%s)"
+
+#, fuzzy
+#~ msgid "Host manager settings"
+#~ msgstr "Setări gazdă"
+
+#, fuzzy
+#~ msgid "Host processing"
+#~ msgstr "Prelucrarea RRD"
+
+#, fuzzy
+#~ msgid "Host processing: "
+#~ msgstr "Prelucrarea RRD"
+
+#, python-format
+#~ msgid "Hosts assigned with this %s"
+#~ msgstr "Gazdele alocate cu acest %s."
+
+#, python-format
+#~ msgid "Hosts: %d created, %d modified, %d deleted"
+#~ msgstr "Gazde: %d creat, %d modificat, %d șters"
+
+#, python-format
+#~ msgid "Invalid DCD command: %r"
+#~ msgstr "Comandă DCD invalidă: %r."
+
+#~ msgid "Manage dynamic configuration"
+#~ msgstr "Gestionați configurația dinamică"
+
+#~ msgid "Manage the Dynamic configuration connections"
+#~ msgstr "Gestionați conexiunile de configurare dinamică"
+
+#, fuzzy
+#~ msgid "Manage the dynamic configuration connections"
+#~ msgstr "Gestionați conexiunile de configurare dinamică"
+
+#, python-format
+#~ msgid "Manually execute this %s"
+#~ msgstr "Executați manual acest %s."
+
+#, fuzzy
+#~ msgid "Maximal number of hosts per bulk discovery"
+#~ msgstr "Numărul așteptat de descriptori de fișiere deschise"
+
+#, fuzzy
+#~ msgid "Next cycle"
+#~ msgstr "Următoarea verificare"
+
+#, fuzzy
+#~ msgid "No next cycle available"
+#~ msgstr "nu este disponibil"
+
+#, fuzzy
+#~ msgid "No previous cycle available"
+#~ msgstr "Nu există informații disponibile"
+
+#, fuzzy
+#~ msgid "No waiting batches"
+#~ msgstr "Afișați toate subiectele"
+
+#~ msgid "Nothing changed"
+#~ msgstr "Nimic nu s-a schimbat"
+
+#~ msgid "Nothing logged"
+#~ msgstr "Nimic înregistrat"
+
+#, fuzzy
+#~ msgid ""
+#~ "Only care about hosts that receive piggyback data from hosts whose names "
+#~ "match one of these regular expressions."
+#~ msgstr ""
+#~ "Aveți grijă doar de gazdele care primesc date piggyback de la gazde al "
+#~ "căror nume se potrivește cu una dintre aceste expresii regulate."
+
+#~ msgid ""
+#~ "Optionally, restrict host creation using regular expressions."
+#~ "<br><b>Important:</b><br>This only applies to hosts created by this "
+#~ "connection, not the monitoring host ('Dummy host').<br><br>"
+#~ msgstr ""
+#~ "Opțional, restricționați crearea de gazde folosind expresii regulate."
+#~ "<br><b>Important:</b><br><br>Acest lucru se aplică numai gazdelor create "
+#~ "de această conexiune, nu și gazdei de monitorizare ('Gazda fictivă')."
+#~ "<br><br>"
+
+#~ msgid "Piggyback creation options"
+#~ msgstr "Opțiuni de creare Piggyback"
+
+#~ msgid "Piggyback data"
+#~ msgstr "Date Piggyback"
+
+#~ msgid "Please specify at least one \"Piggyback creation option\""
+#~ msgstr "Vă rugăm să specificați cel puțin o \"opțiune de creare Piggyback\""
+
+#~ msgid "Prevent host deletion after initialization"
+#~ msgstr "Împiedicați ștergerea gazdei după inițializare"
+
+#, fuzzy
+#~ msgid "Previous cycle"
+#~ msgstr "Descoperit anterior"
+
+#~ msgid "REST API communication"
+#~ msgstr "Comunicarea REST API"
+
+#, fuzzy
+#~ msgid "Recent processing batches"
+#~ msgstr "Timpul de procesare a evenimentelor"
+
+#, fuzzy
+#~ msgid "Recent processing cycles"
+#~ msgstr "Timpul de procesare a evenimentelor"
+
+#, python-format
+#~ msgid "Removed the connection '%s'"
+#~ msgstr "A fost eliminată conexiunea '%s'"
+
+#~ msgid "Restrict source hosts"
+#~ msgstr "Restricționați gazdele sursă"
+
+#, fuzzy
+#~ msgid "Service discovery and activation: "
+#~ msgstr "Descoperirea serviciilor: "
+
+#, fuzzy
+#~ msgid "Service discovery ran on"
+#~ msgstr "Descoperirea serviciilor: "
+
+#, fuzzy
+#~ msgid "Service discovery timeout"
+#~ msgstr "Descoperirea serviciilor: "
+
+#~ msgid "Service discovery: "
+#~ msgstr "Descoperirea serviciilor: "
+
+#, fuzzy
+#~ msgid "Show all cycles"
+#~ msgstr "Afișați toate regulile"
+
+#, fuzzy
+#~ msgid "Show cycle details"
+#~ msgstr "Arată detalii"
+
+#, fuzzy
+#~ msgid "Skipped"
+#~ msgstr "S-a oprit"
+
+#~ msgid ""
+#~ "Specify the site where you want this connector to run. Only this site "
+#~ "will process the piggyback data."
+#~ msgstr ""
+#~ "Specificați site-ul în care doriți ca acest conector să funcționeze. "
+#~ "Numai acest site va procesa datele de piggyback."
+
+#~ msgid "Step"
+#~ msgstr "Pasul"
+
+#~ msgid "Step has been finished"
+#~ msgstr "Etapa a fost finalizată"
+
+#~ msgid "Step has been initialized"
+#~ msgstr "Etapa a fost inițializată"
+
+#~ msgid "Step has been started"
+#~ msgstr "Etapa a fost începută"
+
+#~ msgid "Steps"
+#~ msgstr "Pași"
+
+#, python-format
+#~ msgid "The connection %r does not exist"
+#~ msgstr "Conexiunea %r nu există"
+
+#~ msgid ""
+#~ "The interval the connection will be executed to check the available "
+#~ "piggyback and update the configuration."
+#~ msgstr ""
+#~ "Intervalul la care va fi executată conexiunea pentru a verifica piggyback-"
+#~ "ul disponibil și pentru a actualiza configurația."
+
+#, fuzzy
+#~ msgid "The piggyback mechanism"
+#~ msgstr "Mecanismul Piggyback"
+
+#~ msgid ""
+#~ "This connector can be used to automatically create hosts based on "
+#~ "piggyback data."
+#~ msgstr ""
+#~ "Acest conector poate fi utilizat pentru a crea automat gazde pe baza "
+#~ "datelor piggyback."
+
+#, fuzzy, python-format
+#~ msgid ""
+#~ "This setting decides which types of messages to log into the log of the "
+#~ "Dynamic Configuration Daemon (%s)."
+#~ msgstr ""
+#~ "Această setare decide ce tipuri de mesaje se înregistrează în jurnalul "
+#~ "demonului de configurare dinamică (%s)."
+
+#~ msgid "Time range to continue to consider outdated piggyback data as valid."
+#~ msgstr ""
+#~ "Intervalul de timp pentru a continua să se considere valabile datele de "
+#~ "piggyback învechite."
+
+#~ msgid ""
+#~ "Time range to keep hosts when piggyback source only sends piggyback data "
+#~ "for other hosts."
+#~ msgstr ""
+#~ "Intervalul de timp pentru a păstra gazdele atunci când sursa de piggyback "
+#~ "trimite date de piggyback numai pentru alte gazde."
+
+#~ msgid ""
+#~ "Time range to prevent host deletion after site startup, e.g. when booting "
+#~ "the Checkmk server. This is caused by the 'tmp' directory which needs "
+#~ "more time to initialize and can result in missing piggyback information "
+#~ "from some sources."
+#~ msgstr ""
+#~ "Interval de timp pentru a preveni ștergerea gazdei după pornirea site-"
+#~ "ului, de exemplu, la pornirea serverului Checkmk. Acest lucru este cauzat "
+#~ "de directorul 'tmp' care are nevoie de mai mult timp pentru a se "
+#~ "inițializa și poate duce la lipsa informațiilor piggyback din unele surse."
+
+#, fuzzy
+#~ msgid "Time until forced activation of changes after cycle start"
+#~ msgstr "Comentariu pentru activarea modificărilor"
+
+#, fuzzy
+#~ msgid ""
+#~ "To set the value of a connection using the REST API, you need to set the "
+#~ "<tt>value_raw</tt> field. The value of this field is individual for each "
+#~ "connection set. To help you understand what kind of data structure you "
+#~ "need to provide, this connection export mechanism is showing you the "
+#~ "value you need to set for a given connection. The value needs to be a "
+#~ "string representation of a compatible Python data structure."
+#~ msgstr ""
+#~ "Pentru a seta valoarea unei reguli utilizând REST API, trebuie să setați "
+#~ "câmpul <tt>value_raw</tt>. Valoarea acestui câmp este individuală pentru "
+#~ "fiecare set de reguli. Pentru a vă ajuta să înțelegeți ce tip de "
+#~ "structură de date trebuie să furnizați, acest mecanism de export al "
+#~ "regulilor vă arată valoarea pe care trebuie să o setați pentru o anumită "
+#~ "regulă. Valoarea trebuie să fie o reprezentare sub formă de șir de "
+#~ "caractere a unei structuri de date Python compatibile."
+
+#~ msgid "Toggle log entries"
+#~ msgstr "Comutarea intrărilor din jurnal"
+
+#, fuzzy
+#~ msgid "Total duration: "
+#~ msgstr "Durata totală"
+
+#, fuzzy
+#~ msgid "Total hosts: "
+#~ msgstr "Gazde învechite"
+
+#, python-format
+#~ msgid "User %s of DCD connection was modified"
+#~ msgstr "Utilizatorul %s a fost modificată conexiunea DCD"
+
+#~ msgid "Validity of missing data"
+#~ msgstr "Validitatea datelor lipsă"
+
+#~ msgid "Validity of outdated data"
+#~ msgstr "Valabilitatea datelor depășite"
+
+#, fuzzy
+#~ msgid "Waiting for completion of previous run"
+#~ msgstr "Așteptare pentru începerea replicării"
+
+#, fuzzy
+#~ msgid "Waiting..."
+#~ msgstr "Așteptare"
+
+#, fuzzy
+#~ msgid "finished for "
+#~ msgstr "Finalizat"
+
+#, fuzzy
+#~ msgid "found "
+#~ msgstr "Rotund"
 
 #, fuzzy
 #~ msgid "Getting started"
