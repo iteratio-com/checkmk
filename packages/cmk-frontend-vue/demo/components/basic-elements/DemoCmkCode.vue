@@ -63,7 +63,7 @@ const panelConfig = {
     initialState: 'Example Code Snippet'
   },
   code_txt: {
-    type: 'string',
+    type: 'multiline-string',
     title: 'Code Text',
     initialState: codeExampleCmkCode
   }

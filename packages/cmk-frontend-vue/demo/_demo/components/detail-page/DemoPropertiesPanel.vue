@@ -53,6 +53,14 @@ const state = defineModel<PanelState>({ required: true })
         :model-value="state[key] as number"
         @update:model-value="state[key] = $event ?? 0"
       />
+      <textarea
+        v-else-if="def.type === 'multiline-string'"
+        :id="`ctrl-${key}`"
+        rows="3"
+        class="demo-properties-panel__textarea"
+        :value="state[key] as string"
+        @input="state[key] = ($event.target as HTMLTextAreaElement).value"
+      />
       <CmkDropdown
         v-else-if="def.type === 'list'"
         :component-id="`ctrl-${key}`"
@@ -76,6 +84,11 @@ const state = defineModel<PanelState>({ required: true })
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
   padding-bottom: 12px;
+}
+
+.demo-properties-panel__textarea {
+  flex: 1;
 }
 </style>

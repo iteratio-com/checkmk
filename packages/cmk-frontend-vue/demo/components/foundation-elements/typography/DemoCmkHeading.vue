@@ -44,6 +44,11 @@ const panelConfig = {
     ] satisfies Options<HeadingType>[],
     initialState: 'h1' as NonNullable<HeadingType>
   },
+  text: {
+    type: 'multiline-string',
+    title: 'text',
+    initialState: 'The quick brown fox jumps over the lazy dog.'
+  },
   onClick: {
     type: 'boolean',
     title: 'onClick',
@@ -65,7 +70,7 @@ function onHeadingClick() {
 
     <DemoDetailPageComponent>
       <CmkHeading :type="propState.type" :on-click="propState.onClick ? onHeadingClick : null">
-        The quick brown fox jumps over the lazy dog.
+        {{ propState.text }}
       </CmkHeading>
 
       <template #properties>

@@ -35,7 +35,7 @@ import CmkHtml from '@/components/CmkHtml.vue'
 
 const panelConfig = {
   html: {
-    type: 'string',
+    type: 'multiline-string',
     title: 'html',
     initialState: "<h1>Heading</h1> <b>bold</b> and <a href='https://checkmk.com'>link</a>"
   }

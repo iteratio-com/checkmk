@@ -36,7 +36,19 @@ export interface NumberPropDef {
   help?: string
 }
 
-export type PropDef = BoolPropDef | StringPropDef | NumberPropDef | ListPropDef<string>
+export interface MultilineStringPropDef {
+  type: 'multiline-string'
+  title: string
+  initialState: string
+  help?: string
+}
+
+export type PropDef =
+  | BoolPropDef
+  | StringPropDef
+  | NumberPropDef
+  | ListPropDef<string>
+  | MultilineStringPropDef
 
 export type PanelConfig = Record<string, PropDef>
 
@@ -50,7 +62,9 @@ type InferStateFromDef<T extends PropDef> = T extends BoolPropDef
       ? number
       : T extends ListPropDef<infer U>
         ? NonNullable<U>
-        : never
+        : T extends MultilineStringPropDef
+          ? string
+          : never
 
 export type InferPanelState<T extends PanelConfig> = {
   [K in keyof T]: InferStateFromDef<T[K]>
