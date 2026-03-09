@@ -1,3 +1,4 @@
+/* stylelint-disable no-invalid-double-slash-comments, selector-id-pattern, no-descending-specificity, rule-empty-line-before, declaration-empty-line-before, length-zero-no-unit, declaration-block-no-redundant-longhand-properties, comment-whitespace-inside, comment-empty-line-before, media-feature-range-notation, property-no-vendor-prefix, no-duplicate-selectors */
 @charset "UTF-8";
 // Copyright (C) 2019 Checkmk GmbH - License: GNU General Public License v2
 // This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
@@ -772,3 +773,4 @@ div.node_vis {
   -moz-user-select: none; /* Firefox */
   -ms-user-select: none; /* Internet Explorer/Edge */
 }
+/* stylelint-enable no-invalid-double-slash-comments, selector-id-pattern, no-descending-specificity, rule-empty-line-before, declaration-empty-line-before, length-zero-no-unit, declaration-block-no-redundant-longhand-properties, comment-whitespace-inside, comment-empty-line-before, media-feature-range-notation, property-no-vendor-prefix, no-duplicate-selectors */

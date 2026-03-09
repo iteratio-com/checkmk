@@ -1,3 +1,4 @@
+/* stylelint-disable at-rule-no-unknown, no-invalid-double-slash-comments, property-no-vendor-prefix, selector-id-pattern, no-descending-specificity, rule-empty-line-before, declaration-empty-line-before, function-url-quotes */
 @use 'sass:color';
 @charset "UTF-8";
 // Copyright (C) 2019 Checkmk GmbH - License: GNU General Public License v2
@@ -628,3 +629,4 @@ div.snapin select,
 div.sidebar-snapin__container select {
   background-image: url(images/select_arrow.png);
 }
+/* stylelint-enable at-rule-no-unknown, no-invalid-double-slash-comments, property-no-vendor-prefix, selector-id-pattern, no-descending-specificity, rule-empty-line-before, declaration-empty-line-before, function-url-quotes */

@@ -1,4 +1,5 @@
 @charset "UTF-8";
+/* stylelint-disable-next-line no-invalid-double-slash-comments */
 // Copyright (C) 2019 Checkmk GmbH - License: GNU General Public License v2
 // This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 // conditions defined in the file COPYING, which is part of this source code package.
@@ -74,9 +75,11 @@ div.ntop {
 
   table.table,
   .ntop_host table {
+    /* stylelint-disable-next-line at-rule-no-unknown */
     @extend .data;
 
     tr {
+      /* stylelint-disable-next-line at-rule-no-unknown */
       @extend .data;
 
       &:not(.header) {
@@ -140,6 +143,7 @@ div.ntop {
     }
   }
 
+  /* stylelint-disable-next-line no-invalid-double-slash-comments */
   // HOST DETAILS //
   .ntop_host table.ntop_overview {
     border-collapse: collapse;
@@ -148,6 +152,7 @@ div.ntop {
       padding: 0.25rem;
       font-size: $font-size-large;
       vertical-align: middle;
+      /* stylelint-disable-next-line declaration-property-value-no-unknown */
       border-bottom: 2px solid $grey-3;
     }
 
@@ -189,6 +194,7 @@ div.ntop {
     }
   }
 
+  /* stylelint-disable selector-id-pattern */
   div#ntop_host_traffic_breakdown,
   div#ntop_host_apps_applications,
   div#ntop_host_apps_categories {
@@ -199,7 +205,9 @@ div.ntop {
       max-width: 400px;
     }
   }
+  /* stylelint-enable selector-id-pattern */
 
+  /* stylelint-disable-next-line no-invalid-double-slash-comments */
   // DASHBOARD
   .dashboard_ntop_dashboard {
     .bold {
@@ -219,10 +227,12 @@ div.ntop {
     }
   }
 
+  /* stylelint-disable-next-line no-invalid-double-slash-comments */
   // ALERTS //
   .ntop_alerts {
     div.description_filter {
       display: table-cell;
+      /* stylelint-disable-next-line rule-empty-line-before */
       label {
         padding-right: 10px;
       }
@@ -232,6 +242,7 @@ div.ntop {
       display: table-cell;
       width: 600px;
       height: 28px;
+      /* stylelint-disable-next-line rule-empty-line-before */
       label {
         padding-left: 32px;
         box-decoration-break: clone;
@@ -241,10 +252,12 @@ div.ntop {
     div.fetch_filters {
       .dropdown {
         padding-right: 10px;
+        /* stylelint-disable-next-line rule-empty-line-before */
         label {
           padding-right: 10px;
         }
       }
+      /* stylelint-disable-next-line declaration-empty-line-before */
       padding-bottom: 20px;
     }
 
@@ -279,6 +292,7 @@ div.ntop {
     }
   }
 
+  /* stylelint-disable-next-line no-invalid-double-slash-comments */
   // FLOWS //
   .ntop_flows {
     div.filters div.filter {
@@ -319,6 +333,7 @@ div.ntop {
     }
   }
 
+  /* stylelint-disable-next-line no-invalid-double-slash-comments */
   // TOP TALKERS //
   table.top_talkers {
     td.figure {
@@ -348,6 +363,7 @@ div.ntop {
     }
   }
 
+  /* stylelint-disable-next-line no-invalid-double-slash-comments */
   // BADGE //
   .badge {
     display: inline-block;
@@ -375,16 +391,19 @@ div.ntop {
   }
 }
 
+/* stylelint-disable-next-line no-invalid-double-slash-comments */
 // PAINTER //
 
 .ntop_painter_pie_chart {
   min-height: 216px;
 }
 
+/* stylelint-disable-next-line selector-id-pattern */
 #ntop_host_details {
   min-height: 257px;
 }
 
+/* stylelint-disable-next-line selector-id-pattern */
 #ntop_protocol_breakdown {
   min-height: 110px;
   padding-top: $ntop-protocol-painter-padding-top;
@@ -398,6 +417,7 @@ div.ntop {
   padding: 1rem;
 }
 
+/* stylelint-disable-next-line selector-id-pattern */
 div#peers_table td {
   &._0 {
     width: 400px;

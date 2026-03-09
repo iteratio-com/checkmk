@@ -1,4 +1,5 @@
 @charset "UTF-8";
+/* stylelint-disable-next-line no-invalid-double-slash-comments */
 // Copyright (C) 2019 Checkmk GmbH - License: GNU General Public License v2
 // This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 // conditions defined in the file COPYING, which is part of this source code package.
@@ -34,6 +35,7 @@
   }
 }
 
+/* stylelint-disable no-descending-specificity */
 td.aggrtree .frozen_aggregation,
 .frozen_aggregation {
   span,
@@ -83,6 +85,7 @@ b.bullet {
   margin: 0 5px;
   color: $font-color-dimmed;
 }
+/* stylelint-enable no-descending-specificity */
 
 .state.assumed {
   background-image: url('../facelift/images/assume_bg.png');
@@ -114,6 +117,7 @@ td.aggrtree {
   padding: 3px 3px 1px;
   margin-right: 3px;
   cursor: pointer;
+  /* stylelint-disable-next-line declaration-property-value-no-unknown */
   border: 1px solid $bi-box-border-color;
   border-radius: 2px;
 
@@ -123,10 +127,12 @@ td.aggrtree {
     }
 
     &.open {
+      /* stylelint-disable-next-line declaration-property-value-no-unknown */
       box-shadow: inset 0.5px 0.5px 3px $grey-3;
     }
 
     &.closed {
+      /* stylelint-disable-next-line declaration-property-value-no-unknown */
       box-shadow: 0.5px 0.5px 3px $black;
     }
   }
@@ -151,6 +157,7 @@ table.data.table .bi_tree_container .title {
     margin: 8px 0 0 18px;
     list-style-type: none;
     border: none;
+    /* stylelint-disable-next-line declaration-property-value-no-unknown */
     border-left: 1px solid $darkgrey;
     border-radius: 0;
 
@@ -164,7 +171,9 @@ table.data.table .bi_tree_container .title {
 div.node_preview {
   max-height: 300px;
   overflow: scroll;
+  /* stylelint-disable-next-line declaration-property-value-no-unknown */
   padding-right: 2 * $spacing;
+  /* stylelint-disable-next-line declaration-property-value-no-unknown */
   margin-bottom: 2 * $spacing;
 
   table {

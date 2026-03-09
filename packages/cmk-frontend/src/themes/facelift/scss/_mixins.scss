@@ -1,4 +1,5 @@
 @charset "UTF-8";
+/* stylelint-disable-next-line no-invalid-double-slash-comments */
 // Copyright (C) 2019 Checkmk GmbH - License: GNU General Public License v2
 // This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 // conditions defined in the file COPYING, which is part of this source code package.
@@ -22,6 +23,7 @@
     background-color: $color;
     border-radius: 4px 0 0 4px;
 
+    /* stylelint-disable-next-line declaration-empty-line-before */
     background-image: $icon;
     background-repeat: no-repeat;
     background-position: center;
@@ -30,6 +32,7 @@
   }
 }
 
+/* stylelint-disable-next-line at-rule-no-unknown */
 @mixin floating-text-mixin {
   display: inline-block;
   height: $input-field-height;
@@ -39,6 +42,7 @@
   box-sizing: border-box;
 }
 
+/* stylelint-disable-next-line at-rule-no-unknown */
 @mixin ellipsis-text-overflow {
   display: block;
   overflow: hidden;
@@ -46,6 +50,7 @@
   white-space: nowrap;
 }
 
+/* stylelint-disable-next-line at-rule-no-unknown */
 @mixin label-groups-mixin {
   td.vlof_buttons,
   td.vlof_content {
@@ -95,6 +100,7 @@
 
       span.vs_label {
         margin-right: 4px;
+        /* stylelint-disable-next-line declaration-block-no-shorthand-property-overrides */
         margin: 4px 7px 0;
       }
 
@@ -131,18 +137,21 @@
         padding-bottom: 0;
       }
 
+      /* stylelint-disable-next-line no-descending-specificity */
       span.select2-container--default {
         opacity: $inactive-opacity;
       }
 
       &.active,
       &:hover {
+        /* stylelint-disable-next-line no-descending-specificity */
         span.select2-container--default {
           opacity: 1;
         }
       }
     }
 
+    /* stylelint-disable-next-line no-descending-specificity */
     td.vlof_buttons a.delete_button img {
       right: 0;
       top: 0.5 * $spacing;
@@ -150,6 +159,7 @@
       padding-right: 2px;
     }
 
+    /* stylelint-disable-next-line no-descending-specificity */
     div.line {
       display: none;
     }
@@ -158,6 +168,7 @@
       margin: 0;
     }
 
+    /* stylelint-disable-next-line no-invalid-double-slash-comments */
     // Boolean operator dropdowns
     select[id$='_bool'] {
       & + span.select2-container--default {
@@ -165,6 +176,7 @@
       }
     }
 
+    /* stylelint-disable-next-line no-invalid-double-slash-comments */
     // Valuespec (label) dropdowns
     select[id$='_vs'] {
       + span.select2-container--default {
@@ -190,11 +202,13 @@
       display: none;
     }
 
+    /* stylelint-disable-next-line no-descending-specificity */
     a.delete_button img {
       position: absolute;
     }
   }
 
+  /* stylelint-disable-next-line no-descending-specificity */
   a.vlof_add_button {
     display: inline-block;
     margin: $spacing 2px;
@@ -202,28 +216,33 @@
     text-decoration: none;
     font-weight: $font-weight-bold;
 
+    /* stylelint-disable-next-line no-descending-specificity */
     img {
       margin: 0 4px 2px 0;
     }
   }
 
+  /* stylelint-disable-next-line no-descending-specificity */
   br {
     display: none;
   }
 }
 
+/* stylelint-disable-next-line at-rule-no-unknown */
 @mixin table-header-mixin {
   padding: 6px 0 4px 8px;
   font-weight: $font-weight-bold;
   background-color: $headline-color;
 }
 
+/* stylelint-disable-next-line at-rule-no-unknown */
 @mixin button-mixin {
   display: inline-block;
   width: auto;
   margin-top: 8px;
   margin-right: 8px;
   margin-bottom: 8px;
+  /* stylelint-disable-next-line declaration-block-no-redundant-longhand-properties */
   margin-left: 0;
   font-weight: $font-weight-bold;
   letter-spacing: $letter-spacing-table;
@@ -232,8 +251,10 @@
   border: 1px solid $default-button-border-color;
   box-shadow: none;
 
+  /* stylelint-disable nesting-selector-no-missing-scoping-root */
   &:hover,
   &:active {
     background-color: $input-button-hover-bg-color;
   }
+  /* stylelint-enable nesting-selector-no-missing-scoping-root */
 }

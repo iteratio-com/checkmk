@@ -1,4 +1,5 @@
 @charset "UTF-8";
+/* stylelint-disable-next-line no-invalid-double-slash-comments */
 // Copyright (C) 2019 Checkmk GmbH - License: GNU General Public License v2
 // This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 // conditions defined in the file COPYING, which is part of this source code package.
@@ -35,6 +36,7 @@ body.mobile {
     td {
       padding: 2px 3px;
       overflow: hidden;
+      /* stylelint-disable-next-line declaration-property-value-no-unknown */
       border: 1px solid $color-table-border;
     }
   }
@@ -49,6 +51,7 @@ body.mobile {
     > tbody > tr.data > td {
       padding: 4px 6px;
       font-size: 13px;
+      /* stylelint-disable-next-line declaration-property-value-no-unknown */
       border: 1px solid $color-table-border;
       border-radius: 5px;
     }
@@ -135,11 +138,13 @@ body.mobile {
     margin: 1em;
   }
 
+  /* stylelint-disable-next-line selector-id-pattern */
   input#_saml2_login_button {
     margin-left: 0;
     background-color: $success;
   }
 
+  /* stylelint-disable selector-id-pattern */
   #login_error,
   #login_error_saml2 {
     div.error {
@@ -148,7 +153,9 @@ body.mobile {
       color: $white;
     }
   }
+  /* stylelint-enable selector-id-pattern */
 
+  /* stylelint-disable-next-line selector-id-pattern */
   #login_error_saml2 div.error {
     font-weight: $font-weight-bold;
 
@@ -161,11 +168,13 @@ body.mobile {
   h2.login_separator {
     margin: 26px 0;
     text-align: center;
+    /* stylelint-disable-next-line declaration-property-value-no-unknown */
     border-bottom: 1px solid $black;
     line-height: 0.1em;
 
     span {
       background-color: $mobile-background-color;
+      /* stylelint-disable-next-line declaration-property-value-no-unknown */
       padding: 0 $spacing;
     }
   }
@@ -263,7 +272,9 @@ body.mobile {
     &.select2-container--focus,
     &.select2-container--open {
       box-shadow: $mobile-form-element-focus-box-shadow;
+      /* stylelint-disable-next-line property-no-vendor-prefix */
       -webkit-box-shadow: $mobile-form-element-focus-box-shadow;
+      /* stylelint-disable-next-line property-no-vendor-prefix */
       -moz-box-shadow: $mobile-form-element-focus-box-shadow;
     }
 

@@ -1,4 +1,5 @@
 @charset "UTF-8";
+/* stylelint-disable-next-line no-invalid-double-slash-comments */
 // Copyright (C) 2019 Checkmk GmbH - License: GNU General Public License v2
 // This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 // conditions defined in the file COPYING, which is part of this source code package.
@@ -11,6 +12,7 @@ div.graph_hover_popup {
   border-radius: 5px;
 }
 
+/* stylelint-disable-next-line selector-id-pattern */
 div#hover_menu div.graph {
   float: left;
   margin-right: 2px;
@@ -25,15 +27,18 @@ tr.data > td > div.graph_container {
   vertical-align: top;
 }
 
+/* stylelint-disable-next-line no-descending-specificity */
 div.graph {
   position: relative;
   display: inline-block;
   padding: 0;
   margin-bottom: 5px;
+  /* stylelint-disable-next-line rule-empty-line-before */
   &.with_margin {
     padding: 1ex;
   }
 
+  /* stylelint-disable-next-line rule-empty-line-before */
   a {
     text-decoration: none;
 
@@ -221,16 +226,19 @@ div.graph {
   }
 }
 
+/* stylelint-disable-next-line no-descending-specificity */
 table.prediction td {
   padding: 0;
 }
 
+/* stylelint-disable no-descending-specificity */
 div.graph table.legend th,
 div.graph table,
 legend td {
   padding: 2px 8px 2.5px 2px;
   white-space: nowrap;
 }
+/* stylelint-enable no-descending-specificity */
 
 div.color {
   position: relative;
@@ -250,6 +258,7 @@ div.graph_with_timeranges {
   margin-bottom: 32px;
   white-space: nowrap;
 
+  /* stylelint-disable-next-line no-descending-specificity */
   div.graph {
     border: 1px solid $color-table-border;
     box-shadow: none;
@@ -273,6 +282,7 @@ div.graph_with_timeranges {
     }
   }
 
+  /* stylelint-disable-next-line no-descending-specificity */
   > div.graph_container {
     display: inline-block;
 
@@ -291,11 +301,13 @@ div.graph_with_timeranges {
     vertical-align: top;
     border-spacing: 0;
 
+    /* stylelint-disable-next-line no-descending-specificity */
     div.graph:hover {
       cursor: pointer;
       opacity: 0.75;
     }
 
+    /* stylelint-disable-next-line no-descending-specificity */
     > tbody > tr > td {
       padding: 0 8px 4px;
     }

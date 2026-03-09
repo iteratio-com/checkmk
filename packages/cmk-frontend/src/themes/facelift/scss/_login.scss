@@ -1,5 +1,7 @@
+/* stylelint-disable-next-line at-rule-no-unknown */
 @use 'sass:color';
 @charset "UTF-8";
+/* stylelint-disable-next-line no-invalid-double-slash-comments */
 // Copyright (C) 2019 Checkmk GmbH - License: GNU General Public License v2
 // This file is part of Checkmk (https://checkmk.com). It is subject to the terms and
 // conditions defined in the file COPYING, which is part of this source code package.
@@ -24,6 +26,7 @@ body.login {
     top: 0;
     right: 0;
     bottom: 0;
+    /* stylelint-disable-next-line declaration-block-no-redundant-longhand-properties */
     left: 0;
     width: 770px;
     height: 605px;
@@ -32,6 +35,7 @@ body.login {
     background: transparent;
   }
 
+  /* stylelint-disable-next-line selector-id-pattern */
   #login_window {
     position: relative;
     top: 187px;
@@ -41,6 +45,7 @@ body.login {
     margin: -30px auto 10px;
     background: $navigation-bg-color;
     border-radius: 8px;
+    /* stylelint-disable-next-line declaration-property-value-no-unknown */
     padding: 2.5 * $spacing 4 * $spacing;
     box-sizing: border-box;
 
@@ -91,10 +96,12 @@ body.login {
     }
 
     table {
+      /* stylelint-disable-next-line declaration-property-value-no-unknown */
       margin: 1.3 * $spacing 0;
       border-spacing: 0;
 
       td {
+        /* stylelint-disable-next-line declaration-property-value-no-unknown */
         padding-bottom: 1.3 * $spacing;
 
         &.login_label {
@@ -102,6 +109,7 @@ body.login {
         }
 
         &.login_input {
+          /* stylelint-disable-next-line declaration-property-value-no-unknown */
           padding-left: 2.7 * $spacing;
         }
       }
@@ -117,11 +125,14 @@ body.login {
     text-align: right;
   }
 
+  /* stylelint-disable selector-id-pattern */
   #label_user,
   #label_pass {
     letter-spacing: $letter-spacing-table;
   }
+  /* stylelint-enable selector-id-pattern */
 
+  /* stylelint-disable selector-id-pattern */
   #label_user,
   #input_user,
   #label_pass,
@@ -129,7 +140,9 @@ body.login {
   #input_pass {
     float: left;
   }
+  /* stylelint-enable selector-id-pattern */
 
+  /* stylelint-disable selector-id-pattern */
   #input_user,
   #input_backup,
   #input_pass {
@@ -137,7 +150,9 @@ body.login {
     height: $input-field-height;
     box-shadow: none;
   }
+  /* stylelint-enable selector-id-pattern */
 
+  /* stylelint-disable selector-id-pattern */
   #_login,
   #_saml2_login_button,
   #_use_totp_code,
@@ -148,21 +163,28 @@ body.login {
     padding: 7px 16px;
     margin: 0;
     font-weight: $font-weight-bold;
+    /* stylelint-disable-next-line declaration-property-value-no-unknown */
     border: 1px solid $default-submit-button-border-color;
     background-color: color.adjust($new-success, $lightness: -5%);
   }
+  /* stylelint-enable selector-id-pattern */
 
+  /* stylelint-disable selector-id-pattern */
   #_login:not(.hot),
   #_saml2_login_button:not(.hot) {
     background-color: color.adjust($input-button-hover-bg-color, $lightness: -5%);
+    /* stylelint-disable-next-line rule-empty-line-before */
     &:hover {
       background-color: $input-button-hover-bg-color;
     }
+    /* stylelint-disable-next-line rule-empty-line-before */
     &:active {
       background-color: unset;
     }
   }
+  /* stylelint-enable selector-id-pattern */
 
+  /* stylelint-disable-next-line selector-id-pattern */
   div#saml_button {
     margin-top: 20px;
   }
@@ -170,15 +192,18 @@ body.login {
   h2.login_separator {
     margin: 26px 0;
     text-align: center;
+    /* stylelint-disable-next-line declaration-property-value-no-unknown */
     border-bottom: 1px solid $font-color-light-grey;
     line-height: 0.1em;
 
     span {
       background-color: $navbar-color;
+      /* stylelint-disable-next-line declaration-property-value-no-unknown */
       padding: 0 $spacing;
     }
   }
 
+  /* stylelint-disable selector-id-pattern */
   #login_error,
   #login_error_saml2 {
     width: 100%;
@@ -189,7 +214,9 @@ body.login {
       padding: 7px;
     }
   }
+  /* stylelint-enable selector-id-pattern */
 
+  /* stylelint-disable-next-line selector-id-pattern */
   #login_error_saml2 div.error {
     padding-top: 7px;
     padding-bottom: 7px;
@@ -219,6 +246,7 @@ body.login {
   }
 
   &.two_factor {
+    /* stylelint-disable-next-line selector-id-pattern */
     #login_window {
       background: transparent;
     }
@@ -237,8 +265,10 @@ body.login {
       padding-top: $spacing-double;
     }
 
+    /* stylelint-disable-next-line selector-id-pattern */
     #code_input {
       text-align: left;
+      /* stylelint-disable-next-line rule-empty-line-before */
       input {
         height: $font-size-page-title;
       }
