@@ -10,7 +10,10 @@ py_library(
         "transformation.py",
     ],
     imports = ["../.."],
-    visibility = ["//cmk:__subpackages__"],
+    visibility = [
+        "//cmk:__subpackages__",
+        "//non-free/packages/cmk-liveproxyd:__pkg__",
+    ],
     deps = [
         "//packages/cmk-ccc:exceptions",
         "//packages/cmk-ccc:hostaddress",
