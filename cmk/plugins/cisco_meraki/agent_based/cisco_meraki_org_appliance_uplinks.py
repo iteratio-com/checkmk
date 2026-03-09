@@ -9,7 +9,6 @@
 # mypy: disable-error-code="prop-decorator"
 
 import json
-from datetime import datetime
 from typing import TypedDict
 
 from pydantic import BaseModel, computed_field, Field
@@ -51,10 +50,7 @@ class HighAvailability(BaseModel, frozen=True):
 
 class ApplianceStatus(BaseModel, frozen=True):
     high_availability: HighAvailability = Field(alias="highAvailability")
-    last_reported_at: datetime = Field(alias="lastReportedAt")
-    model: str
     network_name: str = Field(alias="networkName")
-    serial: str
     uplinks_list: list[Uplink] = Field(alias="uplinks")
     usage_by_interface: PossiblyMissing[UplinkUsageByInterface] = Field(
         None, alias="usageByInterface"
