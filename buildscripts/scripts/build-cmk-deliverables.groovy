@@ -40,13 +40,21 @@ void main() {
     /// Might also be taken from editions.yml - there we also have "cloud" and "community" but
     /// AFAIK there is no way to extract the editions we want to test generically, so we
     /// hard-code these:
-    def all_distros = versioning.get_distros(override: "all");
-    def selected_distros = versioning.get_distros(
-        edition: params.EDITION,
-        use_case: params.USE_CASE,
-        override: params.OVERRIDE_DISTROS);
+    def all_distros = [];
+    def selected_distros = [];
+    def exclude_pattern = "";
     def safe_branch_name = versioning.safe_branch_name();
     def branch_version = versioning.get_branch_version(checkout_dir);
+    def container_safe_branch_name = safe_branch_name.replace(".", "-");
+    inside_container_minimal(safe_branch_name: safe_branch_name) {
+        // run everything requiring python in this container
+        all_distros = versioning.get_distros(override: "all");
+        selected_distros = versioning.get_distros(
+            edition: params.EDITION,
+            use_case: params.USE_CASE,
+            override: params.OVERRIDE_DISTROS);
+        exclude_pattern = versioning.get_internal_artifacts_pattern();
+    }
 
     /// This will get us the location to e.g. "checkmk/master" or "Testing/<name>/checkmk/master"
     def branch_base_folder = package_helper.branch_base_folder(true);
@@ -214,62 +222,66 @@ void main() {
         currentBuild.result = parallel(stages).values().every { it } ? "SUCCESS" : "FAILURE";
     }
 
-    smart_stage(
-        name: "Upload artifacts",
-        condition: upload_to_testbuilds && (! currentBuild.fullProjectName.contains("/cv/")),
-    ) {
-        dir("${deliverables_dir}") {
-            /// BOM shall have a unique name, see CMK-16483
-            // TODO: We should really let bazel generate the correct file name - we're already passing edition and version to bazel build
-            sh("""
-                cp omd/bill-of-materials.json check-mk-${params.EDITION}-${cmk_version}-bill-of-materials.json
-                cp omd/bill-of-materials.csv check-mk-${params.EDITION}-${cmk_version}-bill-of-materials.csv
-            """);
-        }
-
-        /// File.eachFileRecurse works on Jenkins master node only, so we have to build it
-        /// on our own..
-        def files_to_upload = {
+    container("minimal-ubuntu-checkmk-${container_safe_branch_name}") {
+        smart_stage(
+            name: "Upload artifacts",
+            condition: upload_to_testbuilds && (! currentBuild.fullProjectName.contains("/cv/")),
+        ) {
             dir("${deliverables_dir}") {
-                cmd_output("ls *.{deb,rpm,cma,tar.gz} *bill-of-materials.{json,csv} || true").split().toList();
+                /// BOM shall have a unique name, see CMK-16483
+                // TODO: We should really let bazel generate the correct file name
+                // we're already passing edition and version to bazel build
+                sh("""
+                    cp omd/bill-of-materials.json check-mk-${params.EDITION}-${cmk_version}-bill-of-materials.json
+                    cp omd/bill-of-materials.csv check-mk-${params.EDITION}-${cmk_version}-bill-of-materials.csv
+                """);
             }
-        }();
-        print("Found files to upload: ${files_to_upload}");
 
-        files_to_upload.each { filename ->
-            artifacts_helper.upload_via_rsync(
-                "${WORKSPACE}/deliverables",
-                "${cmk_version_rc_aware}",
-                "${filename}",
-                "${INTERNAL_DEPLOY_DEST}",
-                INTERNAL_DEPLOY_PORT,
-                exclude_pattern = "{${bazel_log_prefix}*}"
-            );
-        }
+            /// File.eachFileRecurse works on Jenkins master node only, so we have to build it
+            /// on our own..
+            def files_to_upload = {
+                dir("${deliverables_dir}") {
+                    cmd_output("""
+                        ls *.{deb,rpm,cma,tar.gz} *bill-of-materials.{json,csv} || true
+                    """).split().toList();
+                }
+            }();
+            print("Found files to upload: ${files_to_upload}");
 
-        currentBuild.description += """\
-            <p><a href='${INTERNAL_DEPLOY_URL}/${cmk_version}'>Download Artifacts</a></p>
-            """.stripIndent();
+            files_to_upload.each { filename ->
+                artifacts_helper.upload_via_rsync(
+                    "${WORKSPACE}/deliverables",
+                    "${cmk_version_rc_aware}",
+                    "${filename}",
+                    "${INTERNAL_DEPLOY_DEST}",
+                    INTERNAL_DEPLOY_PORT,
+                    exclude_pattern = "{${bazel_log_prefix}*}"
+                );
+            }
 
-        // this must not be called from within the container (results in yaml package missing)
-        def exclude_pattern = versioning.get_internal_artifacts_pattern();
-        files_to_upload.each { filename ->
-            artifacts_helper.upload_via_rsync(
-                "${WORKSPACE}/deliverables",
-                "${cmk_version_rc_aware}",
-                "${filename}",
-                WEB_DEPLOY_DEST,
-                WEB_DEPLOY_PORT,
-                exclude_pattern = exclude_pattern,
-            );
-        }
+            currentBuild.description += """\
+                <p><a href='${INTERNAL_DEPLOY_URL}/${cmk_version}'>Download Artifacts</a></p>
+                """.stripIndent();
 
-        if (EDITION.toLowerCase() == "cloud" && versioning.is_official_release(cmk_version_rc_aware)) {
-            // uploads distro packages, source.tar.gz and hashes
-            artifacts_helper.upload_files_to_nexus(
-                "${deliverables_dir}/check-mk-cloud-${cmk_version}*",
-                "${ARTIFACT_STORAGE}/repository/cloud-patch-releases/",
-            );
+            // this must not be called from within the container (results in yaml package missing)
+            files_to_upload.each { filename ->
+                artifacts_helper.upload_via_rsync(
+                    "${WORKSPACE}/deliverables",
+                    "${cmk_version_rc_aware}",
+                    "${filename}",
+                    WEB_DEPLOY_DEST,
+                    WEB_DEPLOY_PORT,
+                    exclude_pattern = exclude_pattern,
+                );
+            }
+
+            if (EDITION.toLowerCase() == "cloud" && versioning.is_official_release(cmk_version_rc_aware)) {
+                // uploads distro packages, source.tar.gz and hashes
+                artifacts_helper.upload_files_to_nexus(
+                    "${deliverables_dir}/check-mk-cloud-${cmk_version}*",
+                    "${ARTIFACT_STORAGE}/repository/cloud-patch-releases/",
+                );
+            }
         }
     }
 
