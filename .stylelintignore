@@ -1,0 +1,16 @@
+packages/cmk-frontend/src/themes/facelift/theme.scss
+packages/cmk-frontend/src/themes/facelift/zindices.scss
+packages/cmk-frontend/src/themes/facelift/scss/_cmk_figures.scss
+packages/cmk-frontend/src/themes/facelift/scss/_dashboard.scss
+packages/cmk-frontend/src/themes/facelift/scss/_main.scss
+packages/cmk-frontend/src/themes/facelift/scss/_main_menu.scss
+packages/cmk-frontend/src/themes/facelift/scss/_page_menu.scss
+packages/cmk-frontend/src/themes/facelift/scss/_pages.scss
+packages/cmk-frontend/src/themes/facelift/scss/_status.scss
+packages/cmk-frontend/src/themes/facelift/scss/_tables.scss
+packages/cmk-frontend/src/themes/facelift/scss/_variables.scss
+packages/cmk-frontend/src/themes/facelift/scss/_variables_common.scss
+packages/cmk-frontend/src/themes/facelift/scss/_views.scss
+packages/cmk-frontend/src/themes/facelift/scss/_wato.scss
+packages/cmk-frontend/src/themes/modern-dark/scss/_variables.scss
+packages/cmk-frontend/src/themes/modern-dark/theme.scss
