@@ -265,6 +265,7 @@ EOF
         export CI_ORA2_DB_TEST="${CI_ORA2_DB_TEST}"
         export MK_CONFDIR="${TEST_BINARY_REMOTE_PATH}"
         export MK_LIBDIR="${TEST_BINARY_REMOTE_PATH}"/runtimes
+        mkdir -p "${MK_LIBDIR}/plugins/packages/mk-oracle
         chmod +x ./"${TEST_NAME}"
         ./"${TEST_NAME}"
 EOF
