@@ -281,7 +281,7 @@ alias(
 )
 
 sh_library(
-    name = "packages_cmk-shared-typing_sh",
+    name = "helpers",
     srcs = [
         ".f12",
         "run",

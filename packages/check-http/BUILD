@@ -114,7 +114,7 @@ rust_doc(
 )
 
 sh_library(
-    name = "packages_check-http_sh",
+    name = "helpers",
     srcs = [
         ".f12",
         "run",

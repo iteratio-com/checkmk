@@ -381,7 +381,7 @@ package_wheel(
 )
 
 sh_library(
-    name = "packages_cmk-plugin-apis_sh",
+    name = "helpers",
     srcs = [
         ".f12",
         "run",

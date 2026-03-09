@@ -90,7 +90,7 @@ py_test(
 )
 
 sh_library(
-    name = "packages_cmk-astrein_sh",
+    name = "helpers",
     srcs = [
         "run",
     ],

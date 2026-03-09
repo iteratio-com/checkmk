@@ -263,7 +263,7 @@ package_wheel(
 )
 
 sh_library(
-    name = "packages_cmk-agent-receiver_sh",
+    name = "helpers",
     srcs = [
         ".f12",
         "run",

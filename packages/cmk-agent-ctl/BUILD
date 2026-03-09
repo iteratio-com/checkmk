@@ -161,7 +161,7 @@ rust_doc(
 )
 
 sh_library(
-    name = "packages_cmk-agent-ctl_sh",
+    name = "helpers",
     srcs = [
         "run",
     ],

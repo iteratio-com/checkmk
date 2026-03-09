@@ -170,7 +170,7 @@ pkg_tar(
 )
 
 sh_library(
-    name = "packages_cmk-check-engine_sh",
+    name = "helpers",
     srcs = [
         ".f12",
         "run",

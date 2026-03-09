@@ -183,7 +183,7 @@ rust_doc(
 )
 
 sh_library(
-    name = "packages_mk-oracle_sh",
+    name = "helpers",
     srcs = [
         ".f12",
         "cargo_run",

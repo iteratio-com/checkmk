@@ -62,7 +62,7 @@ build_test(
 )
 
 sh_library(
-    name = "packages_unixcat_sh",
+    name = "helpers",
     srcs = [
         ".f12",
         "run",

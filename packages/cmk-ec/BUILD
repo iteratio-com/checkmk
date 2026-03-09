@@ -165,7 +165,7 @@ package_wheel(
 )
 
 sh_library(
-    name = "packages_cmk-ec_sh",
+    name = "helpers",
     srcs = [
         ".f12",
         "run",

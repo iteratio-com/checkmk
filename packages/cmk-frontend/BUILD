@@ -140,7 +140,7 @@ eslint_bin.eslint_test(
 )
 
 sh_library(
-    name = "packages_cmk-frontend_sh",
+    name = "helpers",
     srcs = [
         ".f12",
         "run",

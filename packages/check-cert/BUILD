@@ -125,7 +125,7 @@ rust_doc(
 )
 
 sh_library(
-    name = "packages_check-cert_sh",
+    name = "helpers",
     srcs = [
         ".f12",
         "run",

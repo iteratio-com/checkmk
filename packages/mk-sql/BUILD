@@ -141,7 +141,7 @@ rust_doc(
 )
 
 sh_library(
-    name = "packages_mk-sql_sh",
+    name = "helpers",
     srcs = [
         "run",
     ],

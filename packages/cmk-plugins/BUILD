@@ -743,7 +743,7 @@ pkg_tar(
 )
 
 sh_library(
-    name = "tooling_sh",
+    name = "helpers",
     srcs = [
         ".f12",
         "run",

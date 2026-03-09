@@ -103,7 +103,7 @@ py_wheel(
 )
 
 sh_library(
-    name = "packages_cmk-mkp-tool_sh",
+    name = "helpers",
     srcs = [
         ".f12",
         "run",

@@ -300,7 +300,7 @@ build_test(
 )
 
 sh_library(
-    name = "packages_cmk-frontend-vue_sh",
+    name = "helpers",
     srcs = [
         ".f12",
         "run",
