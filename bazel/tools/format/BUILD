@@ -72,6 +72,9 @@ format_multirun(
     html = ":prettier",
     html_jinja = ":djlint",
     javascript = ":prettier",
+    # Must be 0 (not e.g. 4) — any non-zero value means sequential execution.
+    # See https://github.com/keith/rules_multirun/issues/82
+    jobs = 0,
     markdown = ":prettier",
     python = "@multitool_hub//tools/ruff",
     rust = "@rules_rust//tools/upstream_wrapper:rustfmt",
