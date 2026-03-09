@@ -82,6 +82,7 @@ const originLabel = computed<TranslatedString>(() => {
   display: flex;
   flex-flow: row nowrap;
   place-content: normal;
+  /* stylelint-disable-next-line declaration-block-no-redundant-longhand-properties */
   align-content: normal;
   gap: var(--dimension-4);
 }
