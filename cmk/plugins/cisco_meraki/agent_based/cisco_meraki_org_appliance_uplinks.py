@@ -33,12 +33,12 @@ type Section = ApplianceStatus
 
 
 class Uplink(BaseModel, frozen=True):
-    gateway: str | None
+    gateway: str | None = None
     interface: str
-    ip: str | None
+    ip: str | None = None
     ip_assigned_by: str | None = Field(default=None, alias="ipAssignedBy")
     primary_dns: str | None = Field(default=None, alias="primaryDns")
-    public_ip: str | None = Field(alias="publicIp")
+    public_ip: str | None = Field(default=None, alias="publicIp")
     secondary_dns: str | None = Field(default=None, alias="secondaryDns")
     status: str
 
