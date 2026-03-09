@@ -24,7 +24,7 @@ exports_files(
         "pyproject.toml",
         "requirements.txt",
         ".shellcheckrc",
-        ".stylelintrc.js",
+        ".stylelintrc.mjs",
         ".stylelintignore",
     ],
     visibility = ["//:__subpackages__"],
@@ -34,7 +34,7 @@ js_library(
     name = "stylelintrc",
     srcs = [
         ".stylelintignore",
-        ".stylelintrc.js",
+        ".stylelintrc.mjs",
     ],
     visibility = ["//:__subpackages__"],
     deps = [
