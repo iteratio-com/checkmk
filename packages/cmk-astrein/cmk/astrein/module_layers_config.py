@@ -1238,7 +1238,7 @@ COMPONENTS: Mapping[Component, ImportCheckerProtocol] = {
         "cmk.utils",
     ),
     Component("cmk.nonfree.pro.snmp_backend"): _allow(),
-    Component("cmk.nonfree.pro.liveproxy"): _allow(
+    Component("cmk.liveproxyd.daemon"): _allow(
         *PACKAGE_CCC,
         *PACKAGE_TRACE,
         "cmk.inventory",
@@ -1395,7 +1395,7 @@ COMPONENTS: Mapping[Component, ImportCheckerProtocol] = {
     ),
     Component("tests.integration.cmk.nonfree.pro.liveproxy"): _allow(
         *PACKAGE_CCC,
-        "cmk.nonfree.pro.liveproxy",
+        "cmk.liveproxyd.daemon",
     ),
     Component("tests.integration.cmk.nonfree.pro.robotmk"): _allow(
         *PACKAGE_CCC,
@@ -1536,7 +1536,7 @@ COMPONENTS: Mapping[Component, ImportCheckerProtocol] = {
         "cmk.dcd.gui",
         "cmk.dcd.protocols",
         "cmk.nonfree.pro.bakery",
-        "cmk.nonfree.pro.liveproxy",
+        "cmk.liveproxyd.daemon",
         "cmk.nonfree.pro.robotmk",
         "cmk.nonfree.ultimate.metric_backend",
         "cmk.notification_plugins",
@@ -1599,7 +1599,7 @@ EXPLICIT_FILE_TO_COMPONENT = {
     ModulePath("omd/non-free/packages/cmk-dcd/cmk-dcd.py"): Component("cmk.dcd.daemon"),
     ModulePath("omd/non-free/packages/cmk-dcd/dcd.py"): Component("cmk.dcd.daemon"),
     ModulePath("omd/non-free/packages/cmk-liveproxyd/liveproxyd.py"): Component(
-        "cmk.nonfree.pro.liveproxy"
+        "cmk.liveproxyd.daemon"
     ),
     ModulePath("omd/packages/maintenance/diskspace.py"): Component("cmk.diskspace"),
     ModulePath("web/app/index.wsgi"): Component("cmk.gui"),
