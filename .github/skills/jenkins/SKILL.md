@@ -24,6 +24,14 @@ jenkins_build_data.py <url> --poll [--poll-interval=SECONDS]
 # INCLUDE can be: console,tests,artifacts,stages,full-console
 ```
 
+# Downloading artifacts
+
+Always use `/tmp/jenkins-artifacts` as the download directory:
+
+```
+jenkins_build_data.py <url> --download "<artifact>" --download-dir /tmp/jenkins-artifacts
+```
+
 # Parsing of the downloaded json
 
 Prefer `jq` over `python3` commands.
