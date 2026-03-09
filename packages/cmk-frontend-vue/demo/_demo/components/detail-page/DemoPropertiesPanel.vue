@@ -6,6 +6,8 @@ conditions defined in the file COPYING, which is part of this source code packag
 <script setup lang="ts">
 import type { ListPropDef, PanelConfig, PanelState } from '@demo/_demo/types/prop-panel.ts'
 
+import useId from '@/lib/useId'
+
 import CmkDropdown from '@/components/CmkDropdown'
 import CmkHelpText from '@/components/CmkHelpText.vue'
 import CmkLabel from '@/components/CmkLabel.vue'
@@ -17,6 +19,8 @@ import CmkInput from '@/components/user-input/CmkInput.vue'
 defineProps<{ config: PanelConfig }>()
 
 const state = defineModel<PanelState>({ required: true })
+
+const uid = useId()
 </script>
 
 <template>
@@ -30,32 +34,32 @@ const state = defineModel<PanelState>({ required: true })
       class="demo-properties-panel__prop-control"
     >
       <div class="demo-properties-panel__label-container">
-        <CmkLabel :for="`ctrl-${key}`">{{ def.title }}</CmkLabel>
+        <CmkLabel :for="`${uid}-${key}`">{{ def.title }}</CmkLabel>
         <CmkSpace v-if="def.help" size="small" />
         <CmkHelpText v-if="def.help" :help="def.help" />
       </div>
       <CmkSwitch
         v-if="def.type === 'boolean'"
-        :id="`ctrl-${key}`"
+        :id="`${uid}-${key}`"
         :data="state[key] as boolean"
         @update:data="state[key] = $event"
       />
       <CmkInput
         v-else-if="def.type === 'string'"
-        :id="`ctrl-${key}`"
+        :id="`${uid}-${key}`"
         :model-value="state[key] as string"
         @update:model-value="state[key] = $event ?? ''"
       />
       <CmkInput
         v-else-if="def.type === 'number'"
-        :id="`ctrl-${key}`"
+        :id="`${uid}-${key}`"
         type="number"
         :model-value="state[key] as number"
         @update:model-value="state[key] = $event ?? 0"
       />
       <textarea
         v-else-if="def.type === 'multiline-string'"
-        :id="`ctrl-${key}`"
+        :id="`${uid}-${key}`"
         rows="3"
         class="demo-properties-panel__textarea"
         :value="state[key] as string"
@@ -63,7 +67,7 @@ const state = defineModel<PanelState>({ required: true })
       />
       <CmkDropdown
         v-else-if="def.type === 'list'"
-        :component-id="`ctrl-${key}`"
+        :component-id="`${uid}-${key}`"
         :label="def.title"
         :options="{ type: 'fixed', suggestions: (def as ListPropDef).options }"
         :selected-option="state[key] as string"
