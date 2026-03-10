@@ -51,7 +51,6 @@ def _valuespec_agent_config_zorp() -> Dictionary:
                 ),
             ),
         },
-        migrate=lambda old: {"deployment": ("sync" if old else "do_not_deploy", None)},
     )
 
 
