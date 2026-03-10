@@ -1056,6 +1056,7 @@ def test_history_add_sample() -> None:
     )
 
 
+# This is nowhere near being a unit test of cmk.utils.licensing.
 def test_cloud_service_prefixes_up_to_date():
     """Test if there are services that do not begin with the prefix indicating a cloud service based
     on the categorisation in their manpage. Either rename your service to conform to the given

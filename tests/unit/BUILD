@@ -620,6 +620,84 @@ py_test(
 )
 
 py_test(
+    name = "utils_community",
+    srcs = ["__test__.py"] + glob(
+        include = ["cmk/utils/**/*.py"],
+        exclude = ["**/nonfree/**"],
+    ),
+    args = [
+        "--config-file=$(location @//:pyproject.toml)",
+        "--import-mode=importlib",
+        "--random-order-bucket=global",
+        "--dist=loadfile",
+        "--numprocesses=4",
+    ],
+    data = ["@//:pyproject.toml"] + glob(
+        include = ["**/test-files/**"],
+        exclude = ["**/*.py"],
+    ),
+    main = ":__test__.py",
+    visibility = ["//tests:__subpackages__"],
+    deps = [
+        ":__test__",
+        ":conftest",
+        "//cmk/utils",
+        "//packages/cmk-ccc:exceptions",
+        "//packages/cmk-crypto",
+        "//packages/cmk-plugin-apis:discover_plugins",
+        "//tests/testlib/unit:unit_free",
+        requirement("fakeredis"),
+        requirement("time-machine"),
+        requirement("icalendar"),
+        requirement("cryptography"),
+        requirement("python-dateutil"),
+        requirement("pytest"),
+        requirement("pytest-asyncio"),
+        requirement("recurring-ical-events"),
+        requirement("werkzeug"),
+        requirement("flask"),
+        requirement("pytest-random-order"),
+    ],
+)
+
+py_test(
+    name = "utils_pro",
+    srcs = ["__test__.py"] + glob(
+        include = ["cmk/utils/**/nonfree/**/pro/**/*.py"],
+        allow_empty = True,
+    ),
+    args = [
+        "--config-file=$(location @//:pyproject.toml)",
+        "--import-mode=importlib",
+        "--random-order-bucket=global",
+        "--dist=loadfile",
+        "--numprocesses=4",
+    ],
+    data = ["@//:pyproject.toml"],
+    main = ":__test__.py",
+    target_compatible_with = select({
+        "@//:gpl+nonfree_repo": [],
+        "@//:gpl_repo": ["@platforms//:incompatible"],
+    }),
+    visibility = ["//tests:__subpackages__"],
+    deps = [
+        ":__test__",
+        ":conftest",
+        requirement("pytest"),
+        requirement("pytest-asyncio"),
+        requirement("marshmallow"),
+        requirement("pytest-random-order"),
+        requirement("time-machine"),
+    ] + select({
+        "@//:gpl+nonfree_repo": [
+            "//cmk/utils:pro",
+            "//tests/testlib/unit:unit_nonfree",
+        ],
+        "@//:gpl_repo": [],
+    }),
+)
+
+py_test(
     name = "repo",
     # https://bazel.build/reference/be/common-definitions#test.size
     size = "large",
@@ -651,7 +729,6 @@ py_test(
             "cmk/snmplib/**/*.py",
             "cmk/special_agents/**/*.py",
             "cmk/update_config/**/*.py",
-            "cmk/utils/**/*.py",
             "livestatus/**/*.py",
             "testlib/**/*.py",
         ],
