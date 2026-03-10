@@ -148,6 +148,7 @@ IGNORE_PATHS = [
     # todo: discuss with CI team if we should ignore these
     r"bazel/.*",
     r"locale/.*",
+    r"packages/.*/notifications/.*",
     r"non-free/packages/.*/notifications/.*",
 ] + ([r"doc/treasures/.*"] if IGNORE_TREASURES else [])
 

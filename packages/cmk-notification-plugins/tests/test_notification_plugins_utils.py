@@ -258,7 +258,7 @@ def test_get_bulk_notification_subject(
     ],
 )
 def test_api_endpoint_url(monkeypatch: MonkeyPatch, value: str, result: str) -> None:
-    monkeypatch.setattr("cmk.utils.password_store.extract", lambda x: "http://secret.host")
+    monkeypatch.setattr("cmk.utils.password_store.extract", lambda _x: "http://secret.host")
     assert utils.retrieve_from_passwordstore(value) == result
 
 
@@ -560,7 +560,7 @@ class RequestsSessionMock:
     def __call__(self) -> object:
         return self
 
-    def send(self, request: object, timeout: int) -> ResponseMock:
+    def send(self, request: object, timeout: int) -> ResponseMock:  # noqa: ARG002
         if self.side_effect:
             raise self.side_effect
         return ResponseMock(self.data)
@@ -689,4 +689,4 @@ def test_render_cmk_graphs(capsys: pytest.CaptureFixture) -> None:
     ],
 )
 def test_event_text_templates(notification_type: str, expected: str) -> None:
-    assert utils._event_text_template(notification_type) == expected
+    assert utils._event_text_template(notification_type) == expected  # noqa: SLF001

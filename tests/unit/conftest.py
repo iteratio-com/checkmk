@@ -120,11 +120,11 @@ def _fake_version_and_paths() -> None:
     monkeypatch.setattr("cmk.utils.paths.agents_dir", repo_path() / "agents")
     monkeypatch.setattr("cmk.utils.paths.checks_dir", repo_path() / "checks")
 
-    # Merge notification scripts from repo notifications/ and non-free packages into a
+    # Merge notification scripts from community and non-free packages into a
     # combined directory (in production, all scripts are installed to share/check_mk/notifications/).
     # Use a separate temp dir so it doesn't get cleaned up by the session cleanup fixture.
     notifications_tmp = Path(tempfile.mkdtemp(prefix="pytest_cmk_notif_"))
-    for f in (repo_path() / "notifications").iterdir():
+    for f in (repo_path() / "packages/cmk-notification-plugins/notifications").iterdir():
         if f.is_file():
             (notifications_tmp / f.name).symlink_to(f)
     nonfree_notif = repo_path() / "non-free/packages/cmk-notification-plugins-nonfree/notifications"

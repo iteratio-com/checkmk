@@ -1603,20 +1603,48 @@ EXPLICIT_FILE_TO_COMPONENT = {
     ModulePath("omd/packages/maintenance/diskspace.py"): Component("cmk.diskspace"),
     ModulePath("web/app/index.wsgi"): Component("cmk.gui"),
     # Notification plugins
-    ModulePath("notifications/asciimail"): Component("cmk.notification_plugins"),
-    ModulePath("notifications/cisco_webex_teams"): Component("cmk.notification_plugins"),
-    ModulePath("notifications/ilert"): Component("cmk.notification_plugins"),
-    ModulePath("notifications/mail"): Component("cmk.notification_plugins"),
-    ModulePath("notifications/msteams"): Component("cmk.notification_plugins"),
-    ModulePath("notifications/opsgenie_issues"): Component("cmk.notification_plugins"),
-    ModulePath("notifications/pagerduty"): Component("cmk.notification_plugins"),
-    ModulePath("notifications/pushover"): Component("cmk.notification_plugins"),
-    ModulePath("notifications/signl4"): Component("cmk.notification_plugins"),
-    ModulePath("notifications/slack"): Component("cmk.notification_plugins"),
-    ModulePath("notifications/sms_api"): Component("cmk.notification_plugins"),
-    ModulePath("notifications/sms"): Component("cmk.notification_plugins"),
-    ModulePath("notifications/spectrum"): Component("cmk.notification_plugins"),
-    ModulePath("notifications/victorops"): Component("cmk.notification_plugins"),
+    ModulePath("packages/cmk-notification-plugins/notifications/asciimail"): Component(
+        "cmk.notification_plugins"
+    ),
+    ModulePath("packages/cmk-notification-plugins/notifications/cisco_webex_teams"): Component(
+        "cmk.notification_plugins"
+    ),
+    ModulePath("packages/cmk-notification-plugins/notifications/ilert"): Component(
+        "cmk.notification_plugins"
+    ),
+    ModulePath("packages/cmk-notification-plugins/notifications/mail"): Component(
+        "cmk.notification_plugins"
+    ),
+    ModulePath("packages/cmk-notification-plugins/notifications/msteams"): Component(
+        "cmk.notification_plugins"
+    ),
+    ModulePath("packages/cmk-notification-plugins/notifications/opsgenie_issues"): Component(
+        "cmk.notification_plugins"
+    ),
+    ModulePath("packages/cmk-notification-plugins/notifications/pagerduty"): Component(
+        "cmk.notification_plugins"
+    ),
+    ModulePath("packages/cmk-notification-plugins/notifications/pushover"): Component(
+        "cmk.notification_plugins"
+    ),
+    ModulePath("packages/cmk-notification-plugins/notifications/signl4"): Component(
+        "cmk.notification_plugins"
+    ),
+    ModulePath("packages/cmk-notification-plugins/notifications/slack"): Component(
+        "cmk.notification_plugins"
+    ),
+    ModulePath("packages/cmk-notification-plugins/notifications/sms_api"): Component(
+        "cmk.notification_plugins"
+    ),
+    ModulePath("packages/cmk-notification-plugins/notifications/sms"): Component(
+        "cmk.notification_plugins"
+    ),
+    ModulePath("packages/cmk-notification-plugins/notifications/spectrum"): Component(
+        "cmk.notification_plugins"
+    ),
+    ModulePath("packages/cmk-notification-plugins/notifications/victorops"): Component(
+        "cmk.notification_plugins"
+    ),
     # CEE specific notification plugins
     ModulePath(
         "non-free/packages/cmk-notification-plugins-nonfree/notifications/servicenow"

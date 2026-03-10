@@ -62,10 +62,10 @@ GPL_HEADER_NOTIFICATION = re.compile(
 
 
 ignored_files = [
-    "cmk/notification_plugins/ilert.py",
-    "cmk/notification_plugins/signl4.py",
-    "notifications/ilert",
-    "notifications/signl4",
+    "packages/cmk-notification-plugins/cmk/notification_plugins/ilert.py",
+    "packages/cmk-notification-plugins/cmk/notification_plugins/signl4.py",
+    "packages/cmk-notification-plugins/notifications/ilert",
+    "packages/cmk-notification-plugins/notifications/signl4",
     "omd/packages/Python/pip",
     "tests/integration_redfish/mockup-server/redfishMockupServer.py",
     "tests/integration_redfish/mockup-server/rfSsdpServer.py",
@@ -108,6 +108,14 @@ def get_file_header(path: str, length: int = 30) -> str:
         return "".join(head)
 
 
+def _is_notification_script(rel_path: str) -> bool:
+    """Check if a path is a notification plugin script (not just any file with 'notifications' in path).
+
+    Notification scripts live directly under a notifications/ directory and have no .py extension.
+    """
+    return "/notifications/" in rel_path and not rel_path.endswith(".py")
+
+
 def check_for_license_header_violation(rel_path, abs_path):
     if rel_path.startswith("non-free/packages/cmk-update-agent/cmk_update_agent.py"):
         if not ENTERPRISE_HEADER_CODING.match(get_file_header(abs_path, length=5)):
@@ -115,7 +123,7 @@ def check_for_license_header_violation(rel_path, abs_path):
     elif rel_path.startswith("omd/non-free/packages/alert-handling/alert_handlers/"):
         if not ENTERPRISE_HEADER_ALERT_HANDLERS.match(get_file_header(abs_path, length=8)):
             yield "enterprise header with alert handler not matching", rel_path
-    elif "/notifications/" in rel_path and needs_enterprise_license(rel_path):
+    elif _is_notification_script(rel_path) and needs_enterprise_license(rel_path):
         if not ENTERPRISE_HEADER_NOTIFICATION.match(get_file_header(abs_path, length=10)):
             yield "enterprise header with notification not matching", rel_path
     elif needs_enterprise_license(rel_path):
@@ -125,7 +133,7 @@ def check_for_license_header_violation(rel_path, abs_path):
     elif rel_path == "omd/packages/omd/omd.bin":
         if not OMD_HEADER.match(get_file_header(abs_path, length=23)):
             yield "omd gpl license header not matching", rel_path
-    elif rel_path.startswith("notifications/"):
+    elif _is_notification_script(rel_path) and not needs_enterprise_license(rel_path):
         if not GPL_HEADER_NOTIFICATION.match(get_file_header(abs_path, length=10)):
             yield "gpl header with notification not matching", rel_path
     else:

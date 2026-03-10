@@ -39,7 +39,7 @@ _PERMISSIONS = (
         ("BUILD", "README", "Makefile", "__init__.py"),
         ("*.pyc",),
     ),
-    ("notifications/*", is_executable, ("README", "debug"), ()),
+    ("packages/cmk-notification-plugins/notifications/*", is_executable, ("README", "debug"), ()),
     ("bin/*", is_executable, ("BUILD", "mkevent.cc", "mkeventd_open514.cc"), ()),
     # Enterprise specific
     (

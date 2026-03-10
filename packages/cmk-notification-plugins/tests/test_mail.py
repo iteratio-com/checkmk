@@ -205,7 +205,7 @@ another line\\nlast line
 
 
 # TODO: validate the HTML content
-def test_mail_content_from_service_context(mocker: MockerFixture) -> None:
+def test_mail_content_from_service_context(mocker: MockerFixture) -> None:  # noqa: ARG001
     # The items below are added by the mail plugin
     context = mock_service_context()
     assert "EVENT_TXT" not in context
