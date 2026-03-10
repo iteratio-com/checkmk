@@ -83,7 +83,6 @@ from ._unit import get_temperature_unit, user_specific_unit
 from ._utils import (
     MKGraphRecipeNotFoundError,
     MKGraphWidgetTooSmallError,
-    SizeEx,
 )
 
 RenderOutput = HTML | str
@@ -1404,12 +1403,6 @@ class GraphDestinations:
         ]
 
 
-def _graph_title_height_ex(config: GraphRenderConfig) -> SizeEx:
-    if config.show_title in [False, "inline"]:
-        return SizeEx(0)
-    return SizeEx(1)
-
-
 def host_service_graph_dashlet_cmk(
     request: Request,
     graph_recipes: Sequence[GraphRecipe],
@@ -1430,7 +1423,8 @@ def host_service_graph_dashlet_cmk(
     height = height_var / html_size_per_ex
 
     bounds = _graph_margin_ex(graph_render_config.show_margin)
-    height -= _graph_title_height_ex(graph_render_config)
+    if graph_render_config.show_title not in [False, "inline"]:
+        height -= 1
     height -= bounds.top + bounds.bottom
     width -= bounds.left + bounds.right
 
