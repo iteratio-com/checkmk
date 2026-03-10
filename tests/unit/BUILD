@@ -379,7 +379,10 @@ py_test(
         "--dist=loadfile",
         "--numprocesses=4",
     ],
-    data = ["@//:pyproject.toml"] + glob(["**/*.xml"]),
+    data = ["@//:pyproject.toml"] + glob(
+        include = ["**/*.xml"],
+        allow_empty = True,
+    ),
     main = ":__test__.py",
     target_compatible_with = select({
         "@//:gpl+nonfree_repo": [],
@@ -414,7 +417,10 @@ py_test(
         "--dist=loadfile",
         "--numprocesses=4",
     ],
-    data = ["@//:pyproject.toml"] + glob(["**/*.jsonl"]),
+    data = ["@//:pyproject.toml"] + glob(
+        include = ["**/*.jsonl"],
+        allow_empty = True,
+    ),
     main = ":__test__.py",
     target_compatible_with = select({
         "@//:gpl+nonfree_repo": [],
@@ -477,6 +483,7 @@ py_test(
             "livestatus/**/*.py",
             "testlib/**/*.py",
         ],
+        allow_empty = True,
     ),
     args = [
         "--config-file=$(location @//:pyproject.toml)",
