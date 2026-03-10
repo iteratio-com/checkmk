@@ -4,24 +4,9 @@
 # conditions defined in the file COPYING, which is part of this source code package.
 
 import json
-import logging
 
-from cmk.checkengine.parser import SectionStore
 from cmk.fetchers import Mode
 from cmk.fetchers.filecache import MaxAge
-
-
-class TestSectionStore:
-    def test_repr(self) -> None:
-        assert isinstance(
-            repr(
-                SectionStore(
-                    "/dev/null",
-                    logger=logging.getLogger("test"),
-                )
-            ),
-            str,
-        )
 
 
 class TestMaxAge:

@@ -26,7 +26,6 @@ import cmk.ccc.resulttype as result
 import cmk.fetchers._snmp as snmp
 from cmk.ccc.exceptions import MKTimeout, OnError
 from cmk.ccc.hostaddress import HostAddress, HostName
-from cmk.checkengine.plugins import SectionName
 from cmk.fetchers import (
     ActivatedSecrets,
     Fetcher,
@@ -65,6 +64,7 @@ from cmk.snmplib import (
     SNMPTable,
     SNMPVersion,
 )
+from cmk.snmplib import SNMPSectionName as SectionName
 
 # TODO(ml): This is way too complicated for a unit test.
 PLUGIN_STORE = SNMPPluginStore(

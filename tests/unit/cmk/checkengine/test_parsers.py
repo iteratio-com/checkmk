@@ -36,6 +36,19 @@ from cmk.snmplib import SNMPRawData, SNMPSectionMarker
 StringTable = list[list[str]]
 
 
+class TestSectionStore:
+    def test_repr(self) -> None:
+        assert isinstance(
+            repr(
+                SectionStore(
+                    "/dev/null",
+                    logger=logging.getLogger("test"),
+                )
+            ),
+            str,
+        )
+
+
 class TestAgentParser:
     @pytest.fixture
     def hostname(self) -> HostName:
