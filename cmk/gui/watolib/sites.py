@@ -13,7 +13,7 @@ import re
 import time
 from collections.abc import Collection, Mapping
 from multiprocessing import JoinableQueue, Process
-from typing import Any, cast, NamedTuple
+from typing import Any, cast, NamedTuple, Protocol
 
 from livestatus import (
     BrokerConnection,
@@ -100,7 +100,34 @@ def register(config_file_registry: ConfigFileRegistry) -> None:
     config_file_registry.register(SitesConfigFile())
 
 
+class LivestatusProxyHook(Protocol):
+    def livestatus_proxy_valuespec(self) -> ValueSpec: ...
+    def on_sites_saved(self, sites: SiteConfigurations) -> None: ...
+    def affected_config_domains(self) -> list[ABCConfigDomain]: ...
+
+
+class NoOpLivestatusProxy:
+    def livestatus_proxy_valuespec(self) -> ValueSpec:
+        return FixedValue(
+            value=None,
+            title=_("Use Livestatus proxy daemon"),
+            totext=_("Connect directly (not available in Checkmk Community)"),
+        )
+
+    def on_sites_saved(self, sites: SiteConfigurations) -> None:
+        pass
+
+    def affected_config_domains(self) -> list[ABCConfigDomain]:
+        return []
+
+
 class SiteManagement:
+    def __init__(
+        self,
+        liveproxy_hook: LivestatusProxyHook | None = None,
+    ) -> None:
+        self._liveproxy_hook = liveproxy_hook or NoOpLivestatusProxy()
+
     @classmethod
     def connection_method_valuespec(cls) -> CascadingDropdown:
         return CascadingDropdown(
@@ -117,13 +144,8 @@ class SiteManagement:
             ),
         )
 
-    @classmethod
-    def livestatus_proxy_valuespec(cls) -> ValueSpec:
-        return FixedValue(
-            value=None,
-            title=_("Use Livestatus proxy daemon"),
-            totext=_("Connect directly (not available in Checkmk Community)"),
-        )
+    def livestatus_proxy_valuespec(self) -> ValueSpec:
+        return self._liveproxy_hook.livestatus_proxy_valuespec()
 
     @classmethod
     def _connection_choices(cls) -> list[tuple[str, str, ValueSpec]]:
@@ -506,8 +528,7 @@ class SiteManagement:
     def load_sites(cls) -> SiteConfigurations:
         return SitesConfigFile().load_for_reading()
 
-    @classmethod
-    def save_sites(cls, sites: SiteConfigurations, *, activate: bool, pprint_value: bool) -> None:
+    def save_sites(self, sites: SiteConfigurations, *, activate: bool, pprint_value: bool) -> None:
         # TODO: Clean this up
         from cmk.gui.watolib.hosts_and_folders import folder_tree
 
@@ -529,8 +550,9 @@ class SiteManagement:
             # Call the sites saved hook
             hooks.call("sites-saved", sites)
 
-    @classmethod
-    def delete_site(cls, site_id: SiteId, *, pprint_value: bool, use_git: bool) -> None:
+            self._liveproxy_hook.on_sites_saved(sites)
+
+    def delete_site(self, site_id: SiteId, *, pprint_value: bool, use_git: bool) -> None:
         # TODO: Clean this up
         from cmk.gui.watolib.hosts_and_folders import folder_tree
 
@@ -563,7 +585,7 @@ class SiteManagement:
                 % search_url,
             )
 
-        if cls.is_site_in_broker_connections(site_id):
+        if self.is_site_in_broker_connections(site_id):
             raise MKUserError(
                 None,
                 _(
@@ -571,9 +593,9 @@ class SiteManagement:
                 ),
             )
 
-        domains = cls._affected_config_domains()
+        domains = self._affected_config_domains()
 
-        connected_sites = cls.get_connected_sites_to_update(
+        connected_sites = self.get_connected_sites_to_update(
             new_or_deleted_connection=True,
             modified_site=site_id,
             current_config=all_sites[site_id],
@@ -582,7 +604,7 @@ class SiteManagement:
         )
 
         del all_sites[site_id]
-        cls.save_sites(all_sites, activate=True, pprint_value=pprint_value)
+        self.save_sites(all_sites, activate=True, pprint_value=pprint_value)
 
         cmk.gui.watolib.changes.add_change(
             action_name="edit-sites",
@@ -597,9 +619,8 @@ class SiteManagement:
         )
         cmk.gui.watolib.activate_changes.clear_site_replication_status(site_id)
 
-    @classmethod
-    def _affected_config_domains(cls) -> list[ABCConfigDomain]:
-        return [ConfigDomainGUI()]
+    def _affected_config_domains(self) -> list[ABCConfigDomain]:
+        return [ConfigDomainGUI()] + self._liveproxy_hook.affected_config_domains()
 
 
 class SiteManagementRegistry(Registry[SiteManagement]):
