@@ -121,6 +121,8 @@ class GraphMetric(BaseModel, frozen=True):
 
 
 class GraphSpecification(BaseModel, ABC, frozen=True):
+    id: str | None = None
+
     @staticmethod
     @abstractmethod
     def graph_type_name() -> str: ...

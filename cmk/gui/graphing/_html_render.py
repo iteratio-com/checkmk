@@ -10,8 +10,10 @@ import traceback
 from collections.abc import Callable, Generator, Iterable, Iterator, Mapping, Sequence
 from dataclasses import asdict, dataclass
 from enum import auto, Enum
-from typing import Any, assert_never, Literal, override
+from typing import assert_never, Literal, override
 from uuid import uuid4
+
+from pydantic import BaseModel
 
 from livestatus import MKLivestatusNotFoundError
 
@@ -91,6 +93,16 @@ RenderOutput = HTML | str
 class ExpandableLegendAppearance(Enum):
     POP_UP = auto()
     FOLDABLE = auto()
+
+
+class AjaxContext(BaseModel):
+    """Round-trip envelope sent to the browser and echoed back on graph updates."""
+
+    graph_id: str = ""
+    definition: GraphRecipe
+    data_range: GraphDataRange
+    render_config: GraphRenderConfig
+    display_id: str = ""
 
 
 #   .--HTML-Graphs---------------------------------------------------------.
@@ -220,7 +232,11 @@ def _render_graph_html(
         % (
             json.dumps(str(html_code)),
             json.dumps(graph_artwork.model_dump(exclude={"definition", "display_id"})),
-            json.dumps(_graph_ajax_context(graph_artwork, graph_data_range, graph_render_config)),
+            json.dumps(
+                _graph_ajax_context(
+                    graph_artwork, graph_data_range, graph_render_config
+                ).model_dump()
+            ),
         )
     )
 
@@ -233,13 +249,13 @@ def _graph_ajax_context(
     graph_artwork: GraphArtwork,
     graph_data_range: GraphDataRange,
     graph_render_config: GraphRenderConfig,
-) -> dict[str, Any]:
-    return {
-        "definition": graph_artwork.definition.model_dump(),
-        "data_range": graph_data_range.model_dump(),
-        "render_config": graph_render_config.model_dump(),
-        "display_id": graph_artwork.display_id,
-    }
+) -> AjaxContext:
+    return AjaxContext(
+        definition=graph_artwork.definition,
+        data_range=graph_data_range,
+        render_config=graph_render_config,
+        display_id=graph_artwork.display_id,
+    )
 
 
 def _render_title_elements_plain(elements: Iterable[str]) -> str:
@@ -721,7 +737,7 @@ class AjaxGraph(Page):
         response.set_content_type("application/json")
         try:
             context_var = ctx.request.get_str_input_mandatory("context")
-            context = json.loads(context_var)
+            context = AjaxContext.model_validate(json.loads(context_var))
             response_data = render_ajax_graph(
                 ctx.request,
                 context,
@@ -744,7 +760,7 @@ class AjaxGraph(Page):
 
 def render_ajax_graph(
     request: Request,
-    context: Mapping[str, Any],
+    context: AjaxContext,
     registered_metrics: Mapping[str, RegisteredMetric],
     *,
     temperature_unit: TemperatureUnit,
@@ -752,9 +768,9 @@ def render_ajax_graph(
     show_titles_if_limit_reached: bool,
     converter: Callable[[GraphMetricExpression], JsonSerializable] | None,
 ) -> JsonSerializable:
-    graph_data_range = GraphDataRange.model_validate(context["data_range"])
-    graph_render_config = GraphRenderConfig.model_validate(context["render_config"])
-    graph_recipe = GraphRecipe.model_validate(context["definition"])
+    graph_data_range = context.data_range
+    graph_render_config = context.render_config
+    graph_recipe = context.definition
 
     start_time_var = request.var("start_time")
     end_time_var = request.var("end_time")
@@ -800,13 +816,11 @@ def render_ajax_graph(
     )
 
     # Persist the current data range for the graph editor.
-    if graph_render_config.editing and (
-        specification_id := context.get("definition", {}).get("specification", {}).get("id")
-    ):
+    if graph_render_config.editing and (context.definition.specification.id):
         assert user.id is not None
-        UserGraphDataRangeStore(user.id).save(specification_id, graph_data_range)
+        UserGraphDataRangeStore(user.id).save(context.definition.specification.id, graph_data_range)
 
-    graph_display_id = context.get("display_id", "")
+    graph_display_id = context.display_id
 
     graph_artwork_or_errors = compute_graph_artwork(
         graph_recipe,
@@ -869,13 +883,13 @@ def render_ajax_graph(
     return {
         "html": str(html_code),
         "graph": graph_artwork_or_errors.artwork.model_dump(exclude={"definition", "display_id"}),
-        "context": {
-            "graph_id": context["graph_id"],
-            "definition": graph_recipe.model_dump(),
-            "data_range": graph_data_range.model_dump(),
-            "render_config": graph_render_config.model_dump(),
-            "display_id": graph_display_id,
-        },
+        "context": AjaxContext(
+            graph_id=context.graph_id,
+            definition=graph_recipe,
+            data_range=graph_data_range,
+            render_config=graph_render_config,
+            display_id=graph_display_id,
+        ).model_dump(),
         "error": error_msg,
         "warning": warning_msg,
         "queries_reached_limit": (
@@ -1303,11 +1317,13 @@ def estimate_graph_step_for_html(
 class AjaxGraphHover(Page):
     def page(self, ctx: PageContext) -> PageResult:
         """Registered as `ajax_graph_hover`."""
-        context = json.loads(ctx.request.get_str_input_mandatory("context"))
+        context = AjaxContext.model_validate(
+            json.loads(ctx.request.get_str_input_mandatory("context"))
+        )
         render_graph_hover_for_recipe(
             ctx,
-            GraphRecipe.model_validate(context["definition"]),
-            GraphDataRange.model_validate(context["data_range"]),
+            context.definition,
+            context.data_range,
         )
         return None
 
