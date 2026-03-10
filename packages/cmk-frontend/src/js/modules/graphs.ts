@@ -197,11 +197,12 @@ export interface GraphArtwork {
   requested_end_time: Timestamp
   requested_step: string | Seconds
   pin_time: Timestamp | null
-  // Definition itself, for reproducing the graph
-  definition: GraphRecipe
+  // Definition itself, for reproducing the graph. Not always present, use ajax_context.definition instead.
+  definition?: GraphRecipe
   // Display id to avoid mixups in get_id_of_graph when rendering the same graph multiple times
   // in graph collections and dashboards. Often set to the empty string when not needed.
-  display_id: string
+  // Not always present, use ajax_context.display_id instead.
+  display_id?: string
 }
 
 // Styling. Please note that for each visible pixel our canvas
@@ -376,7 +377,6 @@ export function show_ajax_graph_at_container(ajax_graph: AjaxGraph, container: H
 export function create_graph(
   html_code: string,
   graph_artwork: GraphArtwork,
-  graph_render_config: GraphRenderConfig,
   ajax_context: AjaxContext
 ) {
   // Detect whether or not a new graph_id has to be calculated. During the view
@@ -390,7 +390,7 @@ export function create_graph(
   container_div.setAttribute('id', graph_id)
   /* eslint-disable-next-line no-unsanitized/property -- Highlight existing violations CMK-17846 */
   container_div.innerHTML = html_code
-  if (graph_render_config.show_time_range_previews)
+  if (ajax_context.render_config.show_time_range_previews)
     container_div.className = 'graph_container timeranges'
   else container_div.className = 'graph_container'
 
@@ -406,7 +406,7 @@ export function create_graph(
   // before and after these assignments
   g_graphs[graph_id] = graph_artwork
   g_graphs[graph_id]['ajax_context'] = ajax_context
-  g_graphs[graph_id]['render_config'] = graph_render_config
+  g_graphs[graph_id]['render_config'] = ajax_context.render_config
   g_graphs[graph_id]['id'] = graph_id
   render_graph(g_graphs[graph_id])
 }
@@ -1729,7 +1729,7 @@ function update_graph_hover_popup(event: Event, graph: GraphArtwork): boolean | 
   }
 
   const cmk_token = get_url_param('cmk-token')
-  const display_id = graph.display_id || ''
+  const display_id = graph.ajax_context?.display_id || ''
 
   // Check hover cache (shared dashboards)
   if (cmk_token) {
@@ -1792,7 +1792,7 @@ function handle_graph_hover_popup_update(
   }
 
   if (handler_data.hover_timestamp !== undefined && get_url_param('cmk-token')) {
-    const display_id = handler_data.graph.display_id || ''
+    const display_id = handler_data.graph.ajax_context?.display_id || ''
     const cache_key = _hover_cache_key(display_id, handler_data.hover_timestamp)
     _hover_cache_set(cache_key, popup_data)
   }

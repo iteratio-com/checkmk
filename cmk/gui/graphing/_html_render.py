@@ -216,11 +216,10 @@ def _render_graph_html(
         html_code = HTML.without_escaping(output_funnel.drain())
 
     return HTMLWriter.render_javascript(
-        "cmk.graphs.create_graph(%s, %s, %s, %s);"
+        "cmk.graphs.create_graph(%s, %s, %s);"
         % (
             json.dumps(str(html_code)),
-            json.dumps(graph_artwork.model_dump()),
-            json.dumps(graph_render_config.model_dump()),
+            json.dumps(graph_artwork.model_dump(exclude={"definition", "display_id"})),
             json.dumps(_graph_ajax_context(graph_artwork, graph_data_range, graph_render_config)),
         )
     )
@@ -869,7 +868,7 @@ def render_ajax_graph(
 
     return {
         "html": str(html_code),
-        "graph": graph_artwork_or_errors.artwork.model_dump(),
+        "graph": graph_artwork_or_errors.artwork.model_dump(exclude={"definition", "display_id"}),
         "context": {
             "graph_id": context["graph_id"],
             "definition": graph_recipe.model_dump(),
