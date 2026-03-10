@@ -207,7 +207,6 @@ def _register_gui_background_jobs(job_registry: BackgroundJobRegistry) -> None:
 def _register_config_domains(config_domain_registry: ConfigDomainRegistry) -> None:
     config_domain_registry.register(config_domains.ConfigDomainCore())
     config_domain_registry.register(config_domains.ConfigDomainGUI())
-    config_domain_registry.register(config_domains.ConfigDomainLiveproxy())
     config_domain_registry.register(config_domains.ConfigDomainCACertificates())
     config_domain_registry.register(config_domains.ConfigDomainSiteCertificate())
     config_domain_registry.register(config_domains.ConfigDomainOMD())

@@ -18,7 +18,6 @@ from typing import Any, NewType, override
 
 from pydantic import BaseModel
 
-import cmk.ccc.version as cmk_version
 import cmk.utils.paths
 from cmk.ccc import store
 from cmk.ccc.exceptions import MKGeneralException
@@ -41,7 +40,6 @@ from cmk.gui.site_config import is_distributed_setup_remote_site
 from cmk.gui.type_defs import GlobalSettings, TrustedCertificateAuthorities
 from cmk.gui.utils.html import HTML
 from cmk.gui.watolib import config_domain_name
-from cmk.gui.watolib.audit_log import log_audit
 from cmk.gui.watolib.config_domain_name import (
     ABCConfigDomain,
     ConfigDomainName,
@@ -214,112 +212,6 @@ class ConfigDomainGUI(ABCConfigDomain):
         for s in settings:
             setting.update(s)
         return DomainRequest(cls.ident(), setting)
-
-
-# TODO: This has been moved directly into watolib because it was not easily possible
-# to extract SiteManagement() to a separate module (depends on Folder, add_change, ...).
-# As soon as we have untied this we should re-establish a watolib plug-in hierarchy and
-# move this to a commercial edition specific watolib plug-in
-class ConfigDomainLiveproxy(ABCConfigDomain):
-    needs_sync = False
-    needs_activation = False
-    in_global_settings = True
-
-    @override
-    @classmethod
-    def ident(cls) -> ConfigDomainName:
-        return config_domain_name.LIVEPROXY
-
-    @override
-    @classmethod
-    def enabled(cls) -> bool:
-        return (
-            cmk_version.edition(cmk.utils.paths.omd_root) is not cmk_version.Edition.COMMUNITY
-            and active_config.liveproxyd_enabled
-        )
-
-    @override
-    def config_dir(self) -> Path:
-        return cmk.utils.paths.default_config_dir / "liveproxyd.d/wato"
-
-    @override
-    def save(
-        self,
-        settings: GlobalSettings,
-        site_specific: bool = False,
-        custom_site_path: str | None = None,
-    ) -> None:
-        super().save(settings, site_specific=site_specific, custom_site_path=custom_site_path)
-        self.activate()
-
-    @override
-    def create_artifacts(self, settings: SerializedSettings | None = None) -> ConfigurationWarnings:
-        # see if we can / should move something from activate() here
-        return []
-
-    @override
-    def activate(self, settings: SerializedSettings | None = None) -> ConfigurationWarnings:
-        log_audit(
-            action="liveproxyd-activate",
-            message="Activating changes of Livestatus Proxy configuration",
-            user_id=user.id,
-            use_git=active_config.wato_use_git,
-        )
-
-        try:
-            pidfile = cmk.utils.paths.livestatus_unix_socket.with_name("liveproxyd.pid")
-            try:
-                with pidfile.open(encoding="utf-8") as f:
-                    pid = int(f.read().strip())
-
-                os.kill(pid, signal.SIGHUP)
-            except ProcessLookupError:
-                # ESRCH: PID in pidfiles does not exist: No reload needed.
-                logger.warning("Did not reload liveproxyd (PID not found)")
-            except FileNotFoundError:
-                # ENOENT: No liveproxyd running: No reload needed.
-                # Reduced log level, as otherwise it would be displayed in the output
-                # of cmk-update-config, where all daemons are stopped.
-                logger.info("Did not reload liveproxyd (Missing PID file)")
-            except ValueError:
-                # ignore empty pid file (may happen during locking in
-                # cmk.ccc.daemon.lock_with_pid_file().  We are in the
-                # situation where the livstatus proxy is in early phase of the
-                # startup. The configuration is loaded later -> no reload needed
-                logger.warning("Did not reload liveproxyd (Empty PID file)")
-
-        except Exception as e:
-            logger.exception("error reloading liveproxyd")
-            raise MKGeneralException(
-                _(
-                    "Could not reload Livestatus proxy: %s. See web.log and liveproxyd.log "
-                    "for further information."
-                )
-                % e
-            )
-        return []
-
-    # TODO: Move default values to common module to share
-    # the defaults between the GUI code an liveproxyd.
-    @override
-    def default_globals(self) -> GlobalSettings:
-        return {
-            "liveproxyd_log_levels": {
-                "cmk.liveproxyd": logging.INFO,
-            },
-            "liveproxyd_default_connection_params": ConfigDomainLiveproxy.connection_params_defaults(),
-        }
-
-    @staticmethod
-    def connection_params_defaults() -> GlobalSettings:
-        return {
-            "channels": 5,
-            "heartbeat": (5, 2.0),
-            "channel_timeout": 3.0,
-            "query_timeout": 120.0,
-            "connect_retry": 4.0,
-            "cache": True,
-        }
 
 
 class ConfigDomainCACertificates(ABCConfigDomain):

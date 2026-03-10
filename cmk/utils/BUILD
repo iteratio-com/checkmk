@@ -20,6 +20,7 @@ py_library(
     visibility = [
         "//cmk:__subpackages__",
         "//non-free/packages/cmk-dcd:__pkg__",
+        "//non-free/packages/cmk-liveproxyd:__pkg__",
         "//non-free/packages/cmk-notification-plugins-nonfree:__pkg__",
         "//omd/packages/omd:__pkg__",
         "//packages/cmk-notification-plugins:__pkg__",
@@ -81,6 +82,7 @@ py_library(
     visibility = [
         "//cmk:__subpackages__",
         "//non-free/packages/cmk-dcd:__pkg__",
+        "//non-free/packages/cmk-liveproxyd:__pkg__",
         "//tests:__subpackages__",
     ],
     deps = [

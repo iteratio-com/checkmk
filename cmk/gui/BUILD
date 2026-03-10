@@ -21,6 +21,7 @@ py_library(
     visibility = [
         "//cmk:__subpackages__",
         "//non-free/packages/cmk-dcd:__pkg__",
+        "//non-free/packages/cmk-liveproxyd:__pkg__",
         "//tests:__subpackages__",
     ],
     deps = [
@@ -161,6 +162,7 @@ py_library(
             "//cmk/utils:pro",
             "//non-free/packages/cmk-dcd:gui",
             "//non-free/packages/cmk-dcd:protocols",
+            "//non-free/packages/cmk-liveproxyd:gui",
             "//non-free/packages/cmk-mknotifyd",
         ],
         "@//:gpl_repo": [],
