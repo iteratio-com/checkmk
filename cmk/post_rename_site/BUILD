@@ -33,7 +33,10 @@ py_library(
         allow_empty = True,
     ),
     imports = ["../.."],
-    visibility = ["//cmk:__subpackages__"],
+    visibility = [
+        "//cmk:__subpackages__",
+        "//tests:__subpackages__",
+    ],
     deps = [
         ":cmk_post_rename_site",
         "//cmk/gui:pro",

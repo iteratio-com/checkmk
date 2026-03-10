@@ -39,6 +39,22 @@ py_library(
     ],
 )
 
+py_library(
+    name = "conftest_post_rename_site",
+    testonly = True,
+    srcs = [
+        "cmk/post_rename_site/plugins/actions/conftest.py",
+    ],
+    deps = [
+        "//cmk/gui",
+        "//packages/cmk-ccc:user",
+        "//tests/testlib/unit:unit_free",
+        requirement("flask"),
+        requirement("pytest"),
+        requirement("pytest-mock"),
+    ],
+)
+
 py_pytest_main(
     name = "__test__",
     deps = [
@@ -620,6 +636,81 @@ py_test(
 )
 
 py_test(
+    name = "post_rename_site_community",
+    srcs = ["__test__.py"] + glob(
+        include = ["cmk/post_rename_site/**/*.py"],
+        exclude = [
+            "**/nonfree/**",
+            "**/conftest.py",
+        ],
+    ),
+    args = [
+        "--config-file=$(location @//:pyproject.toml)",
+        "--import-mode=importlib",
+        "--random-order-bucket=global",
+        "--dist=loadfile",
+        "--numprocesses=4",
+    ],
+    data = ["@//:pyproject.toml"],
+    main = ":__test__.py",
+    visibility = ["//tests:__subpackages__"],
+    deps = [
+        ":__test__",
+        ":conftest",
+        ":conftest_post_rename_site",
+        "//cmk/post_rename_site:cmk_post_rename_site",
+        "//tests/testlib/unit:unit_free",
+        requirement("pytest"),
+        requirement("pytest-asyncio"),
+        requirement("pytest-mock"),
+        requirement("werkzeug"),
+        requirement("flask"),
+        requirement("pytest-random-order"),
+    ],
+)
+
+py_test(
+    name = "post_rename_site_pro",
+    srcs = ["__test__.py"] + glob(
+        include = ["cmk/post_rename_site/**/nonfree/**/pro/**/*.py"],
+        allow_empty = True,
+        exclude = ["**/conftest.py"],
+    ),
+    args = [
+        "--config-file=$(location @//:pyproject.toml)",
+        "--import-mode=importlib",
+        "--random-order-bucket=global",
+        "--dist=loadfile",
+        "--numprocesses=4",
+    ],
+    data = ["@//:pyproject.toml"],
+    main = ":__test__.py",
+    target_compatible_with = select({
+        "@//:gpl+nonfree_repo": [],
+        "@//:gpl_repo": ["@platforms//:incompatible"],
+    }),
+    visibility = ["//tests:__subpackages__"],
+    deps = [
+        ":__test__",
+        ":conftest",
+        ":conftest_post_rename_site",
+        "//cmk/utils",
+        "//cmk/gui",
+        requirement("pytest"),
+        requirement("pytest-asyncio"),
+        requirement("marshmallow"),
+        requirement("pytest-random-order"),
+        #requirement("time-machine"),
+    ] + select({
+        "@//:gpl+nonfree_repo": [
+            "//cmk/post_rename_site:cmk_post_rename_site_pro",
+            #"//tests/testlib/unit:unit_nonfree",
+        ],
+        "@//:gpl_repo": [],
+    }),
+)
+
+py_test(
     name = "utils_community",
     srcs = ["__test__.py"] + glob(
         include = ["cmk/utils/**/*.py"],
@@ -723,7 +814,6 @@ py_test(
             "cmk/piggyback_hub/**/*.py",
             "cmk/piggyback/**/*.py",
             "cmk/plugins/**/*.py",
-            "cmk/post_rename_site/**/*.py",
             "cmk/product_usage/**/*.py",
             "cmk/server_side_calls_backend/**/*.py",
             "cmk/snmplib/**/*.py",
