@@ -16012,6 +16012,15 @@ msgstr ""
 "aux traductions sur %s."
 
 msgid ""
+"Configure the local communication channel between the Windows agent and the "
+"Agent Controller. By default, a mailslot is used. If you encounter problems "
+"with mailslot communication in your environment, you can switch to a TCP "
+"socket on localhost instead.<br> <b>Note:</b> We highly recomment to leave "
+"this option untouched unless you encounter problems with the default "
+"configuration."
+msgstr ""
+
+msgid ""
 "Configure the maximum number of bytes that is sent to the monitoring site. "
 "By default, the limit is set to the maximum size of the file storing the log "
 "lines on the server side, which is 500 KB"
@@ -18429,6 +18438,10 @@ msgstr "Macros clients"
 
 #, fuzzy
 msgid "Custom metrics"
+msgstr "Clients"
+
+#, fuzzy, python-format
+msgid "Custom metrics (%s):"
 msgstr "Clients"
 
 #, python-format
@@ -24961,6 +24974,10 @@ msgstr "Entrez l'adresse"
 msgid "Enter alias (optional)"
 msgstr "ID externe (facultatif)"
 
+#, fuzzy
+msgid "Enter credentials for basic authentication."
+msgstr "Informations d'identification pour l'authentification HTTP de base"
+
 msgid "Enter group"
 msgstr "Entrer le groupe"
 
@@ -26789,6 +26806,11 @@ msgstr ""
 #, fuzzy
 msgid "Failed to query hosts from metric backend"
 msgstr "Ajouter une configuration d'état"
+
+#, fuzzy, python-format
+msgid ""
+"Failed to query metric backend of site %s. Check the web log for details."
+msgstr "Échec de l'exécution du test %s : %s"
 
 msgid "Failed to read the Apache process ID"
 msgstr "Échec de la lecture de l'ID du processus Apache"
@@ -33605,10 +33627,6 @@ msgid "IP address or host name"
 msgstr "Adresse IP de l'hôte"
 
 #, fuzzy
-msgid "IP address or hostname"
-msgstr "Adresse IP de l'hôte"
-
-#, fuzzy
 msgid "IP address or name of tunnel endpoint"
 msgstr "Adresse IP ou nom de l'extrémité du tunnel"
 
@@ -37349,6 +37367,10 @@ msgid "Internal access"
 msgstr ""
 "Erreur interne : %s\n"
 "%s"
+
+#, fuzzy
+msgid "Internal agent communication channel"
+msgstr "Nom de la commande interne"
 
 #, python-format
 msgid ""
@@ -42379,6 +42401,10 @@ msgstr "Réception du courrier"
 msgid "Mails waiting for DNS queue"
 msgstr "Mails en attente de la file d'attente DNS"
 
+#, fuzzy
+msgid "Mailslot"
+msgstr "E-Mails"
+
 msgid "Main"
 msgstr "Principal"
 
@@ -44333,6 +44359,10 @@ msgstr "Instances Oracle"
 msgid "Metric backend is not reachable, autocompletion is not available."
 msgstr "Instances Oracle"
 
+#, fuzzy, python-format
+msgid "Metric backend of site %s is disabled"
+msgstr "Instances Oracle"
+
 #, fuzzy
 msgid "Metric configuration"
 msgstr "Configuration de l'hôte"
@@ -44726,11 +44756,6 @@ msgstr ""
 
 msgid "Missing host name"
 msgstr "Nom d'hôte manquant"
-
-msgid ""
-"Missing hostname attribute. Please configure a resource attribute (e.g., "
-"host.name) so the system can determine the hostname"
-msgstr ""
 
 msgid ""
 "Missing hostname attribute. Please configure a resource attribute (e.g., "
@@ -52917,6 +52942,10 @@ msgstr "Politique de mot de passe pour les comptes locaux"
 msgid "Password properties"
 msgstr "Propriétés du tableau de bord"
 
+#, fuzzy
+msgid "Password should not be empty."
+msgstr "Clé d'accès"
+
 msgid "Password:"
 msgstr "Mot de passe :"
 
@@ -58696,6 +58725,10 @@ msgid "Resource Name"
 msgstr "Nom de la ressource"
 
 #, fuzzy
+msgid "Resource attribute for host name lookup"
+msgstr "Calcul du nom d'hôte"
+
+#, fuzzy
 msgid "Resource attribute for hostname lookup"
 msgstr "Calcul du nom d'hôte"
 
@@ -61562,7 +61595,7 @@ msgid "Send host metrics to Graphite"
 msgstr "Envoi des métriques de l'hôte à Graphite"
 
 #, fuzzy
-msgid "Send log messages to event console"
+msgid "Send log messages to Event Console"
 msgstr "Envoyer des événements à la console d'événements locale"
 
 msgid "Send message"
@@ -68015,6 +68048,9 @@ msgstr ""
 msgid "TCP port of Carbon line receiver"
 msgstr "Port TCP du récepteur de la ligne carbone"
 
+msgid "TCP socket on localhost"
+msgstr ""
+
 #, fuzzy
 msgid "TCP target resets"
 msgstr "Réinitialisation de la cible TCP"
@@ -69321,7 +69357,7 @@ msgstr ""
 "l'imitant)."
 
 msgid ""
-"The IP address or hostname the receiver should listen on. To listen only "
+"The IP address or host name the receiver should listen on. To listen only "
 "locally, use '127.0.0.1' or '::1'. To listen on all interfaces, use "
 "'0.0.0.0' or '::'."
 msgstr ""
@@ -71890,6 +71926,9 @@ msgstr ""
 
 msgid "The message has successfully been sent..."
 msgstr "Le message a été envoyé avec succès..."
+
+msgid "The metric backend snapin shows the number of custom metrics"
+msgstr ""
 
 msgid ""
 "The metric label is displayed alongside the queried value in the status "
@@ -80105,6 +80144,10 @@ msgstr "Titre de la colonne. Ce champ est obligatoire."
 msgid "Title of the tree"
 msgstr "Titre de l'arbre"
 
+#, fuzzy
+msgid "Title should not be empty."
+msgstr "Clé secrète"
+
 msgid "Title to show for the group"
 msgstr "Titre à afficher pour le groupe"
 
@@ -84244,6 +84287,10 @@ msgstr "ID unique"
 msgid "Unique ID %s already exists."
 msgstr "Un paquet de règles avec cet ID existe déjà."
 
+#, fuzzy
+msgid "Unique ID should not be empty."
+msgstr "Clé secrète"
+
 msgid "Unique ID used to identify the instance on the host within Checkmk."
 msgstr "ID unique utilisé pour identifier l'instance sur l'hôte dans Checkmk."
 
@@ -86877,6 +86924,10 @@ msgstr "Nom d'utilisateur pour la connexion"
 
 msgid "Username is unknown"
 msgstr "Le nom d'utilisateur est inconnu"
+
+#, fuzzy
+msgid "Username should not be empty."
+msgstr "Clé secrète"
 
 msgid "Username:"
 msgstr "Nom d'utilisateur :"
@@ -92812,6 +92863,11 @@ msgid "You must not provide more than %d characters."
 msgstr "Vous ne devez pas fournir plus de %d caractères."
 
 msgid ""
+"You must set a resource attribute (e.g., service.name) so the system can "
+"determine the host name."
+msgstr ""
+
+msgid ""
 "You must specify a name for your Kubernetes cluster. The provided name will "
 "be used to make the objects from your cluster unique in a multi-cluster "
 "setup."
@@ -93143,10 +93199,6 @@ msgstr ""
 
 #, fuzzy
 msgid "Your input is not a valid email address."
-msgstr "'%s' n'est pas une adresse e-mail valide."
-
-#, fuzzy
-msgid "Your input is not a valid hostname or IP address."
 msgstr "'%s' n'est pas une adresse e-mail valide."
 
 #, fuzzy
@@ -95736,11 +95788,8 @@ msgid "This string was translated outside of a vue component."
 msgstr ""
 
 #, fuzzy
-msgid "German"
-msgstr "dormant"
-
-msgid "French"
-msgstr ""
+msgid "Hello %{name}!"
+msgstr "Nom complet"
 
 #, fuzzy
 msgid "Loading translations..."
@@ -95749,18 +95798,6 @@ msgstr "%d transferts"
 #, fuzzy
 msgid "Translations loaded"
 msgstr "Traductions"
-
-#, fuzzy
-msgid "Your name"
-msgstr "Nom de la source"
-
-#, fuzzy
-msgid "Number of apples"
-msgstr "Nombre de tables"
-
-#, fuzzy
-msgid "Hello %{name}!"
-msgstr "Nom complet"
 
 msgid "There is %{ n } apple"
 msgid_plural "There are %{ n } apples"
@@ -96447,7 +96484,7 @@ msgstr "Tableau de bord"
 #, fuzzy
 msgid ""
 "This selection is only relevant if under 'User' -> 'Edit Profile' -> 'Mega "
-"menue icons' you have selected the options 'Per Entry'. You can select the "
+"menu icons' you have selected the options 'Per Entry'. You can select the "
 "icon to display next to your dashboard in the Monitoring menu. You can "
 "choose either a single colored icon or one with an additional symbol."
 msgstr ""
@@ -97793,6 +97830,18 @@ msgid "This may take up to 30 seconds when a site restart is required."
 msgstr ""
 
 #, fuzzy
+msgid "Pending change(s)"
+msgstr "Modifications en attente (%s)"
+
+#, fuzzy
+msgid "Activation issue(s)"
+msgstr "Activation"
+
+#, fuzzy
+msgid "Site problem(s)"
+msgstr "Problèmes de service"
+
+#, fuzzy
 msgid "Changes: (%{n})"
 msgstr "Changements"
 
@@ -98335,6 +98384,10 @@ msgstr "Coordonnées de l'hôte"
 #, fuzzy
 msgid "seconds remaining"
 msgstr " secondes restants)"
+
+#, fuzzy
+msgid "You can save the connection as is, or go back to reauthenticate."
+msgstr "Vous ne pouvez pas supprimer la connexion au site local."
 
 #, fuzzy
 msgid "OAuth2 connection parameters requested successfully!"
@@ -99397,6 +99450,26 @@ msgid ""
 "You can still access it later via Help > Learning Checkmk > Welcome page"
 msgstr ""
 
+#, fuzzy
+#~ msgid "IP address or hostname"
+#~ msgstr "Adresse IP de l'hôte"
+
+#, fuzzy
+#~ msgid "Your input is not a valid hostname or IP address."
+#~ msgstr "'%s' n'est pas une adresse e-mail valide."
+
+#, fuzzy
+#~ msgid "German"
+#~ msgstr "dormant"
+
+#, fuzzy
+#~ msgid "Your name"
+#~ msgstr "Nom de la source"
+
+#, fuzzy
+#~ msgid "Number of apples"
+#~ msgstr "Nombre de tables"
+
 #~ msgid " changes"
 #~ msgstr " changements"
 
@@ -99915,22 +99988,6 @@ msgstr ""
 #~ msgstr "État résultant"
 
 #, fuzzy
-#~ msgid "Enter credentials for basic authentication."
-#~ msgstr "Informations d'identification pour l'authentification HTTP de base"
-
-#, fuzzy
-#~ msgid "Password should not be empty"
-#~ msgstr "Clé d'accès"
-
-#, fuzzy
-#~ msgid "Title should not be empty."
-#~ msgstr "Clé secrète"
-
-#, fuzzy
-#~ msgid "Unique ID should not be empty."
-#~ msgstr "Clé secrète"
-
-#, fuzzy
 #~ msgid "Device statuses <b>[deprecated]</b>"
 #~ msgstr "État des services"
 
@@ -99956,18 +100013,6 @@ msgstr ""
 #, fuzzy
 #~ msgid "Only me"
 #~ msgstr "Seulement le temps"
-
-#, fuzzy
-#~ msgid "Pending change(s)"
-#~ msgstr "Modifications en attente (%s)"
-
-#, fuzzy
-#~ msgid "Activation issue(s)"
-#~ msgstr "Activation"
-
-#, fuzzy
-#~ msgid "Site problem(s)"
-#~ msgstr "Problèmes de service"
 
 #, fuzzy
 #~ msgid "Register agent updater, if automatic updates are enabled"
@@ -104650,9 +104695,6 @@ msgstr ""
 
 #~ msgid "Database Name"
 #~ msgstr "Nom de la base de données"
-
-#~ msgid "E-Mails"
-#~ msgstr "E-Mails"
 
 #~ msgid "Email Address"
 #~ msgstr "Adresse électronique"

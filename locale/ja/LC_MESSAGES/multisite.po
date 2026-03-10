@@ -4,7 +4,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Checkmk user interface translation 0.1\n"
-"Report-Msgid-Bugs-To: martin.hirschvogel@checkmk.com\n"
+"Report-Msgid-Bugs-To: feedback@checkmk.com\n"
 "POT-Creation-Date: 2011-05-13 09:42+0200\n"
 "PO-Revision-Date: 2026-03-09 15:36+0000\n"
 "Language-Team: Japanese <https://translate.checkmk.com/projects/checkmk/dev/"
@@ -14787,6 +14787,15 @@ msgstr ""
 "サポートされています。"
 
 msgid ""
+"Configure the local communication channel between the Windows agent and the "
+"Agent Controller. By default, a mailslot is used. If you encounter problems "
+"with mailslot communication in your environment, you can switch to a TCP "
+"socket on localhost instead.<br> <b>Note:</b> We highly recomment to leave "
+"this option untouched unless you encounter problems with the default "
+"configuration."
+msgstr ""
+
+msgid ""
 "Configure the maximum number of bytes that is sent to the monitoring site. "
 "By default, the limit is set to the maximum size of the file storing the log "
 "lines on the server side, which is 500 KB"
@@ -17015,6 +17024,10 @@ msgid "Custom macros"
 msgstr "カスタマーマクロ"
 
 msgid "Custom metrics"
+msgstr "カスタムメトリクス"
+
+#, fuzzy, python-format
+msgid "Custom metrics (%s):"
 msgstr "カスタムメトリクス"
 
 #, python-format
@@ -22771,11 +22784,11 @@ msgid ""
 "performing TLS registration on the agent, or wanting to ping VMs by their "
 "DNS name."
 msgstr ""
-"このオプションを有効にすると、ホスト名計算から仮想マシンが除外され、仮想"
-"マシンがホストに紐付けられる場合でも元のAzure名が保持されます。これは、自動"
-"ホスト作成を使用する場合に必要です。これにより、エージェントのインストールに"
-"よる仮想マシンの監視、エージェントでのTLS登録の実行、またはDNS名による仮想"
-"マシンへのping実行が可能になります。"
+"このオプションを有効にすると、ホスト名計算から仮想マシンが除外され、仮想マシ"
+"ンがホストに紐付けられる場合でも元のAzure名が保持されます。これは、自動ホスト"
+"作成を使用する場合に必要です。これにより、エージェントのインストールによる仮"
+"想マシンの監視、エージェントでのTLS登録の実行、またはDNS名による仮想マシンへ"
+"のping実行が可能になります。"
 
 #, fuzzy
 msgid ""
@@ -22833,18 +22846,18 @@ msgid ""
 msgstr ""
 "一意のホスト名計算を有効にすると、Checkmk はピギーバックホストに対して一意の"
 "ホスト名を生成します。これにより、Azure内で同一名称のエンティティによる競合が"
-"回避され、監視データの上書きや損失を防ぎます。複数のAzureテナントや"
-"サブスクリプションにまたがり、同一名称のサブスクリプション、リソース、"
-"リソースグループが存在する場合は有効にしてください。<b>この設定を保存後に変更"
-"すると、すべてのピギーバックホストの名前が変更されます。</b><hr>一意のホスト"
-"名生成を有効化する際、<b>Short（短形式）</b>と<b>Long（長形式）</b>の2つの"
-"テンプレートから選択できます。これはホスト名に含まれる情報を制御します。<ul>"
-"  <li>    <b>Short:</b> <tt>[Azureからのオブジェクト名]_[一意のID]</tt>    "
-"<ul>      <li>例: <b><tt>myresourcegroup_3f40ba0d</tt></b>, <b><tt>"
-"myvm1_86824be2</tt></b>    </ul>  </li>  <li>    <b>Long:</b> <tt>"
-"azr_[オブジェクトの種類]_[Azureからのオブジェクト名]_[一意のID]</tt>    <ul>"
-"      <li>例: <b><tt>azr_rg_myresourcegroup_3f40ba0d</tt></b>, <b><tt>"
-"azr_vm_myvm1_86824be2</tt></b>    </ul>  </li></ul>"
+"回避され、監視データの上書きや損失を防ぎます。複数のAzureテナントやサブスクリ"
+"プションにまたがり、同一名称のサブスクリプション、リソース、リソースグループ"
+"が存在する場合は有効にしてください。<b>この設定を保存後に変更すると、すべての"
+"ピギーバックホストの名前が変更されます。</b><hr>一意のホスト名生成を有効化す"
+"る際、<b>Short（短形式）</b>と<b>Long（長形式）</b>の2つのテンプレートから選"
+"択できます。これはホスト名に含まれる情報を制御します。<ul>  <li>    <b>Short:"
+"</b> <tt>[Azureからのオブジェクト名]_[一意のID]</tt>    <ul>      <li>例: "
+"<b><tt>myresourcegroup_3f40ba0d</tt></b>, <b><tt>myvm1_86824be2</tt></b>    "
+"</ul>  </li>  <li>    <b>Long:</b> <tt>azr_[オブジェクトの種類]_[Azureからの"
+"オブジェクト名]_[一意のID]</tt>    <ul>      <li>例: "
+"<b><tt>azr_rg_myresourcegroup_3f40ba0d</tt></b>, "
+"<b><tt>azr_vm_myvm1_86824be2</tt></b>    </ul>  </li></ul>"
 
 msgid "Enc-In frames rate"
 msgstr "Enc-Inフレームレート"
@@ -23061,6 +23074,9 @@ msgstr "住所を入力してください"
 
 msgid "Enter alias (optional)"
 msgstr "エイリアス（オプション）"
+
+msgid "Enter credentials for basic authentication."
+msgstr "基本認証の認証情報を入力してください。"
 
 msgid "Enter group"
 msgstr "グループに入る"
@@ -24776,6 +24792,11 @@ msgstr ""
 #, fuzzy
 msgid "Failed to query hosts from metric backend"
 msgstr "OpenTelemetryメトリック名"
+
+#, fuzzy, python-format
+msgid ""
+"Failed to query metric backend of site %s. Check the web log for details."
+msgstr "テスト %s の実行に失敗しました: 詳細はweb.logを参照してください"
 
 msgid "Failed to read the Apache process ID"
 msgstr "ApacheプロセスIDの読み取りに失敗しました"
@@ -30997,9 +31018,6 @@ msgstr "JVM WebサーバーのIPアドレスまたはFQDN"
 msgid "IP address or host name"
 msgstr "IPアドレスまたはホスト名"
 
-msgid "IP address or hostname"
-msgstr "IPアドレスまたはホスト名"
-
 msgid "IP address or name of tunnel endpoint"
 msgstr "トンネルのエンドポイントのIPアドレスまたは名前"
 
@@ -34591,6 +34609,10 @@ msgstr "内部ID"
 #, fuzzy
 msgid "Internal access"
 msgstr "内部エラー: %s"
+
+#, fuzzy
+msgid "Internal agent communication channel"
+msgstr "内部コマンド名"
 
 #, python-format
 msgid ""
@@ -39346,6 +39368,10 @@ msgstr "メール受信時間"
 msgid "Mails waiting for DNS queue"
 msgstr "DNSキューを待機しているメール"
 
+#, fuzzy
+msgid "Mailslot"
+msgstr "Eメール"
+
 msgid "Main"
 msgstr "メイン"
 
@@ -41215,6 +41241,10 @@ msgstr "メトリックバックエンドは無効化されており、自動補
 msgid "Metric backend is not reachable, autocompletion is not available."
 msgstr "メトリックバックエンドに接続できません。自動補完は利用できません。"
 
+#, fuzzy, python-format
+msgid "Metric backend of site %s is disabled"
+msgstr "Oracleインスタンス"
+
 #, fuzzy
 msgid "Metric configuration"
 msgstr "テスト構成"
@@ -41586,14 +41616,6 @@ msgstr ""
 
 msgid "Missing host name"
 msgstr "ホスト名がありません"
-
-#, fuzzy
-msgid ""
-"Missing hostname attribute. Please configure a resource attribute (e.g., "
-"host.name) so the system can determine the hostname"
-msgstr ""
-"ホスト名属性が不足しています。システムがホスト名を判別できるよう、リソース属"
-"性（例: host.name）を設定してください。"
 
 msgid ""
 "Missing hostname attribute. Please configure a resource attribute (e.g., "
@@ -49138,6 +49160,10 @@ msgstr "ローカルアカウントのパスワードポリシー"
 msgid "Password properties"
 msgstr "ダッシュボードのプロパティ"
 
+#, fuzzy
+msgid "Password should not be empty."
+msgstr "パスワードは空欄にできません"
+
 msgid "Password:"
 msgstr "パスワード:"
 
@@ -54512,6 +54538,10 @@ msgid "Resource Name"
 msgstr "リソース名"
 
 #, fuzzy
+msgid "Resource attribute for host name lookup"
+msgstr "カスタムホスト名算出"
+
+#, fuzzy
 msgid "Resource attribute for hostname lookup"
 msgstr "カスタムホスト名算出"
 
@@ -57249,7 +57279,8 @@ msgstr "リモートsyslogホストにイベントを送信する"
 msgid "Send host metrics to Graphite"
 msgstr "ホストメトリックをGraphiteに送信する"
 
-msgid "Send log messages to event console"
+#, fuzzy
+msgid "Send log messages to Event Console"
 msgstr "ログメッセージをイベントコンソールに送信"
 
 msgid "Send message"
@@ -63328,6 +63359,9 @@ msgstr "接続するTCPポート番号。通常、139または445のいずれか
 msgid "TCP port of Carbon line receiver"
 msgstr "カーボンラインレシーバーのTCPポート"
 
+msgid "TCP socket on localhost"
+msgstr ""
+
 msgid "TCP target resets"
 msgstr "TCPターゲットのリセット"
 
@@ -64523,8 +64557,9 @@ msgstr ""
 "名を持つビューを作成すると、ビューはそれをオーバーライドします(シャドウ処理し"
 "ます)。"
 
+#, fuzzy
 msgid ""
-"The IP address or hostname the receiver should listen on. To listen only "
+"The IP address or host name the receiver should listen on. To listen only "
 "locally, use '127.0.0.1' or '::1'. To listen on all interfaces, use "
 "'0.0.0.0' or '::'."
 msgstr ""
@@ -67046,6 +67081,9 @@ msgstr ""
 
 msgid "The message has successfully been sent..."
 msgstr "メッセージの送信に成功しました…"
+
+msgid "The metric backend snapin shows the number of custom metrics"
+msgstr ""
 
 msgid ""
 "The metric label is displayed alongside the queried value in the status "
@@ -71450,10 +71488,10 @@ msgid ""
 "sufficient for registering the Agent Updater. This requires the additional "
 "permission <i>Enable agent updates on hosts & download monitoring agents</i>."
 msgstr ""
-"この権限により、ユーザーが連絡先のフォルダ内の新規ホストに対して"
-"エージェントコントローラーを登録できます。<br>注記：この権限だけでは"
-"エージェントアップデーターの登録には不十分です。これには追加の権限<i>ホストで"
-"のエージェント更新の有効化と監視エージェントのダウンロード</i>が必要です。"
+"この権限により、ユーザーが連絡先のフォルダ内の新規ホストに対してエージェント"
+"コントローラーを登録できます。<br>注記：この権限だけではエージェントアップ"
+"データーの登録には不十分です。これには追加の権限<i>ホストでのエージェント更新"
+"の有効化と監視エージェントのダウンロード</i>が必要です。"
 
 msgid ""
 "This permission allows to register the Agent Controller for any new host."
@@ -71461,10 +71499,10 @@ msgid ""
 "Updater. This requires the additional permission <i>Enable agent updates on "
 "all hosts & download all monitoring agents</i>."
 msgstr ""
-"この権限により、新しいホストに対してエージェントコントローラーを登録できます"
-"。<br>注記：この権限だけではエージェントアップデーターの登録には不十分です。"
-"これには追加の権限<i>すべてのホストでエージェント更新を有効化し、すべての監視"
-"エージェントをダウンロードする</i>が必要です。"
+"この権限により、新しいホストに対してエージェントコントローラーを登録できま"
+"す。<br>注記：この権限だけではエージェントアップデーターの登録には不十分で"
+"す。これには追加の権限<i>すべてのホストでエージェント更新を有効化し、すべての"
+"監視エージェントをダウンロードする</i>が必要です。"
 
 msgid ""
 "This permission allows to revert pending changes. Beware that this holds "
@@ -74631,10 +74669,10 @@ msgid ""
 "kinds of failures can therefore be configured here."
 msgstr ""
 "特にパブリックNTPサーバーとの時刻同期は、NTPライフサイクルの過程で様々な形で"
-"失敗する可能性があるため、同期失敗時にはデフォルトでアラートを送信しません（"
-"代わりに、成功するまでの時間が長すぎる場合にアラートを送信することを優先しま"
-"す）。ただし、一部の環境では、同期失敗を即座に把握することが有用な場合があり"
-"ます。そのため、各種の失敗状態をここで設定できます。"
+"失敗する可能性があるため、同期失敗時にはデフォルトでアラートを送信しません"
+"（代わりに、成功するまでの時間が長すぎる場合にアラートを送信することを優先し"
+"ます）。ただし、一部の環境では、同期失敗を即座に把握することが有用な場合があ"
+"ります。そのため、各種の失敗状態をここで設定できます。"
 
 msgid "Time to alert when PVC status is in pending state"
 msgstr "PVCが保留状態の時に警告を発報するまでの時間"
@@ -74909,6 +74947,9 @@ msgstr "列のタイトル。このフィールドは必須です。"
 msgid "Title of the tree"
 msgstr "ツリーのタイトル"
 
+msgid "Title should not be empty."
+msgstr "タイトルは空にしてはいけません。"
+
 msgid "Title to show for the group"
 msgstr "グループに表示するタイトル"
 
@@ -74947,8 +74988,8 @@ msgid ""
 "To configure a proxy, go to <a href='{}'>Global settings</a> and define your "
 "proxy settings there."
 msgstr ""
-"プロキシを設定するには、<a href='{}'>グローバル設定</a> に移動し、そこで"
-"プロキシ設定を定義してください。"
+"プロキシを設定するには、<a href='{}'>グローバル設定</a> に移動し、そこでプロ"
+"キシ設定を定義してください。"
 
 msgid ""
 "To configure a rule for overall FlashArray capacity use 'Overall' as an item."
@@ -75105,12 +75146,12 @@ msgstr ""
 "エージェントパッケージの更新を開始するには、エージェントアップデーターが監視"
 "サイトに登録する必要があります。従来の<tt>cmk-update-agent register</tt>呼び"
 "出しに加え、エージェントコントローラーの登録成功後にエージェント更新の自動登"
-"録を有効にすることも可能です。ただし、エージェントコントローラーと"
-"エージェントアップデーターの登録には以下の違いがあります："
-"エージェントコントローラーは複数サイトに登録可能であり、同一サイトへの再登録"
-"時には既存の登録を上書きします。エージェントアップデーターは一度に1つの登録し"
-"か保持できません。接続の詳細に関わらず、新しい登録は常に以前の登録を上書きし"
-"ます。ここで登録戦略を選択してください。"
+"録を有効にすることも可能です。ただし、エージェントコントローラーとエージェン"
+"トアップデーターの登録には以下の違いがあります：エージェントコントローラーは"
+"複数サイトに登録可能であり、同一サイトへの再登録時には既存の登録を上書きしま"
+"す。エージェントアップデーターは一度に1つの登録しか保持できません。接続の詳細"
+"に関わらず、新しい登録は常に以前の登録を上書きします。ここで登録戦略を選択し"
+"てください。"
 
 msgid "To unlock higher limits, purchase a license "
 msgstr "より高い制限を解除するには、ライセンスを購入してください "
@@ -78480,6 +78521,9 @@ msgstr "一意のID"
 msgid "Unique ID %s already exists."
 msgstr "ユニークID%sはすでに存在します。"
 
+msgid "Unique ID should not be empty."
+msgstr "一意のIDは空欄にできません。"
+
 msgid "Unique ID used to identify the instance on the host within Checkmk."
 msgstr "Checkmk内でホスト上のインスタンスを識別するために使用される一意のID。"
 
@@ -79448,7 +79492,8 @@ msgstr "更新期間の上位レベル"
 
 msgid ""
 "Upper levels for the average latency. Defaults: 5 ms (WARN), 10 ms (CRIT)."
-msgstr "平均レイテンシの上限値。デフォルト値：5ミリ秒（WARN）、10ミリ秒（CRIT）。"
+msgstr ""
+"平均レイテンシの上限値。デフォルト値：5ミリ秒（WARN）、10ミリ秒（CRIT）。"
 
 msgid "Upper levels for the backup age"
 msgstr "バックアップ経過日数の上位レベル"
@@ -79474,7 +79519,8 @@ msgstr "ログ使用の上位レベル"
 
 msgid ""
 "Upper levels for the maximum latency. Defaults: 5 ms (WARN), 10 ms (CRIT)."
-msgstr "最大レイテンシの上限値。デフォルト値：5ミリ秒（WARN）、10ミリ秒（CRIT）。"
+msgstr ""
+"最大レイテンシの上限値。デフォルト値：5ミリ秒（WARN）、10ミリ秒（CRIT）。"
 
 msgid "Upper levels for the number of HTTP requests per second"
 msgstr "1秒あたりのHTTPリクエスト数の上位レベル"
@@ -79836,12 +79882,12 @@ msgid ""
 "Oracle Wallet files are properly configured in that directory."
 msgstr ""
 "Oracleデータベースへの安全な認証にはOracle Walletを使用し、パスワードを平文で"
-"保存しないでください。『tnsnames.oraまたはsqlnet.oraファイルへのパス』（"
-"TNS_ADMIN）が設定されていない場合、ウォレットは$MK_CONFDIR/oracle_walletに配"
-"置する必要があります。この場合、プラグインはsqlnet.oraファイルが存在しない場"
-"合に自動的に作成します。TNS_ADMIN がカスタムパスに設定されている場合、その"
-"ディレクトリ内に正しいウォレットの場所が指定された sqlnet.ora と Oracle "
-"ウォレットファイルが適切に構成されていることを確認する必要があります。"
+"保存しないでください。『tnsnames.oraまたはsqlnet.oraファイルへのパス』"
+"（TNS_ADMIN）が設定されていない場合、ウォレットは$MK_CONFDIR/oracle_walletに"
+"配置する必要があります。この場合、プラグインはsqlnet.oraファイルが存在しない"
+"場合に自動的に作成します。TNS_ADMIN がカスタムパスに設定されている場合、その"
+"ディレクトリ内に正しいウォレットの場所が指定された sqlnet.ora と Oracle ウォ"
+"レットファイルが適切に構成されていることを確認する必要があります。"
 
 msgid "Use Organisation-ID as host prefix"
 msgstr "組織IDをホストプレフィックスとして使用"
@@ -80101,8 +80147,8 @@ msgid ""
 "Use only with cache disabled in the Meraki special agent settings. The "
 "throughput is based on the usage for the last 60 seconds."
 msgstr ""
-"Meraki専用エージェント設定でキャッシュを無効化した状態でのみ使用してください"
-"。スループットは過去60秒間の使用状況に基づいています。"
+"Meraki専用エージェント設定でキャッシュを無効化した状態でのみ使用してくださ"
+"い。スループットは過去60秒間の使用状況に基づいています。"
 
 msgid "Use other host name"
 msgstr "他のホスト名を使用する"
@@ -80145,7 +80191,8 @@ msgid "Use settings and page layout from"
 msgstr "設定とページレイアウトを使用する"
 
 msgid "Use short interface names (i.e. Gi0/0 for GigabitEthernet0/0)"
-msgstr "短いインターフェース名を使用する（例：GigabitEthernet0/0 を Gi0/0 と表記）"
+msgstr ""
+"短いインターフェース名を使用する（例：GigabitEthernet0/0 を Gi0/0 と表記）"
 
 msgid "Use short title in reports header"
 msgstr "レポートヘッダーに短いタイトルを使用する"
@@ -80919,6 +80966,10 @@ msgstr "ログイン用のユーザー名"
 
 msgid "Username is unknown"
 msgstr "ユーザー名は不明です"
+
+#, fuzzy
+msgid "Username should not be empty."
+msgstr "ユーザー名は空欄にできません"
 
 msgid "Username:"
 msgstr "ユーザー名:"
@@ -84122,10 +84173,10 @@ msgid ""
 "folder=&mode=edit_configvar&site=&varname=metric_backend'>Global Settings > "
 "Site Management.</a>"
 msgstr ""
-"<b>OpenTelemetry データ - メトリックバックエンド</b> コネクタタイプでは、<b>"
-"OpenTelemetry Collector</b> または <b>Prometheus スクラッパー</b> から収集さ"
-"れたデータを使用してホストが動的に作成されます。また、<a "
-"href='wato.py?folder=&mode=edit_configvar&site=&varname=metric_backend'\n"
+"<b>OpenTelemetry データ - メトリックバックエンド</b> コネクタタイプでは、"
+"<b>OpenTelemetry Collector</b> または <b>Prometheus スクラッパー</b> から収集"
+"されたデータを使用してホストが動的に作成されます。また、<a href='wato.py?"
+"folder=&mode=edit_configvar&site=&varname=metric_backend'\n"
 ">グローバル設定 > サイト管理</a> でメトリックバックエンドを有効にする必要があ"
 "ります"
 
@@ -85342,7 +85393,8 @@ msgid "You can only archive the current audit log"
 msgstr "現在の監査ログのみアーカイブできます"
 
 msgid "You can only assign ownership to contact groups you are a member of."
-msgstr "所有権を割り当てられるのは、自分がメンバーである連絡先グループのみです。"
+msgstr ""
+"所有権を割り当てられるのは、自分がメンバーである連絡先グループのみです。"
 
 #, python-format
 msgid ""
@@ -86385,6 +86437,14 @@ msgstr "少なくとも1つの要素を指定する必要があります。"
 msgid "You must not provide more than %d characters."
 msgstr "%d文字以上を指定してはいけません。"
 
+#, fuzzy
+msgid ""
+"You must set a resource attribute (e.g., service.name) so the system can "
+"determine the host name."
+msgstr ""
+"ホスト名属性が不足しています。システムがホスト名を判別できるよう、リソース属"
+"性（例: host.name）を設定してください。"
+
 msgid ""
 "You must specify a name for your Kubernetes cluster. The provided name will "
 "be used to make the objects from your cluster unique in a multi-cluster "
@@ -86702,9 +86762,6 @@ msgstr ""
 
 msgid "Your input is not a valid email address."
 msgstr "入力されたメールアドレスは有効ではありません。"
-
-msgid "Your input is not a valid hostname or IP address."
-msgstr "入力された内容は、有効なホスト名またはIPアドレスではありません。"
 
 msgid ""
 "Your input is not valid. You need to provide a regular expression (regex). "
@@ -89216,12 +89273,8 @@ msgstr ""
 msgid "This string was translated outside of a vue component."
 msgstr "この文字列はVueコンポーネントの外で翻訳されました。"
 
-#, fuzzy
-msgid "German"
-msgstr "休眠中"
-
-msgid "French"
-msgstr "フランス」"
+msgid "Hello %{name}!"
+msgstr "こんにちは %{name}!"
 
 msgid "Loading translations..."
 msgstr "翻訳読み込み中..."
@@ -89229,17 +89282,6 @@ msgstr "翻訳読み込み中..."
 #, fuzzy
 msgid "Translations loaded"
 msgstr "翻訳"
-
-#, fuzzy
-msgid "Your name"
-msgstr "ソース名"
-
-#, fuzzy
-msgid "Number of apples"
-msgstr "テーブルの数"
-
-msgid "Hello %{name}!"
-msgstr "こんにちは %{name}!"
 
 msgid "There is %{ n } apple"
 msgid_plural "There are %{ n } apples"
@@ -89395,8 +89437,8 @@ msgid ""
 "filtered out in the top list configuration to resolve the problem."
 msgstr ""
 "Checkmkが内部でメトリクスを処理する方法の制限により、結果に矛盾するメトリクス"
-"が含まれており、このトップリストは不正確または不完全である可能性があります"
-"。\n"
+"が含まれており、このトップリストは不正確または不完全である可能性がありま"
+"す。\n"
 "これは、以下の表に示す例示ホストおよびサービスを含むサービスチェックコマンド"
 "によって引き起こされます。\n"
 "これらの例を使用して、問題を解決するためにトップリスト設定で除外する必要があ"
@@ -89516,7 +89558,8 @@ msgid "Override default filters"
 msgstr "関連ダッシュボード"
 
 msgid "Temporarily ignore default filters and apply only runtime filters."
-msgstr "デフォルトのフィルターを一時的に無視し、実行時フィルターのみを適用する。"
+msgstr ""
+"デフォルトのフィルターを一時的に無視し、実行時フィルターのみを適用する。"
 
 msgid "Please configure the following filters: "
 msgstr "次のフィルターを設定してください： "
@@ -89823,7 +89866,8 @@ msgid "Other elements"
 msgstr "サイドバー要素"
 
 msgid "Display user messages, sidebar elements, text or embed a URL"
-msgstr "ユーザーメッセージ、サイドバーエレメント、テキストの表示、またはURLの埋め込み"
+msgstr ""
+"ユーザーメッセージ、サイドバーエレメント、テキストの表示、またはURLの埋め込み"
 
 #, fuzzy
 msgid "Select graph"
@@ -89914,7 +89958,7 @@ msgstr "ダッシュボード"
 #, fuzzy
 msgid ""
 "This selection is only relevant if under 'User' -> 'Edit Profile' -> 'Mega "
-"menue icons' you have selected the options 'Per Entry'. You can select the "
+"menu icons' you have selected the options 'Per Entry'. You can select the "
 "icon to display next to your dashboard in the Monitoring menu. You can "
 "choose either a single colored icon or one with an additional symbol."
 msgstr ""
@@ -90011,8 +90055,8 @@ msgstr ""
 "ます。</li>\n"
 "      \n"
 "        <li>\n"
-"      ダッシュレットフィルターは、このダッシュレットに対してビュー/"
-"デフォルト/ランタイムフィルターを上書きします。</li>\n"
+"      ダッシュレットフィルターは、このダッシュレットに対してビュー/デフォル"
+"ト/ランタイムフィルターを上書きします。</li>\n"
 "      \n"
 "      </ul>"
 
@@ -90033,8 +90077,8 @@ msgstr ""
 "    ランタイムフィルターはデフォルトフィルターを上書きするために有効化されま"
 "す。</li>\n"
 "      <li>\n"
-"    ウィジェットフィルターは、このウィジェットに対してデフォルト/"
-"ランタイムフィルターを上書きします。</li>\n"
+"    ウィジェットフィルターは、このウィジェットに対してデフォルト/ランタイム"
+"フィルターを上書きします。</li>\n"
 "    </ul>"
 
 msgid ""
@@ -90578,7 +90622,8 @@ msgid "Delete public link?"
 msgstr "公開リンクを削除しますか？"
 
 msgid "This will delete the link and revoke access for all viewers."
-msgstr "これによりリンクが削除され、すべての閲覧者へのアクセス権が取り消されます。"
+msgstr ""
+"これによりリンクが削除され、すべての閲覧者へのアクセス権が取り消されます。"
 
 #, fuzzy
 msgid "Public access"
@@ -91261,6 +91306,18 @@ msgid "This may take up to 30 seconds when a site restart is required."
 msgstr ""
 
 #, fuzzy
+msgid "Pending change(s)"
+msgstr "保留中の変更"
+
+#, fuzzy
+msgid "Activation issue(s)"
+msgstr "アクティベーション"
+
+#, fuzzy
+msgid "Site problem(s)"
+msgstr "サービスの問題"
+
+#, fuzzy
 msgid "Changes: (%{n})"
 msgstr "変更"
 
@@ -91792,6 +91849,10 @@ msgstr "ホストの連絡先情報"
 
 msgid "seconds remaining"
 msgstr "残り秒数"
+
+#, fuzzy
+msgid "You can save the connection as is, or go back to reauthenticate."
+msgstr "ローカルサイトへの接続を削除することはできません。"
 
 msgid "OAuth2 connection parameters requested successfully!"
 msgstr "OAuth2接続パラメータの要求が正常に完了しました！"
@@ -92827,6 +92888,35 @@ msgid ""
 "You can still access it later via Help > Learning Checkmk > Welcome page"
 msgstr ""
 
+#~ msgid "IP address or hostname"
+#~ msgstr "IPアドレスまたはホスト名"
+
+#, fuzzy
+#~ msgid ""
+#~ "Missing hostname attribute. Please configure a resource attribute (e.g., "
+#~ "host.name) so the system can determine the hostname"
+#~ msgstr ""
+#~ "ホスト名属性が不足しています。システムがホスト名を判別できるよう、リソース"
+#~ "属性（例: host.name）を設定してください。"
+
+#~ msgid "Your input is not a valid hostname or IP address."
+#~ msgstr "入力された内容は、有効なホスト名またはIPアドレスではありません。"
+
+#, fuzzy
+#~ msgid "German"
+#~ msgstr "休眠中"
+
+#~ msgid "French"
+#~ msgstr "フランス」"
+
+#, fuzzy
+#~ msgid "Your name"
+#~ msgstr "ソース名"
+
+#, fuzzy
+#~ msgid "Number of apples"
+#~ msgstr "テーブルの数"
+
 #~ msgid " batch is"
 #~ msgstr " 一括"
 
@@ -93453,19 +93543,6 @@ msgstr ""
 #~ msgid "Toggle 'Getting started' button"
 #~ msgstr "「スタート」ボタンの切り替え"
 
-#~ msgid "Enter credentials for basic authentication."
-#~ msgstr "基本認証の認証情報を入力してください。"
-
-#, fuzzy
-#~ msgid "Password should not be empty"
-#~ msgstr "パスワードは空欄にできません"
-
-#~ msgid "Title should not be empty."
-#~ msgstr "タイトルは空にしてはいけません。"
-
-#~ msgid "Unique ID should not be empty."
-#~ msgstr "一意のIDは空欄にできません。"
-
 #~ msgid ""
 #~ "Agent Controller not registered at this site: You tried to register for "
 #~ "agent updates with a user who's authorized to register agents. This is "
@@ -93514,18 +93591,6 @@ msgstr ""
 #, fuzzy
 #~ msgid "The access token is invalid, revoked or expired."
 #~ msgstr "キーファイルが無効です、またはパスワードが間違っています。"
-
-#, fuzzy
-#~ msgid "Pending change(s)"
-#~ msgstr "保留中の変更"
-
-#, fuzzy
-#~ msgid "Activation issue(s)"
-#~ msgstr "アクティベーション"
-
-#, fuzzy
-#~ msgid "Site problem(s)"
-#~ msgstr "サービスの問題"
 
 #, fuzzy
 #~ msgid "Register agent updater, if automatic updates are enabled"
@@ -98358,9 +98423,6 @@ msgstr ""
 
 #~ msgid "Database Name"
 #~ msgstr "データベース名"
-
-#~ msgid "E-Mails"
-#~ msgstr "Eメール"
 
 #~ msgid "Email Address"
 #~ msgstr "電子メールアドレス"

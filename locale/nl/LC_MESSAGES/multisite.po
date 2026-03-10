@@ -15896,6 +15896,15 @@ msgstr ""
 "dragen aan de vertalingen op %s."
 
 msgid ""
+"Configure the local communication channel between the Windows agent and the "
+"Agent Controller. By default, a mailslot is used. If you encounter problems "
+"with mailslot communication in your environment, you can switch to a TCP "
+"socket on localhost instead.<br> <b>Note:</b> We highly recomment to leave "
+"this option untouched unless you encounter problems with the default "
+"configuration."
+msgstr ""
+
+msgid ""
 "Configure the maximum number of bytes that is sent to the monitoring site. "
 "By default, the limit is set to the maximum size of the file storing the log "
 "lines on the server side, which is 500 KB"
@@ -18290,6 +18299,10 @@ msgstr "Macro's voor klanten"
 
 #, fuzzy
 msgid "Custom metrics"
+msgstr "Klanten"
+
+#, fuzzy, python-format
+msgid "Custom metrics (%s):"
 msgstr "Klanten"
 
 #, python-format
@@ -24763,6 +24776,10 @@ msgstr "Voer adres in"
 msgid "Enter alias (optional)"
 msgstr "Externe ID (facultatief)"
 
+#, fuzzy
+msgid "Enter credentials for basic authentication."
+msgstr "Inloggegevens voor HTTP Basis Authenticatie"
+
 msgid "Enter group"
 msgstr "Voer groep in"
 
@@ -26574,6 +26591,11 @@ msgstr ""
 #, fuzzy
 msgid "Failed to query hosts from metric backend"
 msgstr "Configuratie toestand toevoegen"
+
+#, fuzzy, python-format
+msgid ""
+"Failed to query metric backend of site %s. Check the web log for details."
+msgstr "Mislukt bij het uitvoeren van de test %s: %s"
 
 msgid "Failed to read the Apache process ID"
 msgstr "Het is niet gelukt om de Apache proces-ID te lezen"
@@ -33332,10 +33354,6 @@ msgid "IP address or host name"
 msgstr "IP-adres van gastheer"
 
 #, fuzzy
-msgid "IP address or hostname"
-msgstr "IP-adres van gastheer"
-
-#, fuzzy
 msgid "IP address or name of tunnel endpoint"
 msgstr "IP-adres of naam van tunnel-eindpunt"
 
@@ -37037,6 +37055,10 @@ msgid "Internal access"
 msgstr ""
 "Interne fout: %s\n"
 "%s"
+
+#, fuzzy
+msgid "Internal agent communication channel"
+msgstr "Naam intern commando"
 
 #, python-format
 msgid ""
@@ -42049,6 +42071,10 @@ msgstr "Ontvangst van post"
 msgid "Mails waiting for DNS queue"
 msgstr "Mails Wachtend op DNS Wachtrij"
 
+#, fuzzy
+msgid "Mailslot"
+msgstr "E-Mails"
+
 msgid "Main"
 msgstr "Hoofd"
 
@@ -43988,6 +44014,10 @@ msgstr "Oracle gevallen"
 msgid "Metric backend is not reachable, autocompletion is not available."
 msgstr "Oracle gevallen"
 
+#, fuzzy, python-format
+msgid "Metric backend of site %s is disabled"
+msgstr "Oracle gevallen"
+
 #, fuzzy
 msgid "Metric configuration"
 msgstr "Host configuratie"
@@ -44380,11 +44410,6 @@ msgstr ""
 
 msgid "Missing host name"
 msgstr "Ontbrekende hostnaam"
-
-msgid ""
-"Missing hostname attribute. Please configure a resource attribute (e.g., "
-"host.name) so the system can determine the hostname"
-msgstr ""
 
 msgid ""
 "Missing hostname attribute. Please configure a resource attribute (e.g., "
@@ -52513,6 +52538,10 @@ msgstr "Wachtwoordbeleid voor lokale accounts"
 msgid "Password properties"
 msgstr "Eigenschappen van het dashboard"
 
+#, fuzzy
+msgid "Password should not be empty."
+msgstr "Toegangssleutel"
+
 msgid "Password:"
 msgstr "Wachtwoord:"
 
@@ -58216,6 +58245,10 @@ msgid "Resource Name"
 msgstr "Bronnaam"
 
 #, fuzzy
+msgid "Resource attribute for host name lookup"
+msgstr "Hostname berekening"
+
+#, fuzzy
 msgid "Resource attribute for hostname lookup"
 msgstr "Hostname berekening"
 
@@ -61054,7 +61087,7 @@ msgid "Send host metrics to Graphite"
 msgstr "Stuur hostgegevens naar Graphite"
 
 #, fuzzy
-msgid "Send log messages to event console"
+msgid "Send log messages to Event Console"
 msgstr "Gebeurtenissen verzenden naar lokale gebeurtenissenconsole"
 
 msgid "Send message"
@@ -67445,6 +67478,9 @@ msgstr ""
 msgid "TCP port of Carbon line receiver"
 msgstr "TCP poort van Carbon line ontvanger"
 
+msgid "TCP socket on localhost"
+msgstr ""
+
 #, fuzzy
 msgid "TCP target resets"
 msgstr "TCP Doel Resets"
@@ -68737,7 +68773,7 @@ msgstr ""
 "overschrijven (shadowing)."
 
 msgid ""
-"The IP address or hostname the receiver should listen on. To listen only "
+"The IP address or host name the receiver should listen on. To listen only "
 "locally, use '127.0.0.1' or '::1'. To listen on all interfaces, use "
 "'0.0.0.0' or '::'."
 msgstr ""
@@ -71286,6 +71322,9 @@ msgstr ""
 
 msgid "The message has successfully been sent..."
 msgstr "Het bericht is succesvol verzonden..."
+
+msgid "The metric backend snapin shows the number of custom metrics"
+msgstr ""
 
 msgid ""
 "The metric label is displayed alongside the queried value in the status "
@@ -79402,6 +79441,10 @@ msgstr "Titel van de kolom. Dit veld is verplicht."
 msgid "Title of the tree"
 msgstr "Titel van de boom"
 
+#, fuzzy
+msgid "Title should not be empty."
+msgstr "Geheime sleutel"
+
 msgid "Title to show for the group"
 msgstr "Titel die voor de groep moet worden getoond"
 
@@ -83529,6 +83572,10 @@ msgstr "Unieke ID"
 msgid "Unique ID %s already exists."
 msgstr "Een regelpakket met deze ID bestaat al."
 
+#, fuzzy
+msgid "Unique ID should not be empty."
+msgstr "Geheime sleutel"
+
 msgid "Unique ID used to identify the instance on the host within Checkmk."
 msgstr ""
 "Unieke ID die wordt gebruikt om de instantie op de host binnen Checkmk te "
@@ -86122,6 +86169,10 @@ msgstr "Gebruikersnaam voor inloggen"
 
 msgid "Username is unknown"
 msgstr "Gebruikersnaam is onbekend"
+
+#, fuzzy
+msgid "Username should not be empty."
+msgstr "Geheime sleutel"
 
 msgid "Username:"
 msgstr "Gebruikersnaam:"
@@ -91969,6 +92020,11 @@ msgid "You must not provide more than %d characters."
 msgstr "U mag niet meer dan %d tekens opgeven."
 
 msgid ""
+"You must set a resource attribute (e.g., service.name) so the system can "
+"determine the host name."
+msgstr ""
+
+msgid ""
 "You must specify a name for your Kubernetes cluster. The provided name will "
 "be used to make the objects from your cluster unique in a multi-cluster "
 "setup."
@@ -92294,10 +92350,6 @@ msgstr ""
 
 #, fuzzy
 msgid "Your input is not a valid email address."
-msgstr "alle gebruikers met en emailadres"
-
-#, fuzzy
-msgid "Your input is not a valid hostname or IP address."
 msgstr "alle gebruikers met en emailadres"
 
 #, fuzzy
@@ -94889,11 +94941,8 @@ msgid "This string was translated outside of a vue component."
 msgstr ""
 
 #, fuzzy
-msgid "German"
-msgstr "slapend"
-
-msgid "French"
-msgstr ""
+msgid "Hello %{name}!"
+msgstr "Volledige naam"
 
 #, fuzzy
 msgid "Loading translations..."
@@ -94902,18 +94951,6 @@ msgstr "%d vertalingen"
 #, fuzzy
 msgid "Translations loaded"
 msgstr "Vertalingen"
-
-#, fuzzy
-msgid "Your name"
-msgstr "Naam van de bron"
-
-#, fuzzy
-msgid "Number of apples"
-msgstr "Aantal tabellen"
-
-#, fuzzy
-msgid "Hello %{name}!"
-msgstr "Volledige naam"
 
 msgid "There is %{ n } apple"
 msgid_plural "There are %{ n } apples"
@@ -95596,7 +95633,7 @@ msgstr "Dashboard"
 #, fuzzy
 msgid ""
 "This selection is only relevant if under 'User' -> 'Edit Profile' -> 'Mega "
-"menue icons' you have selected the options 'Per Entry'. You can select the "
+"menu icons' you have selected the options 'Per Entry'. You can select the "
 "icon to display next to your dashboard in the Monitoring menu. You can "
 "choose either a single colored icon or one with an additional symbol."
 msgstr ""
@@ -96937,6 +96974,18 @@ msgid "This may take up to 30 seconds when a site restart is required."
 msgstr ""
 
 #, fuzzy
+msgid "Pending change(s)"
+msgstr "Hangende wijzigingen (%s)"
+
+#, fuzzy
+msgid "Activation issue(s)"
+msgstr "Activering"
+
+#, fuzzy
+msgid "Site problem(s)"
+msgstr "Service problemen"
+
+#, fuzzy
 msgid "Changes: (%{n})"
 msgstr "Wijzigingen"
 
@@ -97477,6 +97526,10 @@ msgstr "Contactinformatie gastheer"
 #, fuzzy
 msgid "seconds remaining"
 msgstr "Resterende kredieten"
+
+#, fuzzy
+msgid "You can save the connection as is, or go back to reauthenticate."
+msgstr "U kunt de verbinding met de lokale site niet verwijderen."
 
 #, fuzzy
 msgid "OAuth2 connection parameters requested successfully!"
@@ -98537,6 +98590,26 @@ msgid ""
 msgstr ""
 
 #, fuzzy
+#~ msgid "IP address or hostname"
+#~ msgstr "IP-adres van gastheer"
+
+#, fuzzy
+#~ msgid "Your input is not a valid hostname or IP address."
+#~ msgstr "alle gebruikers met en emailadres"
+
+#, fuzzy
+#~ msgid "German"
+#~ msgstr "slapend"
+
+#, fuzzy
+#~ msgid "Your name"
+#~ msgstr "Naam van de bron"
+
+#, fuzzy
+#~ msgid "Number of apples"
+#~ msgstr "Aantal tabellen"
+
+#, fuzzy
 #~ msgid " batch is"
 #~ msgstr "Pad ID"
 
@@ -99075,22 +99148,6 @@ msgstr ""
 #~ msgstr "Resulterende staat"
 
 #, fuzzy
-#~ msgid "Enter credentials for basic authentication."
-#~ msgstr "Inloggegevens voor HTTP Basis Authenticatie"
-
-#, fuzzy
-#~ msgid "Password should not be empty"
-#~ msgstr "Toegangssleutel"
-
-#, fuzzy
-#~ msgid "Title should not be empty."
-#~ msgstr "Geheime sleutel"
-
-#, fuzzy
-#~ msgid "Unique ID should not be empty."
-#~ msgstr "Geheime sleutel"
-
-#, fuzzy
 #~ msgid "Device statuses <b>[deprecated]</b>"
 #~ msgstr "Dienstverleningsstatus"
 
@@ -99115,18 +99172,6 @@ msgstr ""
 #, fuzzy
 #~ msgid "Only me"
 #~ msgstr "Alleen tijd"
-
-#, fuzzy
-#~ msgid "Pending change(s)"
-#~ msgstr "Hangende wijzigingen (%s)"
-
-#, fuzzy
-#~ msgid "Activation issue(s)"
-#~ msgstr "Activering"
-
-#, fuzzy
-#~ msgid "Site problem(s)"
-#~ msgstr "Service problemen"
 
 #, fuzzy
 #~ msgid "Register agent updater, if automatic updates are enabled"
@@ -103838,9 +103883,6 @@ msgstr ""
 
 #~ msgid "Database Name"
 #~ msgstr "Databank Naam"
-
-#~ msgid "E-Mails"
-#~ msgstr "E-Mails"
 
 #~ msgid "Email Address"
 #~ msgstr "Email Adres"
