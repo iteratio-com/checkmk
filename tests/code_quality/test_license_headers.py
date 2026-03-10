@@ -38,6 +38,14 @@ ENTERPRISE_HEADER_ALERT_HANDLERS = re.compile(
 {ENTERPRISE}"""
 )
 
+ENTERPRISE_HEADER_NOTIFICATION = re.compile(
+    rf"""#!/usr/bin/env python3
+# .+(\n# Bulk: (yes|no))?
+
+{ENTERPRISE}
+"""
+)
+
 
 OMD_HEADER = re.compile(rf"#!/omd/versions/###OMD_VERSION###/bin/python3\n{GPL}")
 
@@ -107,6 +115,9 @@ def check_for_license_header_violation(rel_path, abs_path):
     elif rel_path.startswith("omd/non-free/packages/alert-handling/alert_handlers/"):
         if not ENTERPRISE_HEADER_ALERT_HANDLERS.match(get_file_header(abs_path, length=8)):
             yield "enterprise header with alert handler not matching", rel_path
+    elif "/notifications/" in rel_path and needs_enterprise_license(rel_path):
+        if not ENTERPRISE_HEADER_NOTIFICATION.match(get_file_header(abs_path, length=10)):
+            yield "enterprise header with notification not matching", rel_path
     elif needs_enterprise_license(rel_path):
         header = get_file_header(abs_path, length=4)
         if not (ENTERPRISE_HEADER.match(header) or ENTERPRISE_HEADER_NO_SHEBANG.match(header)):

@@ -5,6 +5,7 @@
 
 from pytest import MonkeyPatch
 
+import cmk.ccc.version as cmk_version
 from cmk.gui.valuespec import Dictionary
 from cmk.gui.watolib import rulespecs
 from cmk.gui.watolib.notification_parameter import (
@@ -13,29 +14,34 @@ from cmk.gui.watolib.notification_parameter import (
     NotificationParameter,
     register_notification_parameters,
 )
+from cmk.utils import paths
 from cmk.utils.rulesets.definition import RuleGroup
-
-expected_plugins = [
-    "asciimail",
-    "cisco_webex_teams",
-    "ilert",
-    "jira_issues",
-    "mail",
-    "mkeventd",
-    "msteams",
-    "opsgenie_issues",
-    "pagerduty",
-    "pushover",
-    "servicenow",
-    "signl4",
-    "slack",
-    "sms_api",
-    "spectrum",
-    "victorops",
-]
 
 
 def test_registered_notification_parameters() -> None:
+    expected_plugins = [
+        "asciimail",
+        "cisco_webex_teams",
+        "ilert",
+        "mail",
+        "mkeventd",
+        "msteams",
+        "pagerduty",
+        "pushover",
+        "signl4",
+        "opsgenie_issues",
+        "slack",
+        "sms_api",
+        "spectrum",
+        "victorops",
+    ]
+
+    if cmk_version.edition(paths.omd_root) is not cmk_version.Edition.COMMUNITY:
+        expected_plugins += [
+            "jira_issues",
+            "servicenow",
+        ]
+
     registered_plugins = sorted(notification_parameter_registry.keys())
     assert registered_plugins == sorted(expected_plugins)
 

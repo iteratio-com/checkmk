@@ -1244,7 +1244,6 @@ COMPONENTS: Mapping[Component, ImportCheckerProtocol] = {
         "cmk.inventory",
         "cmk.utils",
     ),
-    Component("cmk.nonfree.pro.notification_plugins"): _allow("cmk.utils"),
     Component("cmk.nonfree.pro.robotmk"): _allow(
         *PACKAGE_CCC,
         *PACKAGE_PLUGIN_APIS,
@@ -1619,8 +1618,12 @@ EXPLICIT_FILE_TO_COMPONENT = {
     ModulePath("notifications/spectrum"): Component("cmk.notification_plugins"),
     ModulePath("notifications/victorops"): Component("cmk.notification_plugins"),
     # CEE specific notification plugins
-    ModulePath("notifications/servicenow"): Component("cmk.nonfree.pro.notification_plugins"),
-    ModulePath("notifications/jira_issues"): Component("cmk.nonfree.pro.notification_plugins"),
+    ModulePath(
+        "non-free/packages/cmk-notification-plugins-nonfree/notifications/servicenow"
+    ): Component("cmk.notification_plugins"),
+    ModulePath(
+        "non-free/packages/cmk-notification-plugins-nonfree/notifications/jira_issues"
+    ): Component("cmk.notification_plugins"),
 }
 
 EXPLICIT_FILE_TO_DEPENDENCIES = {
