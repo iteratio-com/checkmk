@@ -107,7 +107,7 @@ function navigateUrl(url: string) {
   left: 0;
   min-width: 360px;
   padding-bottom: 20px;
-  background-color: var(--ux-theme-1);
+  background-color: var(--default-bg-color);
   border-right: 4px solid var(--success);
   border-top: 1px solid var(--default-nav-border-color);
 

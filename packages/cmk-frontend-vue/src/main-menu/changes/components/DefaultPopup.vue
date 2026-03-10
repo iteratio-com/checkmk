@@ -16,7 +16,7 @@ conditions defined in the file COPYING, which is part of this source code packag
   left: 0;
   min-width: 360px;
   padding-bottom: 20px;
-  background-color: var(--ux-theme-1);
+  background-color: var(--default-bg-color);
   border-right: 4px solid var(--default-nav-popup-border-color);
 }
 </style>
