@@ -369,7 +369,9 @@ def _show_graph_html_content(
             data=[
                 "pnpgraph",
                 None,
-                _graph_ajax_context(graph_artwork, graph_data_range, graph_render_config),
+                _graph_ajax_context(
+                    graph_artwork, graph_data_range, graph_render_config
+                ).model_dump(),
             ],
             style="z-index:2",
         )  # Ensures that graph canvas does not cover it
