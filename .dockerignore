@@ -48,6 +48,8 @@
 artefacts/
 agents/linux/*
 agents/windows/*
+agents/.buildroot*
+agents/.rpm*
 bazel_execution_log*.json
 /bazel-*
 /bazel_log*
