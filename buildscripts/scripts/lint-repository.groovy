@@ -12,9 +12,14 @@ void main() {
         test_jenkins_helper.execute_test([
             name       : "lint-repository",
             cmd        : "scripts/lint.sh",
-            output_file: "results.sarif",
+            output_file: "lint.log",
             container_name: "ubuntu-2404-${container_safe_branch_name}-latest",
         ]);
+        archiveArtifacts(
+            allowEmptyArchive: true,
+            artifacts: "results.sarif",
+            fingerprint: true,
+        );
         test_jenkins_helper.analyse_issues("SARIF", "results.sarif");
     }
 }
