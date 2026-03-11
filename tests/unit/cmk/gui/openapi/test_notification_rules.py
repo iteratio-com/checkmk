@@ -1715,8 +1715,12 @@ def plugin_with_bulking(
     bulking: Literal["allowed", "not_allowed"],
 ) -> Iterator[APINotificationRule]:
     notification_scripts = load_notification_scripts()
+    is_community = version.edition(paths.omd_root) is version.Edition.COMMUNITY
+    nonfree_plugins = {"jira_issues", "servicenow"}
     plugins: list[str] = []
     for plugin in plugin_test_data:
+        if is_community and plugin["plugin_name"] in nonfree_plugins:
+            continue
         if plugin["plugin_name"] not in plugins:
             if bulking == "allowed":
                 if notification_scripts[plugin["plugin_name"]]["bulk"]:

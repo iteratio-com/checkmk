@@ -25,7 +25,6 @@ def test_registered_config_domains() -> None:
         "check_mk",
         "diskspace",
         "ec",
-        "liveproxyd",
         "multisite",
         "omd",
         "rrdcached",
@@ -37,6 +36,7 @@ def test_registered_config_domains() -> None:
         expected_config_domains += [
             "dcd",
             "mknotifyd",
+            "liveproxyd",
         ]
 
     if cmk_version.edition(paths.omd_root) in {
