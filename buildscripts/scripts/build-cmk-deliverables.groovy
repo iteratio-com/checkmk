@@ -45,7 +45,6 @@ void main() {
     def exclude_pattern = "";
     def safe_branch_name = versioning.safe_branch_name();
     def branch_version = versioning.get_branch_version(checkout_dir);
-    def container_safe_branch_name = safe_branch_name.replace(".", "-");
     inside_container_minimal(safe_branch_name: safe_branch_name) {
         // run everything requiring python in this container
         all_distros = versioning.get_distros(override: "all");
@@ -222,7 +221,7 @@ void main() {
         currentBuild.result = parallel(stages).values().every { it } ? "SUCCESS" : "FAILURE";
     }
 
-    container("minimal-ubuntu-checkmk-${container_safe_branch_name}") {
+    inside_container_minimal(safe_branch_name: safe_branch_name) {
         smart_stage(
             name: "Upload artifacts",
             condition: upload_to_testbuilds && (! currentBuild.fullProjectName.contains("/cv/")),
