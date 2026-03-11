@@ -33,6 +33,7 @@ void main() {
             name: "test-unit",
             cmd: "EDITION=community make -C tests test-unit",
             container_name: "ubuntu-2404-${container_safe_branch_name}-latest",
+            disable_hot_cache: true,
         ]);
 
         test_jenkins_helper.execute_test([
